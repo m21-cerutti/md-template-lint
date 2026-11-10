@@ -37,10 +37,10 @@
     "url": "https://github.com/m21-cerutti/markdown-template-linter/issues"
   },
   "scripts": {
-    "gen:parser": "node scripts/gen-parser.ts",
-    "check:parser": "node scripts/check-parser.ts",
+    "gen:parser": "tsx scripts/gen-parser.ts",
+    "check:parser": "tsx scripts/check-parser.ts",
     "check:rules": "vitest run tests/consistency",
-    "new:rule": "node scripts/new-rule.ts",
+    "new:rule": "tsx scripts/new-rule.ts",
     "typecheck": "tsc -p tsconfig.test.json && tsc -p tsconfig.scripts.json",
     "build": "tsc -p tsconfig.json",
     "test": "vitest run --passWithNoTests",
@@ -49,7 +49,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "prepack": "pnpm run build",
-    "smoke:pack": "node scripts/smoke-pack.ts"
+    "smoke:pack": "tsx scripts/smoke-pack.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -59,6 +59,7 @@
     "eslint": "^10.13.0",
     "jiti": "^2.7.0",
     "prettier": "^3.9.10",
+    "tsx": "^4.23.15",
     "typescript": "~6.0.3",
     "typescript-eslint": "^8.72.1",
     "vitest": "^5.0.5"

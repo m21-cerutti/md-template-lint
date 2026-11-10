@@ -13,7 +13,11 @@ Headings:
 
 Malformed tags:
   - Field 'tags': malformed tag [count:min:abc] (line 2, column 26)
+      2 | tags: ["a"] # [count:min:abc]
+        |                          ^
   - Heading 'Body [content:min-lines:abc]': malformed tag [content:min-lines:abc] (line 6, column 28)
+      6 | ## Body [content:min-lines:abc]
+        |                            ^
 
 ========================
 Summary

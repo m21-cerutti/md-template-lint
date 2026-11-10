@@ -1,0 +1,21 @@
+md-template-lint 1.0.0
+Config: md-template-lint.yml
+========================
+
+Template: templates/notes.template.md
+Target:   notes/*.md (1 file(s))
+
+  ✓ notes/draft.md
+
+========================
+Summary
+========================
+Total files:  1
+Passed:       1
+Failed:       0
+Warnings:     0 (in 0 file(s))
+Suppressed:   3
+Templates:    1 checked, 0 broken
+
+All files passed!
+========================

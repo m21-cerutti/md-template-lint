@@ -77,6 +77,7 @@ describe("json reporter", () => {
       "failed",
       "warnings",
       "filesWithWarnings",
+      "suppressed",
       "templatesChecked",
       "templatesBroken",
       "runErrors",

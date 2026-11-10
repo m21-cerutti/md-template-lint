@@ -37,7 +37,7 @@ describe("check:rules", () => {
   });
 
   it("reads non-empty inputs (a style change cannot make a check pass on nothing)", () => {
-    expect(specCodes()).toHaveLength(55);
+    expect(specCodes()).toHaveLength(61);
     expect(specTypeNames()).toHaveLength(17);
     expect(specRanges().size).toBe(9);
     const atn = MdTemplateParser._ATN;

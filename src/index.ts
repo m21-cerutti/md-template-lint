@@ -8,9 +8,10 @@ export { loadDocument, loadFile } from "./engine/load.js";
 export { inferType } from "./engine/infer.js";
 export { createRegistry, runPhase } from "./engine/registry.js";
 export type { RuleRegistry } from "./engine/registry.js";
-export { checkTarget, checkTemplate } from "./engine/pipeline.js";
-export type { TemplateStatus } from "./engine/pipeline.js";
+export { checkTarget, checkTemplate, lintTarget } from "./engine/pipeline.js";
+export type { TargetResult, TemplateStatus } from "./engine/pipeline.js";
 export {
+  anchorLineOf,
   CATEGORIES,
   createEnv,
   createMemoryIo,
@@ -81,10 +82,12 @@ export type {
   FileResult,
   NoteBlock,
   PairBlock,
+  ReportedDiagnostic,
   RunResult,
   RunSummary,
   SchemaField,
   SchemaHeading,
+  SourceExcerpt,
   TemplateReport,
   TemplateSchema,
   VerifyResult,
@@ -115,6 +118,9 @@ export type {
   BodyPresenceTag,
   BodyTag,
   CaseStyle,
+  Directive,
+  DirectiveItem,
+  DirectiveVerb,
   FilenameConvention,
   Frontmatter,
   FrontmatterComment,

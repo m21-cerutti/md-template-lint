@@ -12,6 +12,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import * as prettier from "prettier";
 import { ROOT } from "../consistency/consistency.js";
 import { diskTree, fixtureProblems } from "../consistency/rule-fixtures.js";
+import { TSX_CLI } from "../helpers/fixtures.js";
 
 let root = "";
 
@@ -25,9 +26,11 @@ afterEach(() => {
 });
 
 const run = (...args: string[]) =>
-  spawnSync(process.execPath, [join(ROOT, "scripts", "new-rule.ts"), ...args, "--root", root], {
-    encoding: "utf8",
-  });
+  spawnSync(
+    process.execPath,
+    [TSX_CLI, join(ROOT, "scripts", "new-rule.ts"), ...args, "--root", root],
+    { encoding: "utf8" },
+  );
 
 /** A name that is never a docs/spec.md 4.3 row, so the scaffold picks the next free code. */
 const FAKE_RULE = "rogue-format-rule";

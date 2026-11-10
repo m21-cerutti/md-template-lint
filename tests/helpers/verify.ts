@@ -12,13 +12,17 @@ import { foldPath } from "../../src/config/paths.js";
 import { REPO_ROOT, expectNameSplit } from "./fixtures.js";
 import { HOME } from "./run.js";
 
-/** One diagnostic of the JSON verify document: line and column only when located. */
+/**
+ * One diagnostic of the JSON verify document: line and column only when located, and then
+ * `sourceLine`, the template line (docs/spec.md 8.5).
+ */
 export interface VerifyDiagnostic {
   readonly code: string;
   readonly severity: "error" | "warning";
   readonly message: string;
   readonly line?: number;
   readonly column?: number;
+  readonly sourceLine?: string;
 }
 
 /** What one `--verify` run of one template gives. */

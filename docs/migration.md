@@ -216,7 +216,7 @@ The comparison with the old linter accepted only documented divergences
 | C04           | A template path that is a directory is `MTL911` (exit 2), not a broken template.                                                                                                                |
 | C05           | A valid tag in the wrong region (a heading tag in frontmatter, or the reverse) is the warning `MTL013`, shown by `--verify`.                                                                    |
 | C07           | New output formats (`--format text\|plain\|json`); `[io:exists]` URL probes are hardened (no redirects, private ranges refused unless `allowPrivateNetworks`).                                  |
-| AS4           | One indented line per diagnostic instead of the nested `FAIL ... has errors:` / `WARN ... has N warning(s):` blocks. The messages are unchanged.                                                |
+| AS4           | One indented line per diagnostic instead of the nested `FAIL ... has errors:` / `WARN ... has N warning(s):` blocks, followed by the offending source line (and a caret row when the column is known, C09). The messages are unchanged.                                                |
 | AS5           | Globs are case-sensitive on every OS (PowerShell wildcards were case-insensitive on Windows).                                                                                                   |
 | AS6           | A template file never lints itself when it matches the `include` of its own pair.                                                                                                               |
 

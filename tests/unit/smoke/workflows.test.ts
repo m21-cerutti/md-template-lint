@@ -204,7 +204,9 @@ describe("release.yml", () => {
   });
 
   it("runs every gate, packs, and smoke-tests the tarball it publishes", () => {
-    const runs = stepsOf(verify).filter((run) => run.startsWith("pnpm"));
+    const runs = stepsOf(verify).filter(
+      (run) => run.startsWith("pnpm") && !run.startsWith("pnpm exec tsx"),
+    );
     expect(runs.slice(0, GATES.length)).toEqual(GATES);
     expect(runs[GATES.length]).toMatch(/^pnpm pack --pack-destination /);
     expect(runs[GATES.length + 1]).toMatch(/^pnpm run smoke:pack -- --tarball /);
@@ -223,7 +225,15 @@ describe("release.yml", () => {
       TAG: "${{ github.ref_name }}",
       REPOSITORY: "${{ github.repository }}",
     });
-    expect(check?.run).toBe('node scripts/smoke/check-release.ts "$TAG" "$REPOSITORY"');
+    expect(check?.run).toBe('pnpm exec tsx scripts/smoke/check-release.ts "$TAG" "$REPOSITORY"');
+    // tsx is a devDependency: the check runs after the install step.
+    const runs = stepsOf(verify);
+    expect(runs.indexOf("pnpm install --frozen-lockfile")).toBeLessThan(
+      runs.indexOf(check?.run ?? ""),
+    );
+    // ...and before the first gate (and so before the pack and the publish).
+    expect(runs.indexOf(check?.run ?? "")).toBeGreaterThanOrEqual(0);
+    expect(runs.indexOf(check?.run ?? "")).toBeLessThan(runs.indexOf("pnpm run check:parser"));
   });
 
   it("uses ${{ github.repository }} and hard-codes no owner or repository", () => {
@@ -267,6 +277,6 @@ describe("package.json publish settings", () => {
 
   it("builds before packing and exposes the smoke test", () => {
     expect(PACKAGE.scripts["prepack"]).toBe("pnpm run build");
-    expect(PACKAGE.scripts["smoke:pack"]).toBe("node scripts/smoke-pack.ts");
+    expect(PACKAGE.scripts["smoke:pack"]).toBe("tsx scripts/smoke-pack.ts");
   });
 });

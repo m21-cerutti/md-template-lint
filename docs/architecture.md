@@ -21,11 +21,37 @@ The sections below detail each part.
 
 Guides:
 
+- [Docs index](README.md): everything under `docs/`.
 - [README](../README.md): install, usage, rule syntax by category, config reference, lint-staged.
-- [Adding a rule](adding-a-rule.md): scaffold, tests, fixtures, new tags, quality gates.
+- [Adding a rule](guides/adding-a-rule.md): step by step with `pnpm run new:rule`, fixtures,
+  consistency tests. The older single-file version is [adding-a-rule.md](adding-a-rule.md).
+- [Adding a tag](guides/adding-a-tag.md): the five places, then the rule that uses the tag.
+- [Grammar and listeners](guides/grammar-and-listeners.md): lexer modes, the two parse stages,
+  visitors, error listeners, the generated parser.
+- [Testing](guides/testing.md): syntax, target, unit, integration and consistency tests, fixtures, gates.
+- [Glossary](glossary.md): the terms of this file in one place.
 - [Migration](migration.md): replace the legacy wrappers and `approved_path.yml`.
 - [Contributing](../CONTRIBUTING.md): setup, gates, commit style, ADR process.
 - [ADR 0006](adr/0006-parity-reached.md): result of the comparison with the legacy linter.
+
+Contents: [Modules](#modules), [Layers and dependency rules](#layers-and-dependency-rules),
+[Where the codes live](#where-the-codes-live), [Extension points](#extension-points),
+[Run flow](#run-flow-config-runner-pipeline-reporters) (with the
+[sequence diagram](#sequence-of-one-lint-run)), [CLI](#cli) (with the
+[`--verify` flowchart](#--verify)), [Data flow](#data-flow), [Lexer modes](#lexer-modes),
+[Listeners and error flow](#listeners-and-error-flow), [Main types](#main-types),
+[Rule contract](#rule-contract), [Discrepancies](#discrepancies). The arrows of the layers
+flowchart are explained in the [Legend](#legend).
+
+## Legend
+
+Meaning of the arrows in the layers flowchart of [Layers and dependency rules](#layers-and-dependency-rules).
+The sequence, `--verify`, state and class diagrams use the standard Mermaid meaning of their own arrows.
+
+| Symbol       | Meaning                                                                                                                                                                                            |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Solid arrow  | Value import in the main direction of the flow.                                                                                                                                                    |
+| Dotted arrow | Import of a contract by a layer that sits on the other side of the flow. `rules` import values from `engine` (`defineRule` and the `report` helper of `engine/rule.ts`); `reporters` import the value `EXCERPT_WIDTH` from `runner`; `config` and `realio` import types only. Also the generator step (`pnpm run gen:parser`). |
 
 ## Modules
 
@@ -43,22 +69,139 @@ Guides:
 | `src/engine/rule.ts`               | Rule contract: categories, phases, steps, contexts, `RuleEnv`, `defineRule`, stubs. |
 | `src/engine/ranges.json`           | Category code ranges (spec 4.2). Read by `rule.ts` and `scripts/new-rule.ts`.       |
 | `src/engine/registry.ts`           | Loads the nine `src/rules/<category>.ts` files, validates codes, categories, steps. |
-| `src/engine/pipeline.ts`           | `checkTemplate` and `checkTarget`: load, then run the rules in spec 4.1 order.      |
+| `src/engine/directives.ts`         | Target disable directives (spec 4.4): validation, range bookkeeping, coverage rule. |
+| `src/engine/pipeline.ts`           | `checkTemplate`, `lintTarget` / `checkTarget`: load, rules in spec 4.1 order, suppression. |
 | `src/rules/<category>.ts`          | One file per category (spec 9). Each exports `rules: readonly AnyRule[]`.           |
 | `src/config/load.ts`               | `loadConfig`: discovery, `yaml` parse, located validation (`MTL901` to `MTL908`).    |
 | `src/config/paths.ts`, `glob.ts`   | One path resolver (spec 6.2, D04); globs to regex plus a walk base (spec 6.4).       |
 | `src/config/types.ts`              | `LintConfig`, `PairConfig`, `ConfigResult`, `RunDiagnostic` (`MTL9xx`).              |
 | `src/runner/run.ts`                | `runLint`: roots, pairs, template cache, pipeline calls, run diagnostics, exit code. |
 | `src/runner/walk.ts`, `types.ts`   | Target discovery (include minus exclude, sorted); the plain-data `RunResult`.        |
-| `src/reporters/`                   | `report`: `pretty`, `plain`, `json`; `cleanText` sanitizing of echoed values.        |
+| `src/reporters/`                   | `report`: `pretty`, `plain`, `json`; `cleanText` sanitizing of echoed values; `excerpt.ts` source-line rows and JSON `sourceLine`. |
 | `src/io/`                          | `createRealIo`: production `RuleIo` (`exists`, hardened `probeUrl`).                 |
 | `src/runner/list.ts`, `verify.ts`  | File-list matching (lint-staged mode); `verifyConfig` / `verifyPaths` (`--verify`).  |
 | `src/runner/files.ts`, `template.ts` | Strict UTF-8 read and path checks; template load shared by lint and `--verify`.    |
 | `src/runner/schema.ts`             | `describeTemplate`: filename convention, fields (type, rules), headings (`--verify`). |
 | `src/cli.ts`, `src/cli/`           | Process entry (`bin`), `execute` catch-all, argument parser, `runCli`, `--verify` reporter, version. |
+| `scripts/`                         | TypeScript scripts run by `tsx` ([ADR 0007](adr/0007-tsx-script-runner.md)): `gen-parser.ts`, `check-parser.ts`, `new-rule.ts`, `smoke-pack.ts`, `smoke/`. Package scripts `gen:parser`, `check:parser`, `new:rule`, `smoke:pack`. |
 
 The CLI is described in [CLI](#cli) below. It calls `loadConfig`, `createRealIo`, `runLint` (or
 `verifyConfig` / `verifyPaths`) and `report`, all exported from `src/index.ts`.
+
+## Layers and dependency rules
+
+The code is a stack of layers. A layer imports only from a layer with a lower number in this
+table (the table runs from the base up). The rules below come from reading the imports of
+`src/`; no check enforces them, review does.
+
+| Layer | Paths                                                  | Imports from                                                                                 |
+| ----- | ------------------------------------------------------ | -------------------------------------------------------------------------------------------- |
+| 0     | `grammar/`, `src/generated/`                           | `antlr4ng` only (the generated files). The `.g4` files are inputs of `pnpm run gen:parser`.  |
+| 1     | `src/tags/`                                            | `src/generated/`, `antlr4ng`. The only layer above 0 that imports `antlr4ng`.                |
+| 2     | `src/engine/` contract and loaders: `model.ts`, `rule.ts`, `values.ts`, `infer.ts`, `load.ts`, `directives.ts` | `src/tags/` (AST types, `analyzeDocument`, `normalizeLineEnds`, `KNOWN_TYPE_NAMES`), `yaml`, `node:fs/promises` (`loadFile`). |
+| 3     | `src/rules/<category>.ts`                              | The contract of layer 2 and the AST types of `src/tags/ast.ts`.                              |
+| 4     | `src/engine/registry.ts`, `src/engine/pipeline.ts`     | `src/rules/*` (only `registry.ts` imports the rules; `src/runner/schema.ts` also imports `enumOptions` from `src/rules/type.ts`) and layer 2. `pipeline.ts` imports `registry.ts`. |
+| 5     | `src/config/`, `src/io/`                               | `src/config/` imports the `RuleCode` and `Severity` types of `src/engine/model.ts` and `yaml`; `src/io/` imports the `RuleIo` types of `src/engine/rule.ts`. |
+| 6     | `src/runner/`                                          | `src/config/`, `src/engine/`, `src/tags/parser.ts` (`normalizeLineEnds`); `schema.ts` also imports `enumOptions` from `src/rules/type.ts`. |
+| 7     | `src/reporters/`                                       | `RunResult` and friends from `src/runner/types.ts`, `EXCERPT_WIDTH` from `src/runner/excerpt.ts`, types of `src/config/` and `src/engine/model.ts`. |
+| 8     | `src/cli.ts`, `src/cli/`                               | `src/config/`, `src/io/`, `src/runner/`, `src/reporters/`, `createMemoryIo` from `src/engine/rule.ts`. |
+
+- `src/index.ts` re-exports the package API from every layer. Nothing inside `src/` imports it.
+- Only `src/tags/` and `src/generated/` know ANTLR. Everything above works on the typed AST
+  (`MarkdownDocument`) and on `TagFinding` data.
+- A rule file imports the engine contract and the AST types, nothing from `src/config/`,
+  `src/runner/`, `src/reporters/`, `src/io/` or `src/cli/`. A rule never touches the file system or
+  the network itself: it calls `context.env.io` (`RuleIo`), which the runner injects.
+- Reporters get plain data (`RunResult`, `VerifyResult`) and return `{ stdout, stderr }`. They read no file.
+- File reads: the config file (`src/config/load.ts`), a document (`loadFile` in `src/engine/load.ts`
+  and `readUtf8` in `src/runner/files.ts`), the directory walk (`src/runner/walk.ts`), the
+  `exists` and `probeUrl` of `src/io/`, the package version (`src/cli/version.ts`).
+- Only `src/cli.ts` reads the process (arguments, `stdout.isTTY`, `NO_COLOR`, the working
+  directory); `runCli` takes them as `env`, so tests call it without a process.
+- Tag syntax lives only in `grammar/*.g4`; the YAML parsing of the frontmatter lives only in
+  `src/config/load.ts` (config) and `src/engine/load.ts` (documents).
+
+```mermaid
+flowchart TD
+  subgraph entry["Entry"]
+    bin["src/cli.ts<br/>process entry, bin"]
+    cli["src/cli/<br/>runCli, parseArgs, reportVerify"]
+  end
+  subgraph run["Run"]
+    config["src/config/<br/>loadConfig, paths, glob"]
+    runner["src/runner/<br/>runLint, verifyConfig, withExcerpts"]
+    realio["src/io/<br/>createRealIo"]
+    reporters["src/reporters/<br/>report, cleanText, excerptRows"]
+  end
+  subgraph core["Engine core"]
+    engine["src/engine/ contract<br/>model, rule, values, load, directives"]
+    pipeline["src/engine/<br/>registry.ts, pipeline.ts"]
+    rules["src/rules/<br/>one file per category"]
+  end
+  subgraph parsing["Parsing"]
+    tags["src/tags/<br/>analyzeDocument, visitors, listeners"]
+    generated["src/generated/<br/>antlr-ng output"]
+    grammar["grammar/<br/>MdTemplateLexer.g4, MdTemplateParser.g4"]
+  end
+  bin --> cli
+  cli --> config
+  cli --> runner
+  cli --> reporters
+  cli --> realio
+  runner --> config
+  runner --> pipeline
+  pipeline --> engine
+  pipeline --> rules
+  engine --> tags
+  rules -.->|"contract: rule.ts, model.ts, values.ts"| engine
+  config -.->|"types"| engine
+  realio -.->|"RuleIo type"| engine
+  reporters -.->|"RunResult type, EXCERPT_WIDTH"| runner
+  tags --> generated
+  grammar -.->|"pnpm run gen:parser"| generated
+```
+
+The diagram is a flowchart with subgraphs, not a C4 diagram. Arrow meanings: see the
+[Legend](#legend).
+
+## Where the codes live
+
+Each rule category is one file in `src/rules/`, with a fixed code range (spec 4.2,
+`src/engine/ranges.json`; the contract and every message are in
+[spec.md 4.3](spec.md#43-code-table)). `src/engine/registry.ts` loads the nine files in the order
+below (`RULE_FILES`) and rejects a code outside the range of the file.
+
+| Codes                 | Category (file)         | Phase and step of its rules                          | Tests                                  |
+| --------------------- | ----------------------- | ---------------------------------------------------- | -------------------------------------- |
+| `MTL001`-`MTL004`     | `syntax` (`syntax.ts`)  | `parse`: a file that does not parse                  | `tests/syntax/syntax/`                 |
+| `MTL010`-`MTL013`     | `syntax` (`syntax.ts`)  | `template`: tag warnings from `TagFinding`           | `tests/syntax/syntax/`                 |
+| `MTL020`-`MTL025`     | `syntax` (`syntax.ts`)  | `target`, step `directives`: disable directive warnings | `tests/target/syntax/`              |
+| `MTL100`-`MTL199`     | `filename` (`filename.ts`) | `target` step `filename`; `field` step `value-filename` | `tests/target/filename/`           |
+| `MTL200`-`MTL299`     | `presence` (`presence.ts`) | `field` step `presence`; `target` step `unknown-keys` | `tests/target/presence/`           |
+| `MTL300`-`MTL399`     | `format` (`format.ts`)  | `field` steps `constant`, `case`, `elements`, `scheme` | `tests/target/format/`              |
+| `MTL400`-`MTL499`     | `bounds` (`bounds.ts`)  | `field` steps `count`, `range`, `order`              | `tests/target/bounds/`                 |
+| `MTL500`-`MTL599`     | `type` (`type.ts`)      | `field` step `type`                                  | `tests/target/type/`                   |
+| `MTL600`-`MTL699`     | `heading` (`heading.ts`) | `target` step `headings`                            | `tests/target/heading/`                |
+| `MTL700`-`MTL799`     | `content` (`content.ts`) | `target` step `content`                             | `tests/target/content/`                |
+| `MTL800`-`MTL899`     | `io` (`io.ts`)          | `field` step `io`                                    | `tests/target/io/`                     |
+| `MTL900`-`MTL999`     | none: run diagnostics   | Built by `src/config/load.ts`, `src/runner/` and `src/cli/` as `RunDiagnostic` | `tests/unit/config/`, `tests/unit/runner/`, `tests/unit/cli/` |
+
+`MTL014`-`MTL019` and `MTL026`-`MTL029` are free. A code is never renumbered or reused. The
+`MTL9xx` codes are not rules: they have no registry entry (a directive that names one gets
+`MTL022`, see `RUN_CODES` in `src/engine/directives.ts`).
+
+## Extension points
+
+| You want to                         | Touch                                                                                          | Guide                                           |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------- | ----------------------------------------------- |
+| Add a rule on existing tags         | spec 4.3 row, `src/rules/<category>.ts`, `tests/consistency/pending-rules.json` while a stub, test file, fixtures | [Adding a rule](guides/adding-a-rule.md)       |
+| Add a template tag                  | `grammar/MdTemplateLexer.g4`, `grammar/MdTemplateParser.g4`, `src/tags/ast.ts`, `src/tags/visitors/`, a rule, then `pnpm run gen:parser` | [Adding a tag](guides/adding-a-tag.md)         |
+| Add a disable directive verb        | `DIRECTIVE` mode and `directiveVerb` in the grammars, `DirectiveVerb` in `src/tags/ast.ts`, `VERBS` in `src/tags/visitors/directive.ts`, `analyzeDirectives` in `src/engine/directives.ts`, spec 4.4 | [Grammar and listeners](guides/grammar-and-listeners.md) |
+| Add a type name                     | `KNOWN_TYPE_NAMES` in `src/tags/types.ts`, spec 3.1, `src/engine/infer.ts`, `src/rules/type.ts` | [spec.md 3](spec.md#3-types)                   |
+| Add an output format                | `src/reporters/` and the `ReportFormat` and `FORMAT_NAMES` lists (`src/reporters/index.ts`, `src/cli/args.ts`) | [spec.md 8](spec.md#8-output)                  |
+| Add a config key                    | `src/config/load.ts` (validation), `src/config/types.ts`, spec 6.3, README config reference     | [spec.md 6](spec.md#6-configuration-md-template-lintyml) |
+| Add a step to the emission order    | `FIELD_STEPS` or `TARGET_STEPS` in `src/engine/rule.ts`, `runTargetRules` in `src/engine/pipeline.ts`, spec 4.1 | [Emission order](#emission-order-spec-41-84)   |
+| Add a script                        | `scripts/<name>.ts` (run by `tsx`, [ADR 0007](adr/0007-tsx-script-runner.md)) and a `package.json` script | [Testing](guides/testing.md#scripts)           |
 
 ## Run flow: config, runner, pipeline, reporters
 
@@ -79,8 +222,10 @@ md-template-lint.yml
          targets (walk, include minus exclude, sorted, template itself skipped);
          none -> MTL913 per onEmpty; template read + checkTemplate ONCE per resolved
          path (cache); broken -> TEMPLATE ERROR block, files not linted, other pairs go on
-       each file: strict UTF-8 read, checkTarget(registry, template, text, rootRelativePath, env)
+       each file: strict UTF-8 read, lintTarget(registry, template, text, rootRelativePath, env)
          env = { aliases, approvedPaths, pairRoot = root dir (D11), io }
+         -> { diagnostics, suppressed }: suppressed ones are already removed (4.4 DIR9),
+            their count adds up in `summary.suppressed`
          target parse failures (MTL001 to MTL004) get the `Parse error: ` prefix (4.1)
        -> RunResult { blocks, brokenTemplates, runErrors, runWarnings, unmatched, summary }
   -> report(result, { format: "pretty" | "plain" | "json", version, color?, quiet? })
@@ -89,7 +234,12 @@ md-template-lint.yml
 
 - Exit code (spec 7.5) is `summary.exitCode`: 2 with any run error, else 1 with a failed file or
   a broken template, else 0. `MTL913` with `warn` is a run warning (exit 0), with `error` a run
-  error (exit 2), with `ignore` nothing.
+  error (exit 2), with `ignore` nothing. Suppressed diagnostics (spec 4.4) are out of the file
+  results before anything counts, so a file whose only errors are suppressed passes.
+- `summary.suppressed` counts them per pair-file lint. The text formats print
+  `Suppressed:   N` after `Warnings:` only when N is greater than 0 (never with `--quiet`, which
+  prints no summary); JSON always has the key, between `filesWithWarnings` and
+  `templatesChecked` (verify JSON: 0, after `warnings`).
 - `pretty` is the wrapper layout of spec 8.2 with Unicode glyphs, ANSI color only when the caller
   passes `color: true` (the CLI decides from the terminal and `NO_COLOR`). `plain` is the same
   layout with ASCII words (`PASS`, `FAIL`, `INFO`) and never colored. `json` is spec 8.5.
@@ -100,6 +250,61 @@ md-template-lint.yml
   only added after the sort. `field` is not emitted (spec change C07).
 - Templates and targets are read by the runner, not by the pipeline. The runner never lets a
   grammar bug pass as a user diagnostic: `InternalParseError` propagates.
+- Source excerpt (spec 8.1, change C09): `src/runner/excerpt.ts` (`withExcerpts`) runs in the
+  runner on the text it just read: each diagnostic gets a bounded `excerpt` (a window of at most 100
+  characters, never the line; see "Source excerpt" below; `ReportedDiagnostic` in
+  `src/runner/types.ts`) from its `position.line`, else its anchor line
+  (`anchorLineOf`), else none; a line outside the file gives none. Target diagnostics use the
+  target text (`lintFile`); `--verify` uses the template text kept by `loadTemplate`
+  (`LoadedTemplate.text`, dropped by `withoutText` in lint mode) for `MTL010` to `MTL013`. The lines are numbered after
+  `normalizeLineEnds` (spec 1.1), the numbering of every `line`. No file is read twice.
+  `RunResult` stays plain data (no side table crosses into the reporters).
+
+### Sequence of one lint run
+
+One `md-template-lint` call without `--verify`, for one target file. The loop runs once per
+root, pair and target, in output order (spec 8.4); the template is parsed once per resolved path
+and cached (`parseOnce` in `runLint`).
+
+```mermaid
+sequenceDiagram
+  autonumber
+  actor User
+  participant Cli as runCli (src/cli/run.ts)
+  participant Cfg as loadConfig (src/config/load.ts)
+  participant Run as runLint (src/runner/run.ts)
+  participant Pipe as lintTarget (src/engine/pipeline.ts)
+  participant Load as loadDocument (src/engine/load.ts)
+  participant Rules as registry rules (src/rules)
+  participant Dir as analyzeDirectives (src/engine/directives.ts)
+  participant Rep as report (src/reporters/index.ts)
+  User->>Cli: md-template-lint with arguments
+  Cli->>Cfg: loadConfig({ cwd, configPath, home, boundary })
+  Cfg-->>Cli: ConfigResult
+  Cli->>Run: runLint(loaded, { io, files })
+  loop each root, pair and target file
+    Run->>Run: loadTemplate once per template (cached)
+    Run->>Pipe: lintTarget(registry, template, text, path, env)
+    Pipe->>Load: loadDocument(text)
+    alt target does not parse
+      Load-->>Pipe: ParseFailure
+      Pipe->>Rules: parse phase rules only (MTL001 to MTL004)
+    else target parsed
+      Load-->>Pipe: DocumentModel
+      Pipe->>Rules: target and field rules in spec 4.1 order
+      Rules-->>Pipe: diagnostics (anchor lines in the side table)
+      Pipe->>Dir: analyzeDirectives(target.directives, knownCodes)
+      Dir-->>Pipe: SuppressionPlan
+      Note over Pipe: isCovered removes the covered diagnostics and counts them
+    end
+    Pipe-->>Run: TargetResult (diagnostics, suppressed)
+    Run->>Run: withExcerpts(diagnostics, text)
+  end
+  Run-->>Cli: RunResult (summary.exitCode)
+  Cli->>Rep: report(result, { format, version, color, quiet })
+  Rep-->>Cli: stdout and stderr
+  Cli-->>User: output and exit code
+```
 
 ## CLI
 
@@ -123,8 +328,8 @@ runCli(argv, env)
       `error MTLnnn: message` + `Try 'md-template-lint --help' for usage.`, exit 2
   lint (default):
     loadConfig({ cwd, configPath, home, boundary })
-    io = createIo({ allowPrivateNetworks: config.allowPrivateNetworks })   ONE per run, none when
-                                                    the config failed (nothing is linted)
+    io = createIo({ allowPrivateNetworks: config.allowPrivateNetworks })   ONE per run, an in-memory
+                                                    io (createMemoryIo) when the config failed (nothing is linted)
     runLint(loaded, { io, files? })                 files = the positional arguments, if any
     report(result, { format, version, color, quiet })
     exit code = result.summary.exitCode
@@ -176,6 +381,33 @@ meets the case-sensitive globs. Two spellings of the root that name one target a
 
 ### `--verify`
 
+The two flows of `runCli` side by side. Lint reads the targets and runs every rule; `--verify`
+reads only templates, builds no io and probes no URL.
+
+```mermaid
+flowchart TD
+  argv(["md-template-lint arguments"]) --> args["parseArgs (src/cli/args.ts)"]
+  args -->|"--help or --version"| ok0(["print, exit 0"])
+  args -->|"MTL920 to MTL922"| bad2(["stderr, exit 2"])
+  args --> mode{"--verify given?"}
+  mode -->|"no: lint"| cfg1["loadConfig"]
+  cfg1 --> io1["createIo: one per run, in-memory io when the config failed"]
+  io1 --> lint["runLint: roots, pairs, targets"]
+  lint --> target["per target: lintTarget, suppression, withExcerpts"]
+  target --> rep["report: pretty, plain or json"]
+  mode -->|"yes"| given{"template paths given?"}
+  given -->|"yes"| vp["verifyPaths: the files are the templates, no config read"]
+  given -->|"no"| cfg2["loadConfig"]
+  cfg2 -->|"no config found: MTL923"| bad2
+  cfg2 --> vc["verifyConfig: distinct templates of the pairs"]
+  vp --> tpl["loadTemplate: checkTemplate, once per distinct template"]
+  vc --> tpl
+  tpl --> schema["describeTemplate, withExcerpts on the tag warnings"]
+  schema --> rv["reportVerify (src/cli/verify-report.ts)"]
+  rep --> code["exit code from summary.exitCode"]
+  rv --> code
+```
+
 `src/runner/verify.ts` parses each DISTINCT template once (dedupe by resolved path, pair order) with
 `loadTemplate` (the same function the lint run uses) and returns a `VerifyResult` (`mode: "verify"`).
 No target is read, no io exists, no URL is probed. Broken (`MTL001` to `MTL004`, also a file that is not
@@ -220,15 +452,17 @@ templates and run errors.
 
 JSON is `mode: "verify"` with `templates[]` of `{ path, status, error?, filenameCase, fields, headings,
 diagnostics }` (a broken template has `error`, `filenameCase: null` and empty `fields`, `headings`,
-`diagnostics`; `diagnostics` of an ok one are its tag warnings), `runErrors`, `runWarnings`, `summary`.
+`diagnostics`; `diagnostics` of an ok one are its tag warnings, each with `line`, `column` and `sourceLine`,
+the template line), `runErrors`, `runWarnings`, `summary`.
 
 ## Reporter sanitizing and UNC paths
 
 `cleanText` (`src/reporters/sanitize.ts`) is applied to every echoed string in all three formats
 (messages, headings, paths, descriptions, pair and root names). Line breaks and other
-whitespace controls become one space, every other C0/C1 control, DEL and the bidi controls
-(U+202A to U+202E, U+2066 to U+2069, U+200E, U+200F, U+061C) and U+FEFF are shown as `\xNN` or
-`\uNNNN`. A document value holding an ANSI escape therefore cannot move the cursor, clear the
+whitespace controls become one space, every other C0/C1 control, DEL, the bidi controls
+(U+202A to U+202E, U+2066 to U+2069, U+200E, U+200F, U+061C), U+FEFF and the invisible format
+characters (U+00AD, U+180E, U+200B to U+200D, U+2060 to U+2064, U+FFF9 to U+FFFB, U+E0000 to
+U+E007F) are shown as `\xNN`, `\uNNNN` or, above U+FFFF, `\u{NNNNN}` (spec 8.2 EX3). A document value holding an ANSI escape therefore cannot move the cursor, clear the
 screen or flip the text direction of a terminal, a CI log or a JSON viewer.
 
 UNC paths: EVERY path value of the config is resolved lexically and may be UNC
@@ -240,6 +474,37 @@ system open the share, which sends the user's NTLM credentials to that server ov
 file is trusted (spec 2.8 trust boundary). Configure a UNC path only for a server you trust,
 and review a config from an untrusted source before running it. Document values are not part of
 this: they only feed `exists` and are gated by `approvedPaths`.
+
+### Source excerpt (spec 8.2 EX1 to EX9, 8.3, 8.5)
+
+The runner builds a bounded window per diagnostic (`src/runner/excerpt.ts`); `src/reporters/excerpt.ts`
+formats it, and nothing else reads source text:
+
+- Bounded cost and memory (EX8). `withExcerpts` normalizes and splits the file text once, then prepares
+  each source line that has a diagnostic once
+  per file (`prepare`: one pass, plus a `Uint32Array` of character offsets only when the line holds
+  surrogates), cached by line number while that file's diagnostics are matched. Each diagnostic then
+  costs `EXCERPT_WIDTH` characters: it keeps `text` (the window, at most 100 characters), `before` and
+  `after` (characters cut on each side), `caret` (index in `text`) and, for the JSON `sourceLine`, `head`
+  (the first 100 characters) and `headCut`. Every kept string is a copy that owns its characters
+  (`Array.from(piece).join("")`): a slice would keep the whole file text alive through V8 sliced strings.
+  The reporters never see the line, so 2000 diagnostics on one 1 MB line cost a few passes, not 2000.
+  Lint mode drops the template text after parsing (`withoutText`, `src/runner/template.ts`); `--verify`
+  holds it only until the tag warnings have their excerpts.
+- `excerptRows(excerpt, indent)`: the gutter row (`<n> | <text>`) and, when the excerpt has a
+  column, the caret row. The text goes through `cleanChar` (`sanitize.ts`), the per-character
+  form of `cleanText` that does not collapse whitespace runs, so the caret stays under its
+  character: a tab is one space, a control, bidi or invisible format character its `\xNN`, `\uNNNN`
+  or (above U+FFFF) `\u{NNNNN}` escape. The window is at most 100 characters; a column above 100
+  slides it to start 40 characters before; `...` marks a cut side. The caret offset counts the shown
+  width (escapes in full, ellipsis included).
+- `sourceLineOf(excerpt)`: the JSON `sourceLine`, the first 100 characters (plus `...` only when the
+  line is longer, `headCut`), and only for an excerpt with a column (`head`). An anchor-only excerpt (no `line` in JSON, DIR5) is text only.
+- `text.ts` prints the rows under each shown diagnostic at indent 8 (gray, SGR 90, with color), so
+  `--quiet` shows exactly the excerpts of the diagnostics it shows. `json.ts` and
+  `src/cli/verify-report.ts` add `sourceLine` right after `column`. `--verify` text prints the rows
+  at indent 6 under each item of the tag sections, in gray with color.
+- An excerpt echoes document content (frontmatter values included) into terminal and CI logs (EX9).
 
 ## Production RuleIo (`src/io/`)
 
@@ -296,6 +561,11 @@ text -> analyzeDocument (src/tags/parser.ts)
           normalizeLineEnds (BOM, CRLF, CR; shared with load.ts)
           stage 1: lexer modes + parser `document`  -> parse tree
           stage 2: each `[word:` bracket re-lexed in TAG_STRICT -> tag or finding
+          directives (spec 4.4): the text re-lexed in DIRECTIVE_SCAN (body lines outside
+            the frontmatter and the fences), comments paired outside code spans, each
+            comment content (and each frontmatter `#` comment) re-lexed in DIRECTIVE
+            -> `MarkdownDocument.directives` (parse data; validated and applied by the
+               engine, src/engine/directives.ts)
           visitors (one per family) -> typed AST; TypeHintListener -> hints
           listeners -> DiagnosticCollector { grammarErrors, findings }
      -> loadDocument (src/engine/load.ts)
@@ -303,11 +573,93 @@ text -> analyzeDocument (src/tags/parser.ts)
           `yaml` (failsafe, uniqueKeys false) -> values
           comment of key line N  <-> YAML key node on line N  (spec 2.1)
           findings kept only on YAML key lines, filename lines and the body
+          directives kept in the body, on YAML key lines and on column-1 comment lines
+            outside a multi-line value (DIR3)
           H1/H2 headings -> sections; inferType -> field type
-     -> DocumentModel { fields, sections, filename, findings }
+     -> DocumentModel { fields, sections, filename, findings, directives }
      -> pipeline (async): parse | template | target + field rules, in order
-     -> Diagnostic { code, severity, message, position }
+          target: steps 2 to 7 of spec 4.1, then suppression (step 8) by the TARGET
+            directives only (src/engine/directives.ts), a filter by code and anchor line
+     -> Diagnostic { code, severity, message, position } (+ anchor line in a side table)
 ```
+
+## Lexer modes
+
+`grammar/MdTemplateLexer.g4` has one lexer and 16 modes (`DEFAULT_MODE` plus 15 `mode` blocks).
+The modes are the regions of a document. Stage 1 starts in `DEFAULT_MODE` over the whole text
+(`analyzeDocument`). Stage 2 starts a NEW lexer in one mode over a small piece of text, through
+`createRecognizers(text, mode, push, map)` in `src/tags/listeners.ts`: `TAG_STRICT` over one
+bracket, `DIRECTIVE_SCAN` over the whole text, `DIRECTIVE` over one comment content. No lexer rule
+of stage 1 leads into those three modes, so the stage-1 tokens never change when a tag or a
+directive is added. `parseInlineComment` and `parseHeadingSuffix` start in `TAG_TEXT` (pushed),
+`parseFilenameComment` in `FM`. The comments of `grammar/MdTemplateLexer.g4` are the reference;
+the diagram shows each `mode(...)`, `pushMode(...)` and `popMode` action of the file.
+
+```mermaid
+stateDiagram-v2
+  state Stage1Document {
+    [*] --> DEFAULT_MODE
+    DEFAULT_MODE --> FM : FM_OPEN, first line is dashes
+    DEFAULT_MODE --> BODY : other first line
+    DEFAULT_MODE --> TAG_TEXT : heading, push
+    DEFAULT_MODE --> FENCE_BACKTICK : opening backtick fence
+    DEFAULT_MODE --> FENCE_TILDE : opening tilde fence
+    DEFAULT_MODE --> BODY_TEXT : plain text line
+    FM --> BODY : FM_CLOSE
+    FM --> TAG_TEXT : whole-line hash comment, push
+    FM --> FM_VALUE : key line
+    FM --> FM_TEXT : indented or other line
+    FM_TEXT --> FM : newline
+    FM_VALUE --> FM_PLAIN : quoted or plain value
+    FM_VALUE --> FM_FLOW : open bracket or brace, push
+    FM_VALUE --> TAG_TEXT : hash comment, push
+    FM_VALUE --> FM : newline
+    FM_PLAIN --> TAG_TEXT : space then hash, push
+    FM_PLAIN --> FM : newline
+    FM_FLOW --> FM_FLOW : nested open, push
+    FM_FLOW --> FM_PLAIN : closing bracket, pop
+    FM_FLOW --> FM : newline
+    TAG_TEXT --> FM : newline, pop, frontmatter comment
+    TAG_TEXT --> BODY : newline, pop, heading
+    BODY --> TAG_TEXT : heading, push
+    BODY --> BODY_TEXT : plain text line
+    BODY --> FENCE_BACKTICK : opening backtick fence
+    BODY --> FENCE_TILDE : opening tilde fence
+    BODY_TEXT --> BODY : newline
+    FENCE_BACKTICK --> BODY : closing fence, at least as long
+    FENCE_TILDE --> BODY : closing fence, at least as long
+  }
+  state Stage2Tag {
+    [*] --> TAG_STRICT
+    TAG_STRICT --> TAG_FREE : constant or conditional argument, push
+    TAG_FREE --> TAG_STRICT : closing bracket, pop
+    TAG_STRICT --> TAG_SCHEME : scheme argument, push
+    TAG_SCHEME --> TAG_STRICT : closing bracket, pop
+  }
+  state Stage2DirectiveScan {
+    [*] --> DIRECTIVE_SCAN
+  }
+  state Stage2DirectiveContent {
+    [*] --> DIRECTIVE
+  }
+```
+
+| Mode                          | Holds                                                                                             |
+| ----------------------------- | ------------------------------------------------------------------------------------------------- |
+| `DEFAULT_MODE`                | Start of the document: `---` opens the frontmatter, any other first line is a body line.          |
+| `FM`, `FM_VALUE`, `FM_PLAIN`, `FM_FLOW`, `FM_TEXT` | Frontmatter: key lines, the value start, the rest of a value, flow collections, other lines. |
+| `BODY`, `BODY_TEXT`           | Body line starts (heading, table row, list item, one-line HTML comment, blank) and plain lines.   |
+| `FENCE_BACKTICK`, `FENCE_TILDE` | Inside a code fence: no heading, no tag. The closing fence must be at least as long as the opening one (the only embedded code). |
+| `TAG_TEXT`                    | Text of an inline comment or a heading (stage 1): brackets, type hints, words, no tag keyword.    |
+| `TAG_STRICT`                  | One bracket of a known family re-lexed strictly (stage 2): tag keywords live here only.           |
+| `TAG_FREE`, `TAG_SCHEME`      | Free text argument (`constant:`, `conditional:`) and scheme list argument (`scheme:`).             |
+| `DIRECTIVE_SCAN`              | One target re-lexed: comment markers, backtick runs, text (spec 4.4). `scanComments` pairs them.  |
+| `DIRECTIVE`                   | The content of one comment: the keyword, the verbs, codes, the `--` reason.                       |
+
+The diagram groups the modes by the parse stage that starts a lexer in them (the four boxes). A `DS_*` rule of `DEFAULT_MODE` mirrors
+a `B_*` rule of `BODY`; `pnpm run check:rules` checks that mirror
+([consistency check](#consistency-check)). More on the stages and the modes:
+[Grammar and listeners](guides/grammar-and-listeners.md).
 
 ## Listeners and error flow
 
@@ -317,6 +669,7 @@ text -> analyzeDocument (src/tags/parser.ts)
 | `ParserErrorListener` | every parser (same)                           | the `SyntaxEventLog` of that parse |
 | family visitors       | stage-2 parse tree of one bracket             | tag data, located by `parser.ts`   |
 | `TypeHintListener`    | stage-1 tree of an inline comment             | hints, located by the session map  |
+| `DirectiveVisitor`    | `directiveEntry` tree of one comment content  | directive data, located by `parser.ts` |
 | `DiagnosticCollector` | one whole document parse                      | `DocumentAnalysis`                 |
 
 - Both error listeners map the ANTLR line and column through a `PositionMap`. For a stage-2
@@ -329,7 +682,8 @@ text -> analyzeDocument (src/tags/parser.ts)
 - Stage-2 events are expected user input. The first event of `fmTagEntry` / `bodyTagEntry`
   becomes a `malformed` finding at the offending token, or `wrong-region` when the other
   region accepts the bracket. Probes (`tagFamilyEntry`, the other-region retry) keep their
-  events local.
+  events local. Exception: `directiveScanEntry` and `directiveEntry` accept any input, so
+  their events are grammar bugs (`GrammarError`) like stage 1.
 - Findings (`unknown`, `malformed`, `wrong-region`) go to the collector in source order.
   `loadDocument` filters them (spec 2.1) into `DocumentModel.findings`; the `template` phase
   rules of `src/rules/syntax.ts` turn them into `MTL010` to `MTL013`. Parse failures run the
@@ -337,6 +691,203 @@ text -> analyzeDocument (src/tags/parser.ts)
 - Reporters print the `Diagnostic` list: target diagnostics with the `Parse error: ` or
   `TEMPLATE ERROR` forms of spec 4.3 (template warnings in `--verify` are printed by
   `src/cli/verify-report.ts`).
+
+## Main types
+
+The types a contributor meets first, where they are declared, and how they hold each other. All
+are plain data except `DiagnosticCollector` and `SyntaxEventLog`, which are classes.
+
+| Type                                              | Declared in                | Role                                                                   |
+| ------------------------------------------------- | -------------------------- | ---------------------------------------------------------------------- |
+| `MarkdownDocument`, `Directive`, `TagFinding`     | `src/tags/ast.ts`          | Typed AST of one file: frontmatter, body blocks, directives, tag problems. |
+| `DiagnosticCollector`, `SyntaxEventLog`           | `src/tags/listeners.ts`    | Sink of one document parse (grammar errors and findings), and the event list of one lexer and parser pair. |
+| `DocumentModel`, `Field`, `Section`, `Diagnostic` | `src/engine/model.ts`      | A loaded template or target; one frontmatter key; one H1 or H2 section; one finding. |
+| `AnyRule`, `FieldContext`, `TargetContext`, `RuleEnv`, `RuleIo` | `src/engine/rule.ts` | The rule contract: what a check receives and what it may call. |
+| `RuleRegistry`                                    | `src/engine/registry.ts`   | Every rule, by code and by category.                                   |
+| `SuppressionPlan`, `DirectiveAnalysis`            | `src/engine/directives.ts` | What the valid directives of one target cover; the problems behind `MTL020` to `MTL025`. |
+| `LintConfig`, `PairConfig`                        | `src/config/types.ts`      | A validated `md-template-lint.yml`; one pair of template and globs.    |
+| `RunResult`, `PairBlock`, `FileResult`, `ReportedDiagnostic`, `SourceExcerpt` | `src/runner/types.ts` | What the reporters print. |
+
+```mermaid
+classDiagram
+  class RuleRegistry {
+    <<interface>>
+    +rules
+    +byCode
+    +byCategory
+  }
+  class AnyRule {
+    <<type>>
+    +code
+    +name
+    +severity
+    +category
+    +phase
+    +step
+    +check(context)
+  }
+  class FieldContext {
+    <<interface>>
+    +key
+    +templateField
+    +value
+    +targetPath
+  }
+  class TargetContext {
+    <<interface>>
+    +targetPath
+    +knownCodes
+  }
+  class RuleEnv {
+    <<interface>>
+    +aliases
+    +approvedPaths
+    +pairRoot
+  }
+  class RuleIo {
+    <<interface>>
+    +exists(path)
+    +probeUrl(url, timeoutMs)
+  }
+  class Diagnostic {
+    <<interface>>
+    +code
+    +severity
+    +message
+    +position
+    +heading
+  }
+  class DocumentModel {
+    <<interface>>
+    +document
+    +fields
+    +sections
+    +filename
+    +findings
+    +directives
+  }
+  class Field {
+    <<interface>>
+    +key
+    +value
+    +line
+    +comment
+    +type
+  }
+  class Section {
+    <<interface>>
+    +level
+    +text
+    +line
+    +tags
+    +body
+  }
+  class MarkdownDocument {
+    <<interface>>
+    +frontmatter
+    +body
+    +directives
+    +findings
+  }
+  class TagFinding {
+    <<interface>>
+    +region
+    +reason
+    +tag
+    +position
+    +subject
+  }
+  class Directive {
+    <<interface>>
+    +verb
+    +items
+    +reason
+    +line
+  }
+  class DiagnosticCollector {
+    +grammarErrors(log, entry, regionOf)
+    +report(findings)
+    +errors
+    +findings
+  }
+  class LintConfig {
+    <<interface>>
+    +aliases
+    +approvedPaths
+    +roots
+    +pairs
+  }
+  class PairConfig {
+    <<interface>>
+    +name
+    +templatePath
+    +include
+    +exclude
+    +onEmpty
+  }
+  class RunResult {
+    <<interface>>
+    +blocks
+    +runErrors
+    +runWarnings
+    +unmatched
+    +summary
+  }
+  class PairBlock {
+    <<interface>>
+    +root
+    +pair
+    +template
+    +files
+  }
+  class FileResult {
+    <<interface>>
+    +path
+    +status
+    +errors
+    +warnings
+  }
+  class ReportedDiagnostic {
+    <<interface>>
+    +excerpt
+  }
+  class SourceExcerpt {
+    <<interface>>
+    +line
+    +column
+    +text
+    +caret
+  }
+  RuleRegistry o-- AnyRule : holds
+  AnyRule ..> FieldContext : check receives
+  AnyRule ..> TargetContext : check receives
+  AnyRule ..> Diagnostic : check returns
+  FieldContext --> DocumentModel : template and target
+  TargetContext --> DocumentModel : template and target
+  FieldContext --> Field : templateField
+  FieldContext --> RuleEnv : env
+  TargetContext --> RuleEnv : env
+  RuleEnv *-- RuleIo : io
+  DocumentModel *-- Field : fields
+  DocumentModel *-- Section : sections
+  DocumentModel --> MarkdownDocument : document
+  DocumentModel o-- TagFinding : findings
+  DocumentModel o-- Directive : directives
+  MarkdownDocument o-- TagFinding : findings
+  MarkdownDocument o-- Directive : directives
+  DiagnosticCollector o-- TagFinding : collects
+  LintConfig *-- PairConfig : pairs
+  RunResult *-- PairBlock : blocks
+  PairBlock *-- FileResult : files
+  FileResult o-- ReportedDiagnostic : errors and warnings
+  ReportedDiagnostic --|> Diagnostic
+  ReportedDiagnostic o-- SourceExcerpt : excerpt
+```
+
+`AnyRule` is a union of four rule types (`ParseRule`, `TemplateRule`, `FieldRule`, `TargetRule`);
+`step` exists on the last two only. `ParseContext` and `TemplateContext` (the contexts of the
+other two phases) are left out of the diagram. `AnyRule`, `FieldContext` and `TargetContext` are
+described in [Rule contract](#rule-contract) below.
 
 ## Rule contract
 
@@ -357,7 +908,7 @@ defineRule({
 | `parse`    | `ParseContext`: role (template or target), `ParseFailure`                                  | none         |
 | `template` | `TemplateContext`: the template model with its tag findings                                | none         |
 | `field`    | `FieldContext`: key, template field, target value or null, both models, target path, `env` | `FieldStep`  |
-| `target`   | `TargetContext`: both models, target path, `env`                                           | `TargetStep` |
+| `target`   | `TargetContext`: both models, target path, `env`, `knownCodes` (spec 4.3 codes)           | `TargetStep` |
 
 `RuleEnv` carries the config `aliases`, `approvedPaths`, the `pairRoot` and an injectable
 `io` (`exists(path)`, `probeUrl(url, timeoutMs)`, never throws, `URL_PROBE_TIMEOUT_MS` is
@@ -370,8 +921,8 @@ file, a code outside the range, or a missing, unknown or unexpected `step`.
 
 ### Emission order (spec 4.1, 8.4)
 
-`checkTarget` is async and awaits each check before the next, so io timing never changes the
-order:
+`lintTarget` (and `checkTarget`, the same without the suppressed count) is async and awaits
+each check before the next, so io timing never changes the order:
 
 1. a parse failure runs only the `parse` rules;
 2. `target` rules of step `filename`;
@@ -379,7 +930,13 @@ order:
    string or empty list), only the `field` rules of step `presence` (the single guard);
    otherwise the `field` rules of the steps `constant`, `count`, `range`, `order`, `scheme`,
    `io`, `value-filename`, `case`, `elements`, `type`, in that order;
-4. `target` rules of steps `unknown-keys`, `headings`, `content`.
+4. `target` rules of steps `unknown-keys`, `headings`, `content`;
+5. `target` rules of step `directives` (`MTL020` to `MTL025`, spec 4.1 step 7);
+6. suppression (spec 4.1 step 8): the TARGET directives (`DocumentModel.directives` of the
+   target; a template is never read for them) give a plan (`analyzeDirectives` in
+   `src/engine/directives.ts`), and every diagnostic it covers (`isCovered`: code and anchor
+   line, DIR7) is removed and counted. The rules ran in full; this is a pure output filter.
+   `MTL020` to `MTL025` are not suppressible (DIR6), so they are never removed.
 
 Inside one step: registry order (category file order, then file order). The result lists
 errors first, then warnings, each in emission order.
@@ -404,15 +961,47 @@ therefore never see the index: a diagnostic has exactly `code`, `severity`, `mes
 Third exception, the `content` step (legacy `validate_content`): the findings `MTL701` to
 `MTL705` come in TEMPLATE SECTION order, interleaved across the five rules, not grouped by rule
 (two empty sections `## A [content:table]` and `## B [content:non-empty]` give `MTL702` for A
-then `MTL701` for B). Each content rule reports through `reportSection(rule, message, index)`
-(`src/engine/rule.ts`), which records the template section index in a side table (a `WeakMap`),
+then `MTL701` for B). Each content rule reports through `reportSection(rule, message, index, anchorLine = null)`
+(`src/engine/rule.ts`; pass the target line as `anchorLine`, or no line directive can cover the finding), which records the template section index in a side table (a `WeakMap`),
 never on the `Diagnostic`. After the step ran, the pipeline stable-sorts its findings by that
 index (`bySectionIndex`; one section keeps registry order).
+
+Fourth exception, the `directives` step (spec 4.4 DIR8): the six directive rules share one
+analysis (`directiveDiagnostics` in `src/engine/directives.ts`: each rule keeps its own
+problem kinds and owns its message). Each finding carries its index in that analysis through
+`reportSequenced` (a side table again), and the pipeline stable-sorts the step by it
+(`bySequence`): directive source order (line, then column), item order inside one directive,
+and every `MTL024` last, by the position of its `begin disable` and then the code order.
+
+### Anchor lines (spec 4.4 DIR5)
+
+Each diagnostic `lintTarget` returns can be resolved to its target anchor line with
+`anchorLineOf(diagnostic)` (`src/engine/rule.ts`, exported by the package): a 1-based line of
+the target file, or null. It is a side table (`WeakMap`), not a field, so the reporters, the
+JSON output and every deep-equality test see the same `Diagnostic` as before. The coverage
+rule reads it, and so does the runner (`withExcerpts`, phase A65), right after the pipeline
+returns, to quote the anchored target line (see the source excerpt in the run flow above). The
+reporters never read it: they get the line in `ReportedDiagnostic.excerpt` (the runner copies only
+the `Parse error: ` ones, which have no anchor, and the diagnostics it adds an excerpt to).
+
+| Diagnostics                                    | Anchor, recorded by                                              |
+| ---------------------------------------------- | ---------------------------------------------------------------- |
+| field steps (`MTL102`, `MTL201`, `MTL301` to `MTL517`, `MTL801` to `MTL805`) | target key line of the field, none when the key is missing; the pipeline (`setAnchorLine`) |
+| `MTL202`                                       | target key line (last occurrence of a duplicate key); the rule (`reportOnLine`) |
+| `MTL603`                                       | first target heading with that text; the rule                    |
+| `MTL701` to `MTL705`                           | first target heading of the checked section; the rule            |
+| `MTL020` to `MTL025`                           | the directive line (never suppressible; data for reporters)      |
+| `MTL101`, `MTL601`, `MTL602`, `MTL604`, parse failures, template diagnostics | none                                    |
+
+The heading and content steps copy their diagnostics (to clear the template position or add
+`heading`); the copies keep the anchor.
 
 `checkTemplate` returns its tag warnings (`MTL010` to `MTL013`) sorted by source position
 (line, then column) across rules; equal positions keep registry order.
 
 ## How to add a tag (5 places)
+
+Step by step with an example: [Adding a tag](guides/adding-a-tag.md).
 
 1. `grammar/MdTemplateLexer.g4`: the keyword token(s) in mode `TAG_STRICT` only.
 2. `grammar/MdTemplateParser.g4`: the `fm*` or `body*` tag rule and its alternative in
@@ -430,11 +1019,14 @@ lists. Only a new stage-2 token whose lexer rule is a negated set needs a sample
 
 ## How to add a rule
 
-The `pnpm run new:rule` scaffold (flags, what it writes, pending rules, test layout and
+The step by step guide is [Adding a rule](guides/adding-a-rule.md). The `pnpm run new:rule`
+scaffold (flags, what it writes, pending rules, test layout and
 fixtures) is described in [adding-a-rule.md](adding-a-rule.md#2-scaffold-the-rule). A new rule
 needs a row in the spec 4.3 code table; a rule that adds a tag also follows the five places above.
 
 ## Tests: rule cases
+
+How to write and run them, with the helpers and the gate order: [Testing](guides/testing.md).
 
 Every registered rule code has one test file and one fixture folder, with at least 1 `pass-` case
 and at least 1 `fail-` case. There is no upper bound: several `pass-` cases are welcome to test
@@ -445,7 +1037,7 @@ the case name to the fixture and the expected result. No case text is written in
 | Family | Test file | Fixtures | Code path |
 | ------ | --------- | -------- | --------- |
 | Template syntax (phase `parse` or `template`: `MTL001`-`MTL004`, `MTL010`-`MTL013`) | `tests/syntax/<category>/<MTLxxx>-<name>.test.ts` | `tests/fixtures/templates/<MTLxxx>/<case>.md`, one template, no target | `md-template-lint --verify --format json <case>.md` through `runCli` (`tests/helpers/verify.ts`); asserts code, severity, message, line and column, template status and exit code (0, or 1 when broken) |
-| Target (phase `field` or `target`: `MTL101`-`MTL805`) | `tests/target/<category>/<MTLxxx>-<name>.test.ts` | `tests/fixtures/pairs/<MTLxxx>/<case>/template.md` + `target.md` | `checkTemplate` then `checkTarget` of `src/engine/pipeline.ts`; asserts the messages, severity and position of the code |
+| Target (phase `field` or `target`: `MTL020`-`MTL025`, `MTL101`-`MTL805`) | `tests/target/<category>/<MTLxxx>-<name>.test.ts` | `tests/fixtures/pairs/<MTLxxx>/<case>/template.md` + `target.md` | `checkTemplate` then `checkTarget` (or `lintTarget`) of `src/engine/pipeline.ts`; asserts the messages, severity and position of the code |
 
 The run diagnostics `MTL9xx` are not rules (no registry entry, no rule file). They depend on a
 config, a file system layout or the command line, so their cases live with the config, runner
@@ -466,19 +1058,20 @@ test of their code.
 | Path                                  | Content                                                                        |
 | ------------------------------------- | ------------------------------------------------------------------------------ |
 | `tests/unit/config/`                  | `validate` (one error kind per fixture), `discovery`, `naming`, `bytes` (invalid UTF-8, BOM + CRLF, zero byte), `paths`, `glob`. |
-| `tests/unit/runner/`                  | `inputs` (MTL909 to MTL911, exit precedence), `empty` (`onEmpty`), `broken`, `parse` (`Parse error:`), `expand`, `io-wiring`, `unreadable`, `walk`. |
-| `tests/unit/reporters/`               | `pretty`, `plain`, `json` against expected-output files, `cleanText`.          |
+| `tests/unit/runner/`                  | `inputs` (MTL909 to MTL911, exit precedence), `empty` (`onEmpty`), `broken`, `parse` (`Parse error:`), `expand`, `io-wiring`, `unreadable`, `walk`, `suppress` (spec 4.4 worked examples, `Suppressed:`, `summary.suppressed`), `excerpt` (source line under a diagnostic, `tests/fixtures/runner/excerpt-*`, generated CRLF, tab, control-character and long-line projects, `--verify` template lines). |
+| `tests/unit/suppression.test.ts`, `anchors.test.ts` | Coverage of each directive verb and the parser edge cases (`tests/fixtures/suppression/<case>/`, `template.md` + `target.md`); anchor lines (DIR5). |
+| `tests/unit/reporters/`               | `pretty`, `plain`, `json` against expected-output files, `cleanText`, `excerpt` (rows, window, JSON `sourceLine`). |
 | `tests/unit/io/`                      | `address`, `probe` (refusal table), `probe-behaviour`, `connect-guard`, `exists`. |
 | `tests/unit/cli/`                     | `usage`, `exit`, `list`, `list-large` (500+ arguments, temp folder) and `list-root-case` (root directory written in another case), `verify`, `schema` (expected table and JSON), `format`, `wiring` (injected `createIo`), `main` (catch-all), `version`, `layout`, `spawn` (`dist/cli.js`, skipped when missing or older than `src/`). |
 | `tests/fixtures/cli/<case>/`          | One project per case: `exit-`, `list-`, `verify-`, `schema-` (a `template.md` with `expected.plain.txt` and `expected.json`), `format-`, `wiring-` (split), `usage-no-config` and `large-source-project` (one shared project each). |
 | `tests/fixtures/config/<case>/`       | One config per case: `validate-` (split), `discover-`, `naming-`.               |
-| `tests/fixtures/runner/<case>/`       | One project per case: `inputs-`, `empty-`, `broken-`, `parse-` (split), `expand-`, `io-`, `unreadable-`, `report-`. |
+| `tests/fixtures/runner/<case>/`       | One project per case: `inputs-`, `empty-`, `broken-`, `parse-`, `suppress-` (split), `excerpt-` (split), `expand-`, `io-`, `unreadable-`, `report-`. |
 | `tests/fixtures/tags/<case>/`         | One `document.md` per case (`pass-` / `fail-`), read by `tests/unit/parser-comment-line.test.ts`. |
-| `tests/helpers/`                      | Fixture paths, the pass/fail split check, runner and io fakes.                 |
+| `tests/helpers/`                      | Fixture paths, the pass/fail split check, runner and io fakes, directive cases. |
 | `tests/unit/smoke/`                   | Packaging (ADR 0005): the pure helpers of `scripts/smoke-pack.ts` and `scripts/smoke/check-release.ts` (`scripts/smoke/helpers.ts`: process invocation and quoting, tarball content, tag and repository checks, CLI expectations), `check-release.ts` as a process, and the workflows `.github/workflows/ci.yml` and `release.yml` plus the `package.json` publish fields. |
 | `tests/fixtures/release/<group>/`     | One file per case (`pass-` / `fail-`): `manifest/`, `repository/` and `consumer/` (JSON: package.json fields, `repository` block, the smoke-test project after `pnpm add`) and `tarball/` (`.txt`: a `tar -tzf` listing). |
 
-A group of fixtures shares a prefix (`inputs-`, `empty-`, `broken-`, `parse-`, `validate-`), so each
+A group of fixtures shares a prefix (`inputs-`, `empty-`, `broken-`, `parse-`, `suppress-`, `validate-`), so each
 test file checks that its directories are exactly its cases (no orphan). Inside a group the case names
 start with `pass-` or `fail-` (naming rules: [CONTRIBUTING.md](../CONTRIBUTING.md#tests)). Groups without
 a pass/fail split (`discover-`, `naming-`, `expand-`, `io-`, `unreadable-`, `report-`) list their cases
@@ -529,3 +1122,18 @@ through the child process of `tests/unit/cli/spawn.test.ts`, which v8 does not s
 visitors). `pnpm test` is unchanged and does not collect coverage. Defensive branches that real input
 cannot reach (the grammar has a catch-all everywhere) are covered by a hand-built argument in
 `tests/unit/listeners-defensive.test.ts`, or removed when dead; thresholds are never lowered.
+
+## Discrepancies
+
+Places where the diagrams and the code differ.
+
+The layers flowchart draws the main edges only. These imports exist in `src/` and are not drawn:
+
+| Area                  | Diagram says | Code does                                                                              | Action                              |
+| --------------------- | ------------ | -------------------------------------------------------------------------------------- | ----------------------------------- |
+| `runner` to `rules`   | no edge      | `src/runner/schema.ts` imports the value `enumOptions`                                 | Accepted: schema check shares enums |
+| `runner` to `tags`    | no edge      | `src/runner/excerpt.ts` imports the value `normalizeLineEnds`                          | Accepted                            |
+| `runner` to `engine`  | no edge      | `src/runner/excerpt.ts` imports the value `anchorLineOf`                               | Accepted                            |
+| `cli` to `engine`     | no edge      | `src/cli/run.ts` imports the value `createMemoryIo`                                    | Accepted                            |
+| `rules` to `tags`     | no edge      | `src/rules/*.ts` (for example `syntax.ts`, `bounds.ts`, `heading.ts`) import types     | Accepted (type only)                |
+| `reporters` to others | no edge      | `src/reporters/text.ts` imports types from `config` and `engine`                       | Accepted (type only)                |

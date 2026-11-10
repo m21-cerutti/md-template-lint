@@ -75,6 +75,19 @@ describe("reporters sanitize control characters of echoed values", () => {
     ["\u202a\u202b\u202c\u202d", "\\u202a\\u202b\\u202c\\u202d"],
     ["\u202e", "\\u202e"],
     ["\u2069", "\\u2069"],
+    // invisible format characters (EX3): soft hyphen, Mongolian vowel separator, zero-width,
+    // word joiner and invisible operators, interlinear annotation, tag characters
+    ["soft\u00adhyphen", "soft\\xadhyphen"],
+    ["mvs\u180e", "mvs\\u180e"],
+    ["zw\u200b\u200c\u200d", "zw\\u200b\\u200c\\u200d"],
+    ["wj\u2060\u2061\u2062\u2063\u2064", "wj\\u2060\\u2061\\u2062\\u2063\\u2064"],
+    ["ia\ufff9\ufffa\ufffb", "ia\\ufff9\\ufffa\\ufffb"],
+    ["tag\u{e0000}\u{e0001}\u{e007f}", "tag\\u{e0000}\\u{e0001}\\u{e007f}"],
+    // the neighbours of those ranges stay
+    [
+      "\u00ac\u00ae\u200a\u2065\ufff8\ufffc\u{e0080}",
+      "\u00ac\u00ae\u200a\u2065\ufff8\ufffc\u{e0080}",
+    ],
     // a break at the ends keeps one space
     ["\nx\n", " x "],
   ];

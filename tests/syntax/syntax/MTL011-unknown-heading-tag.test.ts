@@ -9,8 +9,8 @@ import { expectTemplateCases, verifyFixture, type VerifyCase } from "../../helpe
 const CODE = "MTL011";
 const DIR = "tests/fixtures/templates/MTL011";
 
-const warning = (message: string, line: number, column: number) =>
-  ({ code: CODE, severity: "warning", message, line, column }) as const;
+const warning = (message: string, line: number, column: number, sourceLine: string) =>
+  ({ code: CODE, severity: "warning", message, line, column, sourceLine }) as const;
 
 /** Case -> fixture `<name>.md` -> expected `--verify` result. */
 const CASES: readonly VerifyCase[] = [
@@ -21,7 +21,9 @@ const CASES: readonly VerifyCase[] = [
     name: "fail-unknown-tag-on-heading",
     exitCode: 0,
     status: "ok",
-    diagnostics: [warning("Heading 'Notes [nope:y]': unknown tag [nope:y]", 4, 10)],
+    diagnostics: [
+      warning("Heading 'Notes [nope:y]': unknown tag [nope:y]", 4, 10, "## Notes [nope:y]"),
+    ],
   },
   // One warning per heading, in source order (H1 and H2).
   {
@@ -29,8 +31,8 @@ const CASES: readonly VerifyCase[] = [
     exitCode: 0,
     status: "ok",
     diagnostics: [
-      warning("Heading 'Title [alpha]': unknown tag [alpha]", 4, 9),
-      warning("Heading 'Notes [beta:z]': unknown tag [beta:z]", 6, 10),
+      warning("Heading 'Title [alpha]': unknown tag [alpha]", 4, 9, "# Title [alpha]"),
+      warning("Heading 'Notes [beta:z]': unknown tag [beta:z]", 6, 10, "## Notes [beta:z]"),
     ],
   },
 ];

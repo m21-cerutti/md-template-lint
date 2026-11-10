@@ -1,0 +1,22 @@
+md-template-lint 1.0.0
+Config: md-template-lint.yml
+========================
+
+Template: templates/note.template.md
+Target:   docs/*.md (1 file(s))
+
+  PASS docs/a.md
+      warn  MTL202 Unknown key 'reviewer' not present in template
+        3 | reviewer: alice
+
+========================
+Summary
+========================
+Total files:  1
+Passed:       1
+Failed:       0
+Warnings:     1 (in 1 file(s))
+Templates:    1 checked, 0 broken
+
+All files passed!
+========================

@@ -9,8 +9,8 @@ import { expectTemplateCases, verifyFixture, type VerifyCase } from "../../helpe
 const CODE = "MTL010";
 const DIR = "tests/fixtures/templates/MTL010";
 
-const warning = (message: string, line: number, column: number) =>
-  ({ code: CODE, severity: "warning", message, line, column }) as const;
+const warning = (message: string, line: number, column: number, sourceLine: string) =>
+  ({ code: CODE, severity: "warning", message, line, column, sourceLine }) as const;
 
 /** Case -> fixture `<name>.md` -> expected `--verify` result. */
 const CASES: readonly VerifyCase[] = [
@@ -21,14 +21,21 @@ const CASES: readonly VerifyCase[] = [
     name: "fail-unknown-tag-on-key-line",
     exitCode: 0,
     status: "ok",
-    diagnostics: [warning("Field 'id': unknown tag [nope:y]", 2, 9)],
+    diagnostics: [warning("Field 'id': unknown tag [nope:y]", 2, 9, "id: x # [nope:y]")],
   },
   // A typo in a known family is unknown, not malformed.
   {
     name: "fail-misspelled-tag-family",
     exitCode: 0,
     status: "ok",
-    diagnostics: [warning("Field 'title': unknown tag [presense:required]", 2, 19)],
+    diagnostics: [
+      warning(
+        "Field 'title': unknown tag [presense:required]",
+        2,
+        19,
+        'title: "string" # [presense:required]',
+      ),
+    ],
   },
   // One warning per unknown tag, in source order.
   {
@@ -36,8 +43,8 @@ const CASES: readonly VerifyCase[] = [
     exitCode: 0,
     status: "ok",
     diagnostics: [
-      warning("Field 'first': unknown tag [alpha]", 2, 12),
-      warning("Field 'second': unknown tag [beta:z]", 3, 13),
+      warning("Field 'first': unknown tag [alpha]", 2, 12, "first: x # [alpha]"),
+      warning("Field 'second': unknown tag [beta:z]", 3, 13, "second: y # [beta:z]"),
     ],
   },
 ];

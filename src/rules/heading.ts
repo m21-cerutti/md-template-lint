@@ -3,7 +3,7 @@
  * presence and order. Heading suffix tags are spec 2.6; the evaluation order
  * is spec 4.1 step 5. Every message carries the prefix `Heading: `.
  */
-import { defineRule, report, type AnyRule, type TargetContext } from "../engine/rule.js";
+import { defineRule, report, setAnchorLine, type AnyRule } from "../engine/rule.js";
 import type { Diagnostic, Section } from "../engine/model.js";
 import { pyRepr } from "../engine/values.js";
 import type { SourcePosition } from "../tags/ast.js";
@@ -43,7 +43,7 @@ const headingMissing = defineRule({
   category: "heading",
   phase: "target",
   step: "headings",
-  check: (context: TargetContext): Diagnostic[] => {
+  check: (context): Diagnostic[] => {
     const targetTexts = new Set(context.target.sections.map((section) => section.text));
     return context.template.sections
       .filter((section) => headingPresence(section) === "required")
@@ -70,7 +70,7 @@ const headingLevelMissing = defineRule({
   category: "heading",
   phase: "target",
   step: "headings",
-  check: (context: TargetContext): Diagnostic[] => {
+  check: (context): Diagnostic[] => {
     const targetLevels = new Set(context.target.sections.map((section) => section.level));
     return context.template.sections
       .filter((section) => headingPresence(section) === "exist")
@@ -98,20 +98,21 @@ const headingTemplateOnly = defineRule({
   category: "heading",
   phase: "target",
   step: "headings",
-  check: (context: TargetContext): Diagnostic[] => {
-    const targetTexts = new Set(context.target.sections.map((section) => section.text));
-    return context.template.sections
+  // Target anchor (spec 4.4 DIR5): the first target heading with that text.
+  check: (context): Diagnostic[] =>
+    context.template.sections
       .filter((section) => headingPresence(section) === "template-only")
-      .filter((section) => targetTexts.has(section.text))
-      .map((section) =>
-        report(
+      .flatMap((section) => {
+        const found = context.target.sections.find((target) => target.text === section.text);
+        if (found === undefined) return [];
+        const diagnostic = report(
           headingTemplateOnly,
           `Heading: Heading '${section.text}' is marked [presence:template-only] ` +
             "and must not appear in the linted file",
           anchor(section),
-        ),
-      );
-  },
+        );
+        return [setAnchorLine(diagnostic, found.line)];
+      }),
 });
 
 /**
@@ -130,7 +131,7 @@ const headingOrder = defineRule({
   category: "heading",
   phase: "target",
   step: "headings",
-  check: (context: TargetContext): Diagnostic[] => {
+  check: (context): Diagnostic[] => {
     const targets = context.target.sections;
     const indices = context.template.sections.flatMap((section) => {
       const index =

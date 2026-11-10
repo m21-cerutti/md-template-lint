@@ -2,11 +2,11 @@
 // grammar/MdTemplateLexer.g4 and grammar/MdTemplateParser.g4 with antlr-ng
 // (pure Node, no Java).
 //
-// `node scripts/gen-parser.ts` empties src/generated/ first, so no stale file
+// `tsx scripts/gen-parser.ts` empties src/generated/ first, so no stale file
 // survives a grammar change. scripts/check-parser.ts reuses generateParser()
 // with a temporary output directory. Runs antlr-ng's bin with the current
 // Node, so it does not depend on the package script shell. Scripts run through
-// Node type stripping (ADR 0004): erasable syntax only, `.ts` import extensions.
+// tsx (ADR 0007); `.ts` import extensions, any TypeScript syntax allowed.
 import { execFileSync } from "node:child_process";
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";

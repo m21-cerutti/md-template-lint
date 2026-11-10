@@ -1,0 +1,5 @@
+# Spec 4.4 worked example 5: ignored places (fence, code span) and directive warnings.
+pairs:
+  - name: notes
+    template: templates/notes.template.md
+    include: notes/*.md

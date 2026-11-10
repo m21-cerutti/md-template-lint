@@ -14,7 +14,7 @@ import { rules as io } from "../rules/io.js";
 import { rules as presence } from "../rules/presence.js";
 import { rules as syntax } from "../rules/syntax.js";
 import { rules as type } from "../rules/type.js";
-import type { Diagnostic } from "./model.js";
+import { codeNumber, type Diagnostic } from "./model.js";
 import {
   CATEGORIES,
   CATEGORY_RANGES,
@@ -47,13 +47,7 @@ export interface RuleRegistry {
   readonly byCategory: ReadonlyMap<Category, readonly AnyRule[]>;
 }
 
-/** Numeric part of `MTLnnn`, or null when the code is not `MTL` and three digits. */
-export function codeNumber(code: string): number | null {
-  const digits = code.slice(3);
-  if (!code.startsWith("MTL") || digits.length !== 3) return null;
-  for (const char of digits) if (char < "0" || char > "9") return null;
-  return Number(digits);
-}
+export { codeNumber };
 
 export class RegistryError extends Error {
   override name = "RegistryError";

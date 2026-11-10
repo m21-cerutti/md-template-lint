@@ -39,6 +39,12 @@ describe("rule registry", () => {
       "MTL011",
       "MTL012",
       "MTL013",
+      "MTL020",
+      "MTL021",
+      "MTL022",
+      "MTL023",
+      "MTL024",
+      "MTL025",
     ]);
     expect(registry.byCode.get("MTL012")).toMatchObject({
       name: "malformed-tag",

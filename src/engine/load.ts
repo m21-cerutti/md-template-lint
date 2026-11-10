@@ -7,11 +7,13 @@
 import { readFile } from "node:fs/promises";
 import {
   isAlias,
+  isCollection,
   isMap,
   isScalar,
   isSeq,
   LineCounter,
   parseDocument as parseYaml,
+  visit,
   type Document,
 } from "yaml";
 import type { BodyHeading, FrontmatterComment, TagFinding } from "../tags/ast.js";
@@ -50,6 +52,25 @@ function keyName(key: unknown): string {
   return String(key);
 }
 
+/**
+ * File lines after the first line of a multi-line scalar or flow value: a `#`
+ * line there is value text, not a YAML comment (spec 4.4 DIR3).
+ */
+function valueInteriorLines(doc: Document, lineCounter: LineCounter, startLine: number) {
+  const lines = new Set<number>();
+  const fileLine = (offset: number) => lineCounter.linePos(offset).line + startLine;
+  visit(doc, {
+    Node(_key, node) {
+      const multiLine = isScalar(node) || (isCollection(node) && node.flow === true);
+      if (!multiLine || node.range === undefined || node.range === null) return;
+      const [start, end] = node.range;
+      const last = fileLine(Math.max(start, end - 1));
+      for (let line = fileLine(start) + 1; line <= last; line += 1) lines.add(line);
+    },
+  });
+  return lines;
+}
+
 /** Sections from H1/H2 headings; a body runs to the next heading of equal or higher level. */
 function buildSections(headings: readonly BodyHeading[], fileLines: readonly string[]): Section[] {
   const sections = headings.filter((heading) => heading.level <= 2);
@@ -86,9 +107,11 @@ export function loadDocument(text: string): LoadResult {
 
   const comments = new Map<number, FrontmatterComment | null>();
   const filenameLines = new Set<number>();
+  const commentLines = new Set<number>();
   for (const line of frontmatter.lines) {
     if (line.kind === "key") comments.set(line.line, line.comment);
     else if (line.kind === "filename") filenameLines.add(line.line);
+    if (line.kind === "comment" || line.kind === "filename") commentLines.add(line.line);
   }
 
   const fields = new Map<string, Field>();
@@ -111,6 +134,15 @@ export function loadDocument(text: string): LoadResult {
       keyLines.has(finding.position.line) ||
       filenameLines.has(finding.position.line),
   );
+  // Spec 4.4 DIR3: frontmatter directives on YAML top-level key lines and on
+  // whole-line comments outside a multi-line value; every body directive.
+  const interior = valueInteriorLines(yaml, lineCounter, frontmatter.startLine);
+  const directives = document.directives.filter(
+    (directive) =>
+      directive.region === "body" ||
+      keyLines.has(directive.line) ||
+      (commentLines.has(directive.line) && !interior.has(directive.line)),
+  );
   const headings = document.body.filter((block): block is BodyHeading => block.kind === "heading");
   const fileLines = normalizeLineEnds(text).split("\n");
   const model: DocumentModel = {
@@ -119,6 +151,7 @@ export function loadDocument(text: string): LoadResult {
     sections: buildSections(headings, fileLines),
     filename: frontmatter.filename,
     findings,
+    directives,
   };
   return { ok: true, model };
 }

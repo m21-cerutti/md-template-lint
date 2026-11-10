@@ -9,6 +9,8 @@ owner  string  presence:required
 
 Unknown tags found (typo or unimplemented feature):
   - Field 'owner': unknown tag [optionl]
+      2 | owner: "string" # [optionl]
+        |                   ^
 
 ========================
 Summary

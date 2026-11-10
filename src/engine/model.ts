@@ -4,6 +4,7 @@
  */
 import type {
   BodyTag,
+  Directive,
   FrontmatterComment,
   FrontmatterFilenameTag,
   MarkdownDocument,
@@ -84,6 +85,13 @@ export interface DocumentModel {
    * (spec 2.1, 2.7). Read by src/rules/syntax.ts.
    */
   readonly findings: readonly TagFinding[];
+  /**
+   * Disable directives in source order (spec 4.4, DIR3): every body one-line
+   * HTML comment outside fences and code spans, and frontmatter YAML comments
+   * on top-level key lines or column-1 comment lines outside a multi-line
+   * value. Parse data only; read for a target, never for a template (DIR4).
+   */
+  readonly directives: readonly Directive[];
 }
 
 /** Parse failures MTL001 to MTL004 (spec 1.2). Codes and messages live in src/rules/syntax.ts. */
@@ -104,6 +112,14 @@ export type Severity = "error" | "warning";
 
 /** A stable rule code, `MTL` and three digits. */
 export type RuleCode = `MTL${string}`;
+
+/** Numeric part of `MTLnnn`, or null when the code is not `MTL` and three digits. */
+export function codeNumber(code: string): number | null {
+  const digits = code.slice(3);
+  if (!code.startsWith("MTL") || digits.length !== 3) return null;
+  for (const char of digits) if (char < "0" || char > "9") return null;
+  return Number(digits);
+}
 
 export interface Diagnostic {
   readonly code: RuleCode;

@@ -1,0 +1,6 @@
+# pass-: a warning does not fail the file, and it still quotes its anchor line, the target key
+# line, without a caret (spec 8.1, 8.2 EX2). JSON has no `line`, so no `sourceLine` (8.5).
+pairs:
+  - name: notes
+    template: templates/note.template.md
+    include: docs/*.md

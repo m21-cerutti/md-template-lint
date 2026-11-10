@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "tool": "md-template-lint",
+  "version": "1.0.0",
+  "mode": "lint",
+  "config": "md-template-lint.yml",
+  "results": [
+    {
+      "root": "project",
+      "pair": "notes",
+      "template": {
+        "path": "templates/note.template.md",
+        "status": "ok"
+      },
+      "files": [
+        {
+          "path": "docs/a.md",
+          "status": "fail",
+          "errors": [
+            {
+              "code": "MTL201",
+              "severity": "error",
+              "message": "Field 'status': required but empty or missing"
+            },
+            {
+              "code": "MTL601",
+              "severity": "error",
+              "message": "Heading: Missing required heading: 'Overview'",
+              "heading": "Overview"
+            }
+          ],
+          "warnings": []
+        }
+      ]
+    }
+  ],
+  "runErrors": [],
+  "runWarnings": [],
+  "unmatched": [],
+  "summary": {
+    "files": 1,
+    "passed": 0,
+    "failed": 1,
+    "warnings": 0,
+    "filesWithWarnings": 0,
+    "suppressed": 0,
+    "templatesChecked": 1,
+    "templatesBroken": 0,
+    "runErrors": 0,
+    "runWarnings": 0,
+    "exitCode": 1
+  }
+}

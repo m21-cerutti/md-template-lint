@@ -9,7 +9,7 @@ last_updated: 2026-10-30
 
 - Never `git push` and never add a git remote. Pushing is a human step.
 - Never commit secrets; verify against `.gitignore` before every commit.
-- Run the quality gates below before every commit (once package.json exists).
+- Run the quality gates below before every commit.
 - Tracking plan lives in `tmp/PLAN.md` (git-ignored). No root `PLAN.md`, no `TODO.md`, no `IDEA.md`.
 - Mark a plan item done only after its verification passes.
 
@@ -28,11 +28,10 @@ last_updated: 2026-10-30
 
 - Do NOT write tag regexes outside `grammar/*.g4` (`MdTemplateLexer.g4` lexer with region modes, `MdTemplateParser.g4` parser).
 - Do NOT use `any` in TypeScript source.
-- Do NOT add `.js`/`.mjs`/`.cjs` files except in `src/generated/`, `dist/`, `coverage/`, `node_modules/`, `tmp/`, `.git/`. Scripts are `.ts` only, erasable syntax (no enums, namespaces, parameter properties).
+- Do NOT add `.js`/`.mjs`/`.cjs` files except in `src/generated/`, `dist/`, `coverage/`, `node_modules/`, `tmp/`, `.git/`. Scripts are `.ts` only.
 - Do NOT hand-edit `src/generated/`; run `pnpm run gen:parser` (empties and regenerates it) and verify with `pnpm run check:parser`.
-- Do NOT ship personal paths or personal data in code, corpus or docs.
+- Do NOT ship personal paths or personal data in code, tests or docs.
 - Do NOT commit with `--no-verify`.
-- Do NOT commit secrets, .env files, keys or tokens.
 
 ## Project Purpose
 
@@ -42,10 +41,10 @@ per-project config and a lint-staged compatible CLI.
 
 ## Tech Stack and Key Tools
 
-- **Language:** TypeScript, Node >=22.18 (ESM). Scripts and tool configs are `.ts` too (`node scripts/x.ts`, ADR 0004)
+- **Language:** TypeScript, Node >=22.18 (ESM). Scripts and tool configs are `.ts` too (`tsx scripts/x.ts`, ADR 0007)
 - **Package manager:** `pnpm` (package `md-template-lint`)
 - **Parser:** ANTLR4 via `antlr-ng` and `antlr4ng`, split grammar `grammar/MdTemplateLexer.g4` + `grammar/MdTemplateParser.g4`, no Java
-- **Build/Test:** `vitest`; type check `tsc` strict; lint and format scripts added in A1
+- **Build/Test:** `vitest`; type check `tsc` strict; `eslint`; `prettier`
 - **Config:** per-project `md-template-lint.yml`
 - **Owner and license:** GitHub `m21-cerutti`, MIT, Copyright (c) 2026 Marc CERUTTI
 
@@ -54,9 +53,8 @@ per-project config and a lint-staged compatible CLI.
 - `grammar/` ANTLR lexer and parser grammars (`*.g4`) for every template tag.
 - `src/rules/<category>.ts` one file per rule category, stable `MTLxxx` codes.
 - `src/` engine core, config loader, runner, reporters, CLI.
-- `legacy/` frozen snapshot of the Python linter and wrappers (parity reference).
-- `tests/corpus/`, `tests/golden/` frozen corpus and golden outputs for the parity gate.
-- `docs/` spec, architecture, ADRs, parity report; `templates/` doc templates.
+- `tests/` vitest suites.
+- `docs/` spec, architecture, ADRs, guides, disable directives (index: [docs/README.md](docs/README.md)); `templates/` doc templates.
 
 ## How to Build and Test
 
@@ -66,13 +64,13 @@ pnpm run gen:parser             # regenerate parser from the grammar
 pnpm run check:parser           # fail if src/generated differs from the grammars
 pnpm run typecheck              # tsc strict
 pnpm test                       # vitest suite
-pnpm run parity                 # parity gate vs legacy and wrappers
+pnpm run check:rules && pnpm run lint && pnpm run format:check
+pnpm run build && pnpm run smoke:pack
 ```
 
 ## Acceptance Criteria and Quality Gates
 
-- Typecheck and test suite pass
-- `pnpm run parity` exits 0 before any global install
+- All gates in "How to Build and Test" pass
 - Changes documented (README, `docs/`, ADR for decisions)
 - Commit message follows Conventional Commits
 - No secrets committed (.env, keys, tokens)
@@ -95,5 +93,6 @@ pnpm run parity                 # parity gate vs legacy and wrappers
 ## References
 
 - AI capability inventory (agents, skills, commands, tools): [docs/ai-capabilities.md](docs/ai-capabilities.md)
+- AI-assisted development guideline: [AI_GUIDELINE.md](AI_GUIDELINE.md)
 - Project configuration: `opencode.jsonc`
 - OpenCode documentation: https://opencode.ai/v2/docs

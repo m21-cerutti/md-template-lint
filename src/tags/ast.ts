@@ -260,6 +260,52 @@ export interface BodyLine {
 
 export type BodyBlock = BodyHeading | BodyFence | BodyLine;
 
+// ---------------------------------------------------------------------------
+// Disable directives of a target (spec 4.4). Parse data only: validation of
+// the verb and the codes (MTL020 to MTL022) and suppression belong to A60.
+// ---------------------------------------------------------------------------
+
+/** Canonical lowercase verb of DIR1. */
+export type DirectiveVerb =
+  | "disable"
+  | "disable-line"
+  | "disable-next-line"
+  | "disable-file"
+  | "begin disable"
+  | "end disable";
+
+/** One item of the code list as written (validated as a code later, DIR2). */
+export interface DirectiveItem {
+  readonly text: string;
+  readonly position: SourcePosition;
+}
+
+/**
+ * One directive comment (DIR2, DIR3). `position` is the comment start: `<!--`
+ * in the body, `#` in the frontmatter. `raw` is the whole comment as written
+ * (`<!-- ... -->`, or `#` to the end of the line).
+ */
+export interface Directive extends Located {
+  /** body: one-line HTML comment; frontmatter: YAML comment. */
+  readonly region: Region;
+  /**
+   * File line of the comment (DIR1): the line `disable-line` covers, the line
+   * before the one `disable-next-line` covers, the start or end of a range.
+   */
+  readonly line: number;
+  /** The verb, or null when the keyword is alone or the word is no verb (MTL020). */
+  readonly verb: DirectiveVerb | null;
+  /**
+   * The verb position as written: the verb (`Begin  Disable`), the unknown word
+   * (`disabel`, `begin` or `end` without `disable`), or `''` when there is none.
+   */
+  readonly word: string;
+  /** Code list items in source order, empty items dropped, duplicates kept. */
+  readonly items: readonly DirectiveItem[];
+  /** Free text after a `--` word, trimmed; null when there is no `--`. */
+  readonly reason: string | null;
+}
+
 export interface MarkdownDocument {
   /** null when the document has no frontmatter or when it is unclosed. */
   readonly frontmatter: Frontmatter | null;
@@ -270,6 +316,13 @@ export interface MarkdownDocument {
    */
   readonly frontmatterUnclosed: boolean;
   readonly body: readonly BodyBlock[];
+  /**
+   * Every directive comment candidate in source order (spec 4.4, DIR3, DIR4):
+   * body one-line HTML comments outside fences and code spans, frontmatter
+   * comments on `FM_KEY` lines and column-1 `#` lines. Read for a target only;
+   * `loadDocument` keeps the frontmatter ones on YAML key and comment lines.
+   */
+  readonly directives: readonly Directive[];
   /**
    * Every tag finding of the document, in source order. Field findings carry
    * the key line; A9 keeps only those whose line matches a YAML top-level key.

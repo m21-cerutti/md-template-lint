@@ -24,7 +24,7 @@
 // fails `pnpm run typecheck`). Ranges come from src/engine/ranges.json, the
 // same file src/engine/rule.ts imports. `--root` writes into another tree
 // (tests); the spec and ranges are always read from this repository.
-// No dependencies; never runs git. Runs through Node type stripping (ADR 0004).
+// No dependencies; never runs git. Runs through tsx (ADR 0007).
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import process from "node:process";

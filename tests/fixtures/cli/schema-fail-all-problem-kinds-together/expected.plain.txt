@@ -16,15 +16,27 @@ Headings:
 
 Unknown tags found (typo or unimplemented feature):
   - Field 'unknown_field': unknown tag [optionl]
+      4 | unknown_field: "string" # [optionl]
+        |                           ^
   - Heading 'Unknown heading [bogus]': unknown tag [bogus]
+      11 | ## Unknown heading [bogus] [content:non-empty]
+         |                    ^
 
 Malformed tags:
   - Field 'bad_count': malformed tag [count:min:abc] (line 3, column 31)
+      3 | bad_count: ["a"] # [count:min:abc]
+        |                               ^
   - Heading 'Bad heading [content:min-lines:abc]': malformed tag [content:min-lines:abc] (line 9, column 35)
+      9 | ## Bad heading [content:min-lines:abc]
+        |                                   ^
 
 Misplaced tags:
   - Field 'wrong_place': tag [content:non-empty] is not valid in frontmatter (line 2, column 25)
+      2 | wrong_place: "string" # [content:non-empty]
+        |                         ^
   - Heading 'Wrong heading [value:filename]': tag [value:filename] is not valid in a heading (line 7, column 18)
+      7 | ## Wrong heading [value:filename]
+        |                  ^
 
 ========================
 Summary

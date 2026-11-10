@@ -12,7 +12,11 @@ Headings:
 
 Misplaced tags:
   - Field 'title': tag [content:non-empty] is not valid in frontmatter (line 2, column 19)
+      2 | title: "string" # [content:non-empty]
+        |                   ^
   - Heading 'Body [value:filename]': tag [value:filename] is not valid in a heading (line 5, column 9)
+      5 | ## Body [value:filename]
+        |         ^
 
 ========================
 Summary

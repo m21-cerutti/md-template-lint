@@ -6,14 +6,48 @@
 import type { Diagnostic } from "../engine/model.js";
 import type { RunDiagnostic } from "../config/types.js";
 
+/**
+ * The source line of a diagnostic (spec 8.1, change C09): one line of the file the
+ * diagnostic belongs to (the target, or the template for a template-phase diagnostic).
+ */
+export interface SourceExcerpt {
+  /** 1-based line number, as `line` of the diagnostic or its anchor line (4.4 DIR5). */
+  readonly line: number;
+  /** 1-based column of the diagnostic position; null for an anchor-only excerpt. */
+  readonly column: number | null;
+  /**
+   * The shown part of the line, raw (the reporters sanitize it): at most `EXCERPT_WIDTH`
+   * characters, a string of its own (spec 8.2, EX8). Never the whole line.
+   */
+  readonly text: string;
+  /** Characters of the line before `text`; above 0, the shown text starts with `...` (EX5). */
+  readonly before: number;
+  /** Characters of the line after `text`; above 0, the shown text ends with `...` (EX5). */
+  readonly after: number;
+  /** Index of the caret character in `text`; null when there is no column (EX2, EX4). */
+  readonly caret: number | null;
+  /**
+   * The first `EXCERPT_WIDTH` characters of the line, raw, for the JSON `sourceLine`
+   * (spec 8.5); null for an anchor-only excerpt, which has none.
+   */
+  readonly head: string | null;
+  /** True when the line is longer than `head`: JSON adds `...`. */
+  readonly headCut: boolean;
+}
+
+/** A diagnostic the runner handed over, with its source line when it has one. */
+export interface ReportedDiagnostic extends Diagnostic {
+  readonly excerpt?: SourceExcerpt;
+}
+
 export interface FileResult {
   /** Root-relative path. */
   readonly path: string;
   readonly status: "pass" | "fail";
   /** Error diagnostics in emission order (spec 4.1). */
-  readonly errors: readonly Diagnostic[];
+  readonly errors: readonly ReportedDiagnostic[];
   /** Warning diagnostics in emission order. */
-  readonly warnings: readonly Diagnostic[];
+  readonly warnings: readonly ReportedDiagnostic[];
 }
 
 export type TemplateReport =
@@ -49,6 +83,11 @@ export interface RunSummary {
   /** Warning diagnostics of files (run warnings are not counted, D06). */
   readonly warnings: number;
   readonly filesWithWarnings: number;
+  /**
+   * Diagnostics removed by disable directives, per pair-file lint (spec 4.4
+   * DIR9). They are in no file result and count nowhere else.
+   */
+  readonly suppressed: number;
   /** Distinct templates of pairs that had files. */
   readonly templatesChecked: number;
   readonly templatesBroken: number;
@@ -105,8 +144,11 @@ export interface TemplateSchema {
 /** One template of a `--verify` run (spec 7.3). */
 export interface VerifyTemplate {
   readonly template: TemplateReport;
-  /** Tag warnings `MTL010` to `MTL013` of an ok template, in source order; empty when broken. */
-  readonly warnings: readonly Diagnostic[];
+  /**
+   * Tag warnings `MTL010` to `MTL013` of an ok template, in source order, each with its
+   * template line (spec 8.3, C09); empty when broken.
+   */
+  readonly warnings: readonly ReportedDiagnostic[];
   /** The schema of an ok template; null when broken. */
   readonly schema: TemplateSchema | null;
 }

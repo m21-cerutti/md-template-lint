@@ -5,7 +5,8 @@
  * Order (legacy `validate_content`): one section after the other, the five
  * codes inside a section. Each rule tags its findings with the template
  * section index (`reportSection`) and the pipeline stable-sorts the `content`
- * step by it.
+ * step by it. The finding anchors on the target heading of the checked
+ * section (spec 4.4 DIR5).
  */
 import { defineRule, reportSection, type AnyRule, type TargetContext } from "../engine/rule.js";
 import type { Diagnostic, Section } from "../engine/model.js";
@@ -100,6 +101,7 @@ const contentNonEmpty = defineRule({
           contentNonEmpty,
           `Section '${section.text}': [content:non-empty] section body is empty`,
           index,
+          found.line,
         ),
       ];
     }),
@@ -122,6 +124,7 @@ const contentTable = defineRule({
           contentTable,
           `Section '${section.text}': [content:table] no markdown table row found`,
           index,
+          found.line,
         ),
       ];
     }),
@@ -144,6 +147,7 @@ const contentList = defineRule({
           contentList,
           `Section '${section.text}': [content:list] no markdown list item found`,
           index,
+          found.line,
         ),
       ];
     }),
@@ -169,6 +173,7 @@ const contentMinLines = defineRule({
           contentMinLines,
           `Section '${section.text}': [content:min-lines:${minimum}] only ${count} non-blank line(s)`,
           index,
+          found.line,
         ),
       ];
     }),
@@ -194,6 +199,7 @@ const contentMaxLines = defineRule({
           contentMaxLines,
           `Section '${section.text}': [content:max-lines:${maximum}] ${count} non-blank line(s)`,
           index,
+          found.line,
         ),
       ];
     }),

@@ -11,6 +11,16 @@ deciders: [owner]
 Every script and tool config is TypeScript. Scripts run with `node scripts/x.ts`
 (Node type stripping). `engines.node` is `>=22.18`.
 
+> Superseded in part by [ADR 0007](0007-tsx-script-runner.md) (2026-10-30): scripts now run
+> through `tsx` (`tsx scripts/x.ts`), not Node type stripping. TypeScript scripts, `jiti` for
+> `eslint.config.ts` and `engines.node` `>=22.18` stand. The text below is the record of the
+> original decision and still says `node scripts/x.ts`.
+>
+> The "erasable syntax only" script rule and the `erasableSyntaxOnly` option of
+> `tsconfig.scripts.json` were lifted in phase A69 (2026-10-30): scripts run through `tsx`,
+> which compiles enums, namespaces and parameter properties, so the rule no longer applies.
+> Mentions of it below are historical record only.
+
 ## Context
 
 The repository had three `.mjs` scripts (`scripts/gen-parser.mjs`,

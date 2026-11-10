@@ -23,6 +23,8 @@
  *   TAG_STRICT      one known-family bracket, re-lexed strictly (stage 2)
  *   TAG_FREE        free text argument (`constant:`, `conditional:`)
  *   TAG_SCHEME      scheme list argument (`scheme:`)
+ *   DIRECTIVE_SCAN  one target line: comment markers, backtick runs (spec 4.4)
+ *   DIRECTIVE       content of one comment: disable directive words (spec 4.4)
  *
  * The only embedded code is the fence length: a closing fence must use the
  * same character (separate modes) and be AT LEAST AS LONG as the opening one
@@ -310,3 +312,41 @@ mode TAG_SCHEME;
 SCHEME_TEXT : [a-z0-9+.,-]+ ;
 SCHEME_END : ']' -> type(RBRACK), popMode ;
 SCHEME_OTHER : . -> type(OTHER) ;
+
+// ===========================================================================
+// Disable directives of a target (spec 4.4, DIR2 to DIR4). Two stage-2 modes,
+// never reached from DEFAULT_MODE: the stage-1 tokens above are unchanged.
+// ===========================================================================
+
+// Directive scan: the document re-lexed line by line. Only comment markers,
+// backtick runs and plain text. src/tags/visitors/directive.ts pairs them
+// left to right on one line (an equal backtick run closes a code span, the
+// first following `-->` closes a comment); body lines inside a fence or the
+// frontmatter are skipped by line (the fence modes above decide, DIR4).
+mode DIRECTIVE_SCAN;
+
+SCAN_OPEN : '<!--' ;
+SCAN_CLOSE : '-->' ;
+SCAN_TICKS : '`'+ ;
+SCAN_NL : '\n' -> type(NL) ;
+SCAN_TEXT : ~[<`\n\-]+ ;
+SCAN_CHAR : [<\-] ;
+
+// Directive content: the text of one comment (between `<!--` and `-->`, or
+// after a frontmatter `#`). Keyword and verbs are case-insensitive (options).
+// A word is a run without `,`, space or tab; on equal length a keyword wins.
+mode DIRECTIVE;
+
+DIR_KEYWORD : 'md-template-lint' ;
+DIR_DISABLE : 'disable' ;
+DIR_DISABLE_LINE : 'disable-line' ;
+DIR_DISABLE_NEXT_LINE : 'disable-next-line' ;
+DIR_DISABLE_FILE : 'disable-file' ;
+DIR_BEGIN : 'begin' ;
+DIR_END : 'end' ;
+// A word that is exactly `--` (then whitespace, a comma or the end) starts the
+// free-text reason, up to the end.
+DIR_REASON : '--' ([ \t,] ~'\n'*)? ;
+DIR_COMMA : ',' ;
+DIR_WS : [ \t]+ -> type(WS) ;
+DIR_WORD : ~[, \t\n]+ ;

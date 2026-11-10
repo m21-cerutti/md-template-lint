@@ -62,6 +62,20 @@ import { BodyTagEntryContext } from "./MdTemplateParser.js";
 import { BodyTagBodyContext } from "./MdTemplateParser.js";
 import { BodyPresenceTagContext } from "./MdTemplateParser.js";
 import { BodyContentTagContext } from "./MdTemplateParser.js";
+import { DirectiveScanEntryContext } from "./MdTemplateParser.js";
+import { DirectiveScanLineContext } from "./MdTemplateParser.js";
+import { DirectiveScanItemContext } from "./MdTemplateParser.js";
+import { DirectiveEntryContext } from "./MdTemplateParser.js";
+import { DirectiveContext } from "./MdTemplateParser.js";
+import { DirectiveHeadContext } from "./MdTemplateParser.js";
+import { DirectiveMisplacedContext } from "./MdTemplateParser.js";
+import { DirectiveVerbContext } from "./MdTemplateParser.js";
+import { DirectiveUnknownContext } from "./MdTemplateParser.js";
+import { DirectiveArgsContext } from "./MdTemplateParser.js";
+import { DirectiveSepContext } from "./MdTemplateParser.js";
+import { DirectiveItemContext } from "./MdTemplateParser.js";
+import { DirectiveReasonContext } from "./MdTemplateParser.js";
+import { DirectiveProseContext } from "./MdTemplateParser.js";
 
 
 /**
@@ -675,6 +689,146 @@ export class MdTemplateParserListener implements ParseTreeListener {
      * @param ctx the parse tree
      */
     exitBodyContentTag?: (ctx: BodyContentTagContext) => void;
+    /**
+     * Enter a parse tree produced by `MdTemplateParser.directiveScanEntry`.
+     * @param ctx the parse tree
+     */
+    enterDirectiveScanEntry?: (ctx: DirectiveScanEntryContext) => void;
+    /**
+     * Exit a parse tree produced by `MdTemplateParser.directiveScanEntry`.
+     * @param ctx the parse tree
+     */
+    exitDirectiveScanEntry?: (ctx: DirectiveScanEntryContext) => void;
+    /**
+     * Enter a parse tree produced by `MdTemplateParser.directiveScanLine`.
+     * @param ctx the parse tree
+     */
+    enterDirectiveScanLine?: (ctx: DirectiveScanLineContext) => void;
+    /**
+     * Exit a parse tree produced by `MdTemplateParser.directiveScanLine`.
+     * @param ctx the parse tree
+     */
+    exitDirectiveScanLine?: (ctx: DirectiveScanLineContext) => void;
+    /**
+     * Enter a parse tree produced by `MdTemplateParser.directiveScanItem`.
+     * @param ctx the parse tree
+     */
+    enterDirectiveScanItem?: (ctx: DirectiveScanItemContext) => void;
+    /**
+     * Exit a parse tree produced by `MdTemplateParser.directiveScanItem`.
+     * @param ctx the parse tree
+     */
+    exitDirectiveScanItem?: (ctx: DirectiveScanItemContext) => void;
+    /**
+     * Enter a parse tree produced by `MdTemplateParser.directiveEntry`.
+     * @param ctx the parse tree
+     */
+    enterDirectiveEntry?: (ctx: DirectiveEntryContext) => void;
+    /**
+     * Exit a parse tree produced by `MdTemplateParser.directiveEntry`.
+     * @param ctx the parse tree
+     */
+    exitDirectiveEntry?: (ctx: DirectiveEntryContext) => void;
+    /**
+     * Enter a parse tree produced by `MdTemplateParser.directive`.
+     * @param ctx the parse tree
+     */
+    enterDirective?: (ctx: DirectiveContext) => void;
+    /**
+     * Exit a parse tree produced by `MdTemplateParser.directive`.
+     * @param ctx the parse tree
+     */
+    exitDirective?: (ctx: DirectiveContext) => void;
+    /**
+     * Enter a parse tree produced by `MdTemplateParser.directiveHead`.
+     * @param ctx the parse tree
+     */
+    enterDirectiveHead?: (ctx: DirectiveHeadContext) => void;
+    /**
+     * Exit a parse tree produced by `MdTemplateParser.directiveHead`.
+     * @param ctx the parse tree
+     */
+    exitDirectiveHead?: (ctx: DirectiveHeadContext) => void;
+    /**
+     * Enter a parse tree produced by `MdTemplateParser.directiveMisplaced`.
+     * @param ctx the parse tree
+     */
+    enterDirectiveMisplaced?: (ctx: DirectiveMisplacedContext) => void;
+    /**
+     * Exit a parse tree produced by `MdTemplateParser.directiveMisplaced`.
+     * @param ctx the parse tree
+     */
+    exitDirectiveMisplaced?: (ctx: DirectiveMisplacedContext) => void;
+    /**
+     * Enter a parse tree produced by `MdTemplateParser.directiveVerb`.
+     * @param ctx the parse tree
+     */
+    enterDirectiveVerb?: (ctx: DirectiveVerbContext) => void;
+    /**
+     * Exit a parse tree produced by `MdTemplateParser.directiveVerb`.
+     * @param ctx the parse tree
+     */
+    exitDirectiveVerb?: (ctx: DirectiveVerbContext) => void;
+    /**
+     * Enter a parse tree produced by `MdTemplateParser.directiveUnknown`.
+     * @param ctx the parse tree
+     */
+    enterDirectiveUnknown?: (ctx: DirectiveUnknownContext) => void;
+    /**
+     * Exit a parse tree produced by `MdTemplateParser.directiveUnknown`.
+     * @param ctx the parse tree
+     */
+    exitDirectiveUnknown?: (ctx: DirectiveUnknownContext) => void;
+    /**
+     * Enter a parse tree produced by `MdTemplateParser.directiveArgs`.
+     * @param ctx the parse tree
+     */
+    enterDirectiveArgs?: (ctx: DirectiveArgsContext) => void;
+    /**
+     * Exit a parse tree produced by `MdTemplateParser.directiveArgs`.
+     * @param ctx the parse tree
+     */
+    exitDirectiveArgs?: (ctx: DirectiveArgsContext) => void;
+    /**
+     * Enter a parse tree produced by `MdTemplateParser.directiveSep`.
+     * @param ctx the parse tree
+     */
+    enterDirectiveSep?: (ctx: DirectiveSepContext) => void;
+    /**
+     * Exit a parse tree produced by `MdTemplateParser.directiveSep`.
+     * @param ctx the parse tree
+     */
+    exitDirectiveSep?: (ctx: DirectiveSepContext) => void;
+    /**
+     * Enter a parse tree produced by `MdTemplateParser.directiveItem`.
+     * @param ctx the parse tree
+     */
+    enterDirectiveItem?: (ctx: DirectiveItemContext) => void;
+    /**
+     * Exit a parse tree produced by `MdTemplateParser.directiveItem`.
+     * @param ctx the parse tree
+     */
+    exitDirectiveItem?: (ctx: DirectiveItemContext) => void;
+    /**
+     * Enter a parse tree produced by `MdTemplateParser.directiveReason`.
+     * @param ctx the parse tree
+     */
+    enterDirectiveReason?: (ctx: DirectiveReasonContext) => void;
+    /**
+     * Exit a parse tree produced by `MdTemplateParser.directiveReason`.
+     * @param ctx the parse tree
+     */
+    exitDirectiveReason?: (ctx: DirectiveReasonContext) => void;
+    /**
+     * Enter a parse tree produced by `MdTemplateParser.directiveProse`.
+     * @param ctx the parse tree
+     */
+    enterDirectiveProse?: (ctx: DirectiveProseContext) => void;
+    /**
+     * Exit a parse tree produced by `MdTemplateParser.directiveProse`.
+     * @param ctx the parse tree
+     */
+    exitDirectiveProse?: (ctx: DirectiveProseContext) => void;
 
     visitTerminal(node: TerminalNode): void {}
     visitErrorNode(node: ErrorNode): void {}

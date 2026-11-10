@@ -1,15 +1,16 @@
 /**
  * JSON reporter (docs/spec.md 8.5): one document on stdout and nothing else (run
  * errors are inside it). Keys are stable, arrays follow the output order of
- * 8.4. `--quiet` does not shrink it. Echoed strings go through `cleanText`.
+ * 8.4. `--quiet` does not shrink it. Echoed strings go through `cleanText`. A diagnostic
+ * with a `line` and a source line also has `sourceLine` (8.5).
  */
 import type { RunDiagnostic } from "../config/types.js";
-import type { Diagnostic } from "../engine/model.js";
-import type { PairBlock, RunResult } from "../runner/types.js";
+import type { PairBlock, ReportedDiagnostic, RunResult } from "../runner/types.js";
+import { sourceLineOf } from "./excerpt.js";
 import { cleanText } from "./sanitize.js";
 import type { ReportOutput } from "./text.js";
 
-function diagnosticJson(diagnostic: Diagnostic): Record<string, unknown> {
+function diagnosticJson(diagnostic: ReportedDiagnostic): Record<string, unknown> {
   const out: Record<string, unknown> = {
     code: diagnostic.code,
     severity: diagnostic.severity,
@@ -19,6 +20,9 @@ function diagnosticJson(diagnostic: Diagnostic): Record<string, unknown> {
   if (diagnostic.position !== null) {
     out["line"] = diagnostic.position.line;
     out["column"] = diagnostic.position.column;
+    // Spec 8.5: `sourceLine` sits next to `line`, only when the line exists.
+    const sourceLine = sourceLineOf(diagnostic.excerpt);
+    if (sourceLine !== undefined) out["sourceLine"] = sourceLine;
   }
   return out;
 }

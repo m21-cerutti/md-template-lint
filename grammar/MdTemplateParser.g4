@@ -12,6 +12,8 @@
  *             lines, stage-2 body tags
  *   tag*      bracket shapes of the comment and heading text, shared by both
  *             regions (no meaning of their own)
+ *   directive* target disable directives (spec 4.4): a line scan for comment
+ *             markers and code spans, then the content of one comment
  *
  * Tags are parsed in two stages. Stage 1 (document and the *Entry helpers)
  * never fails on a tag: it only splits comment and heading text into
@@ -389,4 +391,98 @@ bodyContentTag
       | MIN_LINES COLON NUMBER
       | MAX_LINES COLON NUMBER
       )
+    ;
+
+// ===========================================================================
+// Disable directives of a target (directive*), spec 4.4 DIR2 to DIR4
+// ===========================================================================
+
+// Mode DIRECTIVE_SCAN over the whole document: one directiveScanLine per line.
+// Never fails; the pairing of markers and backtick runs is done on its tokens.
+directiveScanEntry
+    : directiveScanLine* EOF
+    ;
+
+directiveScanLine
+    : directiveScanItem* NL
+    ;
+
+directiveScanItem
+    : SCAN_OPEN
+    | SCAN_CLOSE
+    | SCAN_TICKS
+    | SCAN_TEXT
+    | SCAN_CHAR
+    ;
+
+// Mode DIRECTIVE over the content of one comment. Never fails: content that
+// does not start with the keyword followed by a space, a tab or the end is
+// prose (second alternative, no directive). On a tie the first alternative wins.
+directiveEntry
+    : WS? directive EOF
+    | directiveProse EOF
+    ;
+
+// DIR2: keyword WS+ verb (SEP item)* (SEP reason)? SEP?. A missing or unknown
+// verb still parses (MTL020 in src/rules/syntax.ts, A60); items are validated
+// as codes afterwards, never here.
+directive
+    : DIR_KEYWORD (WS directiveHead? directiveArgs)?
+    ;
+
+// A head after a comma (`md-template-lint ,MTL201`) is never a verb (DIR2 wants
+// WS+ before it); its first word is still the MTL020 word.
+directiveHead
+    : directiveVerb
+    | directiveUnknown
+    | directiveSep directiveMisplaced
+    ;
+
+directiveMisplaced
+    : directiveItem
+    ;
+
+// The six verbs. `begin` or `end` not followed by `disable` is directiveUnknown.
+directiveVerb
+    : DIR_DISABLE
+    | DIR_DISABLE_LINE
+    | DIR_DISABLE_NEXT_LINE
+    | DIR_DISABLE_FILE
+    | DIR_BEGIN WS DIR_DISABLE
+    | DIR_END WS DIR_DISABLE
+    ;
+
+directiveUnknown
+    : DIR_WORD
+    | DIR_KEYWORD
+    | DIR_BEGIN
+    | DIR_END
+    ;
+
+directiveArgs
+    : (directiveSep directiveItem)* directiveSep? directiveReason?
+    ;
+
+// Commas, spaces and tabs in any mix; empty items vanish.
+directiveSep
+    : (WS | DIR_COMMA)+
+    ;
+
+directiveItem
+    : DIR_WORD
+    | DIR_KEYWORD
+    | DIR_DISABLE
+    | DIR_DISABLE_LINE
+    | DIR_DISABLE_NEXT_LINE
+    | DIR_DISABLE_FILE
+    | DIR_BEGIN
+    | DIR_END
+    ;
+
+directiveReason
+    : DIR_REASON
+    ;
+
+directiveProse
+    : (WS | DIR_COMMA | DIR_REASON | directiveItem)*
     ;

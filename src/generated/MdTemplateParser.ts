@@ -93,12 +93,27 @@ export class MdTemplateParser extends antlr.Parser {
     public static readonly SCHEME_ARG = 80;
     public static readonly FREE_TEXT = 81;
     public static readonly SCHEME_TEXT = 82;
-    public static readonly FB_NL = 83;
-    public static readonly T_LBRACK = 84;
-    public static readonly T_RBRACK = 85;
-    public static readonly T_COLON = 86;
-    public static readonly T_DASH = 87;
-    public static readonly S_DOT = 88;
+    public static readonly SCAN_OPEN = 83;
+    public static readonly SCAN_CLOSE = 84;
+    public static readonly SCAN_TICKS = 85;
+    public static readonly SCAN_TEXT = 86;
+    public static readonly SCAN_CHAR = 87;
+    public static readonly DIR_KEYWORD = 88;
+    public static readonly DIR_DISABLE = 89;
+    public static readonly DIR_DISABLE_LINE = 90;
+    public static readonly DIR_DISABLE_NEXT_LINE = 91;
+    public static readonly DIR_DISABLE_FILE = 92;
+    public static readonly DIR_BEGIN = 93;
+    public static readonly DIR_END = 94;
+    public static readonly DIR_REASON = 95;
+    public static readonly DIR_COMMA = 96;
+    public static readonly DIR_WORD = 97;
+    public static readonly FB_NL = 98;
+    public static readonly T_LBRACK = 99;
+    public static readonly T_RBRACK = 100;
+    public static readonly T_COLON = 101;
+    public static readonly T_DASH = 102;
+    public static readonly S_DOT = 103;
     public static readonly RULE_document = 0;
     public static readonly RULE_frontmatter = 1;
     public static readonly RULE_fmUnclosed = 2;
@@ -157,6 +172,20 @@ export class MdTemplateParser extends antlr.Parser {
     public static readonly RULE_bodyTagBody = 55;
     public static readonly RULE_bodyPresenceTag = 56;
     public static readonly RULE_bodyContentTag = 57;
+    public static readonly RULE_directiveScanEntry = 58;
+    public static readonly RULE_directiveScanLine = 59;
+    public static readonly RULE_directiveScanItem = 60;
+    public static readonly RULE_directiveEntry = 61;
+    public static readonly RULE_directive = 62;
+    public static readonly RULE_directiveHead = 63;
+    public static readonly RULE_directiveMisplaced = 64;
+    public static readonly RULE_directiveVerb = 65;
+    public static readonly RULE_directiveUnknown = 66;
+    public static readonly RULE_directiveArgs = 67;
+    public static readonly RULE_directiveSep = 68;
+    public static readonly RULE_directiveItem = 69;
+    public static readonly RULE_directiveReason = 70;
+    public static readonly RULE_directiveProse = 71;
 
     public static readonly literalNames = [
         null, null, null, null, null, null, null, null, null, null, null, 
@@ -169,8 +198,10 @@ export class MdTemplateParser extends antlr.Parser {
         "'template-only'", "'elements'", "'snake_case'", "'kebab-case'", 
         "'filename'", "'min'", "'max'", "'ascending'", "'exists'", "'non-empty'", 
         "'table'", "'list'", "'min-lines'", "'max-lines'", "'conditional:'", 
-        "'constant:'", "'scheme:'", null, null, null, null, null, null, 
-        null, "'.'"
+        "'constant:'", "'scheme:'", null, null, "'<!--'", "'-->'", null, 
+        null, null, "'md-template-lint'", "'disable'", "'disable-line'", 
+        "'disable-next-line'", "'disable-file'", "'begin'", "'end'", null, 
+        "','", null, null, null, null, null, null, "'.'"
     ];
 
     public static readonly symbolicNames = [
@@ -188,8 +219,11 @@ export class MdTemplateParser extends antlr.Parser {
         "TEMPLATE_ONLY", "ELEMENTS", "SNAKE_CASE", "KEBAB_CASE", "FILENAME", 
         "MIN", "MAX", "ASCENDING", "EXISTS", "NON_EMPTY", "TABLE", "LIST", 
         "MIN_LINES", "MAX_LINES", "CONDITIONAL_ARG", "CONSTANT_ARG", "SCHEME_ARG", 
-        "FREE_TEXT", "SCHEME_TEXT", "FB_NL", "T_LBRACK", "T_RBRACK", "T_COLON", 
-        "T_DASH", "S_DOT"
+        "FREE_TEXT", "SCHEME_TEXT", "SCAN_OPEN", "SCAN_CLOSE", "SCAN_TICKS", 
+        "SCAN_TEXT", "SCAN_CHAR", "DIR_KEYWORD", "DIR_DISABLE", "DIR_DISABLE_LINE", 
+        "DIR_DISABLE_NEXT_LINE", "DIR_DISABLE_FILE", "DIR_BEGIN", "DIR_END", 
+        "DIR_REASON", "DIR_COMMA", "DIR_WORD", "FB_NL", "T_LBRACK", "T_RBRACK", 
+        "T_COLON", "T_DASH", "S_DOT"
     ];
     public static readonly ruleNames = [
         "document", "frontmatter", "fmUnclosed", "fmLine", "fmFilenameLine", 
@@ -204,7 +238,10 @@ export class MdTemplateParser extends antlr.Parser {
         "fmPresenceTag", "fmFormatTag", "fmCaseStyle", "fmValueTag", "fmCountTag", 
         "fmRangeTag", "fmBound", "fmSignedNumber", "fmOrderTag", "fmIoTag", 
         "fmFilenameTag", "fmConvention", "bodyTagEntry", "bodyTagBody", 
-        "bodyPresenceTag", "bodyContentTag",
+        "bodyPresenceTag", "bodyContentTag", "directiveScanEntry", "directiveScanLine", 
+        "directiveScanItem", "directiveEntry", "directive", "directiveHead", 
+        "directiveMisplaced", "directiveVerb", "directiveUnknown", "directiveArgs", 
+        "directiveSep", "directiveItem", "directiveReason", "directiveProse",
     ];
 
     public get grammarFileName(): string { return "MdTemplateParser.g4"; }
@@ -225,35 +262,35 @@ export class MdTemplateParser extends antlr.Parser {
         let localContext = new DocumentContext(this.context, this.state);
         this.enterRule(localContext, 0, MdTemplateParser.RULE_document);
         try {
-            this.state = 126;
+            this.state = 154;
             this.errorHandler.sync(this);
             switch (this.interpreter.adaptivePredict(this.tokenStream, 0, this.context) ) {
             case 1:
                 this.enterOuterAlt(localContext, 1);
                 {
-                this.state = 116;
+                this.state = 144;
                 this.frontmatter();
-                this.state = 117;
+                this.state = 145;
                 this.body();
-                this.state = 118;
+                this.state = 146;
                 this.match(MdTemplateParser.EOF);
                 }
                 break;
             case 2:
                 this.enterOuterAlt(localContext, 2);
                 {
-                this.state = 120;
+                this.state = 148;
                 this.fmUnclosed();
-                this.state = 121;
+                this.state = 149;
                 this.match(MdTemplateParser.EOF);
                 }
                 break;
             case 3:
                 this.enterOuterAlt(localContext, 3);
                 {
-                this.state = 123;
+                this.state = 151;
                 this.body();
-                this.state = 124;
+                this.state = 152;
                 this.match(MdTemplateParser.EOF);
                 }
                 break;
@@ -279,23 +316,23 @@ export class MdTemplateParser extends antlr.Parser {
         try {
             this.enterOuterAlt(localContext, 1);
             {
-            this.state = 128;
+            this.state = 156;
             this.match(MdTemplateParser.FM_OPEN);
-            this.state = 132;
+            this.state = 160;
             this.errorHandler.sync(this);
             _la = this.tokenStream.LA(1);
             while (((((_la - 29)) & ~0x1F) === 0 && ((1 << (_la - 29)) & 31) !== 0)) {
                 {
                 {
-                this.state = 129;
+                this.state = 157;
                 this.fmLine();
                 }
                 }
-                this.state = 134;
+                this.state = 162;
                 this.errorHandler.sync(this);
                 _la = this.tokenStream.LA(1);
             }
-            this.state = 135;
+            this.state = 163;
             this.match(MdTemplateParser.FM_CLOSE);
             }
         }
@@ -319,19 +356,19 @@ export class MdTemplateParser extends antlr.Parser {
         try {
             this.enterOuterAlt(localContext, 1);
             {
-            this.state = 137;
+            this.state = 165;
             this.match(MdTemplateParser.FM_OPEN);
-            this.state = 141;
+            this.state = 169;
             this.errorHandler.sync(this);
             _la = this.tokenStream.LA(1);
             while (((((_la - 29)) & ~0x1F) === 0 && ((1 << (_la - 29)) & 31) !== 0)) {
                 {
                 {
-                this.state = 138;
+                this.state = 166;
                 this.fmLine();
                 }
                 }
-                this.state = 143;
+                this.state = 171;
                 this.errorHandler.sync(this);
                 _la = this.tokenStream.LA(1);
             }
@@ -354,41 +391,41 @@ export class MdTemplateParser extends antlr.Parser {
         let localContext = new FmLineContext(this.context, this.state);
         this.enterRule(localContext, 6, MdTemplateParser.RULE_fmLine);
         try {
-            this.state = 149;
+            this.state = 177;
             this.errorHandler.sync(this);
             switch (this.interpreter.adaptivePredict(this.tokenStream, 3, this.context) ) {
             case 1:
                 this.enterOuterAlt(localContext, 1);
                 {
-                this.state = 144;
+                this.state = 172;
                 this.fmFilenameLine();
                 }
                 break;
             case 2:
                 this.enterOuterAlt(localContext, 2);
                 {
-                this.state = 145;
+                this.state = 173;
                 this.fmCommentLine();
                 }
                 break;
             case 3:
                 this.enterOuterAlt(localContext, 3);
                 {
-                this.state = 146;
+                this.state = 174;
                 this.fmKeyLine();
                 }
                 break;
             case 4:
                 this.enterOuterAlt(localContext, 4);
                 {
-                this.state = 147;
+                this.state = 175;
                 this.fmBlankLine();
                 }
                 break;
             case 5:
                 this.enterOuterAlt(localContext, 5);
                 {
-                this.state = 148;
+                this.state = 176;
                 this.fmOtherLine();
                 }
                 break;
@@ -414,31 +451,31 @@ export class MdTemplateParser extends antlr.Parser {
         try {
             this.enterOuterAlt(localContext, 1);
             {
-            this.state = 151;
+            this.state = 179;
             this.match(MdTemplateParser.FM_LINE_HASH);
-            this.state = 153;
+            this.state = 181;
             this.errorHandler.sync(this);
             _la = this.tokenStream.LA(1);
             if (_la === 7) {
                 {
-                this.state = 152;
+                this.state = 180;
                 this.match(MdTemplateParser.WS);
                 }
             }
 
-            this.state = 155;
+            this.state = 183;
             this.tagCandidate();
-            this.state = 157;
+            this.state = 185;
             this.errorHandler.sync(this);
             _la = this.tokenStream.LA(1);
             if (_la === 7) {
                 {
-                this.state = 156;
+                this.state = 184;
                 this.match(MdTemplateParser.WS);
                 }
             }
 
-            this.state = 159;
+            this.state = 187;
             this.match(MdTemplateParser.NL);
             }
         }
@@ -462,23 +499,23 @@ export class MdTemplateParser extends antlr.Parser {
         try {
             this.enterOuterAlt(localContext, 1);
             {
-            this.state = 161;
+            this.state = 189;
             this.match(MdTemplateParser.FM_LINE_HASH);
-            this.state = 165;
+            this.state = 193;
             this.errorHandler.sync(this);
             _la = this.tokenStream.LA(1);
-            while ((((_la) & ~0x1F) === 0 && ((1 << _la) & 4294967292) !== 0) || ((((_la - 32)) & ~0x1F) === 0 && ((1 << (_la - 32)) & 4294967295) !== 0) || ((((_la - 64)) & ~0x1F) === 0 && ((1 << (_la - 64)) & 33554431) !== 0)) {
+            while ((((_la) & ~0x1F) === 0 && ((1 << _la) & 4294967292) !== 0) || ((((_la - 32)) & ~0x1F) === 0 && ((1 << (_la - 32)) & 4294967295) !== 0) || ((((_la - 64)) & ~0x1F) === 0 && ((1 << (_la - 64)) & 4294967295) !== 0) || ((((_la - 96)) & ~0x1F) === 0 && ((1 << (_la - 96)) & 255) !== 0)) {
                 {
                 {
-                this.state = 162;
+                this.state = 190;
                 this.fmCommentItem();
                 }
                 }
-                this.state = 167;
+                this.state = 195;
                 this.errorHandler.sync(this);
                 _la = this.tokenStream.LA(1);
             }
-            this.state = 168;
+            this.state = 196;
             this.match(MdTemplateParser.NL);
             }
         }
@@ -500,42 +537,42 @@ export class MdTemplateParser extends antlr.Parser {
         this.enterRule(localContext, 12, MdTemplateParser.RULE_fmKeyLine);
         let _la: number;
         try {
-            this.state = 179;
+            this.state = 207;
             this.errorHandler.sync(this);
             switch (this.tokenStream.LA(1)) {
             case MdTemplateParser.FM_KEY_BARE:
                 this.enterOuterAlt(localContext, 1);
                 {
-                this.state = 170;
+                this.state = 198;
                 this.match(MdTemplateParser.FM_KEY_BARE);
                 }
                 break;
             case MdTemplateParser.FM_KEY:
                 this.enterOuterAlt(localContext, 2);
                 {
-                this.state = 171;
+                this.state = 199;
                 this.match(MdTemplateParser.FM_KEY);
-                this.state = 173;
+                this.state = 201;
                 this.errorHandler.sync(this);
                 _la = this.tokenStream.LA(1);
                 if ((((_la) & ~0x1F) === 0 && ((1 << _la) & 62914560) !== 0)) {
                     {
-                    this.state = 172;
+                    this.state = 200;
                     this.fmValue();
                     }
                 }
 
-                this.state = 176;
+                this.state = 204;
                 this.errorHandler.sync(this);
                 _la = this.tokenStream.LA(1);
                 if (_la === 26) {
                     {
-                    this.state = 175;
+                    this.state = 203;
                     this.fmInlineComment();
                     }
                 }
 
-                this.state = 178;
+                this.state = 206;
                 this.match(MdTemplateParser.NL);
                 }
                 break;
@@ -563,13 +600,13 @@ export class MdTemplateParser extends antlr.Parser {
         try {
             this.enterOuterAlt(localContext, 1);
             {
-            this.state = 182;
+            this.state = 210;
             this.errorHandler.sync(this);
             _la = this.tokenStream.LA(1);
             do {
                 {
                 {
-                this.state = 181;
+                this.state = 209;
                 _la = this.tokenStream.LA(1);
                 if(!((((_la) & ~0x1F) === 0 && ((1 << _la) & 62914560) !== 0))) {
                 this.errorHandler.recoverInline(this);
@@ -580,7 +617,7 @@ export class MdTemplateParser extends antlr.Parser {
                 }
                 }
                 }
-                this.state = 184;
+                this.state = 212;
                 this.errorHandler.sync(this);
                 _la = this.tokenStream.LA(1);
             } while ((((_la) & ~0x1F) === 0 && ((1 << _la) & 62914560) !== 0));
@@ -606,19 +643,19 @@ export class MdTemplateParser extends antlr.Parser {
         try {
             this.enterOuterAlt(localContext, 1);
             {
-            this.state = 186;
+            this.state = 214;
             this.match(MdTemplateParser.FM_COMMENT_HASH);
-            this.state = 190;
+            this.state = 218;
             this.errorHandler.sync(this);
             _la = this.tokenStream.LA(1);
-            while ((((_la) & ~0x1F) === 0 && ((1 << _la) & 4294967292) !== 0) || ((((_la - 32)) & ~0x1F) === 0 && ((1 << (_la - 32)) & 4294967295) !== 0) || ((((_la - 64)) & ~0x1F) === 0 && ((1 << (_la - 64)) & 33554431) !== 0)) {
+            while ((((_la) & ~0x1F) === 0 && ((1 << _la) & 4294967292) !== 0) || ((((_la - 32)) & ~0x1F) === 0 && ((1 << (_la - 32)) & 4294967295) !== 0) || ((((_la - 64)) & ~0x1F) === 0 && ((1 << (_la - 64)) & 4294967295) !== 0) || ((((_la - 96)) & ~0x1F) === 0 && ((1 << (_la - 96)) & 255) !== 0)) {
                 {
                 {
-                this.state = 187;
+                this.state = 215;
                 this.fmCommentItem();
                 }
                 }
-                this.state = 192;
+                this.state = 220;
                 this.errorHandler.sync(this);
                 _la = this.tokenStream.LA(1);
             }
@@ -642,62 +679,62 @@ export class MdTemplateParser extends antlr.Parser {
         this.enterRule(localContext, 18, MdTemplateParser.RULE_fmCommentItem);
         let _la: number;
         try {
-            this.state = 201;
+            this.state = 229;
             this.errorHandler.sync(this);
             switch (this.interpreter.adaptivePredict(this.tokenStream, 12, this.context) ) {
             case 1:
                 this.enterOuterAlt(localContext, 1);
                 {
-                this.state = 193;
+                this.state = 221;
                 this.tagCandidate();
                 }
                 break;
             case 2:
                 this.enterOuterAlt(localContext, 2);
                 {
-                this.state = 194;
+                this.state = 222;
                 this.tagRuleMarker();
                 }
                 break;
             case 3:
                 this.enterOuterAlt(localContext, 3);
                 {
-                this.state = 195;
+                this.state = 223;
                 this.tagBareBracket();
                 }
                 break;
             case 4:
                 this.enterOuterAlt(localContext, 4);
                 {
-                this.state = 196;
+                this.state = 224;
                 this.tagShapedBracket();
                 }
                 break;
             case 5:
                 this.enterOuterAlt(localContext, 5);
                 {
-                this.state = 197;
+                this.state = 225;
                 this.tagProseBracket();
                 }
                 break;
             case 6:
                 this.enterOuterAlt(localContext, 6);
                 {
-                this.state = 198;
+                this.state = 226;
                 this.tagTypeEq();
                 }
                 break;
             case 7:
                 this.enterOuterAlt(localContext, 7);
                 {
-                this.state = 199;
+                this.state = 227;
                 this.fmHintWord();
                 }
                 break;
             case 8:
                 this.enterOuterAlt(localContext, 8);
                 {
-                this.state = 200;
+                this.state = 228;
                 _la = this.tokenStream.LA(1);
                 if(_la<=0 || _la === 1) {
                 this.errorHandler.recoverInline(this);
@@ -730,7 +767,7 @@ export class MdTemplateParser extends antlr.Parser {
         try {
             this.enterOuterAlt(localContext, 1);
             {
-            this.state = 203;
+            this.state = 231;
             _la = this.tokenStream.LA(1);
             if(!(((((_la - 37)) & ~0x1F) === 0 && ((1 << (_la - 37)) & 249) !== 0))) {
             this.errorHandler.recoverInline(this);
@@ -760,7 +797,7 @@ export class MdTemplateParser extends antlr.Parser {
         try {
             this.enterOuterAlt(localContext, 1);
             {
-            this.state = 205;
+            this.state = 233;
             this.match(MdTemplateParser.FM_BLANK);
             }
         }
@@ -784,19 +821,19 @@ export class MdTemplateParser extends antlr.Parser {
         try {
             this.enterOuterAlt(localContext, 1);
             {
-            this.state = 207;
+            this.state = 235;
             this.match(MdTemplateParser.FM_LINE_START);
-            this.state = 209;
+            this.state = 237;
             this.errorHandler.sync(this);
             _la = this.tokenStream.LA(1);
             if (_la === 34) {
                 {
-                this.state = 208;
+                this.state = 236;
                 this.match(MdTemplateParser.FM_TEXT_REST);
                 }
             }
 
-            this.state = 211;
+            this.state = 239;
             this.match(MdTemplateParser.NL);
             }
         }
@@ -820,17 +857,17 @@ export class MdTemplateParser extends antlr.Parser {
         try {
             this.enterOuterAlt(localContext, 1);
             {
-            this.state = 216;
+            this.state = 244;
             this.errorHandler.sync(this);
             _la = this.tokenStream.LA(1);
             while ((((_la) & ~0x1F) === 0 && ((1 << _la) & 2037760) !== 0)) {
                 {
                 {
-                this.state = 213;
+                this.state = 241;
                 this.bodyBlock();
                 }
                 }
-                this.state = 218;
+                this.state = 246;
                 this.errorHandler.sync(this);
                 _la = this.tokenStream.LA(1);
             }
@@ -853,55 +890,55 @@ export class MdTemplateParser extends antlr.Parser {
         let localContext = new BodyBlockContext(this.context, this.state);
         this.enterRule(localContext, 28, MdTemplateParser.RULE_bodyBlock);
         try {
-            this.state = 226;
+            this.state = 254;
             this.errorHandler.sync(this);
             switch (this.tokenStream.LA(1)) {
             case MdTemplateParser.H_OPEN:
                 this.enterOuterAlt(localContext, 1);
                 {
-                this.state = 219;
+                this.state = 247;
                 this.bodyHeading();
                 }
                 break;
             case MdTemplateParser.FENCE_OPEN:
                 this.enterOuterAlt(localContext, 2);
                 {
-                this.state = 220;
+                this.state = 248;
                 this.bodyFence();
                 }
                 break;
             case MdTemplateParser.BODY_TABLE_ROW:
                 this.enterOuterAlt(localContext, 3);
                 {
-                this.state = 221;
+                this.state = 249;
                 this.bodyTableRow();
                 }
                 break;
             case MdTemplateParser.BODY_LIST_ITEM:
                 this.enterOuterAlt(localContext, 4);
                 {
-                this.state = 222;
+                this.state = 250;
                 this.bodyListItem();
                 }
                 break;
             case MdTemplateParser.BODY_HTML_COMMENT:
                 this.enterOuterAlt(localContext, 5);
                 {
-                this.state = 223;
+                this.state = 251;
                 this.bodyHtmlComment();
                 }
                 break;
             case MdTemplateParser.BODY_BLANK:
                 this.enterOuterAlt(localContext, 6);
                 {
-                this.state = 224;
+                this.state = 252;
                 this.bodyBlankLine();
                 }
                 break;
             case MdTemplateParser.BODY_TEXT_START:
                 this.enterOuterAlt(localContext, 7);
                 {
-                this.state = 225;
+                this.state = 253;
                 this.bodyTextLine();
                 }
                 break;
@@ -929,23 +966,23 @@ export class MdTemplateParser extends antlr.Parser {
         try {
             this.enterOuterAlt(localContext, 1);
             {
-            this.state = 228;
+            this.state = 256;
             this.match(MdTemplateParser.H_OPEN);
-            this.state = 232;
+            this.state = 260;
             this.errorHandler.sync(this);
             _la = this.tokenStream.LA(1);
-            while ((((_la) & ~0x1F) === 0 && ((1 << _la) & 4294967292) !== 0) || ((((_la - 32)) & ~0x1F) === 0 && ((1 << (_la - 32)) & 4294967295) !== 0) || ((((_la - 64)) & ~0x1F) === 0 && ((1 << (_la - 64)) & 33554431) !== 0)) {
+            while ((((_la) & ~0x1F) === 0 && ((1 << _la) & 4294967292) !== 0) || ((((_la - 32)) & ~0x1F) === 0 && ((1 << (_la - 32)) & 4294967295) !== 0) || ((((_la - 64)) & ~0x1F) === 0 && ((1 << (_la - 64)) & 4294967295) !== 0) || ((((_la - 96)) & ~0x1F) === 0 && ((1 << (_la - 96)) & 255) !== 0)) {
                 {
                 {
-                this.state = 229;
+                this.state = 257;
                 this.bodyHeadingItem();
                 }
                 }
-                this.state = 234;
+                this.state = 262;
                 this.errorHandler.sync(this);
                 _la = this.tokenStream.LA(1);
             }
-            this.state = 235;
+            this.state = 263;
             this.match(MdTemplateParser.NL);
             }
         }
@@ -967,48 +1004,48 @@ export class MdTemplateParser extends antlr.Parser {
         this.enterRule(localContext, 32, MdTemplateParser.RULE_bodyHeadingItem);
         let _la: number;
         try {
-            this.state = 243;
+            this.state = 271;
             this.errorHandler.sync(this);
             switch (this.interpreter.adaptivePredict(this.tokenStream, 17, this.context) ) {
             case 1:
                 this.enterOuterAlt(localContext, 1);
                 {
-                this.state = 237;
+                this.state = 265;
                 this.tagCandidate();
                 }
                 break;
             case 2:
                 this.enterOuterAlt(localContext, 2);
                 {
-                this.state = 238;
+                this.state = 266;
                 this.tagRuleMarker();
                 }
                 break;
             case 3:
                 this.enterOuterAlt(localContext, 3);
                 {
-                this.state = 239;
+                this.state = 267;
                 this.tagBareBracket();
                 }
                 break;
             case 4:
                 this.enterOuterAlt(localContext, 4);
                 {
-                this.state = 240;
+                this.state = 268;
                 this.tagShapedBracket();
                 }
                 break;
             case 5:
                 this.enterOuterAlt(localContext, 5);
                 {
-                this.state = 241;
+                this.state = 269;
                 this.tagProseBracket();
                 }
                 break;
             case 6:
                 this.enterOuterAlt(localContext, 6);
                 {
-                this.state = 242;
+                this.state = 270;
                 _la = this.tokenStream.LA(1);
                 if(_la<=0 || _la === 1) {
                 this.errorHandler.recoverInline(this);
@@ -1041,15 +1078,15 @@ export class MdTemplateParser extends antlr.Parser {
         try {
             this.enterOuterAlt(localContext, 1);
             {
-            this.state = 245;
+            this.state = 273;
             this.match(MdTemplateParser.FENCE_OPEN);
-            this.state = 249;
+            this.state = 277;
             this.errorHandler.sync(this);
             _la = this.tokenStream.LA(1);
             while (_la === 13 || _la === 14) {
                 {
                 {
-                this.state = 246;
+                this.state = 274;
                 _la = this.tokenStream.LA(1);
                 if(!(_la === 13 || _la === 14)) {
                 this.errorHandler.recoverInline(this);
@@ -1060,16 +1097,16 @@ export class MdTemplateParser extends antlr.Parser {
                 }
                 }
                 }
-                this.state = 251;
+                this.state = 279;
                 this.errorHandler.sync(this);
                 _la = this.tokenStream.LA(1);
             }
-            this.state = 253;
+            this.state = 281;
             this.errorHandler.sync(this);
             _la = this.tokenStream.LA(1);
             if (_la === 15) {
                 {
-                this.state = 252;
+                this.state = 280;
                 this.match(MdTemplateParser.FENCE_CLOSE);
                 }
             }
@@ -1095,7 +1132,7 @@ export class MdTemplateParser extends antlr.Parser {
         try {
             this.enterOuterAlt(localContext, 1);
             {
-            this.state = 255;
+            this.state = 283;
             this.match(MdTemplateParser.BODY_TABLE_ROW);
             }
         }
@@ -1118,7 +1155,7 @@ export class MdTemplateParser extends antlr.Parser {
         try {
             this.enterOuterAlt(localContext, 1);
             {
-            this.state = 257;
+            this.state = 285;
             this.match(MdTemplateParser.BODY_LIST_ITEM);
             }
         }
@@ -1141,7 +1178,7 @@ export class MdTemplateParser extends antlr.Parser {
         try {
             this.enterOuterAlt(localContext, 1);
             {
-            this.state = 259;
+            this.state = 287;
             this.match(MdTemplateParser.BODY_HTML_COMMENT);
             }
         }
@@ -1164,7 +1201,7 @@ export class MdTemplateParser extends antlr.Parser {
         try {
             this.enterOuterAlt(localContext, 1);
             {
-            this.state = 261;
+            this.state = 289;
             this.match(MdTemplateParser.BODY_BLANK);
             }
         }
@@ -1188,19 +1225,19 @@ export class MdTemplateParser extends antlr.Parser {
         try {
             this.enterOuterAlt(localContext, 1);
             {
-            this.state = 263;
+            this.state = 291;
             this.match(MdTemplateParser.BODY_TEXT_START);
-            this.state = 265;
+            this.state = 293;
             this.errorHandler.sync(this);
             _la = this.tokenStream.LA(1);
             if (_la === 21) {
                 {
-                this.state = 264;
+                this.state = 292;
                 this.match(MdTemplateParser.BODY_TEXT_REST);
                 }
             }
 
-            this.state = 267;
+            this.state = 295;
             this.match(MdTemplateParser.NL);
             }
         }
@@ -1224,21 +1261,21 @@ export class MdTemplateParser extends antlr.Parser {
         try {
             this.enterOuterAlt(localContext, 1);
             {
-            this.state = 272;
+            this.state = 300;
             this.errorHandler.sync(this);
             _la = this.tokenStream.LA(1);
-            while ((((_la) & ~0x1F) === 0 && ((1 << _la) & 4294967292) !== 0) || ((((_la - 32)) & ~0x1F) === 0 && ((1 << (_la - 32)) & 4294967295) !== 0) || ((((_la - 64)) & ~0x1F) === 0 && ((1 << (_la - 64)) & 33554431) !== 0)) {
+            while ((((_la) & ~0x1F) === 0 && ((1 << _la) & 4294967292) !== 0) || ((((_la - 32)) & ~0x1F) === 0 && ((1 << (_la - 32)) & 4294967295) !== 0) || ((((_la - 64)) & ~0x1F) === 0 && ((1 << (_la - 64)) & 4294967295) !== 0) || ((((_la - 96)) & ~0x1F) === 0 && ((1 << (_la - 96)) & 255) !== 0)) {
                 {
                 {
-                this.state = 269;
+                this.state = 297;
                 this.fmCommentItem();
                 }
                 }
-                this.state = 274;
+                this.state = 302;
                 this.errorHandler.sync(this);
                 _la = this.tokenStream.LA(1);
             }
-            this.state = 275;
+            this.state = 303;
             this.match(MdTemplateParser.EOF);
             }
         }
@@ -1261,9 +1298,9 @@ export class MdTemplateParser extends antlr.Parser {
         try {
             this.enterOuterAlt(localContext, 1);
             {
-            this.state = 277;
+            this.state = 305;
             this.fmFilenameLine();
-            this.state = 278;
+            this.state = 306;
             this.match(MdTemplateParser.EOF);
             }
         }
@@ -1287,21 +1324,21 @@ export class MdTemplateParser extends antlr.Parser {
         try {
             this.enterOuterAlt(localContext, 1);
             {
-            this.state = 283;
+            this.state = 311;
             this.errorHandler.sync(this);
             _la = this.tokenStream.LA(1);
-            while ((((_la) & ~0x1F) === 0 && ((1 << _la) & 4294967292) !== 0) || ((((_la - 32)) & ~0x1F) === 0 && ((1 << (_la - 32)) & 4294967295) !== 0) || ((((_la - 64)) & ~0x1F) === 0 && ((1 << (_la - 64)) & 33554431) !== 0)) {
+            while ((((_la) & ~0x1F) === 0 && ((1 << _la) & 4294967292) !== 0) || ((((_la - 32)) & ~0x1F) === 0 && ((1 << (_la - 32)) & 4294967295) !== 0) || ((((_la - 64)) & ~0x1F) === 0 && ((1 << (_la - 64)) & 4294967295) !== 0) || ((((_la - 96)) & ~0x1F) === 0 && ((1 << (_la - 96)) & 255) !== 0)) {
                 {
                 {
-                this.state = 280;
+                this.state = 308;
                 this.bodyHeadingItem();
                 }
                 }
-                this.state = 285;
+                this.state = 313;
                 this.errorHandler.sync(this);
                 _la = this.tokenStream.LA(1);
             }
-            this.state = 286;
+            this.state = 314;
             this.match(MdTemplateParser.EOF);
             }
         }
@@ -1324,34 +1361,34 @@ export class MdTemplateParser extends antlr.Parser {
         let _la: number;
         try {
             let alternative: number;
-            this.state = 319;
+            this.state = 347;
             this.errorHandler.sync(this);
             switch (this.interpreter.adaptivePredict(this.tokenStream, 26, this.context) ) {
             case 1:
                 localContext = new TagShapedCandidateContext(localContext);
                 this.enterOuterAlt(localContext, 1);
                 {
-                this.state = 288;
+                this.state = 316;
                 this.match(MdTemplateParser.LBRACK);
-                this.state = 289;
+                this.state = 317;
                 this.tagWord();
-                this.state = 290;
+                this.state = 318;
                 this.match(MdTemplateParser.COLON);
-                this.state = 294;
+                this.state = 322;
                 this.errorHandler.sync(this);
                 _la = this.tokenStream.LA(1);
                 while ((((_la) & ~0x1F) === 0 && ((1 << _la) & 1584) !== 0) || ((((_la - 37)) & ~0x1F) === 0 && ((1 << (_la - 37)) & 383) !== 0)) {
                     {
                     {
-                    this.state = 291;
+                    this.state = 319;
                     this.tagShapePiece();
                     }
                     }
-                    this.state = 296;
+                    this.state = 324;
                     this.errorHandler.sync(this);
                     _la = this.tokenStream.LA(1);
                 }
-                this.state = 297;
+                this.state = 325;
                 this.match(MdTemplateParser.RBRACK);
                 }
                 break;
@@ -1359,27 +1396,27 @@ export class MdTemplateParser extends antlr.Parser {
                 localContext = new TagClosedCandidateContext(localContext);
                 this.enterOuterAlt(localContext, 2);
                 {
-                this.state = 299;
+                this.state = 327;
                 this.match(MdTemplateParser.LBRACK);
-                this.state = 300;
+                this.state = 328;
                 this.tagWord();
-                this.state = 301;
+                this.state = 329;
                 this.match(MdTemplateParser.COLON);
-                this.state = 305;
+                this.state = 333;
                 this.errorHandler.sync(this);
                 _la = this.tokenStream.LA(1);
-                while ((((_la) & ~0x1F) === 0 && ((1 << _la) & 4294967284) !== 0) || ((((_la - 32)) & ~0x1F) === 0 && ((1 << (_la - 32)) & 4294967295) !== 0) || ((((_la - 64)) & ~0x1F) === 0 && ((1 << (_la - 64)) & 33554431) !== 0)) {
+                while ((((_la) & ~0x1F) === 0 && ((1 << _la) & 4294967284) !== 0) || ((((_la - 32)) & ~0x1F) === 0 && ((1 << (_la - 32)) & 4294967295) !== 0) || ((((_la - 64)) & ~0x1F) === 0 && ((1 << (_la - 64)) & 4294967295) !== 0) || ((((_la - 96)) & ~0x1F) === 0 && ((1 << (_la - 96)) & 255) !== 0)) {
                     {
                     {
-                    this.state = 302;
+                    this.state = 330;
                     this.tagBracketItem();
                     }
                     }
-                    this.state = 307;
+                    this.state = 335;
                     this.errorHandler.sync(this);
                     _la = this.tokenStream.LA(1);
                 }
-                this.state = 308;
+                this.state = 336;
                 this.match(MdTemplateParser.RBRACK);
                 }
                 break;
@@ -1387,25 +1424,25 @@ export class MdTemplateParser extends antlr.Parser {
                 localContext = new TagUnclosedCandidateContext(localContext);
                 this.enterOuterAlt(localContext, 3);
                 {
-                this.state = 310;
+                this.state = 338;
                 this.match(MdTemplateParser.LBRACK);
-                this.state = 311;
+                this.state = 339;
                 this.tagWord();
-                this.state = 312;
+                this.state = 340;
                 this.match(MdTemplateParser.COLON);
-                this.state = 316;
+                this.state = 344;
                 this.errorHandler.sync(this);
                 alternative = this.interpreter.adaptivePredict(this.tokenStream, 25, this.context);
                 while (alternative !== 2 && alternative !== antlr.ATN.INVALID_ALT_NUMBER) {
                     if (alternative === 1) {
                         {
                         {
-                        this.state = 313;
+                        this.state = 341;
                         this.tagBracketItem();
                         }
                         }
                     }
-                    this.state = 318;
+                    this.state = 346;
                     this.errorHandler.sync(this);
                     alternative = this.interpreter.adaptivePredict(this.tokenStream, 25, this.context);
                 }
@@ -1432,11 +1469,11 @@ export class MdTemplateParser extends antlr.Parser {
         try {
             this.enterOuterAlt(localContext, 1);
             {
-            this.state = 321;
+            this.state = 349;
             this.match(MdTemplateParser.LBRACK);
-            this.state = 322;
+            this.state = 350;
             this.match(MdTemplateParser.RULE);
-            this.state = 323;
+            this.state = 351;
             this.match(MdTemplateParser.RBRACK);
             }
         }
@@ -1459,11 +1496,11 @@ export class MdTemplateParser extends antlr.Parser {
         try {
             this.enterOuterAlt(localContext, 1);
             {
-            this.state = 325;
+            this.state = 353;
             this.match(MdTemplateParser.LBRACK);
-            this.state = 326;
+            this.state = 354;
             this.tagHintName();
-            this.state = 327;
+            this.state = 355;
             this.match(MdTemplateParser.RBRACK);
             }
         }
@@ -1487,23 +1524,23 @@ export class MdTemplateParser extends antlr.Parser {
         try {
             this.enterOuterAlt(localContext, 1);
             {
-            this.state = 329;
+            this.state = 357;
             this.match(MdTemplateParser.LBRACK);
-            this.state = 331;
+            this.state = 359;
             this.errorHandler.sync(this);
             _la = this.tokenStream.LA(1);
             do {
                 {
                 {
-                this.state = 330;
+                this.state = 358;
                 this.tagShapePiece();
                 }
                 }
-                this.state = 333;
+                this.state = 361;
                 this.errorHandler.sync(this);
                 _la = this.tokenStream.LA(1);
             } while ((((_la) & ~0x1F) === 0 && ((1 << _la) & 1584) !== 0) || ((((_la - 37)) & ~0x1F) === 0 && ((1 << (_la - 37)) & 383) !== 0));
-            this.state = 335;
+            this.state = 363;
             this.match(MdTemplateParser.RBRACK);
             }
         }
@@ -1527,23 +1564,23 @@ export class MdTemplateParser extends antlr.Parser {
         try {
             this.enterOuterAlt(localContext, 1);
             {
-            this.state = 337;
+            this.state = 365;
             this.match(MdTemplateParser.LBRACK);
-            this.state = 341;
+            this.state = 369;
             this.errorHandler.sync(this);
             _la = this.tokenStream.LA(1);
-            while ((((_la) & ~0x1F) === 0 && ((1 << _la) & 4294967284) !== 0) || ((((_la - 32)) & ~0x1F) === 0 && ((1 << (_la - 32)) & 4294967295) !== 0) || ((((_la - 64)) & ~0x1F) === 0 && ((1 << (_la - 64)) & 33554431) !== 0)) {
+            while ((((_la) & ~0x1F) === 0 && ((1 << _la) & 4294967284) !== 0) || ((((_la - 32)) & ~0x1F) === 0 && ((1 << (_la - 32)) & 4294967295) !== 0) || ((((_la - 64)) & ~0x1F) === 0 && ((1 << (_la - 64)) & 4294967295) !== 0) || ((((_la - 96)) & ~0x1F) === 0 && ((1 << (_la - 96)) & 255) !== 0)) {
                 {
                 {
-                this.state = 338;
+                this.state = 366;
                 this.tagBracketItem();
                 }
                 }
-                this.state = 343;
+                this.state = 371;
                 this.errorHandler.sync(this);
                 _la = this.tokenStream.LA(1);
             }
-            this.state = 344;
+            this.state = 372;
             this.match(MdTemplateParser.RBRACK);
             }
         }
@@ -1565,20 +1602,20 @@ export class MdTemplateParser extends antlr.Parser {
         this.enterRule(localContext, 62, MdTemplateParser.RULE_tagBracketItem);
         let _la: number;
         try {
-            this.state = 348;
+            this.state = 376;
             this.errorHandler.sync(this);
             switch (this.interpreter.adaptivePredict(this.tokenStream, 29, this.context) ) {
             case 1:
                 this.enterOuterAlt(localContext, 1);
                 {
-                this.state = 346;
+                this.state = 374;
                 this.tagTypeEq();
                 }
                 break;
             case 2:
                 this.enterOuterAlt(localContext, 2);
                 {
-                this.state = 347;
+                this.state = 375;
                 _la = this.tokenStream.LA(1);
                 if(_la<=0 || _la === 1 || _la === 3) {
                 this.errorHandler.recoverInline(this);
@@ -1611,31 +1648,31 @@ export class MdTemplateParser extends antlr.Parser {
         try {
             this.enterOuterAlt(localContext, 1);
             {
-            this.state = 350;
+            this.state = 378;
             this.match(MdTemplateParser.TYPE);
-            this.state = 352;
+            this.state = 380;
             this.errorHandler.sync(this);
             _la = this.tokenStream.LA(1);
             if (_la === 7) {
                 {
-                this.state = 351;
+                this.state = 379;
                 this.match(MdTemplateParser.WS);
                 }
             }
 
-            this.state = 354;
+            this.state = 382;
             this.match(MdTemplateParser.EQ);
-            this.state = 356;
+            this.state = 384;
             this.errorHandler.sync(this);
             _la = this.tokenStream.LA(1);
             if (_la === 7) {
                 {
-                this.state = 355;
+                this.state = 383;
                 this.match(MdTemplateParser.WS);
                 }
             }
 
-            this.state = 358;
+            this.state = 386;
             this.tagHintName();
             }
         }
@@ -1659,7 +1696,7 @@ export class MdTemplateParser extends antlr.Parser {
             let alternative: number;
             this.enterOuterAlt(localContext, 1);
             {
-            this.state = 361;
+            this.state = 389;
             this.errorHandler.sync(this);
             alternative = 1;
             do {
@@ -1667,7 +1704,7 @@ export class MdTemplateParser extends antlr.Parser {
                 case 1:
                     {
                     {
-                    this.state = 360;
+                    this.state = 388;
                     this.tagHintPiece();
                     }
                     }
@@ -1675,7 +1712,7 @@ export class MdTemplateParser extends antlr.Parser {
                 default:
                     throw new antlr.NoViableAltException(this);
                 }
-                this.state = 363;
+                this.state = 391;
                 this.errorHandler.sync(this);
                 alternative = this.interpreter.adaptivePredict(this.tokenStream, 32, this.context);
             } while (alternative !== 2 && alternative !== antlr.ATN.INVALID_ALT_NUMBER);
@@ -1698,7 +1735,7 @@ export class MdTemplateParser extends antlr.Parser {
         let localContext = new TagHintPieceContext(this.context, this.state);
         this.enterRule(localContext, 68, MdTemplateParser.RULE_tagHintPiece);
         try {
-            this.state = 368;
+            this.state = 396;
             this.errorHandler.sync(this);
             switch (this.tokenStream.LA(1)) {
             case MdTemplateParser.NUMBER:
@@ -1713,21 +1750,21 @@ export class MdTemplateParser extends antlr.Parser {
             case MdTemplateParser.WORD:
                 this.enterOuterAlt(localContext, 1);
                 {
-                this.state = 365;
+                this.state = 393;
                 this.tagWord();
                 }
                 break;
             case MdTemplateParser.UWORD:
                 this.enterOuterAlt(localContext, 2);
                 {
-                this.state = 366;
+                this.state = 394;
                 this.match(MdTemplateParser.UWORD);
                 }
                 break;
             case MdTemplateParser.DASH:
                 this.enterOuterAlt(localContext, 3);
                 {
-                this.state = 367;
+                this.state = 395;
                 this.match(MdTemplateParser.DASH);
                 }
                 break;
@@ -1752,7 +1789,7 @@ export class MdTemplateParser extends antlr.Parser {
         let localContext = new TagShapePieceContext(this.context, this.state);
         this.enterRule(localContext, 70, MdTemplateParser.RULE_tagShapePiece);
         try {
-            this.state = 373;
+            this.state = 401;
             this.errorHandler.sync(this);
             switch (this.tokenStream.LA(1)) {
             case MdTemplateParser.NUMBER:
@@ -1767,21 +1804,21 @@ export class MdTemplateParser extends antlr.Parser {
             case MdTemplateParser.WORD:
                 this.enterOuterAlt(localContext, 1);
                 {
-                this.state = 370;
+                this.state = 398;
                 this.tagWord();
                 }
                 break;
             case MdTemplateParser.DASH:
                 this.enterOuterAlt(localContext, 2);
                 {
-                this.state = 371;
+                this.state = 399;
                 this.match(MdTemplateParser.DASH);
                 }
                 break;
             case MdTemplateParser.COLON:
                 this.enterOuterAlt(localContext, 3);
                 {
-                this.state = 372;
+                this.state = 400;
                 this.match(MdTemplateParser.COLON);
                 }
                 break;
@@ -1809,7 +1846,7 @@ export class MdTemplateParser extends antlr.Parser {
         try {
             this.enterOuterAlt(localContext, 1);
             {
-            this.state = 375;
+            this.state = 403;
             _la = this.tokenStream.LA(1);
             if(!(_la === 9 || _la === 10 || ((((_la - 37)) & ~0x1F) === 0 && ((1 << (_la - 37)) & 383) !== 0))) {
             this.errorHandler.recoverInline(this);
@@ -1839,11 +1876,11 @@ export class MdTemplateParser extends antlr.Parser {
         try {
             this.enterOuterAlt(localContext, 1);
             {
-            this.state = 377;
+            this.state = 405;
             this.match(MdTemplateParser.LBRACK);
-            this.state = 378;
+            this.state = 406;
             this.tagFamily();
-            this.state = 379;
+            this.state = 407;
             this.match(MdTemplateParser.COLON);
             }
         }
@@ -1867,7 +1904,7 @@ export class MdTemplateParser extends antlr.Parser {
         try {
             this.enterOuterAlt(localContext, 1);
             {
-            this.state = 381;
+            this.state = 409;
             _la = this.tokenStream.LA(1);
             if(!(((((_la - 51)) & ~0x1F) === 0 && ((1 << (_la - 51)) & 1021) !== 0))) {
             this.errorHandler.recoverInline(this);
@@ -1898,12 +1935,12 @@ export class MdTemplateParser extends antlr.Parser {
         try {
             this.enterOuterAlt(localContext, 1);
             {
-            this.state = 384;
+            this.state = 412;
             this.errorHandler.sync(this);
             _la = this.tokenStream.LA(1);
             if (_la === 81) {
                 {
-                this.state = 383;
+                this.state = 411;
                 this.match(MdTemplateParser.FREE_TEXT);
                 }
             }
@@ -1929,13 +1966,13 @@ export class MdTemplateParser extends antlr.Parser {
         try {
             this.enterOuterAlt(localContext, 1);
             {
-            this.state = 386;
+            this.state = 414;
             this.match(MdTemplateParser.LBRACK);
-            this.state = 387;
+            this.state = 415;
             this.fmTagBody();
-            this.state = 388;
+            this.state = 416;
             this.match(MdTemplateParser.RBRACK);
-            this.state = 389;
+            this.state = 417;
             this.match(MdTemplateParser.EOF);
             }
         }
@@ -1956,62 +1993,62 @@ export class MdTemplateParser extends antlr.Parser {
         let localContext = new FmTagBodyContext(this.context, this.state);
         this.enterRule(localContext, 82, MdTemplateParser.RULE_fmTagBody);
         try {
-            this.state = 399;
+            this.state = 427;
             this.errorHandler.sync(this);
             switch (this.tokenStream.LA(1)) {
             case MdTemplateParser.PRESENCE:
                 this.enterOuterAlt(localContext, 1);
                 {
-                this.state = 391;
+                this.state = 419;
                 this.fmPresenceTag();
                 }
                 break;
             case MdTemplateParser.FORMAT:
                 this.enterOuterAlt(localContext, 2);
                 {
-                this.state = 392;
+                this.state = 420;
                 this.fmFormatTag();
                 }
                 break;
             case MdTemplateParser.VALUE:
                 this.enterOuterAlt(localContext, 3);
                 {
-                this.state = 393;
+                this.state = 421;
                 this.fmValueTag();
                 }
                 break;
             case MdTemplateParser.COUNT:
                 this.enterOuterAlt(localContext, 4);
                 {
-                this.state = 394;
+                this.state = 422;
                 this.fmCountTag();
                 }
                 break;
             case MdTemplateParser.RANGE:
                 this.enterOuterAlt(localContext, 5);
                 {
-                this.state = 395;
+                this.state = 423;
                 this.fmRangeTag();
                 }
                 break;
             case MdTemplateParser.ORDER:
                 this.enterOuterAlt(localContext, 6);
                 {
-                this.state = 396;
+                this.state = 424;
                 this.fmOrderTag();
                 }
                 break;
             case MdTemplateParser.IO:
                 this.enterOuterAlt(localContext, 7);
                 {
-                this.state = 397;
+                this.state = 425;
                 this.fmIoTag();
                 }
                 break;
             case MdTemplateParser.FILENAME_CS:
                 this.enterOuterAlt(localContext, 8);
                 {
-                this.state = 398;
+                this.state = 426;
                 this.fmFilenameTag();
                 }
                 break;
@@ -2038,30 +2075,30 @@ export class MdTemplateParser extends antlr.Parser {
         try {
             this.enterOuterAlt(localContext, 1);
             {
-            this.state = 401;
+            this.state = 429;
             this.match(MdTemplateParser.PRESENCE);
-            this.state = 402;
+            this.state = 430;
             this.match(MdTemplateParser.COLON);
-            this.state = 407;
+            this.state = 435;
             this.errorHandler.sync(this);
             switch (this.tokenStream.LA(1)) {
             case MdTemplateParser.REQUIRED:
                 {
-                this.state = 403;
+                this.state = 431;
                 this.match(MdTemplateParser.REQUIRED);
                 }
                 break;
             case MdTemplateParser.OPTIONAL:
                 {
-                this.state = 404;
+                this.state = 432;
                 this.match(MdTemplateParser.OPTIONAL);
                 }
                 break;
             case MdTemplateParser.CONDITIONAL_ARG:
                 {
-                this.state = 405;
+                this.state = 433;
                 this.match(MdTemplateParser.CONDITIONAL_ARG);
-                this.state = 406;
+                this.state = 434;
                 this.tagFreeText();
                 }
                 break;
@@ -2089,18 +2126,18 @@ export class MdTemplateParser extends antlr.Parser {
         try {
             this.enterOuterAlt(localContext, 1);
             {
-            this.state = 409;
+            this.state = 437;
             this.match(MdTemplateParser.FORMAT);
-            this.state = 410;
+            this.state = 438;
             this.match(MdTemplateParser.COLON);
-            this.state = 419;
+            this.state = 447;
             this.errorHandler.sync(this);
             switch (this.tokenStream.LA(1)) {
             case MdTemplateParser.CONSTANT_ARG:
                 {
-                this.state = 411;
+                this.state = 439;
                 this.match(MdTemplateParser.CONSTANT_ARG);
-                this.state = 412;
+                this.state = 440;
                 this.tagFreeText();
                 }
                 break;
@@ -2109,25 +2146,25 @@ export class MdTemplateParser extends antlr.Parser {
             case MdTemplateParser.SNAKE_CASE:
             case MdTemplateParser.KEBAB_CASE:
                 {
-                this.state = 413;
+                this.state = 441;
                 this.fmCaseStyle();
                 }
                 break;
             case MdTemplateParser.ELEMENTS:
                 {
-                this.state = 414;
+                this.state = 442;
                 this.match(MdTemplateParser.ELEMENTS);
-                this.state = 415;
+                this.state = 443;
                 this.match(MdTemplateParser.COLON);
-                this.state = 416;
+                this.state = 444;
                 this.fmCaseStyle();
                 }
                 break;
             case MdTemplateParser.SCHEME_ARG:
                 {
-                this.state = 417;
+                this.state = 445;
                 this.match(MdTemplateParser.SCHEME_ARG);
-                this.state = 418;
+                this.state = 446;
                 this.match(MdTemplateParser.SCHEME_TEXT);
                 }
                 break;
@@ -2156,7 +2193,7 @@ export class MdTemplateParser extends antlr.Parser {
         try {
             this.enterOuterAlt(localContext, 1);
             {
-            this.state = 421;
+            this.state = 449;
             _la = this.tokenStream.LA(1);
             if(!(((((_la - 47)) & ~0x1F) === 0 && ((1 << (_la - 47)) & 1572867) !== 0))) {
             this.errorHandler.recoverInline(this);
@@ -2187,11 +2224,11 @@ export class MdTemplateParser extends antlr.Parser {
         try {
             this.enterOuterAlt(localContext, 1);
             {
-            this.state = 423;
+            this.state = 451;
             this.match(MdTemplateParser.VALUE);
-            this.state = 424;
+            this.state = 452;
             this.match(MdTemplateParser.COLON);
-            this.state = 425;
+            this.state = 453;
             _la = this.tokenStream.LA(1);
             if(!(_la === 51 || _la === 68)) {
             this.errorHandler.recoverInline(this);
@@ -2221,15 +2258,15 @@ export class MdTemplateParser extends antlr.Parser {
         try {
             this.enterOuterAlt(localContext, 1);
             {
-            this.state = 427;
+            this.state = 455;
             this.match(MdTemplateParser.COUNT);
-            this.state = 428;
+            this.state = 456;
             this.match(MdTemplateParser.COLON);
-            this.state = 429;
+            this.state = 457;
             this.fmBound();
-            this.state = 430;
+            this.state = 458;
             this.match(MdTemplateParser.COLON);
-            this.state = 431;
+            this.state = 459;
             this.match(MdTemplateParser.NUMBER);
             }
         }
@@ -2252,15 +2289,15 @@ export class MdTemplateParser extends antlr.Parser {
         try {
             this.enterOuterAlt(localContext, 1);
             {
-            this.state = 433;
+            this.state = 461;
             this.match(MdTemplateParser.RANGE);
-            this.state = 434;
+            this.state = 462;
             this.match(MdTemplateParser.COLON);
-            this.state = 435;
+            this.state = 463;
             this.fmBound();
-            this.state = 436;
+            this.state = 464;
             this.match(MdTemplateParser.COLON);
-            this.state = 437;
+            this.state = 465;
             this.fmSignedNumber();
             }
         }
@@ -2284,7 +2321,7 @@ export class MdTemplateParser extends antlr.Parser {
         try {
             this.enterOuterAlt(localContext, 1);
             {
-            this.state = 439;
+            this.state = 467;
             _la = this.tokenStream.LA(1);
             if(!(_la === 69 || _la === 70)) {
             this.errorHandler.recoverInline(this);
@@ -2315,26 +2352,26 @@ export class MdTemplateParser extends antlr.Parser {
         try {
             this.enterOuterAlt(localContext, 1);
             {
-            this.state = 442;
+            this.state = 470;
             this.errorHandler.sync(this);
             _la = this.tokenStream.LA(1);
             if (_la === 5) {
                 {
-                this.state = 441;
+                this.state = 469;
                 this.match(MdTemplateParser.DASH);
                 }
             }
 
-            this.state = 444;
+            this.state = 472;
             this.match(MdTemplateParser.NUMBER);
-            this.state = 447;
+            this.state = 475;
             this.errorHandler.sync(this);
             _la = this.tokenStream.LA(1);
             if (_la === 6) {
                 {
-                this.state = 445;
+                this.state = 473;
                 this.match(MdTemplateParser.DOT);
-                this.state = 446;
+                this.state = 474;
                 this.match(MdTemplateParser.NUMBER);
                 }
             }
@@ -2360,11 +2397,11 @@ export class MdTemplateParser extends antlr.Parser {
         try {
             this.enterOuterAlt(localContext, 1);
             {
-            this.state = 449;
+            this.state = 477;
             this.match(MdTemplateParser.ORDER);
-            this.state = 450;
+            this.state = 478;
             this.match(MdTemplateParser.COLON);
-            this.state = 451;
+            this.state = 479;
             this.match(MdTemplateParser.ASCENDING);
             }
         }
@@ -2387,11 +2424,11 @@ export class MdTemplateParser extends antlr.Parser {
         try {
             this.enterOuterAlt(localContext, 1);
             {
-            this.state = 453;
+            this.state = 481;
             this.match(MdTemplateParser.IO);
-            this.state = 454;
+            this.state = 482;
             this.match(MdTemplateParser.COLON);
-            this.state = 455;
+            this.state = 483;
             this.match(MdTemplateParser.EXISTS);
             }
         }
@@ -2414,15 +2451,15 @@ export class MdTemplateParser extends antlr.Parser {
         try {
             this.enterOuterAlt(localContext, 1);
             {
-            this.state = 457;
+            this.state = 485;
             this.match(MdTemplateParser.FILENAME_CS);
-            this.state = 458;
+            this.state = 486;
             this.match(MdTemplateParser.COLON);
-            this.state = 459;
+            this.state = 487;
             this.match(MdTemplateParser.CASE_CS);
-            this.state = 460;
+            this.state = 488;
             this.match(MdTemplateParser.COLON);
-            this.state = 461;
+            this.state = 489;
             this.fmConvention();
             }
         }
@@ -2446,7 +2483,7 @@ export class MdTemplateParser extends antlr.Parser {
         try {
             this.enterOuterAlt(localContext, 1);
             {
-            this.state = 463;
+            this.state = 491;
             _la = this.tokenStream.LA(1);
             if(!(((((_la - 47)) & ~0x1F) === 0 && ((1 << (_la - 47)) & 15) !== 0))) {
             this.errorHandler.recoverInline(this);
@@ -2476,13 +2513,13 @@ export class MdTemplateParser extends antlr.Parser {
         try {
             this.enterOuterAlt(localContext, 1);
             {
-            this.state = 465;
+            this.state = 493;
             this.match(MdTemplateParser.LBRACK);
-            this.state = 466;
+            this.state = 494;
             this.bodyTagBody();
-            this.state = 467;
+            this.state = 495;
             this.match(MdTemplateParser.RBRACK);
-            this.state = 468;
+            this.state = 496;
             this.match(MdTemplateParser.EOF);
             }
         }
@@ -2503,20 +2540,20 @@ export class MdTemplateParser extends antlr.Parser {
         let localContext = new BodyTagBodyContext(this.context, this.state);
         this.enterRule(localContext, 110, MdTemplateParser.RULE_bodyTagBody);
         try {
-            this.state = 472;
+            this.state = 500;
             this.errorHandler.sync(this);
             switch (this.tokenStream.LA(1)) {
             case MdTemplateParser.PRESENCE:
                 this.enterOuterAlt(localContext, 1);
                 {
-                this.state = 470;
+                this.state = 498;
                 this.bodyPresenceTag();
                 }
                 break;
             case MdTemplateParser.CONTENT:
                 this.enterOuterAlt(localContext, 2);
                 {
-                this.state = 471;
+                this.state = 499;
                 this.bodyContentTag();
                 }
                 break;
@@ -2543,42 +2580,42 @@ export class MdTemplateParser extends antlr.Parser {
         try {
             this.enterOuterAlt(localContext, 1);
             {
-            this.state = 474;
+            this.state = 502;
             this.match(MdTemplateParser.PRESENCE);
-            this.state = 475;
+            this.state = 503;
             this.match(MdTemplateParser.COLON);
-            this.state = 482;
+            this.state = 510;
             this.errorHandler.sync(this);
             switch (this.tokenStream.LA(1)) {
             case MdTemplateParser.REQUIRED:
                 {
-                this.state = 476;
+                this.state = 504;
                 this.match(MdTemplateParser.REQUIRED);
                 }
                 break;
             case MdTemplateParser.OPTIONAL:
                 {
-                this.state = 477;
+                this.state = 505;
                 this.match(MdTemplateParser.OPTIONAL);
                 }
                 break;
             case MdTemplateParser.EXIST:
                 {
-                this.state = 478;
+                this.state = 506;
                 this.match(MdTemplateParser.EXIST);
                 }
                 break;
             case MdTemplateParser.TEMPLATE_ONLY:
                 {
-                this.state = 479;
+                this.state = 507;
                 this.match(MdTemplateParser.TEMPLATE_ONLY);
                 }
                 break;
             case MdTemplateParser.CONDITIONAL_ARG:
                 {
-                this.state = 480;
+                this.state = 508;
                 this.match(MdTemplateParser.CONDITIONAL_ARG);
-                this.state = 481;
+                this.state = 509;
                 this.tagFreeText();
                 }
                 break;
@@ -2606,48 +2643,48 @@ export class MdTemplateParser extends antlr.Parser {
         try {
             this.enterOuterAlt(localContext, 1);
             {
-            this.state = 484;
+            this.state = 512;
             this.match(MdTemplateParser.CONTENT);
-            this.state = 485;
+            this.state = 513;
             this.match(MdTemplateParser.COLON);
-            this.state = 495;
+            this.state = 523;
             this.errorHandler.sync(this);
             switch (this.tokenStream.LA(1)) {
             case MdTemplateParser.NON_EMPTY:
                 {
-                this.state = 486;
+                this.state = 514;
                 this.match(MdTemplateParser.NON_EMPTY);
                 }
                 break;
             case MdTemplateParser.TABLE:
                 {
-                this.state = 487;
+                this.state = 515;
                 this.match(MdTemplateParser.TABLE);
                 }
                 break;
             case MdTemplateParser.LIST:
                 {
-                this.state = 488;
+                this.state = 516;
                 this.match(MdTemplateParser.LIST);
                 }
                 break;
             case MdTemplateParser.MIN_LINES:
                 {
-                this.state = 489;
+                this.state = 517;
                 this.match(MdTemplateParser.MIN_LINES);
-                this.state = 490;
+                this.state = 518;
                 this.match(MdTemplateParser.COLON);
-                this.state = 491;
+                this.state = 519;
                 this.match(MdTemplateParser.NUMBER);
                 }
                 break;
             case MdTemplateParser.MAX_LINES:
                 {
-                this.state = 492;
+                this.state = 520;
                 this.match(MdTemplateParser.MAX_LINES);
-                this.state = 493;
+                this.state = 521;
                 this.match(MdTemplateParser.COLON);
-                this.state = 494;
+                this.state = 522;
                 this.match(MdTemplateParser.NUMBER);
                 }
                 break;
@@ -2669,187 +2706,837 @@ export class MdTemplateParser extends antlr.Parser {
         }
         return localContext;
     }
+    public directiveScanEntry(): DirectiveScanEntryContext {
+        let localContext = new DirectiveScanEntryContext(this.context, this.state);
+        this.enterRule(localContext, 116, MdTemplateParser.RULE_directiveScanEntry);
+        let _la: number;
+        try {
+            this.enterOuterAlt(localContext, 1);
+            {
+            this.state = 528;
+            this.errorHandler.sync(this);
+            _la = this.tokenStream.LA(1);
+            while (_la === 1 || ((((_la - 83)) & ~0x1F) === 0 && ((1 << (_la - 83)) & 31) !== 0)) {
+                {
+                {
+                this.state = 525;
+                this.directiveScanLine();
+                }
+                }
+                this.state = 530;
+                this.errorHandler.sync(this);
+                _la = this.tokenStream.LA(1);
+            }
+            this.state = 531;
+            this.match(MdTemplateParser.EOF);
+            }
+        }
+        catch (re) {
+            if (re instanceof antlr.RecognitionException) {
+                this.errorHandler.reportError(this, re);
+                this.errorHandler.recover(this, re);
+            } else {
+                throw re;
+            }
+        }
+        finally {
+            this.exitRule();
+        }
+        return localContext;
+    }
+    public directiveScanLine(): DirectiveScanLineContext {
+        let localContext = new DirectiveScanLineContext(this.context, this.state);
+        this.enterRule(localContext, 118, MdTemplateParser.RULE_directiveScanLine);
+        let _la: number;
+        try {
+            this.enterOuterAlt(localContext, 1);
+            {
+            this.state = 536;
+            this.errorHandler.sync(this);
+            _la = this.tokenStream.LA(1);
+            while (((((_la - 83)) & ~0x1F) === 0 && ((1 << (_la - 83)) & 31) !== 0)) {
+                {
+                {
+                this.state = 533;
+                this.directiveScanItem();
+                }
+                }
+                this.state = 538;
+                this.errorHandler.sync(this);
+                _la = this.tokenStream.LA(1);
+            }
+            this.state = 539;
+            this.match(MdTemplateParser.NL);
+            }
+        }
+        catch (re) {
+            if (re instanceof antlr.RecognitionException) {
+                this.errorHandler.reportError(this, re);
+                this.errorHandler.recover(this, re);
+            } else {
+                throw re;
+            }
+        }
+        finally {
+            this.exitRule();
+        }
+        return localContext;
+    }
+    public directiveScanItem(): DirectiveScanItemContext {
+        let localContext = new DirectiveScanItemContext(this.context, this.state);
+        this.enterRule(localContext, 120, MdTemplateParser.RULE_directiveScanItem);
+        let _la: number;
+        try {
+            this.enterOuterAlt(localContext, 1);
+            {
+            this.state = 541;
+            _la = this.tokenStream.LA(1);
+            if(!(((((_la - 83)) & ~0x1F) === 0 && ((1 << (_la - 83)) & 31) !== 0))) {
+            this.errorHandler.recoverInline(this);
+            }
+            else {
+                this.errorHandler.reportMatch(this);
+                this.consume();
+            }
+            }
+        }
+        catch (re) {
+            if (re instanceof antlr.RecognitionException) {
+                this.errorHandler.reportError(this, re);
+                this.errorHandler.recover(this, re);
+            } else {
+                throw re;
+            }
+        }
+        finally {
+            this.exitRule();
+        }
+        return localContext;
+    }
+    public directiveEntry(): DirectiveEntryContext {
+        let localContext = new DirectiveEntryContext(this.context, this.state);
+        this.enterRule(localContext, 122, MdTemplateParser.RULE_directiveEntry);
+        let _la: number;
+        try {
+            this.state = 552;
+            this.errorHandler.sync(this);
+            switch (this.interpreter.adaptivePredict(this.tokenStream, 47, this.context) ) {
+            case 1:
+                this.enterOuterAlt(localContext, 1);
+                {
+                this.state = 544;
+                this.errorHandler.sync(this);
+                _la = this.tokenStream.LA(1);
+                if (_la === 7) {
+                    {
+                    this.state = 543;
+                    this.match(MdTemplateParser.WS);
+                    }
+                }
+
+                this.state = 546;
+                this.directive();
+                this.state = 547;
+                this.match(MdTemplateParser.EOF);
+                }
+                break;
+            case 2:
+                this.enterOuterAlt(localContext, 2);
+                {
+                this.state = 549;
+                this.directiveProse();
+                this.state = 550;
+                this.match(MdTemplateParser.EOF);
+                }
+                break;
+            }
+        }
+        catch (re) {
+            if (re instanceof antlr.RecognitionException) {
+                this.errorHandler.reportError(this, re);
+                this.errorHandler.recover(this, re);
+            } else {
+                throw re;
+            }
+        }
+        finally {
+            this.exitRule();
+        }
+        return localContext;
+    }
+    public directive(): DirectiveContext {
+        let localContext = new DirectiveContext(this.context, this.state);
+        this.enterRule(localContext, 124, MdTemplateParser.RULE_directive);
+        let _la: number;
+        try {
+            this.enterOuterAlt(localContext, 1);
+            {
+            this.state = 554;
+            this.match(MdTemplateParser.DIR_KEYWORD);
+            this.state = 560;
+            this.errorHandler.sync(this);
+            _la = this.tokenStream.LA(1);
+            if (_la === 7) {
+                {
+                this.state = 555;
+                this.match(MdTemplateParser.WS);
+                this.state = 557;
+                this.errorHandler.sync(this);
+                switch (this.interpreter.adaptivePredict(this.tokenStream, 48, this.context) ) {
+                case 1:
+                    {
+                    this.state = 556;
+                    this.directiveHead();
+                    }
+                    break;
+                }
+                this.state = 559;
+                this.directiveArgs();
+                }
+            }
+
+            }
+        }
+        catch (re) {
+            if (re instanceof antlr.RecognitionException) {
+                this.errorHandler.reportError(this, re);
+                this.errorHandler.recover(this, re);
+            } else {
+                throw re;
+            }
+        }
+        finally {
+            this.exitRule();
+        }
+        return localContext;
+    }
+    public directiveHead(): DirectiveHeadContext {
+        let localContext = new DirectiveHeadContext(this.context, this.state);
+        this.enterRule(localContext, 126, MdTemplateParser.RULE_directiveHead);
+        try {
+            this.state = 567;
+            this.errorHandler.sync(this);
+            switch (this.interpreter.adaptivePredict(this.tokenStream, 50, this.context) ) {
+            case 1:
+                this.enterOuterAlt(localContext, 1);
+                {
+                this.state = 562;
+                this.directiveVerb();
+                }
+                break;
+            case 2:
+                this.enterOuterAlt(localContext, 2);
+                {
+                this.state = 563;
+                this.directiveUnknown();
+                }
+                break;
+            case 3:
+                this.enterOuterAlt(localContext, 3);
+                {
+                this.state = 564;
+                this.directiveSep();
+                this.state = 565;
+                this.directiveMisplaced();
+                }
+                break;
+            }
+        }
+        catch (re) {
+            if (re instanceof antlr.RecognitionException) {
+                this.errorHandler.reportError(this, re);
+                this.errorHandler.recover(this, re);
+            } else {
+                throw re;
+            }
+        }
+        finally {
+            this.exitRule();
+        }
+        return localContext;
+    }
+    public directiveMisplaced(): DirectiveMisplacedContext {
+        let localContext = new DirectiveMisplacedContext(this.context, this.state);
+        this.enterRule(localContext, 128, MdTemplateParser.RULE_directiveMisplaced);
+        try {
+            this.enterOuterAlt(localContext, 1);
+            {
+            this.state = 569;
+            this.directiveItem();
+            }
+        }
+        catch (re) {
+            if (re instanceof antlr.RecognitionException) {
+                this.errorHandler.reportError(this, re);
+                this.errorHandler.recover(this, re);
+            } else {
+                throw re;
+            }
+        }
+        finally {
+            this.exitRule();
+        }
+        return localContext;
+    }
+    public directiveVerb(): DirectiveVerbContext {
+        let localContext = new DirectiveVerbContext(this.context, this.state);
+        this.enterRule(localContext, 130, MdTemplateParser.RULE_directiveVerb);
+        try {
+            this.state = 581;
+            this.errorHandler.sync(this);
+            switch (this.tokenStream.LA(1)) {
+            case MdTemplateParser.DIR_DISABLE:
+                this.enterOuterAlt(localContext, 1);
+                {
+                this.state = 571;
+                this.match(MdTemplateParser.DIR_DISABLE);
+                }
+                break;
+            case MdTemplateParser.DIR_DISABLE_LINE:
+                this.enterOuterAlt(localContext, 2);
+                {
+                this.state = 572;
+                this.match(MdTemplateParser.DIR_DISABLE_LINE);
+                }
+                break;
+            case MdTemplateParser.DIR_DISABLE_NEXT_LINE:
+                this.enterOuterAlt(localContext, 3);
+                {
+                this.state = 573;
+                this.match(MdTemplateParser.DIR_DISABLE_NEXT_LINE);
+                }
+                break;
+            case MdTemplateParser.DIR_DISABLE_FILE:
+                this.enterOuterAlt(localContext, 4);
+                {
+                this.state = 574;
+                this.match(MdTemplateParser.DIR_DISABLE_FILE);
+                }
+                break;
+            case MdTemplateParser.DIR_BEGIN:
+                this.enterOuterAlt(localContext, 5);
+                {
+                this.state = 575;
+                this.match(MdTemplateParser.DIR_BEGIN);
+                this.state = 576;
+                this.match(MdTemplateParser.WS);
+                this.state = 577;
+                this.match(MdTemplateParser.DIR_DISABLE);
+                }
+                break;
+            case MdTemplateParser.DIR_END:
+                this.enterOuterAlt(localContext, 6);
+                {
+                this.state = 578;
+                this.match(MdTemplateParser.DIR_END);
+                this.state = 579;
+                this.match(MdTemplateParser.WS);
+                this.state = 580;
+                this.match(MdTemplateParser.DIR_DISABLE);
+                }
+                break;
+            default:
+                throw new antlr.NoViableAltException(this);
+            }
+        }
+        catch (re) {
+            if (re instanceof antlr.RecognitionException) {
+                this.errorHandler.reportError(this, re);
+                this.errorHandler.recover(this, re);
+            } else {
+                throw re;
+            }
+        }
+        finally {
+            this.exitRule();
+        }
+        return localContext;
+    }
+    public directiveUnknown(): DirectiveUnknownContext {
+        let localContext = new DirectiveUnknownContext(this.context, this.state);
+        this.enterRule(localContext, 132, MdTemplateParser.RULE_directiveUnknown);
+        let _la: number;
+        try {
+            this.enterOuterAlt(localContext, 1);
+            {
+            this.state = 583;
+            _la = this.tokenStream.LA(1);
+            if(!(((((_la - 88)) & ~0x1F) === 0 && ((1 << (_la - 88)) & 609) !== 0))) {
+            this.errorHandler.recoverInline(this);
+            }
+            else {
+                this.errorHandler.reportMatch(this);
+                this.consume();
+            }
+            }
+        }
+        catch (re) {
+            if (re instanceof antlr.RecognitionException) {
+                this.errorHandler.reportError(this, re);
+                this.errorHandler.recover(this, re);
+            } else {
+                throw re;
+            }
+        }
+        finally {
+            this.exitRule();
+        }
+        return localContext;
+    }
+    public directiveArgs(): DirectiveArgsContext {
+        let localContext = new DirectiveArgsContext(this.context, this.state);
+        this.enterRule(localContext, 134, MdTemplateParser.RULE_directiveArgs);
+        let _la: number;
+        try {
+            let alternative: number;
+            this.enterOuterAlt(localContext, 1);
+            {
+            this.state = 590;
+            this.errorHandler.sync(this);
+            alternative = this.interpreter.adaptivePredict(this.tokenStream, 52, this.context);
+            while (alternative !== 2 && alternative !== antlr.ATN.INVALID_ALT_NUMBER) {
+                if (alternative === 1) {
+                    {
+                    {
+                    this.state = 585;
+                    this.directiveSep();
+                    this.state = 586;
+                    this.directiveItem();
+                    }
+                    }
+                }
+                this.state = 592;
+                this.errorHandler.sync(this);
+                alternative = this.interpreter.adaptivePredict(this.tokenStream, 52, this.context);
+            }
+            this.state = 594;
+            this.errorHandler.sync(this);
+            _la = this.tokenStream.LA(1);
+            if (_la === 7 || _la === 96) {
+                {
+                this.state = 593;
+                this.directiveSep();
+                }
+            }
+
+            this.state = 597;
+            this.errorHandler.sync(this);
+            _la = this.tokenStream.LA(1);
+            if (_la === 95) {
+                {
+                this.state = 596;
+                this.directiveReason();
+                }
+            }
+
+            }
+        }
+        catch (re) {
+            if (re instanceof antlr.RecognitionException) {
+                this.errorHandler.reportError(this, re);
+                this.errorHandler.recover(this, re);
+            } else {
+                throw re;
+            }
+        }
+        finally {
+            this.exitRule();
+        }
+        return localContext;
+    }
+    public directiveSep(): DirectiveSepContext {
+        let localContext = new DirectiveSepContext(this.context, this.state);
+        this.enterRule(localContext, 136, MdTemplateParser.RULE_directiveSep);
+        let _la: number;
+        try {
+            this.enterOuterAlt(localContext, 1);
+            {
+            this.state = 600;
+            this.errorHandler.sync(this);
+            _la = this.tokenStream.LA(1);
+            do {
+                {
+                {
+                this.state = 599;
+                _la = this.tokenStream.LA(1);
+                if(!(_la === 7 || _la === 96)) {
+                this.errorHandler.recoverInline(this);
+                }
+                else {
+                    this.errorHandler.reportMatch(this);
+                    this.consume();
+                }
+                }
+                }
+                this.state = 602;
+                this.errorHandler.sync(this);
+                _la = this.tokenStream.LA(1);
+            } while (_la === 7 || _la === 96);
+            }
+        }
+        catch (re) {
+            if (re instanceof antlr.RecognitionException) {
+                this.errorHandler.reportError(this, re);
+                this.errorHandler.recover(this, re);
+            } else {
+                throw re;
+            }
+        }
+        finally {
+            this.exitRule();
+        }
+        return localContext;
+    }
+    public directiveItem(): DirectiveItemContext {
+        let localContext = new DirectiveItemContext(this.context, this.state);
+        this.enterRule(localContext, 138, MdTemplateParser.RULE_directiveItem);
+        let _la: number;
+        try {
+            this.enterOuterAlt(localContext, 1);
+            {
+            this.state = 604;
+            _la = this.tokenStream.LA(1);
+            if(!(((((_la - 88)) & ~0x1F) === 0 && ((1 << (_la - 88)) & 639) !== 0))) {
+            this.errorHandler.recoverInline(this);
+            }
+            else {
+                this.errorHandler.reportMatch(this);
+                this.consume();
+            }
+            }
+        }
+        catch (re) {
+            if (re instanceof antlr.RecognitionException) {
+                this.errorHandler.reportError(this, re);
+                this.errorHandler.recover(this, re);
+            } else {
+                throw re;
+            }
+        }
+        finally {
+            this.exitRule();
+        }
+        return localContext;
+    }
+    public directiveReason(): DirectiveReasonContext {
+        let localContext = new DirectiveReasonContext(this.context, this.state);
+        this.enterRule(localContext, 140, MdTemplateParser.RULE_directiveReason);
+        try {
+            this.enterOuterAlt(localContext, 1);
+            {
+            this.state = 606;
+            this.match(MdTemplateParser.DIR_REASON);
+            }
+        }
+        catch (re) {
+            if (re instanceof antlr.RecognitionException) {
+                this.errorHandler.reportError(this, re);
+                this.errorHandler.recover(this, re);
+            } else {
+                throw re;
+            }
+        }
+        finally {
+            this.exitRule();
+        }
+        return localContext;
+    }
+    public directiveProse(): DirectiveProseContext {
+        let localContext = new DirectiveProseContext(this.context, this.state);
+        this.enterRule(localContext, 142, MdTemplateParser.RULE_directiveProse);
+        let _la: number;
+        try {
+            this.enterOuterAlt(localContext, 1);
+            {
+            this.state = 614;
+            this.errorHandler.sync(this);
+            _la = this.tokenStream.LA(1);
+            while (_la === 7 || ((((_la - 88)) & ~0x1F) === 0 && ((1 << (_la - 88)) & 1023) !== 0)) {
+                {
+                this.state = 612;
+                this.errorHandler.sync(this);
+                switch (this.tokenStream.LA(1)) {
+                case MdTemplateParser.WS:
+                    {
+                    this.state = 608;
+                    this.match(MdTemplateParser.WS);
+                    }
+                    break;
+                case MdTemplateParser.DIR_COMMA:
+                    {
+                    this.state = 609;
+                    this.match(MdTemplateParser.DIR_COMMA);
+                    }
+                    break;
+                case MdTemplateParser.DIR_REASON:
+                    {
+                    this.state = 610;
+                    this.match(MdTemplateParser.DIR_REASON);
+                    }
+                    break;
+                case MdTemplateParser.DIR_KEYWORD:
+                case MdTemplateParser.DIR_DISABLE:
+                case MdTemplateParser.DIR_DISABLE_LINE:
+                case MdTemplateParser.DIR_DISABLE_NEXT_LINE:
+                case MdTemplateParser.DIR_DISABLE_FILE:
+                case MdTemplateParser.DIR_BEGIN:
+                case MdTemplateParser.DIR_END:
+                case MdTemplateParser.DIR_WORD:
+                    {
+                    this.state = 611;
+                    this.directiveItem();
+                    }
+                    break;
+                default:
+                    throw new antlr.NoViableAltException(this);
+                }
+                }
+                this.state = 616;
+                this.errorHandler.sync(this);
+                _la = this.tokenStream.LA(1);
+            }
+            }
+        }
+        catch (re) {
+            if (re instanceof antlr.RecognitionException) {
+                this.errorHandler.reportError(this, re);
+                this.errorHandler.recover(this, re);
+            } else {
+                throw re;
+            }
+        }
+        finally {
+            this.exitRule();
+        }
+        return localContext;
+    }
 
     public static readonly _serializedATN: number[] = [
-        4,1,88,498,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,2,5,7,5,2,6,7,
-        6,2,7,7,7,2,8,7,8,2,9,7,9,2,10,7,10,2,11,7,11,2,12,7,12,2,13,7,13,
-        2,14,7,14,2,15,7,15,2,16,7,16,2,17,7,17,2,18,7,18,2,19,7,19,2,20,
-        7,20,2,21,7,21,2,22,7,22,2,23,7,23,2,24,7,24,2,25,7,25,2,26,7,26,
-        2,27,7,27,2,28,7,28,2,29,7,29,2,30,7,30,2,31,7,31,2,32,7,32,2,33,
-        7,33,2,34,7,34,2,35,7,35,2,36,7,36,2,37,7,37,2,38,7,38,2,39,7,39,
-        2,40,7,40,2,41,7,41,2,42,7,42,2,43,7,43,2,44,7,44,2,45,7,45,2,46,
-        7,46,2,47,7,47,2,48,7,48,2,49,7,49,2,50,7,50,2,51,7,51,2,52,7,52,
-        2,53,7,53,2,54,7,54,2,55,7,55,2,56,7,56,2,57,7,57,1,0,1,0,1,0,1,
-        0,1,0,1,0,1,0,1,0,1,0,1,0,3,0,127,8,0,1,1,1,1,5,1,131,8,1,10,1,12,
-        1,134,9,1,1,1,1,1,1,2,1,2,5,2,140,8,2,10,2,12,2,143,9,2,1,3,1,3,
-        1,3,1,3,1,3,3,3,150,8,3,1,4,1,4,3,4,154,8,4,1,4,1,4,3,4,158,8,4,
-        1,4,1,4,1,5,1,5,5,5,164,8,5,10,5,12,5,167,9,5,1,5,1,5,1,6,1,6,1,
-        6,3,6,174,8,6,1,6,3,6,177,8,6,1,6,3,6,180,8,6,1,7,4,7,183,8,7,11,
-        7,12,7,184,1,8,1,8,5,8,189,8,8,10,8,12,8,192,9,8,1,9,1,9,1,9,1,9,
-        1,9,1,9,1,9,1,9,3,9,202,8,9,1,10,1,10,1,11,1,11,1,12,1,12,3,12,210,
-        8,12,1,12,1,12,1,13,5,13,215,8,13,10,13,12,13,218,9,13,1,14,1,14,
-        1,14,1,14,1,14,1,14,1,14,3,14,227,8,14,1,15,1,15,5,15,231,8,15,10,
-        15,12,15,234,9,15,1,15,1,15,1,16,1,16,1,16,1,16,1,16,1,16,3,16,244,
-        8,16,1,17,1,17,5,17,248,8,17,10,17,12,17,251,9,17,1,17,3,17,254,
-        8,17,1,18,1,18,1,19,1,19,1,20,1,20,1,21,1,21,1,22,1,22,3,22,266,
-        8,22,1,22,1,22,1,23,5,23,271,8,23,10,23,12,23,274,9,23,1,23,1,23,
-        1,24,1,24,1,24,1,25,5,25,282,8,25,10,25,12,25,285,9,25,1,25,1,25,
-        1,26,1,26,1,26,1,26,5,26,293,8,26,10,26,12,26,296,9,26,1,26,1,26,
-        1,26,1,26,1,26,1,26,5,26,304,8,26,10,26,12,26,307,9,26,1,26,1,26,
-        1,26,1,26,1,26,1,26,5,26,315,8,26,10,26,12,26,318,9,26,3,26,320,
-        8,26,1,27,1,27,1,27,1,27,1,28,1,28,1,28,1,28,1,29,1,29,4,29,332,
-        8,29,11,29,12,29,333,1,29,1,29,1,30,1,30,5,30,340,8,30,10,30,12,
-        30,343,9,30,1,30,1,30,1,31,1,31,3,31,349,8,31,1,32,1,32,3,32,353,
-        8,32,1,32,1,32,3,32,357,8,32,1,32,1,32,1,33,4,33,362,8,33,11,33,
-        12,33,363,1,34,1,34,1,34,3,34,369,8,34,1,35,1,35,1,35,3,35,374,8,
-        35,1,36,1,36,1,37,1,37,1,37,1,37,1,38,1,38,1,39,3,39,385,8,39,1,
-        40,1,40,1,40,1,40,1,40,1,41,1,41,1,41,1,41,1,41,1,41,1,41,1,41,3,
-        41,400,8,41,1,42,1,42,1,42,1,42,1,42,1,42,3,42,408,8,42,1,43,1,43,
-        1,43,1,43,1,43,1,43,1,43,1,43,1,43,1,43,3,43,420,8,43,1,44,1,44,
-        1,45,1,45,1,45,1,45,1,46,1,46,1,46,1,46,1,46,1,46,1,47,1,47,1,47,
-        1,47,1,47,1,47,1,48,1,48,1,49,3,49,443,8,49,1,49,1,49,1,49,3,49,
-        448,8,49,1,50,1,50,1,50,1,50,1,51,1,51,1,51,1,51,1,52,1,52,1,52,
-        1,52,1,52,1,52,1,53,1,53,1,54,1,54,1,54,1,54,1,54,1,55,1,55,3,55,
-        473,8,55,1,56,1,56,1,56,1,56,1,56,1,56,1,56,1,56,3,56,483,8,56,1,
-        57,1,57,1,57,1,57,1,57,1,57,1,57,1,57,1,57,1,57,1,57,3,57,496,8,
-        57,1,57,0,0,58,0,2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32,34,
-        36,38,40,42,44,46,48,50,52,54,56,58,60,62,64,66,68,70,72,74,76,78,
-        80,82,84,86,88,90,92,94,96,98,100,102,104,106,108,110,112,114,0,
-        11,1,0,22,25,1,0,1,1,2,0,37,37,40,44,1,0,13,14,2,0,1,1,3,3,3,0,9,
-        10,37,43,45,45,2,0,51,51,53,60,2,0,47,48,66,67,2,0,51,51,68,68,1,
-        0,69,70,1,0,47,50,520,0,126,1,0,0,0,2,128,1,0,0,0,4,137,1,0,0,0,
-        6,149,1,0,0,0,8,151,1,0,0,0,10,161,1,0,0,0,12,179,1,0,0,0,14,182,
-        1,0,0,0,16,186,1,0,0,0,18,201,1,0,0,0,20,203,1,0,0,0,22,205,1,0,
-        0,0,24,207,1,0,0,0,26,216,1,0,0,0,28,226,1,0,0,0,30,228,1,0,0,0,
-        32,243,1,0,0,0,34,245,1,0,0,0,36,255,1,0,0,0,38,257,1,0,0,0,40,259,
-        1,0,0,0,42,261,1,0,0,0,44,263,1,0,0,0,46,272,1,0,0,0,48,277,1,0,
-        0,0,50,283,1,0,0,0,52,319,1,0,0,0,54,321,1,0,0,0,56,325,1,0,0,0,
-        58,329,1,0,0,0,60,337,1,0,0,0,62,348,1,0,0,0,64,350,1,0,0,0,66,361,
-        1,0,0,0,68,368,1,0,0,0,70,373,1,0,0,0,72,375,1,0,0,0,74,377,1,0,
-        0,0,76,381,1,0,0,0,78,384,1,0,0,0,80,386,1,0,0,0,82,399,1,0,0,0,
-        84,401,1,0,0,0,86,409,1,0,0,0,88,421,1,0,0,0,90,423,1,0,0,0,92,427,
-        1,0,0,0,94,433,1,0,0,0,96,439,1,0,0,0,98,442,1,0,0,0,100,449,1,0,
-        0,0,102,453,1,0,0,0,104,457,1,0,0,0,106,463,1,0,0,0,108,465,1,0,
-        0,0,110,472,1,0,0,0,112,474,1,0,0,0,114,484,1,0,0,0,116,117,3,2,
-        1,0,117,118,3,26,13,0,118,119,5,0,0,1,119,127,1,0,0,0,120,121,3,
-        4,2,0,121,122,5,0,0,1,122,127,1,0,0,0,123,124,3,26,13,0,124,125,
-        5,0,0,1,125,127,1,0,0,0,126,116,1,0,0,0,126,120,1,0,0,0,126,123,
-        1,0,0,0,127,1,1,0,0,0,128,132,5,27,0,0,129,131,3,6,3,0,130,129,1,
-        0,0,0,131,134,1,0,0,0,132,130,1,0,0,0,132,133,1,0,0,0,133,135,1,
-        0,0,0,134,132,1,0,0,0,135,136,5,28,0,0,136,3,1,0,0,0,137,141,5,27,
-        0,0,138,140,3,6,3,0,139,138,1,0,0,0,140,143,1,0,0,0,141,139,1,0,
-        0,0,141,142,1,0,0,0,142,5,1,0,0,0,143,141,1,0,0,0,144,150,3,8,4,
-        0,145,150,3,10,5,0,146,150,3,12,6,0,147,150,3,22,11,0,148,150,3,
-        24,12,0,149,144,1,0,0,0,149,145,1,0,0,0,149,146,1,0,0,0,149,147,
-        1,0,0,0,149,148,1,0,0,0,150,7,1,0,0,0,151,153,5,30,0,0,152,154,5,
-        7,0,0,153,152,1,0,0,0,153,154,1,0,0,0,154,155,1,0,0,0,155,157,3,
-        52,26,0,156,158,5,7,0,0,157,156,1,0,0,0,157,158,1,0,0,0,158,159,
-        1,0,0,0,159,160,5,1,0,0,160,9,1,0,0,0,161,165,5,30,0,0,162,164,3,
-        18,9,0,163,162,1,0,0,0,164,167,1,0,0,0,165,163,1,0,0,0,165,166,1,
-        0,0,0,166,168,1,0,0,0,167,165,1,0,0,0,168,169,5,1,0,0,169,11,1,0,
-        0,0,170,180,5,32,0,0,171,173,5,31,0,0,172,174,3,14,7,0,173,172,1,
-        0,0,0,173,174,1,0,0,0,174,176,1,0,0,0,175,177,3,16,8,0,176,175,1,
-        0,0,0,176,177,1,0,0,0,177,178,1,0,0,0,178,180,5,1,0,0,179,170,1,
-        0,0,0,179,171,1,0,0,0,180,13,1,0,0,0,181,183,7,0,0,0,182,181,1,0,
-        0,0,183,184,1,0,0,0,184,182,1,0,0,0,184,185,1,0,0,0,185,15,1,0,0,
-        0,186,190,5,26,0,0,187,189,3,18,9,0,188,187,1,0,0,0,189,192,1,0,
-        0,0,190,188,1,0,0,0,190,191,1,0,0,0,191,17,1,0,0,0,192,190,1,0,0,
-        0,193,202,3,52,26,0,194,202,3,54,27,0,195,202,3,56,28,0,196,202,
-        3,58,29,0,197,202,3,60,30,0,198,202,3,64,32,0,199,202,3,20,10,0,
-        200,202,8,1,0,0,201,193,1,0,0,0,201,194,1,0,0,0,201,195,1,0,0,0,
-        201,196,1,0,0,0,201,197,1,0,0,0,201,198,1,0,0,0,201,199,1,0,0,0,
-        201,200,1,0,0,0,202,19,1,0,0,0,203,204,7,2,0,0,204,21,1,0,0,0,205,
-        206,5,29,0,0,206,23,1,0,0,0,207,209,5,33,0,0,208,210,5,34,0,0,209,
-        208,1,0,0,0,209,210,1,0,0,0,210,211,1,0,0,0,211,212,5,1,0,0,212,
-        25,1,0,0,0,213,215,3,28,14,0,214,213,1,0,0,0,215,218,1,0,0,0,216,
-        214,1,0,0,0,216,217,1,0,0,0,217,27,1,0,0,0,218,216,1,0,0,0,219,227,
-        3,30,15,0,220,227,3,34,17,0,221,227,3,36,18,0,222,227,3,38,19,0,
-        223,227,3,40,20,0,224,227,3,42,21,0,225,227,3,44,22,0,226,219,1,
-        0,0,0,226,220,1,0,0,0,226,221,1,0,0,0,226,222,1,0,0,0,226,223,1,
-        0,0,0,226,224,1,0,0,0,226,225,1,0,0,0,227,29,1,0,0,0,228,232,5,11,
-        0,0,229,231,3,32,16,0,230,229,1,0,0,0,231,234,1,0,0,0,232,230,1,
-        0,0,0,232,233,1,0,0,0,233,235,1,0,0,0,234,232,1,0,0,0,235,236,5,
-        1,0,0,236,31,1,0,0,0,237,244,3,52,26,0,238,244,3,54,27,0,239,244,
-        3,56,28,0,240,244,3,58,29,0,241,244,3,60,30,0,242,244,8,1,0,0,243,
-        237,1,0,0,0,243,238,1,0,0,0,243,239,1,0,0,0,243,240,1,0,0,0,243,
-        241,1,0,0,0,243,242,1,0,0,0,244,33,1,0,0,0,245,249,5,12,0,0,246,
-        248,7,3,0,0,247,246,1,0,0,0,248,251,1,0,0,0,249,247,1,0,0,0,249,
-        250,1,0,0,0,250,253,1,0,0,0,251,249,1,0,0,0,252,254,5,15,0,0,253,
-        252,1,0,0,0,253,254,1,0,0,0,254,35,1,0,0,0,255,256,5,16,0,0,256,
-        37,1,0,0,0,257,258,5,17,0,0,258,39,1,0,0,0,259,260,5,18,0,0,260,
-        41,1,0,0,0,261,262,5,19,0,0,262,43,1,0,0,0,263,265,5,20,0,0,264,
-        266,5,21,0,0,265,264,1,0,0,0,265,266,1,0,0,0,266,267,1,0,0,0,267,
-        268,5,1,0,0,268,45,1,0,0,0,269,271,3,18,9,0,270,269,1,0,0,0,271,
-        274,1,0,0,0,272,270,1,0,0,0,272,273,1,0,0,0,273,275,1,0,0,0,274,
-        272,1,0,0,0,275,276,5,0,0,1,276,47,1,0,0,0,277,278,3,8,4,0,278,279,
-        5,0,0,1,279,49,1,0,0,0,280,282,3,32,16,0,281,280,1,0,0,0,282,285,
-        1,0,0,0,283,281,1,0,0,0,283,284,1,0,0,0,284,286,1,0,0,0,285,283,
-        1,0,0,0,286,287,5,0,0,1,287,51,1,0,0,0,288,289,5,2,0,0,289,290,3,
-        72,36,0,290,294,5,4,0,0,291,293,3,70,35,0,292,291,1,0,0,0,293,296,
-        1,0,0,0,294,292,1,0,0,0,294,295,1,0,0,0,295,297,1,0,0,0,296,294,
-        1,0,0,0,297,298,5,3,0,0,298,320,1,0,0,0,299,300,5,2,0,0,300,301,
-        3,72,36,0,301,305,5,4,0,0,302,304,3,62,31,0,303,302,1,0,0,0,304,
-        307,1,0,0,0,305,303,1,0,0,0,305,306,1,0,0,0,306,308,1,0,0,0,307,
-        305,1,0,0,0,308,309,5,3,0,0,309,320,1,0,0,0,310,311,5,2,0,0,311,
-        312,3,72,36,0,312,316,5,4,0,0,313,315,3,62,31,0,314,313,1,0,0,0,
-        315,318,1,0,0,0,316,314,1,0,0,0,316,317,1,0,0,0,317,320,1,0,0,0,
-        318,316,1,0,0,0,319,288,1,0,0,0,319,299,1,0,0,0,319,310,1,0,0,0,
-        320,53,1,0,0,0,321,322,5,2,0,0,322,323,5,39,0,0,323,324,5,3,0,0,
-        324,55,1,0,0,0,325,326,5,2,0,0,326,327,3,66,33,0,327,328,5,3,0,0,
-        328,57,1,0,0,0,329,331,5,2,0,0,330,332,3,70,35,0,331,330,1,0,0,0,
-        332,333,1,0,0,0,333,331,1,0,0,0,333,334,1,0,0,0,334,335,1,0,0,0,
-        335,336,5,3,0,0,336,59,1,0,0,0,337,341,5,2,0,0,338,340,3,62,31,0,
-        339,338,1,0,0,0,340,343,1,0,0,0,341,339,1,0,0,0,341,342,1,0,0,0,
-        342,344,1,0,0,0,343,341,1,0,0,0,344,345,5,3,0,0,345,61,1,0,0,0,346,
-        349,3,64,32,0,347,349,8,4,0,0,348,346,1,0,0,0,348,347,1,0,0,0,349,
-        63,1,0,0,0,350,352,5,38,0,0,351,353,5,7,0,0,352,351,1,0,0,0,352,
-        353,1,0,0,0,353,354,1,0,0,0,354,356,5,35,0,0,355,357,5,7,0,0,356,
-        355,1,0,0,0,356,357,1,0,0,0,357,358,1,0,0,0,358,359,3,66,33,0,359,
-        65,1,0,0,0,360,362,3,68,34,0,361,360,1,0,0,0,362,363,1,0,0,0,363,
-        361,1,0,0,0,363,364,1,0,0,0,364,67,1,0,0,0,365,369,3,72,36,0,366,
-        369,5,46,0,0,367,369,5,5,0,0,368,365,1,0,0,0,368,366,1,0,0,0,368,
-        367,1,0,0,0,369,69,1,0,0,0,370,374,3,72,36,0,371,374,5,5,0,0,372,
-        374,5,4,0,0,373,370,1,0,0,0,373,371,1,0,0,0,373,372,1,0,0,0,374,
-        71,1,0,0,0,375,376,7,5,0,0,376,73,1,0,0,0,377,378,5,2,0,0,378,379,
-        3,76,38,0,379,380,5,4,0,0,380,75,1,0,0,0,381,382,7,6,0,0,382,77,
-        1,0,0,0,383,385,5,81,0,0,384,383,1,0,0,0,384,385,1,0,0,0,385,79,
-        1,0,0,0,386,387,5,2,0,0,387,388,3,82,41,0,388,389,5,3,0,0,389,390,
-        5,0,0,1,390,81,1,0,0,0,391,400,3,84,42,0,392,400,3,86,43,0,393,400,
-        3,90,45,0,394,400,3,92,46,0,395,400,3,94,47,0,396,400,3,100,50,0,
-        397,400,3,102,51,0,398,400,3,104,52,0,399,391,1,0,0,0,399,392,1,
-        0,0,0,399,393,1,0,0,0,399,394,1,0,0,0,399,395,1,0,0,0,399,396,1,
-        0,0,0,399,397,1,0,0,0,399,398,1,0,0,0,400,83,1,0,0,0,401,402,5,53,
-        0,0,402,407,5,4,0,0,403,408,5,61,0,0,404,408,5,62,0,0,405,406,5,
-        78,0,0,406,408,3,78,39,0,407,403,1,0,0,0,407,404,1,0,0,0,407,405,
-        1,0,0,0,408,85,1,0,0,0,409,410,5,54,0,0,410,419,5,4,0,0,411,412,
-        5,79,0,0,412,420,3,78,39,0,413,420,3,88,44,0,414,415,5,65,0,0,415,
-        416,5,4,0,0,416,420,3,88,44,0,417,418,5,80,0,0,418,420,5,82,0,0,
-        419,411,1,0,0,0,419,413,1,0,0,0,419,414,1,0,0,0,419,417,1,0,0,0,
-        420,87,1,0,0,0,421,422,7,7,0,0,422,89,1,0,0,0,423,424,5,55,0,0,424,
-        425,5,4,0,0,425,426,7,8,0,0,426,91,1,0,0,0,427,428,5,56,0,0,428,
-        429,5,4,0,0,429,430,3,96,48,0,430,431,5,4,0,0,431,432,5,9,0,0,432,
-        93,1,0,0,0,433,434,5,57,0,0,434,435,5,4,0,0,435,436,3,96,48,0,436,
-        437,5,4,0,0,437,438,3,98,49,0,438,95,1,0,0,0,439,440,7,9,0,0,440,
-        97,1,0,0,0,441,443,5,5,0,0,442,441,1,0,0,0,442,443,1,0,0,0,443,444,
-        1,0,0,0,444,447,5,9,0,0,445,446,5,6,0,0,446,448,5,9,0,0,447,445,
-        1,0,0,0,447,448,1,0,0,0,448,99,1,0,0,0,449,450,5,58,0,0,450,451,
-        5,4,0,0,451,452,5,71,0,0,452,101,1,0,0,0,453,454,5,59,0,0,454,455,
-        5,4,0,0,455,456,5,72,0,0,456,103,1,0,0,0,457,458,5,51,0,0,458,459,
-        5,4,0,0,459,460,5,52,0,0,460,461,5,4,0,0,461,462,3,106,53,0,462,
-        105,1,0,0,0,463,464,7,10,0,0,464,107,1,0,0,0,465,466,5,2,0,0,466,
-        467,3,110,55,0,467,468,5,3,0,0,468,469,5,0,0,1,469,109,1,0,0,0,470,
-        473,3,112,56,0,471,473,3,114,57,0,472,470,1,0,0,0,472,471,1,0,0,
-        0,473,111,1,0,0,0,474,475,5,53,0,0,475,482,5,4,0,0,476,483,5,61,
-        0,0,477,483,5,62,0,0,478,483,5,63,0,0,479,483,5,64,0,0,480,481,5,
-        78,0,0,481,483,3,78,39,0,482,476,1,0,0,0,482,477,1,0,0,0,482,478,
-        1,0,0,0,482,479,1,0,0,0,482,480,1,0,0,0,483,113,1,0,0,0,484,485,
-        5,60,0,0,485,495,5,4,0,0,486,496,5,73,0,0,487,496,5,74,0,0,488,496,
-        5,75,0,0,489,490,5,76,0,0,490,491,5,4,0,0,491,496,5,9,0,0,492,493,
-        5,77,0,0,493,494,5,4,0,0,494,496,5,9,0,0,495,486,1,0,0,0,495,487,
-        1,0,0,0,495,488,1,0,0,0,495,489,1,0,0,0,495,492,1,0,0,0,496,115,
-        1,0,0,0,44,126,132,141,149,153,157,165,173,176,179,184,190,201,209,
-        216,226,232,243,249,253,265,272,283,294,305,316,319,333,341,348,
-        352,356,363,368,373,384,399,407,419,442,447,472,482,495
+        4,1,103,618,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,2,5,7,5,2,6,
+        7,6,2,7,7,7,2,8,7,8,2,9,7,9,2,10,7,10,2,11,7,11,2,12,7,12,2,13,7,
+        13,2,14,7,14,2,15,7,15,2,16,7,16,2,17,7,17,2,18,7,18,2,19,7,19,2,
+        20,7,20,2,21,7,21,2,22,7,22,2,23,7,23,2,24,7,24,2,25,7,25,2,26,7,
+        26,2,27,7,27,2,28,7,28,2,29,7,29,2,30,7,30,2,31,7,31,2,32,7,32,2,
+        33,7,33,2,34,7,34,2,35,7,35,2,36,7,36,2,37,7,37,2,38,7,38,2,39,7,
+        39,2,40,7,40,2,41,7,41,2,42,7,42,2,43,7,43,2,44,7,44,2,45,7,45,2,
+        46,7,46,2,47,7,47,2,48,7,48,2,49,7,49,2,50,7,50,2,51,7,51,2,52,7,
+        52,2,53,7,53,2,54,7,54,2,55,7,55,2,56,7,56,2,57,7,57,2,58,7,58,2,
+        59,7,59,2,60,7,60,2,61,7,61,2,62,7,62,2,63,7,63,2,64,7,64,2,65,7,
+        65,2,66,7,66,2,67,7,67,2,68,7,68,2,69,7,69,2,70,7,70,2,71,7,71,1,
+        0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,3,0,155,8,0,1,1,1,1,5,1,159,
+        8,1,10,1,12,1,162,9,1,1,1,1,1,1,2,1,2,5,2,168,8,2,10,2,12,2,171,
+        9,2,1,3,1,3,1,3,1,3,1,3,3,3,178,8,3,1,4,1,4,3,4,182,8,4,1,4,1,4,
+        3,4,186,8,4,1,4,1,4,1,5,1,5,5,5,192,8,5,10,5,12,5,195,9,5,1,5,1,
+        5,1,6,1,6,1,6,3,6,202,8,6,1,6,3,6,205,8,6,1,6,3,6,208,8,6,1,7,4,
+        7,211,8,7,11,7,12,7,212,1,8,1,8,5,8,217,8,8,10,8,12,8,220,9,8,1,
+        9,1,9,1,9,1,9,1,9,1,9,1,9,1,9,3,9,230,8,9,1,10,1,10,1,11,1,11,1,
+        12,1,12,3,12,238,8,12,1,12,1,12,1,13,5,13,243,8,13,10,13,12,13,246,
+        9,13,1,14,1,14,1,14,1,14,1,14,1,14,1,14,3,14,255,8,14,1,15,1,15,
+        5,15,259,8,15,10,15,12,15,262,9,15,1,15,1,15,1,16,1,16,1,16,1,16,
+        1,16,1,16,3,16,272,8,16,1,17,1,17,5,17,276,8,17,10,17,12,17,279,
+        9,17,1,17,3,17,282,8,17,1,18,1,18,1,19,1,19,1,20,1,20,1,21,1,21,
+        1,22,1,22,3,22,294,8,22,1,22,1,22,1,23,5,23,299,8,23,10,23,12,23,
+        302,9,23,1,23,1,23,1,24,1,24,1,24,1,25,5,25,310,8,25,10,25,12,25,
+        313,9,25,1,25,1,25,1,26,1,26,1,26,1,26,5,26,321,8,26,10,26,12,26,
+        324,9,26,1,26,1,26,1,26,1,26,1,26,1,26,5,26,332,8,26,10,26,12,26,
+        335,9,26,1,26,1,26,1,26,1,26,1,26,1,26,5,26,343,8,26,10,26,12,26,
+        346,9,26,3,26,348,8,26,1,27,1,27,1,27,1,27,1,28,1,28,1,28,1,28,1,
+        29,1,29,4,29,360,8,29,11,29,12,29,361,1,29,1,29,1,30,1,30,5,30,368,
+        8,30,10,30,12,30,371,9,30,1,30,1,30,1,31,1,31,3,31,377,8,31,1,32,
+        1,32,3,32,381,8,32,1,32,1,32,3,32,385,8,32,1,32,1,32,1,33,4,33,390,
+        8,33,11,33,12,33,391,1,34,1,34,1,34,3,34,397,8,34,1,35,1,35,1,35,
+        3,35,402,8,35,1,36,1,36,1,37,1,37,1,37,1,37,1,38,1,38,1,39,3,39,
+        413,8,39,1,40,1,40,1,40,1,40,1,40,1,41,1,41,1,41,1,41,1,41,1,41,
+        1,41,1,41,3,41,428,8,41,1,42,1,42,1,42,1,42,1,42,1,42,3,42,436,8,
+        42,1,43,1,43,1,43,1,43,1,43,1,43,1,43,1,43,1,43,1,43,3,43,448,8,
+        43,1,44,1,44,1,45,1,45,1,45,1,45,1,46,1,46,1,46,1,46,1,46,1,46,1,
+        47,1,47,1,47,1,47,1,47,1,47,1,48,1,48,1,49,3,49,471,8,49,1,49,1,
+        49,1,49,3,49,476,8,49,1,50,1,50,1,50,1,50,1,51,1,51,1,51,1,51,1,
+        52,1,52,1,52,1,52,1,52,1,52,1,53,1,53,1,54,1,54,1,54,1,54,1,54,1,
+        55,1,55,3,55,501,8,55,1,56,1,56,1,56,1,56,1,56,1,56,1,56,1,56,3,
+        56,511,8,56,1,57,1,57,1,57,1,57,1,57,1,57,1,57,1,57,1,57,1,57,1,
+        57,3,57,524,8,57,1,58,5,58,527,8,58,10,58,12,58,530,9,58,1,58,1,
+        58,1,59,5,59,535,8,59,10,59,12,59,538,9,59,1,59,1,59,1,60,1,60,1,
+        61,3,61,545,8,61,1,61,1,61,1,61,1,61,1,61,1,61,3,61,553,8,61,1,62,
+        1,62,1,62,3,62,558,8,62,1,62,3,62,561,8,62,1,63,1,63,1,63,1,63,1,
+        63,3,63,568,8,63,1,64,1,64,1,65,1,65,1,65,1,65,1,65,1,65,1,65,1,
+        65,1,65,1,65,3,65,582,8,65,1,66,1,66,1,67,1,67,1,67,5,67,589,8,67,
+        10,67,12,67,592,9,67,1,67,3,67,595,8,67,1,67,3,67,598,8,67,1,68,
+        4,68,601,8,68,11,68,12,68,602,1,69,1,69,1,70,1,70,1,71,1,71,1,71,
+        1,71,5,71,613,8,71,10,71,12,71,616,9,71,1,71,0,0,72,0,2,4,6,8,10,
+        12,14,16,18,20,22,24,26,28,30,32,34,36,38,40,42,44,46,48,50,52,54,
+        56,58,60,62,64,66,68,70,72,74,76,78,80,82,84,86,88,90,92,94,96,98,
+        100,102,104,106,108,110,112,114,116,118,120,122,124,126,128,130,
+        132,134,136,138,140,142,0,15,1,0,22,25,1,0,1,1,2,0,37,37,40,44,1,
+        0,13,14,2,0,1,1,3,3,3,0,9,10,37,43,45,45,2,0,51,51,53,60,2,0,47,
+        48,66,67,2,0,51,51,68,68,1,0,69,70,1,0,47,50,1,0,83,87,3,0,88,88,
+        93,94,97,97,2,0,7,7,96,96,2,0,88,94,97,97,647,0,154,1,0,0,0,2,156,
+        1,0,0,0,4,165,1,0,0,0,6,177,1,0,0,0,8,179,1,0,0,0,10,189,1,0,0,0,
+        12,207,1,0,0,0,14,210,1,0,0,0,16,214,1,0,0,0,18,229,1,0,0,0,20,231,
+        1,0,0,0,22,233,1,0,0,0,24,235,1,0,0,0,26,244,1,0,0,0,28,254,1,0,
+        0,0,30,256,1,0,0,0,32,271,1,0,0,0,34,273,1,0,0,0,36,283,1,0,0,0,
+        38,285,1,0,0,0,40,287,1,0,0,0,42,289,1,0,0,0,44,291,1,0,0,0,46,300,
+        1,0,0,0,48,305,1,0,0,0,50,311,1,0,0,0,52,347,1,0,0,0,54,349,1,0,
+        0,0,56,353,1,0,0,0,58,357,1,0,0,0,60,365,1,0,0,0,62,376,1,0,0,0,
+        64,378,1,0,0,0,66,389,1,0,0,0,68,396,1,0,0,0,70,401,1,0,0,0,72,403,
+        1,0,0,0,74,405,1,0,0,0,76,409,1,0,0,0,78,412,1,0,0,0,80,414,1,0,
+        0,0,82,427,1,0,0,0,84,429,1,0,0,0,86,437,1,0,0,0,88,449,1,0,0,0,
+        90,451,1,0,0,0,92,455,1,0,0,0,94,461,1,0,0,0,96,467,1,0,0,0,98,470,
+        1,0,0,0,100,477,1,0,0,0,102,481,1,0,0,0,104,485,1,0,0,0,106,491,
+        1,0,0,0,108,493,1,0,0,0,110,500,1,0,0,0,112,502,1,0,0,0,114,512,
+        1,0,0,0,116,528,1,0,0,0,118,536,1,0,0,0,120,541,1,0,0,0,122,552,
+        1,0,0,0,124,554,1,0,0,0,126,567,1,0,0,0,128,569,1,0,0,0,130,581,
+        1,0,0,0,132,583,1,0,0,0,134,590,1,0,0,0,136,600,1,0,0,0,138,604,
+        1,0,0,0,140,606,1,0,0,0,142,614,1,0,0,0,144,145,3,2,1,0,145,146,
+        3,26,13,0,146,147,5,0,0,1,147,155,1,0,0,0,148,149,3,4,2,0,149,150,
+        5,0,0,1,150,155,1,0,0,0,151,152,3,26,13,0,152,153,5,0,0,1,153,155,
+        1,0,0,0,154,144,1,0,0,0,154,148,1,0,0,0,154,151,1,0,0,0,155,1,1,
+        0,0,0,156,160,5,27,0,0,157,159,3,6,3,0,158,157,1,0,0,0,159,162,1,
+        0,0,0,160,158,1,0,0,0,160,161,1,0,0,0,161,163,1,0,0,0,162,160,1,
+        0,0,0,163,164,5,28,0,0,164,3,1,0,0,0,165,169,5,27,0,0,166,168,3,
+        6,3,0,167,166,1,0,0,0,168,171,1,0,0,0,169,167,1,0,0,0,169,170,1,
+        0,0,0,170,5,1,0,0,0,171,169,1,0,0,0,172,178,3,8,4,0,173,178,3,10,
+        5,0,174,178,3,12,6,0,175,178,3,22,11,0,176,178,3,24,12,0,177,172,
+        1,0,0,0,177,173,1,0,0,0,177,174,1,0,0,0,177,175,1,0,0,0,177,176,
+        1,0,0,0,178,7,1,0,0,0,179,181,5,30,0,0,180,182,5,7,0,0,181,180,1,
+        0,0,0,181,182,1,0,0,0,182,183,1,0,0,0,183,185,3,52,26,0,184,186,
+        5,7,0,0,185,184,1,0,0,0,185,186,1,0,0,0,186,187,1,0,0,0,187,188,
+        5,1,0,0,188,9,1,0,0,0,189,193,5,30,0,0,190,192,3,18,9,0,191,190,
+        1,0,0,0,192,195,1,0,0,0,193,191,1,0,0,0,193,194,1,0,0,0,194,196,
+        1,0,0,0,195,193,1,0,0,0,196,197,5,1,0,0,197,11,1,0,0,0,198,208,5,
+        32,0,0,199,201,5,31,0,0,200,202,3,14,7,0,201,200,1,0,0,0,201,202,
+        1,0,0,0,202,204,1,0,0,0,203,205,3,16,8,0,204,203,1,0,0,0,204,205,
+        1,0,0,0,205,206,1,0,0,0,206,208,5,1,0,0,207,198,1,0,0,0,207,199,
+        1,0,0,0,208,13,1,0,0,0,209,211,7,0,0,0,210,209,1,0,0,0,211,212,1,
+        0,0,0,212,210,1,0,0,0,212,213,1,0,0,0,213,15,1,0,0,0,214,218,5,26,
+        0,0,215,217,3,18,9,0,216,215,1,0,0,0,217,220,1,0,0,0,218,216,1,0,
+        0,0,218,219,1,0,0,0,219,17,1,0,0,0,220,218,1,0,0,0,221,230,3,52,
+        26,0,222,230,3,54,27,0,223,230,3,56,28,0,224,230,3,58,29,0,225,230,
+        3,60,30,0,226,230,3,64,32,0,227,230,3,20,10,0,228,230,8,1,0,0,229,
+        221,1,0,0,0,229,222,1,0,0,0,229,223,1,0,0,0,229,224,1,0,0,0,229,
+        225,1,0,0,0,229,226,1,0,0,0,229,227,1,0,0,0,229,228,1,0,0,0,230,
+        19,1,0,0,0,231,232,7,2,0,0,232,21,1,0,0,0,233,234,5,29,0,0,234,23,
+        1,0,0,0,235,237,5,33,0,0,236,238,5,34,0,0,237,236,1,0,0,0,237,238,
+        1,0,0,0,238,239,1,0,0,0,239,240,5,1,0,0,240,25,1,0,0,0,241,243,3,
+        28,14,0,242,241,1,0,0,0,243,246,1,0,0,0,244,242,1,0,0,0,244,245,
+        1,0,0,0,245,27,1,0,0,0,246,244,1,0,0,0,247,255,3,30,15,0,248,255,
+        3,34,17,0,249,255,3,36,18,0,250,255,3,38,19,0,251,255,3,40,20,0,
+        252,255,3,42,21,0,253,255,3,44,22,0,254,247,1,0,0,0,254,248,1,0,
+        0,0,254,249,1,0,0,0,254,250,1,0,0,0,254,251,1,0,0,0,254,252,1,0,
+        0,0,254,253,1,0,0,0,255,29,1,0,0,0,256,260,5,11,0,0,257,259,3,32,
+        16,0,258,257,1,0,0,0,259,262,1,0,0,0,260,258,1,0,0,0,260,261,1,0,
+        0,0,261,263,1,0,0,0,262,260,1,0,0,0,263,264,5,1,0,0,264,31,1,0,0,
+        0,265,272,3,52,26,0,266,272,3,54,27,0,267,272,3,56,28,0,268,272,
+        3,58,29,0,269,272,3,60,30,0,270,272,8,1,0,0,271,265,1,0,0,0,271,
+        266,1,0,0,0,271,267,1,0,0,0,271,268,1,0,0,0,271,269,1,0,0,0,271,
+        270,1,0,0,0,272,33,1,0,0,0,273,277,5,12,0,0,274,276,7,3,0,0,275,
+        274,1,0,0,0,276,279,1,0,0,0,277,275,1,0,0,0,277,278,1,0,0,0,278,
+        281,1,0,0,0,279,277,1,0,0,0,280,282,5,15,0,0,281,280,1,0,0,0,281,
+        282,1,0,0,0,282,35,1,0,0,0,283,284,5,16,0,0,284,37,1,0,0,0,285,286,
+        5,17,0,0,286,39,1,0,0,0,287,288,5,18,0,0,288,41,1,0,0,0,289,290,
+        5,19,0,0,290,43,1,0,0,0,291,293,5,20,0,0,292,294,5,21,0,0,293,292,
+        1,0,0,0,293,294,1,0,0,0,294,295,1,0,0,0,295,296,5,1,0,0,296,45,1,
+        0,0,0,297,299,3,18,9,0,298,297,1,0,0,0,299,302,1,0,0,0,300,298,1,
+        0,0,0,300,301,1,0,0,0,301,303,1,0,0,0,302,300,1,0,0,0,303,304,5,
+        0,0,1,304,47,1,0,0,0,305,306,3,8,4,0,306,307,5,0,0,1,307,49,1,0,
+        0,0,308,310,3,32,16,0,309,308,1,0,0,0,310,313,1,0,0,0,311,309,1,
+        0,0,0,311,312,1,0,0,0,312,314,1,0,0,0,313,311,1,0,0,0,314,315,5,
+        0,0,1,315,51,1,0,0,0,316,317,5,2,0,0,317,318,3,72,36,0,318,322,5,
+        4,0,0,319,321,3,70,35,0,320,319,1,0,0,0,321,324,1,0,0,0,322,320,
+        1,0,0,0,322,323,1,0,0,0,323,325,1,0,0,0,324,322,1,0,0,0,325,326,
+        5,3,0,0,326,348,1,0,0,0,327,328,5,2,0,0,328,329,3,72,36,0,329,333,
+        5,4,0,0,330,332,3,62,31,0,331,330,1,0,0,0,332,335,1,0,0,0,333,331,
+        1,0,0,0,333,334,1,0,0,0,334,336,1,0,0,0,335,333,1,0,0,0,336,337,
+        5,3,0,0,337,348,1,0,0,0,338,339,5,2,0,0,339,340,3,72,36,0,340,344,
+        5,4,0,0,341,343,3,62,31,0,342,341,1,0,0,0,343,346,1,0,0,0,344,342,
+        1,0,0,0,344,345,1,0,0,0,345,348,1,0,0,0,346,344,1,0,0,0,347,316,
+        1,0,0,0,347,327,1,0,0,0,347,338,1,0,0,0,348,53,1,0,0,0,349,350,5,
+        2,0,0,350,351,5,39,0,0,351,352,5,3,0,0,352,55,1,0,0,0,353,354,5,
+        2,0,0,354,355,3,66,33,0,355,356,5,3,0,0,356,57,1,0,0,0,357,359,5,
+        2,0,0,358,360,3,70,35,0,359,358,1,0,0,0,360,361,1,0,0,0,361,359,
+        1,0,0,0,361,362,1,0,0,0,362,363,1,0,0,0,363,364,5,3,0,0,364,59,1,
+        0,0,0,365,369,5,2,0,0,366,368,3,62,31,0,367,366,1,0,0,0,368,371,
+        1,0,0,0,369,367,1,0,0,0,369,370,1,0,0,0,370,372,1,0,0,0,371,369,
+        1,0,0,0,372,373,5,3,0,0,373,61,1,0,0,0,374,377,3,64,32,0,375,377,
+        8,4,0,0,376,374,1,0,0,0,376,375,1,0,0,0,377,63,1,0,0,0,378,380,5,
+        38,0,0,379,381,5,7,0,0,380,379,1,0,0,0,380,381,1,0,0,0,381,382,1,
+        0,0,0,382,384,5,35,0,0,383,385,5,7,0,0,384,383,1,0,0,0,384,385,1,
+        0,0,0,385,386,1,0,0,0,386,387,3,66,33,0,387,65,1,0,0,0,388,390,3,
+        68,34,0,389,388,1,0,0,0,390,391,1,0,0,0,391,389,1,0,0,0,391,392,
+        1,0,0,0,392,67,1,0,0,0,393,397,3,72,36,0,394,397,5,46,0,0,395,397,
+        5,5,0,0,396,393,1,0,0,0,396,394,1,0,0,0,396,395,1,0,0,0,397,69,1,
+        0,0,0,398,402,3,72,36,0,399,402,5,5,0,0,400,402,5,4,0,0,401,398,
+        1,0,0,0,401,399,1,0,0,0,401,400,1,0,0,0,402,71,1,0,0,0,403,404,7,
+        5,0,0,404,73,1,0,0,0,405,406,5,2,0,0,406,407,3,76,38,0,407,408,5,
+        4,0,0,408,75,1,0,0,0,409,410,7,6,0,0,410,77,1,0,0,0,411,413,5,81,
+        0,0,412,411,1,0,0,0,412,413,1,0,0,0,413,79,1,0,0,0,414,415,5,2,0,
+        0,415,416,3,82,41,0,416,417,5,3,0,0,417,418,5,0,0,1,418,81,1,0,0,
+        0,419,428,3,84,42,0,420,428,3,86,43,0,421,428,3,90,45,0,422,428,
+        3,92,46,0,423,428,3,94,47,0,424,428,3,100,50,0,425,428,3,102,51,
+        0,426,428,3,104,52,0,427,419,1,0,0,0,427,420,1,0,0,0,427,421,1,0,
+        0,0,427,422,1,0,0,0,427,423,1,0,0,0,427,424,1,0,0,0,427,425,1,0,
+        0,0,427,426,1,0,0,0,428,83,1,0,0,0,429,430,5,53,0,0,430,435,5,4,
+        0,0,431,436,5,61,0,0,432,436,5,62,0,0,433,434,5,78,0,0,434,436,3,
+        78,39,0,435,431,1,0,0,0,435,432,1,0,0,0,435,433,1,0,0,0,436,85,1,
+        0,0,0,437,438,5,54,0,0,438,447,5,4,0,0,439,440,5,79,0,0,440,448,
+        3,78,39,0,441,448,3,88,44,0,442,443,5,65,0,0,443,444,5,4,0,0,444,
+        448,3,88,44,0,445,446,5,80,0,0,446,448,5,82,0,0,447,439,1,0,0,0,
+        447,441,1,0,0,0,447,442,1,0,0,0,447,445,1,0,0,0,448,87,1,0,0,0,449,
+        450,7,7,0,0,450,89,1,0,0,0,451,452,5,55,0,0,452,453,5,4,0,0,453,
+        454,7,8,0,0,454,91,1,0,0,0,455,456,5,56,0,0,456,457,5,4,0,0,457,
+        458,3,96,48,0,458,459,5,4,0,0,459,460,5,9,0,0,460,93,1,0,0,0,461,
+        462,5,57,0,0,462,463,5,4,0,0,463,464,3,96,48,0,464,465,5,4,0,0,465,
+        466,3,98,49,0,466,95,1,0,0,0,467,468,7,9,0,0,468,97,1,0,0,0,469,
+        471,5,5,0,0,470,469,1,0,0,0,470,471,1,0,0,0,471,472,1,0,0,0,472,
+        475,5,9,0,0,473,474,5,6,0,0,474,476,5,9,0,0,475,473,1,0,0,0,475,
+        476,1,0,0,0,476,99,1,0,0,0,477,478,5,58,0,0,478,479,5,4,0,0,479,
+        480,5,71,0,0,480,101,1,0,0,0,481,482,5,59,0,0,482,483,5,4,0,0,483,
+        484,5,72,0,0,484,103,1,0,0,0,485,486,5,51,0,0,486,487,5,4,0,0,487,
+        488,5,52,0,0,488,489,5,4,0,0,489,490,3,106,53,0,490,105,1,0,0,0,
+        491,492,7,10,0,0,492,107,1,0,0,0,493,494,5,2,0,0,494,495,3,110,55,
+        0,495,496,5,3,0,0,496,497,5,0,0,1,497,109,1,0,0,0,498,501,3,112,
+        56,0,499,501,3,114,57,0,500,498,1,0,0,0,500,499,1,0,0,0,501,111,
+        1,0,0,0,502,503,5,53,0,0,503,510,5,4,0,0,504,511,5,61,0,0,505,511,
+        5,62,0,0,506,511,5,63,0,0,507,511,5,64,0,0,508,509,5,78,0,0,509,
+        511,3,78,39,0,510,504,1,0,0,0,510,505,1,0,0,0,510,506,1,0,0,0,510,
+        507,1,0,0,0,510,508,1,0,0,0,511,113,1,0,0,0,512,513,5,60,0,0,513,
+        523,5,4,0,0,514,524,5,73,0,0,515,524,5,74,0,0,516,524,5,75,0,0,517,
+        518,5,76,0,0,518,519,5,4,0,0,519,524,5,9,0,0,520,521,5,77,0,0,521,
+        522,5,4,0,0,522,524,5,9,0,0,523,514,1,0,0,0,523,515,1,0,0,0,523,
+        516,1,0,0,0,523,517,1,0,0,0,523,520,1,0,0,0,524,115,1,0,0,0,525,
+        527,3,118,59,0,526,525,1,0,0,0,527,530,1,0,0,0,528,526,1,0,0,0,528,
+        529,1,0,0,0,529,531,1,0,0,0,530,528,1,0,0,0,531,532,5,0,0,1,532,
+        117,1,0,0,0,533,535,3,120,60,0,534,533,1,0,0,0,535,538,1,0,0,0,536,
+        534,1,0,0,0,536,537,1,0,0,0,537,539,1,0,0,0,538,536,1,0,0,0,539,
+        540,5,1,0,0,540,119,1,0,0,0,541,542,7,11,0,0,542,121,1,0,0,0,543,
+        545,5,7,0,0,544,543,1,0,0,0,544,545,1,0,0,0,545,546,1,0,0,0,546,
+        547,3,124,62,0,547,548,5,0,0,1,548,553,1,0,0,0,549,550,3,142,71,
+        0,550,551,5,0,0,1,551,553,1,0,0,0,552,544,1,0,0,0,552,549,1,0,0,
+        0,553,123,1,0,0,0,554,560,5,88,0,0,555,557,5,7,0,0,556,558,3,126,
+        63,0,557,556,1,0,0,0,557,558,1,0,0,0,558,559,1,0,0,0,559,561,3,134,
+        67,0,560,555,1,0,0,0,560,561,1,0,0,0,561,125,1,0,0,0,562,568,3,130,
+        65,0,563,568,3,132,66,0,564,565,3,136,68,0,565,566,3,128,64,0,566,
+        568,1,0,0,0,567,562,1,0,0,0,567,563,1,0,0,0,567,564,1,0,0,0,568,
+        127,1,0,0,0,569,570,3,138,69,0,570,129,1,0,0,0,571,582,5,89,0,0,
+        572,582,5,90,0,0,573,582,5,91,0,0,574,582,5,92,0,0,575,576,5,93,
+        0,0,576,577,5,7,0,0,577,582,5,89,0,0,578,579,5,94,0,0,579,580,5,
+        7,0,0,580,582,5,89,0,0,581,571,1,0,0,0,581,572,1,0,0,0,581,573,1,
+        0,0,0,581,574,1,0,0,0,581,575,1,0,0,0,581,578,1,0,0,0,582,131,1,
+        0,0,0,583,584,7,12,0,0,584,133,1,0,0,0,585,586,3,136,68,0,586,587,
+        3,138,69,0,587,589,1,0,0,0,588,585,1,0,0,0,589,592,1,0,0,0,590,588,
+        1,0,0,0,590,591,1,0,0,0,591,594,1,0,0,0,592,590,1,0,0,0,593,595,
+        3,136,68,0,594,593,1,0,0,0,594,595,1,0,0,0,595,597,1,0,0,0,596,598,
+        3,140,70,0,597,596,1,0,0,0,597,598,1,0,0,0,598,135,1,0,0,0,599,601,
+        7,13,0,0,600,599,1,0,0,0,601,602,1,0,0,0,602,600,1,0,0,0,602,603,
+        1,0,0,0,603,137,1,0,0,0,604,605,7,14,0,0,605,139,1,0,0,0,606,607,
+        5,95,0,0,607,141,1,0,0,0,608,613,5,7,0,0,609,613,5,96,0,0,610,613,
+        5,95,0,0,611,613,3,138,69,0,612,608,1,0,0,0,612,609,1,0,0,0,612,
+        610,1,0,0,0,612,611,1,0,0,0,613,616,1,0,0,0,614,612,1,0,0,0,614,
+        615,1,0,0,0,615,143,1,0,0,0,616,614,1,0,0,0,58,154,160,169,177,181,
+        185,193,201,204,207,212,218,229,237,244,254,260,271,277,281,293,
+        300,311,322,333,344,347,361,369,376,380,384,391,396,401,412,427,
+        435,447,470,475,500,510,523,528,536,544,552,557,560,567,581,590,
+        594,597,602,612,614
     ];
 
     private static __ATN: antlr.ATN;
@@ -5343,6 +6030,597 @@ export class BodyContentTagContext extends antlr.ParserRuleContext {
     public override accept<Result>(visitor: MdTemplateParserVisitor<Result>): Result | null {
         if (visitor.visitBodyContentTag) {
             return visitor.visitBodyContentTag(this);
+        } else {
+            return visitor.visitChildren(this);
+        }
+    }
+}
+
+
+export class DirectiveScanEntryContext extends antlr.ParserRuleContext {
+    public constructor(parent: antlr.ParserRuleContext | null, invokingState: number) {
+        super(parent, invokingState);
+    }
+    public EOF(): antlr.TerminalNode {
+        return this.getToken(MdTemplateParser.EOF, 0)!;
+    }
+    public directiveScanLine(): DirectiveScanLineContext[];
+    public directiveScanLine(i: number): DirectiveScanLineContext | null;
+    public directiveScanLine(i?: number): DirectiveScanLineContext[] | DirectiveScanLineContext | null {
+        if (i === undefined) {
+            return this.getRuleContexts(DirectiveScanLineContext);
+        }
+
+        return this.getRuleContext(i, DirectiveScanLineContext);
+    }
+    public override get ruleIndex(): number {
+        return MdTemplateParser.RULE_directiveScanEntry;
+    }
+    public override enterRule(listener: MdTemplateParserListener): void {
+        if(listener.enterDirectiveScanEntry) {
+             listener.enterDirectiveScanEntry(this);
+        }
+    }
+    public override exitRule(listener: MdTemplateParserListener): void {
+        if(listener.exitDirectiveScanEntry) {
+             listener.exitDirectiveScanEntry(this);
+        }
+    }
+    public override accept<Result>(visitor: MdTemplateParserVisitor<Result>): Result | null {
+        if (visitor.visitDirectiveScanEntry) {
+            return visitor.visitDirectiveScanEntry(this);
+        } else {
+            return visitor.visitChildren(this);
+        }
+    }
+}
+
+
+export class DirectiveScanLineContext extends antlr.ParserRuleContext {
+    public constructor(parent: antlr.ParserRuleContext | null, invokingState: number) {
+        super(parent, invokingState);
+    }
+    public NL(): antlr.TerminalNode {
+        return this.getToken(MdTemplateParser.NL, 0)!;
+    }
+    public directiveScanItem(): DirectiveScanItemContext[];
+    public directiveScanItem(i: number): DirectiveScanItemContext | null;
+    public directiveScanItem(i?: number): DirectiveScanItemContext[] | DirectiveScanItemContext | null {
+        if (i === undefined) {
+            return this.getRuleContexts(DirectiveScanItemContext);
+        }
+
+        return this.getRuleContext(i, DirectiveScanItemContext);
+    }
+    public override get ruleIndex(): number {
+        return MdTemplateParser.RULE_directiveScanLine;
+    }
+    public override enterRule(listener: MdTemplateParserListener): void {
+        if(listener.enterDirectiveScanLine) {
+             listener.enterDirectiveScanLine(this);
+        }
+    }
+    public override exitRule(listener: MdTemplateParserListener): void {
+        if(listener.exitDirectiveScanLine) {
+             listener.exitDirectiveScanLine(this);
+        }
+    }
+    public override accept<Result>(visitor: MdTemplateParserVisitor<Result>): Result | null {
+        if (visitor.visitDirectiveScanLine) {
+            return visitor.visitDirectiveScanLine(this);
+        } else {
+            return visitor.visitChildren(this);
+        }
+    }
+}
+
+
+export class DirectiveScanItemContext extends antlr.ParserRuleContext {
+    public constructor(parent: antlr.ParserRuleContext | null, invokingState: number) {
+        super(parent, invokingState);
+    }
+    public SCAN_OPEN(): antlr.TerminalNode | null {
+        return this.getToken(MdTemplateParser.SCAN_OPEN, 0);
+    }
+    public SCAN_CLOSE(): antlr.TerminalNode | null {
+        return this.getToken(MdTemplateParser.SCAN_CLOSE, 0);
+    }
+    public SCAN_TICKS(): antlr.TerminalNode | null {
+        return this.getToken(MdTemplateParser.SCAN_TICKS, 0);
+    }
+    public SCAN_TEXT(): antlr.TerminalNode | null {
+        return this.getToken(MdTemplateParser.SCAN_TEXT, 0);
+    }
+    public SCAN_CHAR(): antlr.TerminalNode | null {
+        return this.getToken(MdTemplateParser.SCAN_CHAR, 0);
+    }
+    public override get ruleIndex(): number {
+        return MdTemplateParser.RULE_directiveScanItem;
+    }
+    public override enterRule(listener: MdTemplateParserListener): void {
+        if(listener.enterDirectiveScanItem) {
+             listener.enterDirectiveScanItem(this);
+        }
+    }
+    public override exitRule(listener: MdTemplateParserListener): void {
+        if(listener.exitDirectiveScanItem) {
+             listener.exitDirectiveScanItem(this);
+        }
+    }
+    public override accept<Result>(visitor: MdTemplateParserVisitor<Result>): Result | null {
+        if (visitor.visitDirectiveScanItem) {
+            return visitor.visitDirectiveScanItem(this);
+        } else {
+            return visitor.visitChildren(this);
+        }
+    }
+}
+
+
+export class DirectiveEntryContext extends antlr.ParserRuleContext {
+    public constructor(parent: antlr.ParserRuleContext | null, invokingState: number) {
+        super(parent, invokingState);
+    }
+    public directive(): DirectiveContext | null {
+        return this.getRuleContext(0, DirectiveContext);
+    }
+    public EOF(): antlr.TerminalNode {
+        return this.getToken(MdTemplateParser.EOF, 0)!;
+    }
+    public WS(): antlr.TerminalNode | null {
+        return this.getToken(MdTemplateParser.WS, 0);
+    }
+    public directiveProse(): DirectiveProseContext | null {
+        return this.getRuleContext(0, DirectiveProseContext);
+    }
+    public override get ruleIndex(): number {
+        return MdTemplateParser.RULE_directiveEntry;
+    }
+    public override enterRule(listener: MdTemplateParserListener): void {
+        if(listener.enterDirectiveEntry) {
+             listener.enterDirectiveEntry(this);
+        }
+    }
+    public override exitRule(listener: MdTemplateParserListener): void {
+        if(listener.exitDirectiveEntry) {
+             listener.exitDirectiveEntry(this);
+        }
+    }
+    public override accept<Result>(visitor: MdTemplateParserVisitor<Result>): Result | null {
+        if (visitor.visitDirectiveEntry) {
+            return visitor.visitDirectiveEntry(this);
+        } else {
+            return visitor.visitChildren(this);
+        }
+    }
+}
+
+
+export class DirectiveContext extends antlr.ParserRuleContext {
+    public constructor(parent: antlr.ParserRuleContext | null, invokingState: number) {
+        super(parent, invokingState);
+    }
+    public DIR_KEYWORD(): antlr.TerminalNode {
+        return this.getToken(MdTemplateParser.DIR_KEYWORD, 0)!;
+    }
+    public WS(): antlr.TerminalNode | null {
+        return this.getToken(MdTemplateParser.WS, 0);
+    }
+    public directiveArgs(): DirectiveArgsContext | null {
+        return this.getRuleContext(0, DirectiveArgsContext);
+    }
+    public directiveHead(): DirectiveHeadContext | null {
+        return this.getRuleContext(0, DirectiveHeadContext);
+    }
+    public override get ruleIndex(): number {
+        return MdTemplateParser.RULE_directive;
+    }
+    public override enterRule(listener: MdTemplateParserListener): void {
+        if(listener.enterDirective) {
+             listener.enterDirective(this);
+        }
+    }
+    public override exitRule(listener: MdTemplateParserListener): void {
+        if(listener.exitDirective) {
+             listener.exitDirective(this);
+        }
+    }
+    public override accept<Result>(visitor: MdTemplateParserVisitor<Result>): Result | null {
+        if (visitor.visitDirective) {
+            return visitor.visitDirective(this);
+        } else {
+            return visitor.visitChildren(this);
+        }
+    }
+}
+
+
+export class DirectiveHeadContext extends antlr.ParserRuleContext {
+    public constructor(parent: antlr.ParserRuleContext | null, invokingState: number) {
+        super(parent, invokingState);
+    }
+    public directiveVerb(): DirectiveVerbContext | null {
+        return this.getRuleContext(0, DirectiveVerbContext);
+    }
+    public directiveUnknown(): DirectiveUnknownContext | null {
+        return this.getRuleContext(0, DirectiveUnknownContext);
+    }
+    public directiveSep(): DirectiveSepContext | null {
+        return this.getRuleContext(0, DirectiveSepContext);
+    }
+    public directiveMisplaced(): DirectiveMisplacedContext | null {
+        return this.getRuleContext(0, DirectiveMisplacedContext);
+    }
+    public override get ruleIndex(): number {
+        return MdTemplateParser.RULE_directiveHead;
+    }
+    public override enterRule(listener: MdTemplateParserListener): void {
+        if(listener.enterDirectiveHead) {
+             listener.enterDirectiveHead(this);
+        }
+    }
+    public override exitRule(listener: MdTemplateParserListener): void {
+        if(listener.exitDirectiveHead) {
+             listener.exitDirectiveHead(this);
+        }
+    }
+    public override accept<Result>(visitor: MdTemplateParserVisitor<Result>): Result | null {
+        if (visitor.visitDirectiveHead) {
+            return visitor.visitDirectiveHead(this);
+        } else {
+            return visitor.visitChildren(this);
+        }
+    }
+}
+
+
+export class DirectiveMisplacedContext extends antlr.ParserRuleContext {
+    public constructor(parent: antlr.ParserRuleContext | null, invokingState: number) {
+        super(parent, invokingState);
+    }
+    public directiveItem(): DirectiveItemContext {
+        return this.getRuleContext(0, DirectiveItemContext)!;
+    }
+    public override get ruleIndex(): number {
+        return MdTemplateParser.RULE_directiveMisplaced;
+    }
+    public override enterRule(listener: MdTemplateParserListener): void {
+        if(listener.enterDirectiveMisplaced) {
+             listener.enterDirectiveMisplaced(this);
+        }
+    }
+    public override exitRule(listener: MdTemplateParserListener): void {
+        if(listener.exitDirectiveMisplaced) {
+             listener.exitDirectiveMisplaced(this);
+        }
+    }
+    public override accept<Result>(visitor: MdTemplateParserVisitor<Result>): Result | null {
+        if (visitor.visitDirectiveMisplaced) {
+            return visitor.visitDirectiveMisplaced(this);
+        } else {
+            return visitor.visitChildren(this);
+        }
+    }
+}
+
+
+export class DirectiveVerbContext extends antlr.ParserRuleContext {
+    public constructor(parent: antlr.ParserRuleContext | null, invokingState: number) {
+        super(parent, invokingState);
+    }
+    public DIR_DISABLE(): antlr.TerminalNode | null {
+        return this.getToken(MdTemplateParser.DIR_DISABLE, 0);
+    }
+    public DIR_DISABLE_LINE(): antlr.TerminalNode | null {
+        return this.getToken(MdTemplateParser.DIR_DISABLE_LINE, 0);
+    }
+    public DIR_DISABLE_NEXT_LINE(): antlr.TerminalNode | null {
+        return this.getToken(MdTemplateParser.DIR_DISABLE_NEXT_LINE, 0);
+    }
+    public DIR_DISABLE_FILE(): antlr.TerminalNode | null {
+        return this.getToken(MdTemplateParser.DIR_DISABLE_FILE, 0);
+    }
+    public DIR_BEGIN(): antlr.TerminalNode | null {
+        return this.getToken(MdTemplateParser.DIR_BEGIN, 0);
+    }
+    public WS(): antlr.TerminalNode | null {
+        return this.getToken(MdTemplateParser.WS, 0);
+    }
+    public DIR_END(): antlr.TerminalNode | null {
+        return this.getToken(MdTemplateParser.DIR_END, 0);
+    }
+    public override get ruleIndex(): number {
+        return MdTemplateParser.RULE_directiveVerb;
+    }
+    public override enterRule(listener: MdTemplateParserListener): void {
+        if(listener.enterDirectiveVerb) {
+             listener.enterDirectiveVerb(this);
+        }
+    }
+    public override exitRule(listener: MdTemplateParserListener): void {
+        if(listener.exitDirectiveVerb) {
+             listener.exitDirectiveVerb(this);
+        }
+    }
+    public override accept<Result>(visitor: MdTemplateParserVisitor<Result>): Result | null {
+        if (visitor.visitDirectiveVerb) {
+            return visitor.visitDirectiveVerb(this);
+        } else {
+            return visitor.visitChildren(this);
+        }
+    }
+}
+
+
+export class DirectiveUnknownContext extends antlr.ParserRuleContext {
+    public constructor(parent: antlr.ParserRuleContext | null, invokingState: number) {
+        super(parent, invokingState);
+    }
+    public DIR_WORD(): antlr.TerminalNode | null {
+        return this.getToken(MdTemplateParser.DIR_WORD, 0);
+    }
+    public DIR_KEYWORD(): antlr.TerminalNode | null {
+        return this.getToken(MdTemplateParser.DIR_KEYWORD, 0);
+    }
+    public DIR_BEGIN(): antlr.TerminalNode | null {
+        return this.getToken(MdTemplateParser.DIR_BEGIN, 0);
+    }
+    public DIR_END(): antlr.TerminalNode | null {
+        return this.getToken(MdTemplateParser.DIR_END, 0);
+    }
+    public override get ruleIndex(): number {
+        return MdTemplateParser.RULE_directiveUnknown;
+    }
+    public override enterRule(listener: MdTemplateParserListener): void {
+        if(listener.enterDirectiveUnknown) {
+             listener.enterDirectiveUnknown(this);
+        }
+    }
+    public override exitRule(listener: MdTemplateParserListener): void {
+        if(listener.exitDirectiveUnknown) {
+             listener.exitDirectiveUnknown(this);
+        }
+    }
+    public override accept<Result>(visitor: MdTemplateParserVisitor<Result>): Result | null {
+        if (visitor.visitDirectiveUnknown) {
+            return visitor.visitDirectiveUnknown(this);
+        } else {
+            return visitor.visitChildren(this);
+        }
+    }
+}
+
+
+export class DirectiveArgsContext extends antlr.ParserRuleContext {
+    public constructor(parent: antlr.ParserRuleContext | null, invokingState: number) {
+        super(parent, invokingState);
+    }
+    public directiveSep(): DirectiveSepContext[];
+    public directiveSep(i: number): DirectiveSepContext | null;
+    public directiveSep(i?: number): DirectiveSepContext[] | DirectiveSepContext | null {
+        if (i === undefined) {
+            return this.getRuleContexts(DirectiveSepContext);
+        }
+
+        return this.getRuleContext(i, DirectiveSepContext);
+    }
+    public directiveItem(): DirectiveItemContext[];
+    public directiveItem(i: number): DirectiveItemContext | null;
+    public directiveItem(i?: number): DirectiveItemContext[] | DirectiveItemContext | null {
+        if (i === undefined) {
+            return this.getRuleContexts(DirectiveItemContext);
+        }
+
+        return this.getRuleContext(i, DirectiveItemContext);
+    }
+    public directiveReason(): DirectiveReasonContext | null {
+        return this.getRuleContext(0, DirectiveReasonContext);
+    }
+    public override get ruleIndex(): number {
+        return MdTemplateParser.RULE_directiveArgs;
+    }
+    public override enterRule(listener: MdTemplateParserListener): void {
+        if(listener.enterDirectiveArgs) {
+             listener.enterDirectiveArgs(this);
+        }
+    }
+    public override exitRule(listener: MdTemplateParserListener): void {
+        if(listener.exitDirectiveArgs) {
+             listener.exitDirectiveArgs(this);
+        }
+    }
+    public override accept<Result>(visitor: MdTemplateParserVisitor<Result>): Result | null {
+        if (visitor.visitDirectiveArgs) {
+            return visitor.visitDirectiveArgs(this);
+        } else {
+            return visitor.visitChildren(this);
+        }
+    }
+}
+
+
+export class DirectiveSepContext extends antlr.ParserRuleContext {
+    public constructor(parent: antlr.ParserRuleContext | null, invokingState: number) {
+        super(parent, invokingState);
+    }
+    public WS(): antlr.TerminalNode[];
+    public WS(i: number): antlr.TerminalNode | null;
+    public WS(i?: number): antlr.TerminalNode | null | antlr.TerminalNode[] {
+    	if (i === undefined) {
+    		return this.getTokens(MdTemplateParser.WS);
+    	} else {
+    		return this.getToken(MdTemplateParser.WS, i);
+    	}
+    }
+    public DIR_COMMA(): antlr.TerminalNode[];
+    public DIR_COMMA(i: number): antlr.TerminalNode | null;
+    public DIR_COMMA(i?: number): antlr.TerminalNode | null | antlr.TerminalNode[] {
+    	if (i === undefined) {
+    		return this.getTokens(MdTemplateParser.DIR_COMMA);
+    	} else {
+    		return this.getToken(MdTemplateParser.DIR_COMMA, i);
+    	}
+    }
+    public override get ruleIndex(): number {
+        return MdTemplateParser.RULE_directiveSep;
+    }
+    public override enterRule(listener: MdTemplateParserListener): void {
+        if(listener.enterDirectiveSep) {
+             listener.enterDirectiveSep(this);
+        }
+    }
+    public override exitRule(listener: MdTemplateParserListener): void {
+        if(listener.exitDirectiveSep) {
+             listener.exitDirectiveSep(this);
+        }
+    }
+    public override accept<Result>(visitor: MdTemplateParserVisitor<Result>): Result | null {
+        if (visitor.visitDirectiveSep) {
+            return visitor.visitDirectiveSep(this);
+        } else {
+            return visitor.visitChildren(this);
+        }
+    }
+}
+
+
+export class DirectiveItemContext extends antlr.ParserRuleContext {
+    public constructor(parent: antlr.ParserRuleContext | null, invokingState: number) {
+        super(parent, invokingState);
+    }
+    public DIR_WORD(): antlr.TerminalNode | null {
+        return this.getToken(MdTemplateParser.DIR_WORD, 0);
+    }
+    public DIR_KEYWORD(): antlr.TerminalNode | null {
+        return this.getToken(MdTemplateParser.DIR_KEYWORD, 0);
+    }
+    public DIR_DISABLE(): antlr.TerminalNode | null {
+        return this.getToken(MdTemplateParser.DIR_DISABLE, 0);
+    }
+    public DIR_DISABLE_LINE(): antlr.TerminalNode | null {
+        return this.getToken(MdTemplateParser.DIR_DISABLE_LINE, 0);
+    }
+    public DIR_DISABLE_NEXT_LINE(): antlr.TerminalNode | null {
+        return this.getToken(MdTemplateParser.DIR_DISABLE_NEXT_LINE, 0);
+    }
+    public DIR_DISABLE_FILE(): antlr.TerminalNode | null {
+        return this.getToken(MdTemplateParser.DIR_DISABLE_FILE, 0);
+    }
+    public DIR_BEGIN(): antlr.TerminalNode | null {
+        return this.getToken(MdTemplateParser.DIR_BEGIN, 0);
+    }
+    public DIR_END(): antlr.TerminalNode | null {
+        return this.getToken(MdTemplateParser.DIR_END, 0);
+    }
+    public override get ruleIndex(): number {
+        return MdTemplateParser.RULE_directiveItem;
+    }
+    public override enterRule(listener: MdTemplateParserListener): void {
+        if(listener.enterDirectiveItem) {
+             listener.enterDirectiveItem(this);
+        }
+    }
+    public override exitRule(listener: MdTemplateParserListener): void {
+        if(listener.exitDirectiveItem) {
+             listener.exitDirectiveItem(this);
+        }
+    }
+    public override accept<Result>(visitor: MdTemplateParserVisitor<Result>): Result | null {
+        if (visitor.visitDirectiveItem) {
+            return visitor.visitDirectiveItem(this);
+        } else {
+            return visitor.visitChildren(this);
+        }
+    }
+}
+
+
+export class DirectiveReasonContext extends antlr.ParserRuleContext {
+    public constructor(parent: antlr.ParserRuleContext | null, invokingState: number) {
+        super(parent, invokingState);
+    }
+    public DIR_REASON(): antlr.TerminalNode {
+        return this.getToken(MdTemplateParser.DIR_REASON, 0)!;
+    }
+    public override get ruleIndex(): number {
+        return MdTemplateParser.RULE_directiveReason;
+    }
+    public override enterRule(listener: MdTemplateParserListener): void {
+        if(listener.enterDirectiveReason) {
+             listener.enterDirectiveReason(this);
+        }
+    }
+    public override exitRule(listener: MdTemplateParserListener): void {
+        if(listener.exitDirectiveReason) {
+             listener.exitDirectiveReason(this);
+        }
+    }
+    public override accept<Result>(visitor: MdTemplateParserVisitor<Result>): Result | null {
+        if (visitor.visitDirectiveReason) {
+            return visitor.visitDirectiveReason(this);
+        } else {
+            return visitor.visitChildren(this);
+        }
+    }
+}
+
+
+export class DirectiveProseContext extends antlr.ParserRuleContext {
+    public constructor(parent: antlr.ParserRuleContext | null, invokingState: number) {
+        super(parent, invokingState);
+    }
+    public WS(): antlr.TerminalNode[];
+    public WS(i: number): antlr.TerminalNode | null;
+    public WS(i?: number): antlr.TerminalNode | null | antlr.TerminalNode[] {
+    	if (i === undefined) {
+    		return this.getTokens(MdTemplateParser.WS);
+    	} else {
+    		return this.getToken(MdTemplateParser.WS, i);
+    	}
+    }
+    public DIR_COMMA(): antlr.TerminalNode[];
+    public DIR_COMMA(i: number): antlr.TerminalNode | null;
+    public DIR_COMMA(i?: number): antlr.TerminalNode | null | antlr.TerminalNode[] {
+    	if (i === undefined) {
+    		return this.getTokens(MdTemplateParser.DIR_COMMA);
+    	} else {
+    		return this.getToken(MdTemplateParser.DIR_COMMA, i);
+    	}
+    }
+    public DIR_REASON(): antlr.TerminalNode[];
+    public DIR_REASON(i: number): antlr.TerminalNode | null;
+    public DIR_REASON(i?: number): antlr.TerminalNode | null | antlr.TerminalNode[] {
+    	if (i === undefined) {
+    		return this.getTokens(MdTemplateParser.DIR_REASON);
+    	} else {
+    		return this.getToken(MdTemplateParser.DIR_REASON, i);
+    	}
+    }
+    public directiveItem(): DirectiveItemContext[];
+    public directiveItem(i: number): DirectiveItemContext | null;
+    public directiveItem(i?: number): DirectiveItemContext[] | DirectiveItemContext | null {
+        if (i === undefined) {
+            return this.getRuleContexts(DirectiveItemContext);
+        }
+
+        return this.getRuleContext(i, DirectiveItemContext);
+    }
+    public override get ruleIndex(): number {
+        return MdTemplateParser.RULE_directiveProse;
+    }
+    public override enterRule(listener: MdTemplateParserListener): void {
+        if(listener.enterDirectiveProse) {
+             listener.enterDirectiveProse(this);
+        }
+    }
+    public override exitRule(listener: MdTemplateParserListener): void {
+        if(listener.exitDirectiveProse) {
+             listener.exitDirectiveProse(this);
+        }
+    }
+    public override accept<Result>(visitor: MdTemplateParserVisitor<Result>): Result | null {
+        if (visitor.visitDirectiveProse) {
+            return visitor.visitDirectiveProse(this);
         } else {
             return visitor.visitChildren(this);
         }

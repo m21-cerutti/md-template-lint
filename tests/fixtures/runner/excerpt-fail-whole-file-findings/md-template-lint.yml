@@ -1,0 +1,6 @@
+# fail-: every finding is about the whole file (a missing key, a missing heading), so no
+# diagnostic has a position or an anchor line and the output carries no excerpt (spec 8.1, EX1).
+pairs:
+  - name: notes
+    template: templates/note.template.md
+    include: docs/*.md

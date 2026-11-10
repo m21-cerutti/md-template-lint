@@ -10,8 +10,8 @@ import { expectTemplateCases, verifyFixture, type VerifyCase } from "../../helpe
 const CODE = "MTL012";
 const DIR = "tests/fixtures/templates/MTL012";
 
-const warning = (message: string, line: number, column: number) =>
-  ({ code: CODE, severity: "warning", message, line, column }) as const;
+const warning = (message: string, line: number, column: number, sourceLine: string) =>
+  ({ code: CODE, severity: "warning", message, line, column, sourceLine }) as const;
 
 /** Case -> fixture `<name>.md` -> expected `--verify` result. */
 const CASES: readonly VerifyCase[] = [
@@ -22,7 +22,9 @@ const CASES: readonly VerifyCase[] = [
     name: "fail-field-tag-bound-not-a-number",
     exitCode: 0,
     status: "ok",
-    diagnostics: [warning("Field 'n': malformed tag [count:min:abc]", 2, 19)],
+    diagnostics: [
+      warning("Field 'n': malformed tag [count:min:abc]", 2, 19, "n: x # [count:min:abc]"),
+    ],
   },
   // A heading tag whose bound is not a number.
   {
@@ -30,7 +32,12 @@ const CASES: readonly VerifyCase[] = [
     exitCode: 0,
     status: "ok",
     diagnostics: [
-      warning("Heading 'Notes [content:min-lines:x]': malformed tag [content:min-lines:x]", 4, 29),
+      warning(
+        "Heading 'Notes [content:min-lines:x]': malformed tag [content:min-lines:x]",
+        4,
+        29,
+        "## Notes [content:min-lines:x]",
+      ),
     ],
   },
   // The filename comment names an unknown case convention.
@@ -38,7 +45,14 @@ const CASES: readonly VerifyCase[] = [
     name: "fail-filename-comment-unknown-case",
     exitCode: 0,
     status: "ok",
-    diagnostics: [warning("Filename comment: malformed tag [filename:case:bogus]", 2, 18)],
+    diagnostics: [
+      warning(
+        "Filename comment: malformed tag [filename:case:bogus]",
+        2,
+        18,
+        "# [filename:case:bogus]",
+      ),
+    ],
   },
 ];
 

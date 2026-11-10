@@ -1,6 +1,6 @@
 // Release guard (phase A30), run by .github/workflows/release.yml on a tag push:
 //
-//   node scripts/smoke/check-release.ts <tag> <owner>/<name>
+//   tsx scripts/smoke/check-release.ts <tag> <owner>/<name>
 //
 // Reads package.json in the working directory. Fails when the tag is not `v<version>` or when
 // `repository.url` is not this repository (provenance needs both to agree). The rules are in
@@ -13,7 +13,7 @@ import { checkRelease } from "./helpers.ts";
 
 const [tag, repository, ...extra] = process.argv.slice(2);
 if (tag === undefined || repository === undefined || extra.length > 0) {
-  process.stderr.write("usage: node scripts/smoke/check-release.ts <tag> <owner>/<name>\n");
+  process.stderr.write("usage: tsx scripts/smoke/check-release.ts <tag> <owner>/<name>\n");
   process.exitCode = 2;
 } else {
   try {

@@ -9,8 +9,8 @@ import { expectTemplateCases, verifyFixture, type VerifyCase } from "../../helpe
 const CODE = "MTL013";
 const DIR = "tests/fixtures/templates/MTL013";
 
-const warning = (message: string, line: number, column: number) =>
-  ({ code: CODE, severity: "warning", message, line, column }) as const;
+const warning = (message: string, line: number, column: number, sourceLine: string) =>
+  ({ code: CODE, severity: "warning", message, line, column, sourceLine }) as const;
 
 /** Case -> fixture `<name>.md` -> expected `--verify` result. */
 const CASES: readonly VerifyCase[] = [
@@ -21,7 +21,14 @@ const CASES: readonly VerifyCase[] = [
     name: "fail-heading-tag-in-frontmatter",
     exitCode: 0,
     status: "ok",
-    diagnostics: [warning("Field 'n': tag [content:table] is not valid in frontmatter", 2, 8)],
+    diagnostics: [
+      warning(
+        "Field 'n': tag [content:table] is not valid in frontmatter",
+        2,
+        8,
+        "n: x # [content:table]",
+      ),
+    ],
   },
   // A field tag on a heading.
   {
@@ -29,7 +36,12 @@ const CASES: readonly VerifyCase[] = [
     exitCode: 0,
     status: "ok",
     diagnostics: [
-      warning("Heading 'Notes [count:min:1]': tag [count:min:1] is not valid in a heading", 4, 10),
+      warning(
+        "Heading 'Notes [count:min:1]': tag [count:min:1] is not valid in a heading",
+        4,
+        10,
+        "## Notes [count:min:1]",
+      ),
     ],
   },
 ];

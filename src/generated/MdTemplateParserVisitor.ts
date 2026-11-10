@@ -62,6 +62,20 @@ import { BodyTagEntryContext } from "./MdTemplateParser.js";
 import { BodyTagBodyContext } from "./MdTemplateParser.js";
 import { BodyPresenceTagContext } from "./MdTemplateParser.js";
 import { BodyContentTagContext } from "./MdTemplateParser.js";
+import { DirectiveScanEntryContext } from "./MdTemplateParser.js";
+import { DirectiveScanLineContext } from "./MdTemplateParser.js";
+import { DirectiveScanItemContext } from "./MdTemplateParser.js";
+import { DirectiveEntryContext } from "./MdTemplateParser.js";
+import { DirectiveContext } from "./MdTemplateParser.js";
+import { DirectiveHeadContext } from "./MdTemplateParser.js";
+import { DirectiveMisplacedContext } from "./MdTemplateParser.js";
+import { DirectiveVerbContext } from "./MdTemplateParser.js";
+import { DirectiveUnknownContext } from "./MdTemplateParser.js";
+import { DirectiveArgsContext } from "./MdTemplateParser.js";
+import { DirectiveSepContext } from "./MdTemplateParser.js";
+import { DirectiveItemContext } from "./MdTemplateParser.js";
+import { DirectiveReasonContext } from "./MdTemplateParser.js";
+import { DirectiveProseContext } from "./MdTemplateParser.js";
 
 
 /**
@@ -435,5 +449,89 @@ export class MdTemplateParserVisitor<Result> extends AbstractParseTreeVisitor<Re
      * @return the visitor result
      */
     visitBodyContentTag?: (ctx: BodyContentTagContext) => Result;
+    /**
+     * Visit a parse tree produced by `MdTemplateParser.directiveScanEntry`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitDirectiveScanEntry?: (ctx: DirectiveScanEntryContext) => Result;
+    /**
+     * Visit a parse tree produced by `MdTemplateParser.directiveScanLine`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitDirectiveScanLine?: (ctx: DirectiveScanLineContext) => Result;
+    /**
+     * Visit a parse tree produced by `MdTemplateParser.directiveScanItem`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitDirectiveScanItem?: (ctx: DirectiveScanItemContext) => Result;
+    /**
+     * Visit a parse tree produced by `MdTemplateParser.directiveEntry`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitDirectiveEntry?: (ctx: DirectiveEntryContext) => Result;
+    /**
+     * Visit a parse tree produced by `MdTemplateParser.directive`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitDirective?: (ctx: DirectiveContext) => Result;
+    /**
+     * Visit a parse tree produced by `MdTemplateParser.directiveHead`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitDirectiveHead?: (ctx: DirectiveHeadContext) => Result;
+    /**
+     * Visit a parse tree produced by `MdTemplateParser.directiveMisplaced`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitDirectiveMisplaced?: (ctx: DirectiveMisplacedContext) => Result;
+    /**
+     * Visit a parse tree produced by `MdTemplateParser.directiveVerb`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitDirectiveVerb?: (ctx: DirectiveVerbContext) => Result;
+    /**
+     * Visit a parse tree produced by `MdTemplateParser.directiveUnknown`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitDirectiveUnknown?: (ctx: DirectiveUnknownContext) => Result;
+    /**
+     * Visit a parse tree produced by `MdTemplateParser.directiveArgs`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitDirectiveArgs?: (ctx: DirectiveArgsContext) => Result;
+    /**
+     * Visit a parse tree produced by `MdTemplateParser.directiveSep`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitDirectiveSep?: (ctx: DirectiveSepContext) => Result;
+    /**
+     * Visit a parse tree produced by `MdTemplateParser.directiveItem`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitDirectiveItem?: (ctx: DirectiveItemContext) => Result;
+    /**
+     * Visit a parse tree produced by `MdTemplateParser.directiveReason`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitDirectiveReason?: (ctx: DirectiveReasonContext) => Result;
+    /**
+     * Visit a parse tree produced by `MdTemplateParser.directiveProse`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitDirectiveProse?: (ctx: DirectiveProseContext) => Result;
 }
 

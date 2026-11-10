@@ -20,14 +20,16 @@
         "severity": "warning",
         "message": "Field 'tags': malformed tag [count:min:abc]",
         "line": 2,
-        "column": 26
+        "column": 26,
+        "sourceLine": "tags: [\"a\"] # [count:min:abc]"
       },
       {
         "code": "MTL012",
         "severity": "warning",
         "message": "Heading 'Body [content:min-lines:abc]': malformed tag [content:min-lines:abc]",
         "line": 6,
-        "column": 28
+        "column": 28,
+        "sourceLine": "## Body [content:min-lines:abc]"
       }
     ]
   }

@@ -1,0 +1,5 @@
+# Spec 4.4 worked example 1: disable-line and disable-next-line, frontmatter and heading.
+pairs:
+  - name: notes
+    template: templates/notes.template.md
+    include: notes/*.md

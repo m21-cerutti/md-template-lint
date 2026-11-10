@@ -27,42 +27,48 @@
         "severity": "warning",
         "message": "Field 'wrong_place': tag [content:non-empty] is not valid in frontmatter",
         "line": 2,
-        "column": 25
+        "column": 25,
+        "sourceLine": "wrong_place: \"string\" # [content:non-empty]"
       },
       {
         "code": "MTL012",
         "severity": "warning",
         "message": "Field 'bad_count': malformed tag [count:min:abc]",
         "line": 3,
-        "column": 31
+        "column": 31,
+        "sourceLine": "bad_count: [\"a\"] # [count:min:abc]"
       },
       {
         "code": "MTL010",
         "severity": "warning",
         "message": "Field 'unknown_field': unknown tag [optionl]",
         "line": 4,
-        "column": 27
+        "column": 27,
+        "sourceLine": "unknown_field: \"string\" # [optionl]"
       },
       {
         "code": "MTL013",
         "severity": "warning",
         "message": "Heading 'Wrong heading [value:filename]': tag [value:filename] is not valid in a heading",
         "line": 7,
-        "column": 18
+        "column": 18,
+        "sourceLine": "## Wrong heading [value:filename]"
       },
       {
         "code": "MTL012",
         "severity": "warning",
         "message": "Heading 'Bad heading [content:min-lines:abc]': malformed tag [content:min-lines:abc]",
         "line": 9,
-        "column": 35
+        "column": 35,
+        "sourceLine": "## Bad heading [content:min-lines:abc]"
       },
       {
         "code": "MTL011",
         "severity": "warning",
         "message": "Heading 'Unknown heading [bogus]': unknown tag [bogus]",
         "line": 11,
-        "column": 20
+        "column": 20,
+        "sourceLine": "## Unknown heading [bogus] [content:non-empty]"
       }
     ]
   }

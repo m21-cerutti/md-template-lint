@@ -1,0 +1,7 @@
+# fail-: errors and warnings quote their source line. An anchored finding (MTL201 on an empty
+# key, MTL202, MTL701) quotes its anchor line; a directive warning (MTL021) has a position, so
+# it also gets a caret and a JSON `sourceLine` (spec 8.1, 8.2, 8.5).
+pairs:
+  - name: notes
+    template: templates/note.template.md
+    include: docs/*.md

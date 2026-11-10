@@ -49,7 +49,7 @@ const CASES: readonly Case[] = [
     ],
     stderr: [],
     absent: ["docs/b.md", "Total files", "✗"],
-    summary: { templates: 2, broken: 0, warnings: 1, runErrors: 0, exitCode: 0 },
+    summary: { templates: 2, broken: 0, warnings: 1, suppressed: 0, runErrors: 0, exitCode: 0 },
   },
   {
     name: "fail-broken-template",
@@ -62,7 +62,7 @@ const CASES: readonly Case[] = [
     ],
     stderr: [],
     absent: ["docs/a.md", "All templates passed!"],
-    summary: { templates: 2, broken: 1, warnings: 0, runErrors: 0, exitCode: 1 },
+    summary: { templates: 2, broken: 1, warnings: 0, suppressed: 0, runErrors: 0, exitCode: 1 },
   },
   {
     // The missing template is a run error (exit 2); the other template is still checked.
@@ -76,7 +76,7 @@ const CASES: readonly Case[] = [
     ],
     stderr: ["error MTL910: template not found: templates/missing.template.md (pair 'ghost')"],
     absent: ["All templates passed!"],
-    summary: { templates: 1, broken: 0, warnings: 0, runErrors: 1, exitCode: 2 },
+    summary: { templates: 1, broken: 0, warnings: 0, suppressed: 0, runErrors: 1, exitCode: 2 },
   },
   {
     // Precedence (spec 7.5): one broken template (1) and one missing template (2) is exit 2.
@@ -91,7 +91,7 @@ const CASES: readonly Case[] = [
     ],
     stderr: ["error MTL910: template not found: templates/missing.template.md (pair 'ghost')"],
     absent: ["All templates passed!"],
-    summary: { templates: 1, broken: 1, warnings: 0, runErrors: 1, exitCode: 2 },
+    summary: { templates: 1, broken: 1, warnings: 0, suppressed: 0, runErrors: 1, exitCode: 2 },
   },
   {
     name: "fail-template-is-directory",
@@ -102,7 +102,7 @@ const CASES: readonly Case[] = [
       "error MTL911: template path is not a regular file (for example a directory): templates/dir.template.md (pair 'dir')",
     ],
     absent: ["No templates checked."],
-    summary: { templates: 0, broken: 0, warnings: 0, runErrors: 1, exitCode: 2 },
+    summary: { templates: 0, broken: 0, warnings: 0, suppressed: 0, runErrors: 1, exitCode: 2 },
   },
   {
     // A config error stops before any template is read.
@@ -112,7 +112,7 @@ const CASES: readonly Case[] = [
     stdout: ["Templates:    0 checked, 0 broken", "Run errors:   2"],
     stderr: ["error MTL903: pairs[0].inlcude: unknown key 'inlcude'", "error MTL904:"],
     absent: ["✓", "TEMPLATE ERROR"],
-    summary: { templates: 0, broken: 0, warnings: 0, runErrors: 2, exitCode: 2 },
+    summary: { templates: 0, broken: 0, warnings: 0, suppressed: 0, runErrors: 2, exitCode: 2 },
   },
   {
     // Template paths on the command line: no config is read (there is none here).
@@ -125,7 +125,7 @@ const CASES: readonly Case[] = [
       `TEMPLATE ERROR: templates/broken.template.md - ${NO_FRONTMATTER}`,
     ],
     stderr: [],
-    summary: { templates: 2, broken: 1, warnings: 0, runErrors: 0, exitCode: 1 },
+    summary: { templates: 2, broken: 1, warnings: 0, suppressed: 0, runErrors: 0, exitCode: 1 },
   },
 ];
 
@@ -167,6 +167,15 @@ describe("cli --verify (spec 7.3)", () => {
       expect(run.exitCode).toBe(testCase.exitCode);
       expect(json.mode).toBe("verify");
       expect(json.summary).toEqual(testCase.summary);
+      // Spec 8.5: `suppressed` (always 0 in verify mode) follows `warnings`.
+      expect(Object.keys(json.summary)).toEqual([
+        "templates",
+        "broken",
+        "warnings",
+        "suppressed",
+        "runErrors",
+        "exitCode",
+      ]);
       expect(run.stderr).toBe("");
     });
   }
@@ -201,6 +210,7 @@ describe("cli --verify: details", () => {
             message: "Field 'title': unknown tag [optionl]",
             line: 2,
             column: 19,
+            sourceLine: 'title: "string" # [optionl]',
           },
         ],
       },

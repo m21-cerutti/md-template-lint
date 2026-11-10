@@ -6,8 +6,9 @@
  * - From paths: those files are the templates, no config needed.
  * - A template that does not parse or is not UTF-8 is broken (exit 1); one that does
  *   not exist is `MTL910` and one that is not a regular file `MTL911` (exit 2).
- *   Tag warnings (`MTL010` to `MTL013`) do not fail. A run error outranks a broken
- *   template: one missing template and one broken template is exit 2.
+ *   Tag warnings (`MTL010` to `MTL013`) do not fail and carry their template line
+ *   (spec 8.3, C09). A run error outranks a broken template: one missing template and
+ *   one broken template is exit 2.
  * - An ok template carries its schema (`schema.ts`): filename convention, fields with
  *   type and rules, headings with rules (spec 8.3).
  */
@@ -15,6 +16,7 @@ import { homedir } from "node:os";
 import { displayPath, foldPath, resolvePath } from "../config/paths.js";
 import type { ConfigResult, RunDiagnostic } from "../config/types.js";
 import { createRegistry, type RuleRegistry } from "../engine/registry.js";
+import { withExcerpts } from "./excerpt.js";
 import { pathKey, templateProblem } from "./files.js";
 import { describeTemplate } from "./schema.js";
 import { brokenReport, loadTemplate } from "./template.js";
@@ -73,7 +75,7 @@ async function verifyRefs(
         ? { template: brokenReport(ref.shown, status.diagnostics), warnings: [], schema: null }
         : {
             template: { path: ref.shown, status: "ok" },
-            warnings: status.warnings,
+            warnings: withExcerpts(status.warnings, status.text),
             schema: describeTemplate(status.model),
           },
     );

@@ -11,14 +11,16 @@
         "severity": "warning",
         "message": "Field 'title': tag [content:non-empty] is not valid in frontmatter",
         "line": 2,
-        "column": 19
+        "column": 19,
+        "sourceLine": "title: \"string\" # [content:non-empty]"
       },
       {
         "code": "MTL013",
         "severity": "warning",
         "message": "Heading 'Body [value:filename]': tag [value:filename] is not valid in a heading",
         "line": 5,
-        "column": 9
+        "column": 9,
+        "sourceLine": "## Body [value:filename]"
       }
     ]
   }

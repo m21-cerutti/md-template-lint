@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "tool": "md-template-lint",
+  "version": "1.0.0",
+  "mode": "lint",
+  "config": "md-template-lint.yml",
+  "results": [
+    {
+      "root": "project",
+      "pair": "notes",
+      "template": {
+        "path": "templates/note.template.md",
+        "status": "ok"
+      },
+      "files": [
+        {
+          "path": "docs/a.md",
+          "status": "pass",
+          "errors": [],
+          "warnings": [
+            {
+              "code": "MTL202",
+              "severity": "warning",
+              "message": "Unknown key 'reviewer' not present in template"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "runErrors": [],
+  "runWarnings": [],
+  "unmatched": [],
+  "summary": {
+    "files": 1,
+    "passed": 1,
+    "failed": 0,
+    "warnings": 1,
+    "filesWithWarnings": 1,
+    "suppressed": 0,
+    "templatesChecked": 1,
+    "templatesBroken": 0,
+    "runErrors": 0,
+    "runWarnings": 0,
+    "exitCode": 0
+  }
+}

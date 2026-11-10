@@ -1,0 +1,8 @@
+# Spec 4.4 DIR9: summary.suppressed is the sum over every pair-file lint (notes/a.md twice).
+pairs:
+  - name: notes
+    template: templates/notes.template.md
+    include: notes/*.md
+  - name: first
+    template: templates/notes.template.md
+    include: notes/a.md

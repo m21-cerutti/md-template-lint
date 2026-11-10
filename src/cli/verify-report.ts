@@ -6,15 +6,22 @@
  * Text, per template: a header line (`✓ <path>`, `PASS` in plain), then the spec 8.3
  * schema: the `Filename:` line when declared, the `Field  Type  Rules` table, the
  * `Headings:` list and the sections `Unknown tags found`, `Malformed tags:` and
- * `Misplaced tags:` (from the template warnings `MTL010` to `MTL013`). A broken
+ * `Misplaced tags:` (from the template warnings `MTL010` to `MTL013`, each item followed
+ * by the excerpt of its template line, spec 8.3). A broken
  * template prints `TEMPLATE ERROR: <path> - <message>` instead. `--quiet` hides the
  * schema and shows only broken templates and run errors.
  */
 import type { RunDiagnostic } from "../config/types.js";
 import type { Diagnostic } from "../engine/model.js";
+import { excerptRows, sourceLineOf } from "../reporters/excerpt.js";
 import { cleanText } from "../reporters/sanitize.js";
 import type { ReportFormat, ReportOutput } from "../reporters/index.js";
-import type { TemplateSchema, VerifyResult, VerifyTemplate } from "../runner/types.js";
+import type {
+  ReportedDiagnostic,
+  TemplateSchema,
+  VerifyResult,
+  VerifyTemplate,
+} from "../runner/types.js";
 
 export interface VerifyReportOptions {
   readonly format: ReportFormat;
@@ -25,7 +32,14 @@ export interface VerifyReportOptions {
 }
 
 const ESC = String.fromCharCode(27);
-const ANSI = { cyan: "36", green: "32", red: "31", yellow: "33", magenta: "35" } as const;
+const ANSI = {
+  cyan: "36",
+  green: "32",
+  red: "31",
+  yellow: "33",
+  magenta: "35",
+  gray: "90",
+} as const;
 type Tone = keyof typeof ANSI | "none";
 const RULE = "========================";
 
@@ -48,7 +62,7 @@ const located = (diagnostic: Diagnostic): string =>
     ? ""
     : ` (line ${diagnostic.position.line}, column ${diagnostic.position.column})`;
 
-function diagnosticJson(diagnostic: Diagnostic): Record<string, unknown> {
+function diagnosticJson(diagnostic: ReportedDiagnostic): Record<string, unknown> {
   const out: Record<string, unknown> = {
     code: diagnostic.code,
     severity: diagnostic.severity,
@@ -57,6 +71,9 @@ function diagnosticJson(diagnostic: Diagnostic): Record<string, unknown> {
   if (diagnostic.position !== null) {
     out["line"] = diagnostic.position.line;
     out["column"] = diagnostic.position.column;
+    // Spec 8.5: `sourceLine` is the template line, only when it exists.
+    const sourceLine = sourceLineOf(diagnostic.excerpt);
+    if (sourceLine !== undefined) out["sourceLine"] = sourceLine;
   }
   return out;
 }
@@ -107,7 +124,15 @@ function reportVerifyJson(result: VerifyResult, version: string): ReportOutput {
     templates: result.templates.map(templateJson),
     runErrors: result.runErrors.map(runDiagnosticJson),
     runWarnings: [],
-    summary: { ...result.summary },
+    // Spec 8.5, 4.4 DIR10: `suppressed` is always present; no target is read, so 0.
+    summary: {
+      templates: result.summary.templates,
+      broken: result.summary.broken,
+      warnings: result.summary.warnings,
+      suppressed: 0,
+      runErrors: result.summary.runErrors,
+      exitCode: result.summary.exitCode,
+    },
   };
   return { stdout: `${JSON.stringify(document, null, 2)}\n`, stderr: "" };
 }
@@ -132,11 +157,23 @@ function tableLines(schema: TemplateSchema): string[] {
   return out;
 }
 
+/** Indent of an excerpt under a tag item: 2 more than the item text (spec 8.3, C09). */
+const EXCERPT_INDENT = 6;
+
+/** A line of the warning sections with its color: items yellow, excerpts gray. */
+type Entry = readonly [tone: Tone, text: string];
+
+/** One tag item: its text and the excerpt rows under it. */
+interface Item {
+  readonly text: string;
+  readonly rows: readonly string[];
+}
+
 /** Schema block of one ok template; each paragraph is followed by one blank line. */
 function schemaLines(
   schema: TemplateSchema,
-  warnings: readonly Diagnostic[],
-): { readonly text: readonly string[]; readonly warn: readonly string[] } {
+  warnings: readonly ReportedDiagnostic[],
+): { readonly text: readonly string[]; readonly warn: readonly Entry[] } {
   const text: string[] = [];
   if (schema.filenameCase !== null) {
     text.push(`Filename: [filename:case:${cleanText(schema.filenameCase)}]`, "");
@@ -153,17 +190,25 @@ function schemaLines(
   }
   // The sections come from the template warnings: unknown (fields, then headings),
   // malformed and misplaced (with line and column).
-  const warn: string[] = [];
-  const section = (title: string, items: readonly string[]): void => {
+  const warn: Entry[] = [];
+  const section = (title: string, items: readonly Item[]): void => {
     if (items.length === 0) return;
-    warn.push(title, ...items.map((item) => `  - ${item}`), "");
+    warn.push(["yellow", title]);
+    for (const item of items) {
+      warn.push(["yellow", `  - ${item.text}`]);
+      for (const row of item.rows) warn.push(["gray", row]);
+    }
+    warn.push(["none", ""]);
   };
-  const of = (code: string, withPosition: boolean): string[] =>
+  // Spec 8.3, C09: each item is followed by the excerpt of its template line.
+  const of = (code: string, withPosition: boolean): Item[] =>
     warnings
       .filter((diagnostic) => diagnostic.code === code)
-      .map(
-        (diagnostic) => cleanText(diagnostic.message) + (withPosition ? located(diagnostic) : ""),
-      );
+      .map((diagnostic) => ({
+        text: cleanText(diagnostic.message) + (withPosition ? located(diagnostic) : ""),
+        rows:
+          diagnostic.excerpt === undefined ? [] : excerptRows(diagnostic.excerpt, EXCERPT_INDENT),
+      }));
   section("Unknown tags found (typo or unimplemented feature):", [
     ...of("MTL010", false),
     ...of("MTL011", false),
@@ -202,7 +247,7 @@ export function reportVerify(result: VerifyResult, options: VerifyReportOptions)
       line("green", `  ${passWord} ${path}`);
       const block = schemaLines(item.schema, item.warnings);
       out.push(...block.text);
-      for (const entry of block.warn) line(entry === "" ? "none" : "yellow", entry);
+      for (const [tone, text] of block.warn) line(tone, text);
     }
   }
   if (!quiet) {

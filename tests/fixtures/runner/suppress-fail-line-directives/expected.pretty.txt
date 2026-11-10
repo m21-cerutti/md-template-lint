@@ -1,0 +1,27 @@
+md-template-lint 1.0.0
+Config: md-template-lint.yml
+========================
+
+Template: templates/notes.template.md
+Target:   notes/*.md (1 file(s))
+
+  ✗ notes/notes.md
+      error MTL701 Section 'Details': [content:non-empty] section body is empty
+        14 | ## Details
+      warn  MTL202 Unknown key 'draft' not present in template
+        7 | draft: yes
+
+========================
+Summary
+========================
+Total files:  1
+Passed:       0
+Failed:       1
+Warnings:     1 (in 1 file(s))
+Suppressed:   3
+Templates:    1 checked, 0 broken
+
+Failed files:
+  - notes/notes.md
+
+========================

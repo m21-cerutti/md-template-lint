@@ -1,0 +1,26 @@
+version: 1
+
+# Dogfood: this repository lints its own docs against its own templates.
+# Run `pnpm run build` then `node dist/cli.js` from the repository root.
+#
+# Pairs not listed yet (the doc needs a rewrite or the template cannot express it):
+#   - docs/spec.md vs templates/spec-technical.template.md: the spec has no Scope,
+#     Model, Requirements, Interfaces or Errors and codes sections (numbered sections).
+#   - docs/ai-capabilities.md vs templates/ai-capabilities.template.md: the template
+#     asks for "None." under an empty heading but requires [content:table] there.
+#   - README.md vs templates/README.template.md: no frontmatter, no License section,
+#     "Install" instead of "Installation".
+pairs:
+  - name: adr
+    template: templates/adr.template.md
+    include: docs/adr/*.md
+    exclude: "**/README.md"
+    description: architecture decision records
+  - name: architecture
+    template: templates/architecture.template.md
+    include: docs/architecture.md
+    description: architecture overview
+  - name: agents
+    template: templates/ai/AGENTS.template.md
+    include: AGENTS.md
+    description: project rules for AI agents

@@ -22,7 +22,8 @@ Phase A30 prepares the first release. Facts that shape the decision:
 - `tsc -p tsconfig.json` (rootDir `src`) writes `dist/` with `.js`, `.d.ts`, `.js.map` and
   `dist/engine/ranges.json`. It emits no test and no script.
 - `src/generated/` is produced by `antlr-ng` and compiled into `dist/generated/`. The licence of
-  `antlr-ng` output is not stated by the tool (open item below).
+  `antlr-ng` output is not stated by the tool; the owner decided it is MIT
+  ([ADR 0008](0008-generated-parser-licence.md)).
 - Publishing is a human step: agents never run `npm publish` or `pnpm publish`, and never push.
   The owner pushes a tag; GitHub Actions then publishes.
 - A tarball that only works from inside the clone (a missing file, a wrong `bin`) is the usual
@@ -64,10 +65,12 @@ Phase A30 prepares the first release. Facts that shape the decision:
   artifact, so it uses neither (next item).
 - **Release** (`.github/workflows/release.yml`): trigger on a tag `v*`, plus `workflow_dispatch`
   as a dry run that never publishes. Job `verify` (`contents: read`) runs
-  `node scripts/smoke/check-release.ts "$TAG" "$REPOSITORY"` (tag must be exactly `v<version>`;
+  `pnpm exec tsx scripts/smoke/check-release.ts "$TAG" "$REPOSITORY"` after the install step, because
+  [ADR 0007](0007-tsx-script-runner.md) made tsx a devDependency (before that it was
+  `node scripts/...` ahead of the install). Rules: tag must be exactly `v<version>`;
   `repository.url` must be `https://github.com/<repository>.git`, optionally `git+https`, anchored
   so `owner/name` never matches `owner/name-longer`; the rules are `checkRelease` in
-  `scripts/smoke/helpers.ts`, unit tested; `${{ github.repository }}` is passed through `env`),
+  `scripts/smoke/helpers.ts`, unit tested; `${{ github.repository }}` is passed through `env`. The job then
   runs the gates, `pnpm pack`, the smoke test on that tarball, and uploads the tarball as an
   artifact. Job `publish` (needs `verify`; tag push only, not on a fork:
   `github.event_name == 'push' && github.event.repository.fork == false`) runs in the GitHub
@@ -97,10 +100,11 @@ Phase A30 prepares the first release. Facts that shape the decision:
   environment name `release` if npm asks for it). Whether the package page must exist before the
   first publish was not verified; if it must, the owner bootstraps the first version by hand.
 - **Actions** are pinned by major version tag.
-- **Open owner decision: licence of the `antlr-ng` generated output.** The generated parser ships
+- **Licence of the `antlr-ng` generated output (decided 2026-10-30).** The generated parser ships
   in `dist/generated/`. Neither `antlr-ng` nor `antlr4ng` states a licence for generated output.
-  [THIRD_PARTY_NOTICES.md](../../THIRD_PARTY_NOTICES.md) records it as open. No legal conclusion is
-  drawn here. The owner decides before the first publish; the release stays blocked on it.
+  The owner decided that the shipped parser is MIT; see
+  [ADR 0008](0008-generated-parser-licence.md) and
+  [THIRD_PARTY_NOTICES.md](../../THIRD_PARTY_NOTICES.md). This item no longer blocks the release.
 
 ## Consequences
 

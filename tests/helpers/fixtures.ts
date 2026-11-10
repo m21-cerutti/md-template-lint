@@ -10,7 +10,13 @@ import { expect } from "vitest";
 
 export const REPO_ROOT = fileURLToPath(new URL("../../", import.meta.url));
 
-export type FixtureArea = "config" | "runner" | "cli" | "tags";
+/**
+ * The tsx CLI (devDependency, ADR 0007). Tests that spawn a script run it as
+ * `process.execPath TSX_CLI <script>`: no shell, no `.cmd` shim, same on Windows and POSIX.
+ */
+export const TSX_CLI = join(REPO_ROOT, "node_modules", "tsx", "dist", "cli.mjs");
+
+export type FixtureArea = "config" | "runner" | "cli" | "tags" | "directives" | "suppression";
 
 /** Absolute directory of fixture `name` under `tests/fixtures/<area>/`. */
 export const fixturePath = (area: FixtureArea, name: string): string =>

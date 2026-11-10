@@ -7,7 +7,9 @@ Target:   docs/*.md (1 file(s))
 
   FAIL docs/evil.md
       error MTL301 Field 'kind': expected constant value 'abc', got 'evil\x1b[2Jred\u202eend'
+        2 | kind: "evil\x1b[2Jred\u202eend"
       error MTL301 Field 'note': expected constant value 'abc', got 'first second third'
+        3 | note: "first\nsecond\r\n\tthird"
 
 ========================
 Summary

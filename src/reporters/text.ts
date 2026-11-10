@@ -2,12 +2,17 @@
  * Text reporters (docs/spec.md 8.2): `pretty` (wrapper layout, Unicode glyphs,
  * ANSI color when asked) and `plain` (same layout, ASCII words, never colored).
  * Run errors go to stderr as `error MTLnnn: <message>`, everything else to
- * stdout. Every echoed string goes through `cleanText`.
+ * stdout. Every echoed string goes through `cleanText`. A diagnostic with a source line
+ * (`ReportedDiagnostic.excerpt`) is followed by its excerpt (`excerpt.ts`).
  */
 import type { Diagnostic } from "../engine/model.js";
 import type { RunDiagnostic } from "../config/types.js";
 import type { FileResult, PairBlock, RunResult } from "../runner/types.js";
+import { excerptRows } from "./excerpt.js";
 import { cleanText } from "./sanitize.js";
+
+/** Indent of an excerpt under a file diagnostic: 2 more than the diagnostic text (spec 8.2, EX2). */
+const EXCERPT_INDENT = 8;
 
 export interface ReportOutput {
   readonly stdout: string;
@@ -86,6 +91,9 @@ function render(
     const shown = quiet ? file.errors : [...file.errors, ...file.warnings];
     for (const diagnostic of shown) {
       line(diagnostic.severity === "error" ? "red" : "yellow", diagnosticLine(diagnostic));
+      // Spec 8.2 EX1 to EX7: the source line under the diagnostic that has one.
+      if (diagnostic.excerpt === undefined) continue;
+      for (const row of excerptRows(diagnostic.excerpt, EXCERPT_INDENT)) line("gray", row);
     }
   };
 
@@ -130,6 +138,8 @@ function render(
     line("green", `Passed:       ${summary.passed}`);
     line(summary.failed > 0 ? "red" : "green", `Failed:       ${summary.failed}`);
     line("yellow", `Warnings:     ${summary.warnings} (in ${summary.filesWithWarnings} file(s))`);
+    // Spec 8.2, 4.4 DIR9: only when greater than 0, never as `0`.
+    if (summary.suppressed > 0) out.push(`Suppressed:   ${summary.suppressed}`);
     out.push(
       `Templates:    ${summary.templatesChecked} checked, ${summary.templatesBroken} broken`,
     );

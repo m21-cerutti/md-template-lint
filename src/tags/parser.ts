@@ -30,6 +30,7 @@ import {
 import type {
   BodyBlock,
   BodyTag,
+  Directive,
   FilenameComment,
   Frontmatter,
   FrontmatterComment,
@@ -54,6 +55,7 @@ import {
   type SyntaxEventLog,
 } from "./listeners.js";
 import { BracketShapeVisitor } from "./visitors/brackets.js";
+import { DirectiveVisitor, scanComments } from "./visitors/directive.js";
 import { HeadingVisitor, peelHeading, type HeadingItemResult } from "./visitors/heading.js";
 import { TypeHintListener } from "./visitors/hints.js";
 import { BODY_TAG_VISITORS, FRONTMATTER_TAG_VISITORS } from "./visitors/index.js";
@@ -94,6 +96,7 @@ type Classified<T> = Resolved<T> | null;
 
 const bracketShapes = new BracketShapeVisitor();
 const headingParts = new HeadingVisitor();
+const directiveParts = new DirectiveVisitor();
 
 /** Spec 1.1: BOM ignored, CRLF and lone CR become LF. Shared with src/engine/load.ts. */
 export function normalizeLineEnds(text: string): string {
@@ -254,6 +257,85 @@ class ParseSession {
     }
     return this.bodyTag(shape.ctx);
   }
+
+  // --- disable directives (spec 4.4) ---------------------------------------
+
+  /**
+   * Stage 2 of one comment content (mode DIRECTIVE): its directive, or null
+   * for prose. `start` is the comment start (`<!--` or `#`), `origin` the
+   * file position of the first content character. directiveEntry never
+   * fails, so an event here is a grammar bug (a GrammarError).
+   */
+  directive(
+    region: Region,
+    raw: string,
+    start: SourcePosition,
+    content: string,
+    origin: SourcePosition,
+  ): Directive | null {
+    const map: PositionMap = (_line, column) => ({
+      line: origin.line,
+      column: origin.column + column,
+    });
+    const { parser, log } = createRecognizers(content, MdTemplateLexer.DIRECTIVE, false, map);
+    const entry = parser.directiveEntry();
+    this.collector.grammarErrors(log, "directiveEntry", () => region);
+    const parts = directiveParts.visit(entry);
+    if (parts === null) return null;
+    return {
+      region,
+      line: start.line,
+      position: start,
+      raw,
+      verb: parts.verb,
+      word: parts.word,
+      items: parts.items.map((token) => ({
+        text: token.text ?? "",
+        position: map(token.line, token.column),
+      })),
+      reason: parts.reason,
+    };
+  }
+
+  /**
+   * Body directives (DIR3, DIR4): `source` re-lexed in mode DIRECTIVE_SCAN,
+   * lines before `firstLine` (the frontmatter) and in `fenced` skipped.
+   */
+  bodyDirectives(source: string, firstLine: number, fenced: ReadonlySet<number>): Directive[] {
+    const { parser, log } = createRecognizers(
+      source,
+      MdTemplateLexer.DIRECTIVE_SCAN,
+      false,
+      (l, c) => this.position(l, c),
+    );
+    const tree = parser.directiveScanEntry();
+    this.collector.grammarErrors(log, "directiveScanEntry", () => "body");
+    const directives: Directive[] = [];
+    for (const scanLine of tree.directiveScanLine()) {
+      const line = this.lineOf(scanLine);
+      if (line < firstLine || fenced.has(line)) continue;
+      const tokens: Token[] = [];
+      for (const item of scanLine.directiveScanItem()) {
+        if (item.start !== null) tokens.push(item.start);
+      }
+      const text = (from: number, to: number) =>
+        tokens
+          .slice(from, to)
+          .map((token) => token.text ?? "")
+          .join("");
+      for (const span of scanComments(tokens)) {
+        const open = tokens[span.open];
+        if (open === undefined) continue;
+        const start = this.tokenPosition(open);
+        const origin = { line: start.line, column: start.column + (open.text ?? "").length };
+        const raw = text(span.open, span.close + 1);
+        const content = text(span.open + 1, span.close);
+        const directive = this.directive("body", raw, start, content, origin);
+        if (directive !== null) directives.push(directive);
+      }
+    }
+    return directives;
+  }
 }
 
 function withSubject(list: readonly Finding[], subject: TagSubject | null): TagFinding[] {
@@ -328,13 +410,44 @@ function keyText(token: string): string {
   return token.trimEnd().slice(0, -1).trimEnd();
 }
 
-function buildFrontmatter(session: ParseSession, ctx: FrontmatterContext): Frontmatter {
+/**
+ * Frontmatter directive carriers (DIR3): a whole-line comment whose `#` is in
+ * column 1 (`hash` is FM_LINE_HASH, `raw` its line) or the trailing comment
+ * of a key line (`hash` is FM_COMMENT_HASH, `content` its text). The YAML
+ * side (key lines, multi-line values) is checked by src/engine/load.ts.
+ */
+function frontmatterDirective(
+  session: ParseSession,
+  hash: Token,
+  content: string,
+  wholeLine: boolean,
+): Directive | null {
+  const marker = hash.text ?? "#";
+  // FM_LINE_HASH and FP_COMMENT include the spaces before `#`.
+  const start = session.position(hash.line, hash.column + marker.length - 1);
+  if (wholeLine && start.column !== 1) return null;
+  const origin = session.position(hash.line, hash.column + marker.length);
+  return session.directive("frontmatter", `#${content}`, start, content, origin);
+}
+
+function buildFrontmatter(
+  session: ParseSession,
+  ctx: FrontmatterContext,
+  directives: Directive[],
+): Frontmatter {
   const lines: FrontmatterLine[] = [];
   let filename: FrontmatterFilenameTag | null = null;
+  const collect = (directive: Directive | null) => {
+    if (directive !== null) directives.push(directive);
+  };
   for (const fmLine of ctx.fmLine()) {
     const line = session.lineOf(fmLine);
     const raw = lineText(fmLine);
     const body = fmLine.getChild(0);
+    if (body instanceof FmFilenameLineContext || body instanceof FmCommentLineContext) {
+      const hash = body.FM_LINE_HASH().symbol;
+      collect(frontmatterDirective(session, hash, raw.slice((hash.text ?? "#").length), true));
+    }
     if (body instanceof FmFilenameLineContext) {
       const result = buildFilename(session, body.tagCandidate());
       session.collector.report(result.findings);
@@ -354,6 +467,11 @@ function buildFrontmatter(session: ParseSession, ctx: FrontmatterContext): Front
         const position = session.position(hash.line, hash.column + (hash.text ?? "#").length);
         comment = buildComment(session, commentCtx.fmCommentItem(), position, keySubject(key));
         session.collector.report(comment.findings);
+        const content = commentCtx
+          .fmCommentItem()
+          .map((item) => item.getText())
+          .join("");
+        collect(frontmatterDirective(session, hash, content, false));
       }
       lines.push({ kind: "key", line, raw, key, comment });
     } else {
@@ -477,12 +595,26 @@ export function analyzeDocument(text: string): DocumentAnalysis {
   );
   const grammarErrors = session.collector.errors;
   if (grammarErrors.length > 0) return { document: null, grammarErrors, findings: [] };
-  const frontmatter = fmCtx === null ? null : buildFrontmatter(session, fmCtx);
+  const directives: Directive[] = [];
+  const frontmatter = fmCtx === null ? null : buildFrontmatter(session, fmCtx, directives);
   const blocks = tree.body()?.bodyBlock() ?? [];
   const body = blocks.map((block) => buildBodyBlock(session, block));
+  if (!unclosed) {
+    // DIR4: no directive inside a fence (the stage-1 fence modes decide).
+    const fenced = new Set<number>();
+    for (const block of body) {
+      if (block.kind !== "fence") continue;
+      for (let line = block.line; line <= block.endLine; line += 1) fenced.add(line);
+    }
+    const firstLine = frontmatter === null ? 1 : frontmatter.endLine + 1;
+    directives.push(...session.bodyDirectives(source, firstLine, fenced));
+  }
+  if (session.collector.errors.length > 0) {
+    return { document: null, grammarErrors: session.collector.errors, findings: [] };
+  }
   const findings = session.collector.findings;
   return {
-    document: { frontmatter, frontmatterUnclosed: unclosed, body, findings },
+    document: { frontmatter, frontmatterUnclosed: unclosed, body, directives, findings },
     grammarErrors,
     findings,
   };

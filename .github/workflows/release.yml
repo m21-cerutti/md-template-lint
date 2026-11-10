@@ -44,15 +44,17 @@ jobs:
       - name: Enable pnpm (Corepack, version from packageManager)
         run: corepack enable
 
-      # Same logic as the unit tests: scripts/smoke/helpers.ts (checkRelease).
+      - run: pnpm install --frozen-lockfile
+
+      # Same logic as the unit tests: scripts/smoke/helpers.ts (checkRelease). Runs after the
+      # install because scripts run through tsx, a devDependency (ADR 0007).
       - name: Tag matches the package version and repository
         if: github.event_name == 'push'
         env:
           TAG: ${{ github.ref_name }}
           REPOSITORY: ${{ github.repository }}
-        run: node scripts/smoke/check-release.ts "$TAG" "$REPOSITORY"
+        run: pnpm exec tsx scripts/smoke/check-release.ts "$TAG" "$REPOSITORY"
 
-      - run: pnpm install --frozen-lockfile
       - run: pnpm run check:parser
       - run: pnpm run check:rules
       - run: pnpm run typecheck

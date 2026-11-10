@@ -2,9 +2,9 @@
 # [filename:case:kebab-case]
 id: 0000-record-template  # [presence:required] [value:filename] [format:kebab-case]
 title: Short imperative statement of the decision  # [presence:required]
-status: proposed | accepted | superseded | deprecated  # [presence:required]
+status: proposed | accepted | rejected | superseded | deprecated  # [presence:required]
 date: 2026-10-29  # [presence:required] type=date
-deciders: [Name]  # [presence:required] [count:min:1]
+deciders: [Name]  # [presence:optional]
 supersedes: 0000-other-record  # [presence:optional]
 ---
 
@@ -35,10 +35,20 @@ Include the concrete shape (names, folders, protocols) that follows from it.
 | Chosen option   | why it wins         | what it costs | Chosen   |
 | Rejected option | what was attractive | why it lost   | Rejected |
 
+## Research [presence:optional]
+
+Sources, measurements or spikes that fed the decision. Link them.
+
+## Notes [presence:optional]
+
+Open points, review date, or links to related records.
+
 ## Authoring checklist [presence:template-only]
 
 - Save as `docs/adr/NNNN-short-title.md`; `id` equals the filename stem.
-- `status` starts at `proposed`; flip to `accepted` once the decision is live.
+- `status` starts at `proposed`; flip to `accepted` once the decision is live,
+  or to `rejected` when it is turned down.
+- `deciders` is optional: list the people or roles who took the decision.
 - When this record replaces an older one, set `supersedes` and flip the old
   record to `superseded`.
 - Keep at least one rejected option: an ADR with a single option documents

@@ -1,0 +1,24 @@
+md-template-lint 1.0.0
+Config: md-template-lint.yml
+========================
+
+Template: templates/notes.template.md
+Target:   notes/*.md (1 file(s))
+
+  ✓ notes/imported.md
+      warn  MTL023 Directive on line 21: 'end disable MTL202' has no open 'disable' or 'begin disable' for MTL202
+        21 | <!-- md-template-lint end disable MTL202 -->
+           | ^
+
+========================
+Summary
+========================
+Total files:  1
+Passed:       1
+Failed:       0
+Warnings:     1 (in 1 file(s))
+Suppressed:   2
+Templates:    1 checked, 0 broken
+
+All files passed!
+========================

@@ -36,7 +36,7 @@ import {
 } from "../../../scripts/smoke/helpers.ts";
 import { runCli } from "../../../src/cli/run.js";
 import { foldPath } from "../../../src/config/paths.js";
-import { expectNameSplit, REPO_ROOT } from "../../helpers/fixtures.js";
+import { expectNameSplit, REPO_ROOT, TSX_CLI } from "../../helpers/fixtures.js";
 
 const FIXTURES = join(REPO_ROOT, "tests", "fixtures", "release");
 
@@ -725,10 +725,14 @@ describe("release: scripts/smoke/check-release.ts as a process", () => {
   const repository = /github\.com\/(.+?)(?:\.git)?$/.exec(manifest.repository.url)?.[1] ?? "";
 
   function check(...args: string[]) {
-    const result = spawnSync(process.execPath, ["scripts/smoke/check-release.ts", ...args], {
-      cwd: REPO_ROOT,
-      encoding: "utf8",
-    });
+    const result = spawnSync(
+      process.execPath,
+      [TSX_CLI, "scripts/smoke/check-release.ts", ...args],
+      {
+        cwd: REPO_ROOT,
+        encoding: "utf8",
+      },
+    );
     return { status: result.status, stdout: result.stdout, stderr: result.stderr };
   }
 

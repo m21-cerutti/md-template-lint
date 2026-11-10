@@ -21,21 +21,24 @@
         "severity": "warning",
         "message": "Field 'owner': unknown tag [optionl]",
         "line": 2,
-        "column": 19
+        "column": 19,
+        "sourceLine": "owner: \"string\" # [optionl]"
       },
       {
         "code": "MTL010",
         "severity": "warning",
         "message": "Field 'title': unknown tag [another-typo]",
         "line": 3,
-        "column": 19
+        "column": 19,
+        "sourceLine": "title: \"string\" # [another-typo] [presence:optional]"
       },
       {
         "code": "MTL011",
         "severity": "warning",
         "message": "Heading 'Overview [bogus]': unknown tag [bogus]",
         "line": 6,
-        "column": 13
+        "column": 13,
+        "sourceLine": "## Overview [bogus] [content:non-empty]"
       }
     ]
   }

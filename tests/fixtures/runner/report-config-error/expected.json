@@ -33,6 +33,7 @@
     "failed": 0,
     "warnings": 0,
     "filesWithWarnings": 0,
+    "suppressed": 0,
     "templatesChecked": 0,
     "templatesBroken": 0,
     "runErrors": 2,

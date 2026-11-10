@@ -11,10 +11,19 @@
  *    shared guard); otherwise the `field` rules of every other step, in
  *    FIELD_STEPS order;
  * 4. `target` rules of steps `unknown-keys`, `headings`, `content`;
+ * 5. `target` rules of step `directives` (MTL020 to MTL025, spec 4.4);
  * inside one step, registry order (category file order, then file order);
  * the `headings` step then orders its presence findings by template heading,
- * and the `content` step orders its findings by template section.
+ * the `content` step orders its findings by template section, and the
+ * `directives` step follows the directive analysis (MTL024 last).
+ * 6. suppression (spec 4.1 step 8): the diagnostics a target directive covers
+ *    (code and anchor line, DIR7) are removed and counted.
  * Errors are returned first, then warnings, each in emission order.
+ *
+ * Anchor lines (spec 4.4 DIR5) live in the side table of src/engine/rule.ts
+ * (`anchorLineOf`): field findings take the target key line, MTL202, MTL603
+ * and MTL701 to MTL705 the line their rule recorded, the directive warnings
+ * their directive line; every other diagnostic has none.
  * `env` is required: a caller states its io on purpose (`createEnv` builds an
  * in-memory one for tests; the production runner builds the real one).
  *
@@ -25,14 +34,18 @@
  * file system and network access). Rules run one at a time, each awaited
  * before the next, so the order never depends on io timing.
  */
+import { analyzeDirectives, isCovered, RUN_CODES } from "./directives.js";
 import { loadDocument } from "./load.js";
 import { isEmptyValue, type Diagnostic, type DocumentModel } from "./model.js";
 import { rulesOf, runPhase, runRules, type RuleRegistry } from "./registry.js";
 import {
+  anchorLineOf,
   FIELD_STEPS,
   itemIndexOf,
   recordedSectionIndex,
   sectionIndexOf,
+  sequenceOf,
+  setAnchorLine,
   TARGET_STEPS,
   type FieldRule,
   type RuleEnv,
@@ -101,7 +114,12 @@ function byTemplateHeading(
   const sorted = [...anchored].sort((a, b) => line(a) - line(b));
   const named = sorted.map((diagnostic): Diagnostic => {
     const text = template.sections.find((section) => section.line === line(diagnostic))?.text;
-    return { ...diagnostic, position: null, ...(text === undefined ? {} : { heading: text }) };
+    const copy = {
+      ...diagnostic,
+      position: null,
+      ...(text === undefined ? {} : { heading: text }),
+    };
+    return setAnchorLine(copy, anchorLineOf(diagnostic));
   });
   return [...named, ...loose];
 }
@@ -131,8 +149,18 @@ function bySectionIndex(diagnostics: readonly Diagnostic[], template: DocumentMo
     .map((diagnostic): Diagnostic => {
       const index = recordedSectionIndex(diagnostic);
       const text = index === null ? undefined : template.sections[index]?.text;
-      return text === undefined ? diagnostic : { ...diagnostic, heading: text };
+      if (text === undefined) return diagnostic;
+      return setAnchorLine({ ...diagnostic, heading: text }, anchorLineOf(diagnostic));
     });
+}
+
+/**
+ * Order of the `directives` step (spec 4.1 step 7): the directive warnings of
+ * the six rules in the order of the directive analysis (directive source
+ * order, item order, MTL024 last, DIR8), recorded by `reportSequenced`.
+ */
+function bySequence(diagnostics: readonly Diagnostic[]): Diagnostic[] {
+  return [...diagnostics].sort((a, b) => sequenceOf(a) - sequenceOf(b));
 }
 
 /** Errors first, then warnings, each in emission order (spec 4.1, 8.4). */
@@ -143,7 +171,46 @@ function errorsFirst(diagnostics: readonly Diagnostic[]): Diagnostic[] {
   ];
 }
 
-/** Lint one target text against a parsed template, in the order described above. */
+/** Result of one target: what is reported, and how many diagnostics directives removed. */
+export interface TargetResult {
+  /**
+   * Reported diagnostics, errors first, then warnings (spec 4.1). Each one that
+   * concerns one target line carries it in the anchor side table
+   * (`anchorLineOf`, spec 4.4 DIR5); the others have none.
+   */
+  readonly diagnostics: Diagnostic[];
+  /** Diagnostics removed by the disable directives of the target (spec 4.4 DIR9). */
+  readonly suppressed: number;
+}
+
+/**
+ * Lint one target text against a parsed template, in the order described above,
+ * then apply the disable directives of the TARGET (spec 4.1 step 8, 4.4 DIR7):
+ * a pure output filter by code and anchor line; every rule still ran in full.
+ */
+export async function lintTarget(
+  registry: RuleRegistry,
+  template: DocumentModel,
+  text: string,
+  targetPath: string,
+  env: RuleEnv,
+): Promise<TargetResult> {
+  const loaded = loadDocument(text);
+  if (!loaded.ok) {
+    const context = { phase: "parse", role: "target", failure: loaded.failure } as const;
+    return { diagnostics: errorsFirst(await runPhase(registry, "parse", context)), suppressed: 0 };
+  }
+  const target = loaded.model;
+  const knownCodes = new Set<string>([...registry.byCode.keys(), ...RUN_CODES]);
+  const out = await runTargetRules(registry, template, target, targetPath, env, knownCodes);
+  const { plan } = analyzeDirectives(target.directives, knownCodes);
+  const kept = out.filter(
+    (diagnostic) => !isCovered(plan, diagnostic.code, anchorLineOf(diagnostic)),
+  );
+  return { diagnostics: errorsFirst(kept), suppressed: out.length - kept.length };
+}
+
+/** `lintTarget` without the suppressed count: the reported diagnostics only. */
 export async function checkTarget(
   registry: RuleRegistry,
   template: DocumentModel,
@@ -151,15 +218,28 @@ export async function checkTarget(
   targetPath: string,
   env: RuleEnv,
 ): Promise<Diagnostic[]> {
-  const loaded = loadDocument(text);
-  if (!loaded.ok) {
-    const context = { phase: "parse", role: "target", failure: loaded.failure } as const;
-    return errorsFirst(await runPhase(registry, "parse", context));
-  }
-  const target = loaded.model;
+  return (await lintTarget(registry, template, text, targetPath, env)).diagnostics;
+}
+
+/** Steps 2 to 7 of spec 4.1 on a loaded target, in emission order, with their anchors. */
+async function runTargetRules(
+  registry: RuleRegistry,
+  template: DocumentModel,
+  target: DocumentModel,
+  targetPath: string,
+  env: RuleEnv,
+  knownCodes: ReadonlySet<string>,
+): Promise<Diagnostic[]> {
   const targetRules = rulesOf(registry, "target");
   const fieldRules = rulesOf(registry, "field");
-  const context: TargetContext = { phase: "target", template, target, targetPath, env };
+  const context: TargetContext = {
+    phase: "target",
+    template,
+    target,
+    targetPath,
+    env,
+    knownCodes,
+  };
   const [first, ...after] = TARGET_STEPS;
   const out = await runRules(byStep(targetRules, TARGET_STEPS, first), context);
   for (const templateField of template.fields.values()) {
@@ -176,8 +256,11 @@ export async function checkTarget(
       targetPath,
       env,
     } as const;
+    // DIR5: a field finding anchors on the target key line; none when the key is missing.
+    const keyLine = target.fields.get(templateField.key)?.line ?? null;
     for (const step of steps) {
       const found = await runRules(byStep(fieldRules, FIELD_STEPS, step), fieldContext);
+      for (const diagnostic of found) setAnchorLine(diagnostic, keyLine);
       out.push(...(step === "io" ? byItemIndex(found) : found));
     }
   }
@@ -185,7 +268,8 @@ export async function checkTarget(
     const found = await runRules(byStep(targetRules, TARGET_STEPS, step), context);
     if (step === "headings") out.push(...byTemplateHeading(found, template));
     else if (step === "content") out.push(...bySectionIndex(found, template));
+    else if (step === "directives") out.push(...bySequence(found));
     else out.push(...found);
   }
-  return errorsFirst(out);
+  return out;
 }

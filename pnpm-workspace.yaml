@@ -1,7 +1,9 @@
 # pnpm workspace configuration and build policy.
 # Single-project workspace for clarity on build approval.
 
-# No dependencies in this project require lifecycle script execution.
-# All transitive dependencies are pre-built or pure JavaScript.
-# strictDepBuilds (default true) blocks all builds; this empty list confirms it.
-allowBuilds: {}
+# One dependency has a build script: esbuild (pulled in by tsx), and it is denied
+# below. All other dependencies are pre-built or pure JavaScript.
+# strictDepBuilds (default true) blocks every build that is not listed. The esbuild
+# postinstall only verifies the binary; its platform package ships the binary, so
+# the build stays denied (ADR 0007).
+allowBuilds: { esbuild: false }

@@ -7,7 +7,9 @@ Target:   docs/*.md (1 file(s))
 
   PASS docs/a.md
       warn  MTL202 Unknown key 'extra1' not present in template
+        3 | extra1: one
       warn  MTL202 Unknown key 'extra2' not present in template
+        4 | extra2: two
 
 Template: templates/note.template.md
 Root:     other
@@ -15,7 +17,9 @@ Target:   docs/*.md (1 file(s))
 
   FAIL docs/b.md
       error MTL201 Field 'title': required but empty or missing
+        2 | title:
       error MTL701 Section 'Summary': [content:non-empty] section body is empty
+        5 | ## Summary
 
 ========================
 Summary

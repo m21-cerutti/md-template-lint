@@ -20,8 +20,9 @@ Conventions in this file:
   `Lnnn` is a line number in the frozen snapshot of the file named just before it.
 - "Frozen" behaviour is kept byte for byte (messages, order, defaults) unless a section says
   "changed". Every change is listed in section 5 (defects D01 to D18), section 10
-  (assumptions AS1 to AS7) or section 11 (kept quirks Q01 to Q08, other changes C01 to C05).
-- `AS<n>` is an assumption id, `Q<nn>` a kept quirk, `C<nn>` a change beyond the defect list.
+  (assumptions AS1 to AS14) or section 11 (kept quirks Q01 to Q08, other changes C01 to C09).
+- `AS<n>` is an assumption id, `Q<nn>` a kept quirk, `C<nn>` a change beyond the defect list,
+  `DIR<n>` a decision of the disable directives section (4.4).
   Phase ids (A3, A6, A9, A21 to A25) are plan phases and are never used as assumption ids.
 - Rule codes are `MTLnnn`. A code is never renumbered and never reused.
 
@@ -45,7 +46,8 @@ A template is a Markdown file. It IS the schema. There is no separate schema fil
 
 A target is a Markdown file linted against one template. It needs the same frontmatter
 shape. Tags in a target are inert (see 2.7), except that recognized trailing heading tags
-are stripped from target heading text before comparison.
+are stripped from target heading text before comparison. A target may carry disable
+directives (comments that silence rule codes locally, 4.4); a template never does.
 
 The template is parsed once per run (defect D05) and never linted against itself. A template
 file that matches the `include` of its own pair is skipped as a target.
@@ -299,7 +301,8 @@ The old `<!-- [rule] required -->` HTML comment is dead. It is inert prose.
 - The parser layer reports only a region, a reason (unknown, malformed, wrong-region), a location
   and the subject. The rule file `src/rules/syntax.ts` owns the code, the severity and the
   message text (ADR 0002).
-- Tags in a target file are inert. Only trailing heading tags are stripped (2.6).
+- Tags in a target file are inert. Only trailing heading tags are stripped (2.6). Disable
+  directives (4.4) are comments, not tags.
 
 ### 2.8 The `[io:exists]` tag
 
@@ -494,7 +497,15 @@ reproduces this for parity. Placeholder `{pylist}` in section 4.
 4. Unknown keys, in target key order (`MTL202`, warning).
 5. Heading presence and order (`MTL601` to `MTL604`), message prefix `Heading: `.
 6. Section content (`MTL701` to `MTL705`).
+7. Directive diagnostics of the target (`MTL020` to `MTL025`, warnings, 4.4), in directive
+   source order, `MTL024` last (DIR8).
+8. Suppression (engine core, 4.4): every diagnostic of steps 2 to 6 that a directive covers
+   (DIR7: a line directive or range on its anchor line, or a `disable-file` for its code)
+   is removed and counted as suppressed. Step 7 diagnostics are never removed.
 
+Steps 7 and 8 are new (change C08) and are appended at the end, so the numbers of steps 1
+to 6 stay valid. A target without directives gives the same diagnostics and the same text
+output as before (parity); JSON only gains the always present `summary.suppressed` key (8.5).
 Errors are printed first, then warnings, each list in emission order.
 
 Template-side diagnostics (`MTL001` to `MTL004` fatal, `MTL010` to `MTL013` warnings) come
@@ -504,7 +515,7 @@ from the template parse.
 
 | Range         | Category (file in `src/rules/`) | Scope                                         |
 | ------------- | ------------------------------- | --------------------------------------------- |
-| `MTL001`-`099` | `syntax`                        | parsing and template tag diagnostics          |
+| `MTL001`-`099` | `syntax`                        | parsing, template tag and target directive diagnostics |
 | `MTL100`-`199` | `filename`                      | rules on the target file name                 |
 | `MTL200`-`299` | `presence`                      | field presence, unknown keys                  |
 | `MTL300`-`399` | `format`                        | value shape rules from tags                   |
@@ -514,6 +525,11 @@ from the template parse.
 | `MTL700`-`799` | `content`                       | section body rules                            |
 | `MTL800`-`899` | `io`                            | `[io:exists]` warnings                        |
 | `MTL900`-`999` | none (engine)                   | run diagnostics: config, CLI, missing inputs (errors; `MTL913` may be a warning) |
+
+Sub-ranges inside `syntax` (prose on purpose: the table above is read by `pnpm run
+check:rules`, one row per category): `MTL001`-`009` parse errors, `MTL010`-`019` template
+tag warnings (`MTL014`-`019` free), `MTL020`-`029` target directive warnings (4.4;
+`MTL026`-`029` free).
 
 ### 4.3 Code table
 
@@ -533,6 +549,15 @@ heading text, `{pylist}` Python-style list, `{shape}` see 3.4. Messages are the 
 | `MTL011` | unknown-heading-tag       | warning  | `Heading '{text}': unknown tag {tag}`                                | py L864-871 `split_heading_tags`, L2232-2234 `describe` |
 | `MTL012` | malformed-tag             | warning  | `Field '{key}': malformed tag {tag}`, `Heading '{text}': malformed tag {tag}` or `Filename comment: malformed tag {tag}` | new (phase A6, located errors) |
 | `MTL013` | misplaced-tag             | warning  | `Field '{key}': tag {tag} is not valid in frontmatter` or `Heading '{text}': tag {tag} is not valid in a heading` | new (change C05) |
+| `MTL020` | directive-malformed          | warning  | `Directive on line {line}: unknown directive '{word}' (expected disable, disable-line, disable-next-line, disable-file, begin disable or end disable)` or `Directive on line {line}: '{directive}' needs at least one rule code` | new (C08) |
+| `MTL021` | directive-unknown-code       | warning  | `Directive on line {line}: unknown rule code '{token}'`                                                     | new (C08)     |
+| `MTL022` | directive-code-not-suppressible | warning | `Directive on line {line}: rule code {code} cannot be disabled`                                           | new (C08)     |
+| `MTL023` | directive-end-without-begin  | warning  | `Directive on line {line}: 'end disable {code}' has no open 'disable' or 'begin disable' for {code}`        | new (C08)     |
+| `MTL024` | directive-begin-unclosed     | warning  | `Directive on line {line}: 'begin disable {code}' is never closed, it runs to the end of the file`          | new (C08)     |
+| `MTL025` | directive-already-disabled   | warning  | `Directive on line {line}: '{directive} {code}' while {code} is already disabled since line {open}`         | new (C08)     |
+
+`MTL020` to `MTL025` are the target directive warnings; their placeholders and rules are
+under "Directive warnings" below (4.3) and in 4.4.
 
 `MTL001` to `MTL004` on a target print `Parse error: <message>`. On a template the same
 diagnostic makes the template "broken" and is printed in ONE form everywhere (text, verify and
@@ -697,6 +722,456 @@ and 7.
 | `MTL921` | option-missing-arg     | `{flag} requires an argument`                                             | py L2541-2566                          |
 | `MTL922` | option-bad-value       | `invalid value '{value}' for {flag} (expected {expected})`                | new                                    |
 | `MTL923` | usage-conflict         | e.g. `--verify needs a config or at least one template path`              | py L2579-2582                          |
+
+#### Directive warnings (`MTL020` to `MTL025`, rows in the `syntax` table above)
+
+Target directive warnings (4.4, change C08), category `syntax`, `src/rules/syntax.ts`, phase
+`target`, step `directives`. All are warnings, never change the exit code and
+are never suppressible. Each carries the `line` and `column` of the directive start (`<!--`
+or `#`), and the message names the line too: the message must stay readable on its own, in
+the JSON `message` and in logs that drop the excerpt rows of 8.2 (which quote that line with a
+caret under the start). `{line}` is the 1-based file line of the directive. `{directive}` is the canonical
+lowercase verb (`disable`, `disable-line`, `disable-next-line`, `disable-file`, `begin
+disable`, `end disable`). `{code}` is a rule code in upper case. `{token}` and `{word}` are the text as
+written (control characters escaped as in 8.2). One diagnostic per offending code token; a
+token written twice in one directive (compared in upper case) counts once, like a code.
+
+`{word}` of `MTL020` is the first word after the keyword (leading commas and spaces are skipped,
+so `,MTL201` gives `MTL201`), or empty (`''`) when the keyword is alone; for a two-word verb that is broken (`begin disabel`, `end` alone) it is the first word
+(`begin` or `end`) when the second word is not `disable`, else the verb is valid. `{open}` of `MTL025` is the line of the directive that opened the active range.
+`disable-file` never opens a range, so it never takes part in `MTL023`, `MTL024` or
+`MTL025` (DIR8); it can give `MTL020` (no code), `MTL021` and `MTL022` like every verb.
+
+The six rows live in the `syntax` table because `pnpm run check:rules` reads only the rows
+under a heading whose first word is a category (`tests/consistency/rules.test.ts` pins the
+row count). This heading holds the prose only.
+
+### 4.4 Disable directives in target files
+
+A target file may silence rule codes locally with comments. This is the only way a target
+changes which diagnostics are reported (change C08). Directives came in A58 (grammar and
+parser) and A60 (engine suppression and `MTL020` to `MTL025`); A62 documents them in the
+README. Each decision
+below is numbered (DIR1 to DIR10, cited from other sections) with its rationale; the global
+assumptions are AS9 to AS13 (section 10).
+
+#### Forms and syntax (DIR1, DIR2)
+
+DIR1. Six directive words give four behaviours (inline, open disable, block, whole document):
+
+| Directive                              | Covers (file lines, inclusive)                                                           |
+| -------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `disable <codes>`                      | from its own line to the line of a matching `end disable`, else to the end of the file    |
+| `disable-line <codes>`                 | its own line only (inline)                                                               |
+| `disable-next-line <codes>`            | the next file line only (line + 1, even when that line is blank)                          |
+| `disable-file <codes>`                 | the whole target document, wherever it stands: every line, and every diagnostic without anchor (DIR7) |
+| `begin disable <codes>`                | from its own line to the line of the matching `end disable` (block)                      |
+| `end disable <codes>`                  | closes the open range (`disable` or `begin disable`) of each listed code, on its own line |
+
+`disable` and `begin disable` open the same kind of range. The only difference: an unclosed
+`begin disable` is a mistake (`MTL024`, the range still runs to the end of the file), while an
+unclosed `disable` is the normal, intended use. Rationale: both an open
+`disable` and a `begin`/`end` block are needed; ESLint users also know `disable-line` and
+`disable-next-line`, and the next-line form keeps a busy line clean (a YAML key with a long
+value, a heading) by putting the comment on its own line above it.
+
+`disable-file` is the only directive that covers a diagnostic without anchor (a missing
+key, a missing heading, the heading order, the file name; DIR5, DIR7). It opens no range, so
+`end disable` does not close it and it never conflicts with a range (DIR8). Rationale: a
+finding about the whole file has no line a line directive could point at; a dedicated verb
+states the whole-file intent explicitly, in one place, instead of inferring it from where a
+range happens to end. There is no alias: a draft name, `disable-document`, was never
+released and is an unknown verb (`MTL020`) like any other.
+
+DIR2. Syntax. A directive is the content of one comment (carriers in DIR3):
+
+```text
+directive  = keyword WS+ verb (SEP item)* (SEP reason)? SEP?
+keyword    = "md-template-lint"
+verb       = "disable" | "disable-line" | "disable-next-line" | "disable-file"
+           | "begin" WS+ "disable" | "end" WS+ "disable"
+SEP        = ("," | WS)+                          ; commas and/or spaces and tabs
+item       = word                                 ; validated afterwards as a code
+word       = (any character except "," and WS)+, but not exactly "--"
+reason     = "--" (WS any text)?                  ; free text, ignored
+```
+
+Each `item` is checked after parsing, never by the grammar: it is a code when it matches
+`MTL` and three digits (case-insensitive) and names a code of the 4.3 tables. A suppressible
+code (DIR6) is kept; a known code that is not suppressible gives `MTL022`; any other item
+(`MTL2O1`, `201`, `MTL050`) gives `MTL021`. Example: `disable-line MTL601 -- x` parses as
+verb, SEP, item `MTL601`, SEP, reason `-- x`.
+
+- The comment content, after leading spaces and tabs, must START with the keyword followed by
+  a space, a tab or the end of the content. Otherwise the comment is plain prose, silently
+  (`<!-- see md-template-lint docs -->` is not a directive).
+- Keyword, verbs and codes are case-insensitive (`MD-Template-Lint Disable mtl202` is valid);
+  codes are normalized to upper case. Rationale: tag keywords are case-insensitive too (section 2 intro).
+- Codes are separated by commas, spaces or tabs, in any mix: `MTL201, MTL202`,
+  `MTL201,MTL202` and `MTL201 MTL202` are equal. Empty items (`MTL201,,MTL202`, a trailing
+  comma) are ignored. A code listed twice in one directive counts once.
+- The code list ends at the end of the content or at a word that is exactly `--` (preceded
+  by a separator, followed by whitespace, a comma or the end); the rest, without that one
+  leading comma, is a free-text reason (`<!-- md-template-lint disable-line MTL202 -- kept for import -->`).
+  Rationale: a reason documents why, and `--` inside an HTML comment is valid HTML5.
+- There is no wildcard and no "disable everything": a directive without a code is `MTL020`.
+  Rationale: explicit codes keep each suppression reviewable.
+- Error cases (warnings, 4.3 `syntax` table and "Directive warnings"): an unknown verb or a keyword alone is
+  `MTL020`; a verb with no item is `MTL020`; an item that is not a code of the 4.3 tables
+  (`MTL2O1`, `201`, `MTL050`) is `MTL021`; a known code that is not suppressible (DIR6) is
+  `MTL022`. A bad item is dropped; the valid codes of the same directive still apply. A
+  malformed verb (`MTL020`) makes the whole directive inert.
+- When every item of a directive is dropped (all `MTL021` or `MTL022`), there is no extra
+  `MTL020`: those warnings already explain the problem. The directive is inert (it opens,
+  closes and covers nothing). Rationale: one warning per mistake, no duplicate.
+- A code that never fires in this file is fine: no warning (no "unused directive" check).
+  Rationale: a directive may guard a value that is only sometimes wrong; an unused check
+  would add noise and a new code for little gain.
+
+#### Carriers and where directives are read (DIR3, DIR4)
+
+DIR3. Carriers. Only in a TARGET file, in two forms:
+
+- Body (after the frontmatter): an HTML comment `<!--` ... `-->` that opens and closes on the
+  same line. Its content is the text between `<!--` and the first following `-->`. The
+  comment may stand anywhere on the line, also after text or on a heading line
+  (`## Notes <!-- md-template-lint disable-line MTL701 -->`; heading extraction already drops
+  a trailing HTML comment, 2.6, so the heading still matches). Several directive comments on
+  one line are read left to right. A multi-line HTML comment is never a directive.
+- Frontmatter: a YAML comment. Its content is the text after the `#`. Two places only: the
+  trailing comment of a top-level key line (the same lines that bind field comments, 2.1:
+  lines that match a top-level key of the parsed YAML document), and a whole-line comment
+  whose `#` is in column 1 and that the `yaml` document treats as a comment (not a line inside
+  a multi-line quoted or flow value). An HTML comment in the frontmatter is YAML text, not a
+  directive. Comments on indented sub-keys and list items are not read (their findings anchor
+  on the top-level key line anyway, DIR5).
+
+Rationale: an HTML comment is invisible in rendered Markdown and is the convention of
+markdownlint and Prettier; YAML has its own comment syntax, and most field findings anchor on
+key lines, which can only hold a YAML comment. Single-line comments keep the parse
+line-based and simple. The comment lexing lives in the grammar (`grammar/*.g4`, A58), like
+every other token of the linter (AGENTS.md, no tag regex outside the grammar).
+
+DIR4. Not read:
+
+- in a template (body or frontmatter): a template is the schema and is never suppressed;
+  such a comment is inert prose there, with no warning, and is not shown by `--verify`;
+- inside a fenced code block (the fences of 2.6, the lexer fence modes);
+- inside an inline code span: a `<!--` that lies between a pair of equal backtick runs on the
+  same line;
+- after a target parse failure (`MTL001` to `MTL004`): the file is not linted (4.1 step 1).
+
+Known limitation, accepted: indented code blocks (four spaces) are not detected, as for
+headings (2.6). Directive comments stay part of the section body text, so a directive line
+counts as a non-blank line for `MTL701`, `MTL704` and `MTL705`. Put a directive about a
+section on its heading line to keep the body unchanged. Rationale: the body text is the
+legacy contract (2.6, HTML comments are prose); stripping comments would change content
+results for files without directives.
+
+Line numbers: 1-based physical lines of the whole file after line-ending normalization (1.1),
+line 1 is the opening `---`. The same numbering as field and heading lines.
+
+#### Anchors and the coverage rule (DIR5, DIR6, DIR7)
+
+DIR5. Anchor line. The engine gives each target diagnostic an anchor: one target line, or
+none. The anchor is internal (a side table, like the item and section sort keys of the
+pipeline); its number is not printed on its own and does not change `line` in JSON, so for a
+target without directives the diagnostic set stays identical (JSON differs only by the
+always present `summary.suppressed` key, 8.5). The text formats quote the anchored line
+below the diagnostic (source line, 8.1; excerpt, 8.2), which is the one intended change of
+the text output (change C09).
+
+| Codes                                                            | Anchor                                                                    |
+| ---------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| `MTL101`                                                         | none (the file name)                                                      |
+| `MTL201`                                                         | the target key line when the key is present with an empty value; none when the key is missing |
+| `MTL202`                                                         | the target key line                                                       |
+| field steps: `MTL102`, `MTL301`-`MTL305`, `MTL401`-`MTL407`, `MTL501`-`MTL517`, `MTL801`-`MTL805` | the target key line of that field                                         |
+| `MTL601`, `MTL602`, `MTL604`                                     | none (missing heading, order of the whole file)                           |
+| `MTL603`                                                         | the line of the first target heading with that text (the one that fired)   |
+| `MTL701`-`MTL705`                                                | the line of the target heading whose section was checked (the first occurrence, 2.6) |
+
+A key line is the line of the key itself (for a duplicate key, the last occurrence, Q06),
+never the lines of a multi-line value. Rationale: the key line is what the user sees as the
+field, and it is already known to the engine (`Field.line`).
+
+DIR6. Suppressible codes: the file diagnostics of a parsed target, `MTL101` to `MTL899`
+(categories filename, presence, format, bounds, type, heading, content, io). NOT
+suppressible, and named in a directive they give `MTL022`:
+
+- `MTL001` to `MTL004`, on a target or a template: a file that does not parse is not linted
+  and its directives are not read; a broken template is never suppressed;
+- `MTL010` to `MTL013`: template tag warnings; they are never emitted for a target (tags in a
+  target are inert, 2.7), and the template cannot carry directives (DIR4);
+- `MTL020` to `MTL025`: directive warnings; a directive cannot silence its own diagnostics;
+- `MTL900` to `MTL999`: run diagnostics; they belong to the run, not to a file line.
+
+Rationale: only findings about the content of one target are local to that file; the others
+describe the template, the run or the directives themselves.
+
+DIR7. Coverage rule. A suppressible diagnostic with code C is removed when:
+
+- the target holds a valid `disable-file` for C, anywhere in the file (any carrier of
+  DIR3, before or after the finding). This covers every diagnostic with code C, with or
+  without anchor;
+- or it has an anchor line A, and some line directive or range for C covers A (DIR1 table: a
+  `disable-line` on A, a `disable-next-line` on A - 1, or a `disable` / `begin disable` range
+  that starts at or before A and is not closed before A; the `end disable` line itself is
+  covered).
+
+A diagnostic without anchor (`MTL101`, `MTL201` for a missing key, `MTL601`, `MTL602`,
+`MTL604`; DIR5) is covered ONLY by `disable-file`. `disable`, `begin disable`,
+`disable-line` and `disable-next-line` never cover it, whether their range is closed or runs
+to the end of the file. The match is by code only: a `disable-file MTL601` silences every
+missing heading of the file, not one named heading.
+
+Rationale: a finding without anchor (missing field, missing heading, heading order, file
+name) concerns the whole file and has no line; any line-based rule (first lines, nearest
+directive, a range that happens to stay open) would be arbitrary and easy to trigger by
+accident. One explicit whole-file verb keeps the intent reviewable. Consequence, documented
+in the README (A62): a missing key or a missing heading is silenced with
+`disable-file <code>` (for example `<!-- md-template-lint disable-file MTL601 -->`
+in the body or `# md-template-lint disable-file MTL201` in the frontmatter), never with
+an open `disable`. Likewise, a body `disable MTL202` does not cover the frontmatter keys
+(they come before its range); use `disable-file MTL202` or a frontmatter directive.
+
+#### Range bookkeeping (DIR8)
+
+DIR8. Directives are processed in source order (line, then column). Per code:
+
+- `disable C` or `begin disable C` while C is not open: opens a range at this line.
+- `disable C` or `begin disable C` while C is open: `MTL025`, no effect (the first range
+  keeps its start). Rationale: no nested counting; one open range per code is easy to reason
+  about.
+- `end disable C` while C is open: closes the range at this line (inclusive).
+- `end disable C` while C is not open: `MTL023`, no effect.
+- End of file with C still open from `begin disable`: `MTL024`, emitted once per open code,
+  ordered by the source position (line, then column) of the `begin disable`, and for several
+  codes opened by one directive by the order of the codes in that directive, first to last;
+  the range runs to the end of the file. Still
+  open from `disable`: silent.
+- `disable-line` and `disable-next-line` never open or close a range and never conflict with
+  one (no `MTL025`).
+- `disable-file C` never opens or closes a range: no `MTL023`, `MTL024` or `MTL025` for
+  it, also when C is open or already named by another `disable-file` (repeating it is
+  harmless, no warning). `disable C` after it opens a range as usual, and `end disable C`
+  does not end its effect (with no open range for C, that `end disable` is `MTL023`).
+
+Step 7 of 4.1 emits the directive diagnostics in directive order, `MTL024` last. A file that
+is linted against two pairs is processed once per pair, so its directive warnings appear in
+both blocks, like any other warning.
+
+#### Counts, exit codes and reporters (DIR9)
+
+DIR9. A suppressed diagnostic is removed before anything counts it:
+
+- it is not printed (text, `--quiet`, JSON), not counted in `Warnings:` /
+  `summary.warnings` or `filesWithWarnings`, and does not make a file fail: a file whose only
+  errors are suppressed is `✓` and JSON status `pass`, and the exit code follows the rest
+  (7.5);
+- it is counted per pair-file lint in the text summary line `Suppressed:` (shown only when
+  greater than 0, 8.2) and in JSON `summary.suppressed` (always present, 0 when none, 8.5);
+- the directive warnings `MTL020` to `MTL025` are normal file warnings: printed, counted in
+  `Warnings:`, hidden by `--quiet`, never in `Suppressed:`.
+
+Rationale: the count keeps suppression visible in CI without listing what was hidden; listing
+suppressed findings would need a new output section for little gain. JSON stays
+`schemaVersion` 1 because the new key is additive.
+
+#### Interactions (DIR10)
+
+DIR10.
+
+- Presence, value and content tags: no interaction. The rules still run in full; suppression
+  only filters their output (4.1 step 8). Suppressing `MTL201` does not run the value checks
+  of an empty field, and does not change the `MTL517` severity. A `disable-file MTL601`
+  hides a missing heading but does not make it present: the order check (`MTL604`) still
+  see it as absent.
+- File-list mode (7.2): no difference. Directives belong to the target file, whatever pair or
+  mode selected it.
+- `--quiet` (7.1): suppressed diagnostics are never printed in any mode; `--quiet` prints no
+  summary, so no `Suppressed:` line either.
+- `--verify` (7.3): no target is read, so no directive is read; templates never carry
+  directives (DIR4). Directives change nothing in verify output and exit codes (JSON only
+  gains `summary.suppressed`, 0, 8.5); the excerpt rows of C09 are a separate change.
+
+Rationale: suppression is a pure output filter on one target, so it composes with every tag,
+mode and flag without special cases.
+
+#### Worked examples
+
+Template for the examples (fields `title`, `status` required; headings `# Notes`,
+`## Overview [content:non-empty]`, `## Details [content:non-empty]`, `## Context`).
+
+Example 1, `disable-line` and `disable-next-line` in the frontmatter and on a heading:
+
+```markdown
+---
+title: Notes
+status: draft
+owner: alice # md-template-lint disable-line MTL202
+# md-template-lint disable-next-line MTL202, MTL301
+reviewer: bob
+draft: yes
+---
+
+# Notes
+
+## Overview <!-- md-template-lint disable-line MTL701 -->
+
+## Details
+
+## Context
+```
+
+- Line 4 `owner`: `MTL202` anchored on line 4, covered by its `disable-line`. Suppressed.
+- Line 6 `reviewer`: `MTL202` anchored on line 6, covered by the `disable-next-line` of line 5
+  (multi-code list; `MTL301` never fires here, which is fine). Suppressed.
+- Line 7 `draft`: `MTL202` anchored on line 7, no directive. Reported (negative case).
+- Line 12 `## Overview`: `MTL701` anchored on line 12, covered. Suppressed.
+- Line 14 `## Details`: `MTL701` anchored on line 14, no directive. Reported (negative case).
+- Negative variant: `# md-template-lint disable-line MTL202` alone on line 5 covers line 5
+  only, so `reviewer` would be reported.
+- Summary: `Suppressed:   3`.
+
+Example 2, a `begin disable` / `end disable` block over several keys, with a multi-code list
+(frontmatter only; the body is the one of example 1):
+
+```markdown
+---
+title: Notes
+status: draft
+# md-template-lint begin disable MTL202, MTL301
+legacy_id: 42
+legacy_owner: alice
+# md-template-lint end disable MTL202 MTL301
+extra: x
+---
+```
+
+- Range for `MTL202` and `MTL301`: lines 4 to 7. `legacy_id` (line 5) and `legacy_owner`
+  (line 6): `MTL202` suppressed.
+- `extra` (line 8): after the block, `MTL202` reported (negative case).
+- Without line 7, both ranges run to the end of the file: `extra` is suppressed too, and two
+  `MTL024` warnings are printed, `Directive on line 4: 'begin disable MTL202' is never
+  closed, it runs to the end of the file` and the same for `MTL301`.
+
+Example 3, `disable-file` and diagnostics without anchor (file `notes/draft.md`):
+
+```markdown
+---
+title: Draft
+---
+
+<!-- md-template-lint disable-file MTL201, MTL601 -- filled in later -->
+
+# Notes
+
+## Overview
+
+Text.
+```
+
+- `status` is missing: `MTL201` without anchor, covered by the `disable-file MTL201` of
+  line 5. Suppressed.
+- `## Details` and `## Context` are missing: two `MTL601` without anchor, covered by
+  `disable-file MTL601`. Suppressed.
+- Expected text output: the file passes, its block is `✓ notes/draft.md` with no diagnostic
+  line, and the summary shows `Suppressed:   3`.
+- The same result with the directive in the frontmatter, for example
+  `# md-template-lint disable-file MTL201, MTL601` as line 2, or at the end of the file:
+  the position does not matter.
+- Negative variant: replace `disable-file` by `disable`. The range runs to the end of the
+  file, but a range never covers a diagnostic without anchor, so all three are reported, no
+  `Suppressed:` line:
+
+```text
+  ✗ notes/draft.md
+      error MTL201 Field 'status': required but empty or missing
+      error MTL601 Heading: Missing required heading: 'Details'
+      error MTL601 Heading: Missing required heading: 'Context'
+```
+
+- Negative variant: `disable-file MTL201` only. The two `MTL601` are reported, the file
+  fails, `Suppressed:   1`.
+
+Example 4, `disable-file` on anchored diagnostics (file `notes/imported.md`):
+
+```markdown
+---
+title: Notes
+status: draft
+legacy_id: 42
+legacy_owner: alice
+---
+
+# Notes
+
+## Overview
+
+Text.
+
+## Details
+
+Text.
+
+## Context
+
+<!-- md-template-lint disable-file MTL202 -- imported keys -->
+<!-- md-template-lint end disable MTL202 -->
+```
+
+- `legacy_id` (line 4) and `legacy_owner` (line 5): `MTL202` anchored on lines 4 and 5. The
+  `disable-file MTL202` on line 20 comes after them but covers the whole document.
+  Suppressed.
+- Line 21: `end disable` does not end a `disable-file`, and no range for `MTL202` is open,
+  so it gives `MTL023`; the two keys stay suppressed.
+- Expected text output:
+
+```text
+  ✓ notes/imported.md
+      warn  MTL023 Directive on line 21: 'end disable MTL202' has no open 'disable' or 'begin disable' for MTL202
+        21 | <!-- md-template-lint end disable MTL202 -->
+           | ^
+```
+
+  and the summary shows `Warnings:     1 (in 1 file(s))` and `Suppressed:   2`.
+- Negative variant: replace `disable-file` by `disable` on line 20. Its range starts on
+  line 20 (and ends on line 21), after both key lines, so the two `MTL202` are reported.
+
+Example 5, ignored places and directive warnings:
+
+````markdown
+---
+title: Notes
+status: draft
+---
+
+```markdown
+<!-- md-template-lint disable MTL601 -->
+```
+
+Inline code is prose: `<!-- md-template-lint disable MTL601 -->`.
+
+<!-- md-template-lint disabel MTL601 -->
+<!-- md-template-lint disable MTL2O1, MTL910 -->
+<!-- md-template-lint end disable MTL202 -->
+<!-- md-template-lint begin disable -->
+````
+
+- Lines 7 and 10: inside a fence and inside a code span. Not directives, no warning.
+- Line 12: `MTL020` `Directive on line 12: unknown directive 'disabel' (expected disable,
+  disable-line, disable-next-line, disable-file, begin disable or end disable)`.
+- Line 13: `MTL021` `Directive on line 13: unknown rule code 'MTL2O1'` (letter O) and
+  `MTL022` `Directive on line 13: rule code MTL910 cannot be disabled`. Both items are
+  dropped, so the directive is inert (no range opens) and there is no extra `MTL020`.
+- Line 14: `MTL023` `Directive on line 14: 'end disable MTL202' has no open 'disable' or
+  'begin disable' for MTL202`.
+- Line 15: `MTL020` `Directive on line 15: 'begin disable' needs at least one rule code`.
+- The missing headings still give `MTL601`: no `disable-file MTL601` is read, and the
+  `disable MTL601` lines would not cover them even if read (DIR7).
+- Variant: `<!-- md-template-lint disable-file -->` added as line 16 gives `MTL020`
+  `Directive on line 16: 'disable-file' needs at least one rule code`.
 
 ## 5. Defect decisions (D01 to D18)
 
@@ -922,7 +1397,8 @@ The legacy flags `--pattern`, `--dir`, `--ignore`, `--base-dir` do not exist (D0
    matching several pairs is linted once per pair. A file that matches a pair but does not exist
    is `MTL912` (a missing file matching no pair is ignored like any other; the other files are
    still linted, change C01). Output order follows 8.4, not the argument
-   order.
+   order. Disable directives (4.4) apply the same in both modes: they belong to the target
+   file, not to the mode or the pair.
 
 lint-staged config:
 
@@ -948,6 +1424,8 @@ lint-staged config:
   UTF-8) is broken: exit 1, as in legacy. A template path that does not exist is `MTL910` and
   one that is not a regular file is `MTL911`: exit 2 (checks in 4.3, "Template file checks").
   No config and no template path: `MTL923`.
+- Disable directives (4.4) play no role: no target is read, and a directive-like comment in a
+  template is inert prose (not listed, no warning, no effect on the exit code).
 
 ### 7.4 Empty target sets
 
@@ -978,15 +1456,51 @@ templates:`, `Run errors:`) and `No files linted.` is not printed.
 The engine keeps going after a run error when the remaining work is independent (D14), and
 reports exit 2 at the end. A usage or config validation error stops before any lint.
 
+Suppressed diagnostics (4.4) are removed before the exit code is computed: a target whose
+only errors are suppressed counts as passed (exit 0 when nothing else fails). The directive
+warnings `MTL020` to `MTL025` never change the exit code. Run diagnostics (`MTL9xx`) are never
+suppressible, so exit 2 is never hidden.
+
 ## 8. Output
 
 ### 8.1 Diagnostic
 
 Every finding is `{ code, severity, message }`, plus optional `heading`, `line`, `column`
-(1-based, only where known, for example tag errors). `heading` is set for heading and content
+(1-based, only where known, for example tag errors) and, in JSON only, `sourceLine` (the
+source line, below and 8.5). `heading` is set for heading and content
 findings (MTL601-603, MTL701-705; MTL604 has no anchor and gets no heading). A `field` member is NOT emitted (change C07). `message` is the legacy text
 without the code. Comparisons with the legacy output use `(path, severity, code, message)` after normalizing
-separators (D18).
+separators (D18). The directive warnings `MTL020` to `MTL025` carry `line` and `column` of
+the directive in the target (4.4). The anchor line used for suppression (4.4, DIR5) is
+internal: its number is never emitted as `line` (it can be quoted in the text output, see
+the source line below). A suppressed diagnostic is never emitted at all.
+
+Source line (change C09, AS14). A diagnostic may have a source line: the line of its own
+source file that causes it, shown by the reporters as an excerpt (8.2, 8.3, 8.5). It is
+resolved once per diagnostic, by the runner, in this order:
+
+1. the `line` of its `position`, when it has one;
+2. else its anchor line (4.4, DIR5), when it has one;
+3. else none.
+
+The source file is the file the diagnostic belongs to: the TARGET file for a target
+diagnostic (the field, filename, heading, content and directive codes), the TEMPLATE file for
+a template-phase diagnostic (`MTL010` to `MTL013`, shown by `--verify`, 8.3). `MTL001` to
+`MTL004` (no position, no anchor) and the run diagnostics `MTL9xx` have no source line. A line
+number outside the file (below 1 or above its line count) gives no source line. Line numbers
+and text follow the line-ending normalization of 1.1: CRLF and a lone CR are line ends, a
+leading BOM is dropped, so a `\r` never appears in a source line and `line` and `column` agree
+with the text shown. The runner reuses the text it already read to lint the file; no file is
+read again. What the runner keeps while matching, and what stays on a diagnostic, is bounded
+(8.2, EX8).
+
+Rationale for step 2: most findings concern one key or heading and have no column, so a
+position-only excerpt would show almost nothing (in a lint run only `MTL020` to `MTL025` have
+a position). The anchor is already known, cheap (a table lookup) and unambiguous (DIR5 gives
+one target line per code, or none), and it is the line a user must edit: the key line of a
+field, the heading line of a section. A diagnostic about the whole file (`MTL101`, a missing
+key, `MTL601`, `MTL602`, `MTL604`) has no anchor and no excerpt: showing line 1 or the
+first heading would point at a line that did not cause it.
 
 ### 8.2 Text format
 
@@ -997,8 +1511,9 @@ else to stdout.
 
 Two renderings exist (change C07): `pretty` is the layout below with glyphs and optional
 color; `plain` is the same layout with ASCII words `PASS`, `FAIL`, `INFO` instead of glyphs
-and never colored. The CLI format `text` maps to `pretty`. Control characters in echoed
-document values are replaced by visible escapes in every format. `Templates:` counts distinct
+and never colored. The CLI format `text` maps to `pretty`. Control characters,
+bidi controls and invisible format characters in echoed document values are replaced by
+visible escapes in every format (the set is listed in EX3). `Templates:` counts distinct
 template paths. A failed file of a non-project root is listed as `path (root 'name')`.
 A pair with no files raises `MTL913` before its template is parsed, so a broken template
 of an empty pair is not reported.
@@ -1014,10 +1529,13 @@ Target:   docs/adr/*.md (3 file(s)) - architecture decision records
   ✓ docs/adr/0001-first.md
   ✗ docs/adr/0002-second.md
       error MTL201 Field 'status': required but empty or missing
+        3 | status:
       error MTL601 Heading: Missing required heading: 'Context'
       warn  MTL202 Unknown key 'authors' not present in template
+        4 | authors: bob
   ✓ docs/adr/0003-third.md
       warn  MTL202 Unknown key 'reviewer' not present in template
+        4 | reviewer: alice
 
 Template: templates/x.md
 Target:   notes/*.md (2 file(s))
@@ -1056,7 +1574,7 @@ Rules:
 - One block per root-pair combination that has files (or a note). When the root is not
   `project`, a line `Root:     <name>` follows `Template:`. The `Target:` line lists the
   include globs joined by `, `, the file count and the description.
-- Per file: `✓ <path>` or `✗ <path>`, then one indented line per diagnostic: `error` lines
+- Per file: `✓ <path>` or `✗ <path>`, then one indented line per diagnostic, each followed by its excerpt rows when it has any (EX1): `error` lines
   first, then `warn` lines, each list in emission order (4.1). A passing file shows its
   warnings.
 - Broken template: one `TEMPLATE ERROR: <template> - <message>` line under its
@@ -1074,8 +1592,93 @@ Rules:
 - A `MTL913` line is printed where the pair would have been (`ℹ MTL913 <message>` on stdout
   for `warn`). Its counting rules are in 7.4.
 - `Total files` counts pair-file lints (a file in two pairs counts twice, as in the wrapper).
-- `--quiet` prints only the `✗` lines with their `error` lines, `TEMPLATE ERROR` lines and run
-  errors. Nothing when clean.
+- `Suppressed:` (4.4, DIR9) follows `Warnings:` and counts the diagnostics removed by
+  disable directives, per pair-file lint, for example `Suppressed:   3`. It is shown only when
+  greater than 0 (never as `0`), so the sample above has none. Suppressed diagnostics are
+  never printed and never count in `Warnings:`, `Failed` or `Failed files:`.
+- `--quiet` prints only the `✗` lines with their `error` lines (and the excerpts of those
+  lines, see below), `TEMPLATE ERROR` lines and run errors. Nothing when clean.
+
+#### Source excerpt (change C09, AS14)
+
+Rows added under a diagnostic line, in `pretty` and `plain` alike:
+
+- EX1. Which. A diagnostic with a source line (8.1) is followed by its excerpt. One without
+  prints no extra row, so a file whose diagnostics all lack a source line (a missing key, a
+  missing heading, a file name, a parse failure) prints exactly as before. Excerpts follow the
+  order of their diagnostics (errors first, then warnings, 8.4).
+- EX2. Layout. The gutter row is 8 spaces, the 1-based line number (no padding, no
+  alignment with other excerpts), ` | `, then the text. When the diagnostic has a `column`, a
+  caret row follows: 8 spaces, as many spaces as the line number has digits, ` | `, spaces up
+  to the offending character, `^`. An empty text prints the gutter row as `<n> |` with
+  nothing after the bar.
+- EX3. Text. Each character of the line is shown as follows, one output character per source
+  character unless escaped: a whitespace control (tab, VT, FF, NEL, U+2028, U+2029) becomes
+  one space; every other control, DEL, bidi control, U+FEFF and invisible format character
+  is the escape of `cleanText` (`\x1b`, `\u202e`, and `\u{e0001}` above U+FFFF); anything
+  else is unchanged. The invisible format characters are U+00AD, U+180E, U+200B to U+200D,
+  U+2060 to U+2064, U+FFF9 to U+FFFB and U+E0000 to U+E007F; with U+061C, U+200E, U+200F,
+  U+202A to U+202E, U+2066 to U+2069 and U+FEFF they are the whole escaped set above C0, C1
+  and DEL (the same set escapes echoed values in every message, heading and path, 8). Unlike
+  `cleanText`, runs of whitespace are NOT collapsed, so the caret stays under its character. Leading and trailing whitespace is
+  kept. A tab is one space (not a tab stop), so the excerpt never depends on the terminal.
+  CRLF never shows: the line comes from the normalized text (8.1), so a file with CRLF line
+  ends gives the same excerpt as one with LF.
+- EX4. Caret. `column` is 1-based and counts characters (Unicode code points), as the
+  parser reports it. The caret is under the character at that column; the offset is the width
+  of the shown text before it (an escape counts its full width). A column past the end of the
+  line puts the caret just after the last character; a column below 1 is read as 1. (A column
+  past the end is not produced by any rule today; if it were, the caret index is clamped to
+  the line length and the window of EX5 follows that index, so on a line of exactly 100
+  characters it may still slide.)
+- EX5. Width. At most 100 characters of the line are shown. A longer line is cut: the shown
+  window is the first 100 characters followed by `...`. When the diagnostic has a column in
+  the part that would be cut (column above 100), the window instead starts 40 characters
+  before the offending character (it then shows up to 59 characters after it, fewer when the
+  line ends sooner), is preceded by `...`, and is followed by `...` when characters remain
+  after it. The caret offset includes the 3 characters of a leading `...`. The ellipsis is the
+  ASCII `...` in every format. The width counts source characters, before escaping.
+- EX6. Color. In `pretty` with color, the excerpt rows (gutter and caret) are gray (SGR 90) and
+  the rest of the output is unchanged; `plain` and no-color output carry no escape code.
+- EX7. `--quiet` hides an excerpt exactly when it hides its diagnostic (warnings are hidden,
+  so are their excerpts). The summary, counts and exit code never depend on excerpts.
+- EX8. Cost and memory. Building the excerpts of a file costs one normalize-and-split pass
+  over the file text (the lines of 8.1), one pass over each source line that has a diagnostic,
+  however many diagnostics it has, plus a constant (at most 100
+  characters, EX5) per diagnostic: 2000 diagnostics on one line of 1 MB cost a few passes,
+  not 2000. What stays on a diagnostic is at most two strings of 100 characters (the shown
+  window, and for the JSON `sourceLine` the first 100 characters) and a few numbers; each
+  string is a copy that owns its characters, so a diagnostic never keeps the line, nor the
+  file text, alive. The prepared lines live only while the diagnostics of one file are
+  matched. In a lint run the template text is not retained after it is parsed (no template
+  line is ever quoted in lint mode); `--verify` holds a template text only until its tag
+  warnings have their excerpts. A source line is therefore never held per diagnostic, and a
+  report of N diagnostics holds O(N x 100) characters of source, not O(N x line length).
+- EX9. Echo. An excerpt echoes the content of the linted file, including frontmatter values
+  such as tokens, e-mail addresses or paths, into the terminal and into CI logs and JSON
+  artifacts, as the messages already do for the values they name. Escaping (EX3) keeps it
+  from acting on the terminal, not from being read. A project that must not print its
+  content should not write it into lines that lint messages can quote.
+
+Example (a caret row exists only for a diagnostic with a column: in a lint run
+`MTL020` to `MTL025`):
+
+```text
+  ✗ docs/adr/0004-fourth.md
+      error MTL201 Field 'status': required but empty or missing
+        3 | status:
+      warn  MTL021 Directive on line 9: unknown rule code 'MTL999'
+        9 | <!-- md-template-lint disable-line MTL999 -->
+          | ^
+```
+
+Rationale: the message says what is wrong, the excerpt says where, so a reader no longer
+opens the file to find the line. The rows are indented under the diagnostic (EX2) and start
+with a line number, so they cannot be mistaken for a diagnostic line (`error`/`warn`), a
+file line (`✓`/`✗`) or a summary line. One format for text and the rule that the text comes
+from the normalized document (8.1) keep the caret and `line:column` consistent. Sanitising
+(EX3) is mandatory for the same reason as in 8: a document line may hold an escape sequence.
+Windowing (EX5) keeps the caret visible without printing a minified line in full.
 
 ### 8.3 Verify text output
 
@@ -1095,6 +1698,8 @@ Headings:
 
 Unknown tags found (typo or unimplemented feature):
   - Field 'owner': unknown tag [optionl]
+      7 | owner: string # [optionl]
+        |                 ^
 ```
 
 - The `Filename:` line only when the template declares it. Columns are padded to the widest
@@ -1106,7 +1711,21 @@ Unknown tags found (typo or unimplemented feature):
   listed in a section `Malformed tags:` with line and column. Misplaced tags (`MTL013`) are
   listed in a section `Misplaced tags:` with line and column.
 - A broken template prints `TEMPLATE ERROR: <template> - <message>` instead of its table.
-- `--quiet` hides the table and shows only broken templates and run errors.
+- Source excerpt (change C09, AS14). Every item of the three sections above is followed by
+  the excerpt of its TEMPLATE line (the tag warnings `MTL010` to `MTL013` all carry line and
+  column), with the rules EX2 to EX6 of 8.2 except that the rows are indented 6 spaces
+  instead of 8 (the item text starts at column 5, the excerpt sits 2 columns to the right of
+  it, as in 8.2). The caret is under the character the `column` names (for a malformed tag,
+  the bad part). An item whose line does not exist has no excerpt. Example:
+
+  ```text
+  Malformed tags:
+    - Field 'tags': malformed tag [count:min:abc] (line 2, column 26)
+        2 | tags: ["a"] # [count:min:abc]
+          |                          ^
+  ```
+- `--quiet` hides the table and shows only broken templates and run errors; the sections, and
+  so the excerpts, are hidden with the table.
 
 ### 8.4 Ordering
 
@@ -1172,6 +1791,7 @@ it, nothing goes to stderr). Keys are stable, arrays follow 8.4.
     "failed": 1,
     "warnings": 2,
     "filesWithWarnings": 2,
+    "suppressed": 0,
     "templatesChecked": 2,
     "templatesBroken": 1,
     "runErrors": 0,
@@ -1197,7 +1817,31 @@ sample.
   arrays. Neither is added to `summary.warnings`, which counts file diagnostics only (D06).
   Both arrays are always present, empty when there is nothing.
 - `summary.exitCode` equals the process exit code.
+- `summary.suppressed` counts the diagnostics removed by disable directives (4.4, DIR9), per
+  pair-file lint. Always present, 0 when none. Suppressed diagnostics are not in any
+  `errors` or `warnings` array, and a file whose only errors are suppressed has status
+  `pass`. In verify mode it is 0. The key is additive, so `schemaVersion` stays 1. Its
+  position is fixed: between `filesWithWarnings` and `templatesChecked` (sample above). In
+  the verify document it follows `warnings` (`templates`, `broken`, `warnings`,
+  `suppressed`, `runErrors`, `exitCode`). Pinned by the summary key-order list of
+  `tests/unit/reporters/json.test.ts` and the `summary` object of every
+  `tests/fixtures/runner/*/expected.json`.
 - `--quiet` does not shrink JSON.
+- `sourceLine` (change C09, AS14) is an optional string member of a diagnostic, placed right
+  after `column`. It is the text of line `line` of the diagnostic's source file (the target
+  file for the diagnostics of `files[]`, the template file for the `diagnostics` of a verify
+  template, 8.1), shown as in EX3 of 8.2 (escapes, whitespace controls as single spaces, runs
+  not collapsed) and cut after 100 characters with `...` when longer (EX5, but never a
+  window and no caret: `column` already says where). It is present exactly when the
+  diagnostic has `line` and that line exists in the file. It is absent otherwise: an
+  anchor-only diagnostic (4.4, DIR5) has no `line`, so it has no `sourceLine` even though the
+  text formats quote its anchor line; `runErrors`, `runWarnings` and a broken template's
+  `error` never have it. The key is additive, so `schemaVersion` stays 1. It is never
+  affected by `--quiet`. Example (a directive warning):
+
+  ```json
+  { "code": "MTL021", "severity": "warning", "message": "Directive on line 9: unknown rule code 'MTL999'", "line": 9, "column": 1, "sourceLine": "<!-- md-template-lint disable-line MTL999 -->" }
+  ```
 
 ## 9. Rule categories
 
@@ -1222,7 +1866,7 @@ pending, ADR 0002). A negated-set lexer token needs a `TOKEN_SAMPLES` entry in
 
 | File                      | Codes                 | Tags and checks                                                                      |
 | ------------------------- | --------------------- | ------------------------------------------------------------------------------------ |
-| `src/rules/syntax.ts`     | `MTL001`-`MTL004`, `MTL010`-`MTL013` | Frontmatter and YAML parse errors, unknown, malformed and misplaced tags. |
+| `src/rules/syntax.ts`     | `MTL001`-`MTL004`, `MTL010`-`MTL013`, `MTL020`-`MTL025` | Frontmatter and YAML parse errors, unknown, malformed and misplaced tags; target disable directive warnings (4.4). |
 | `src/rules/filename.ts`   | `MTL101`, `MTL102`    | `[filename:case:<convention>]`, `[value:filename]`.                                  |
 | `src/rules/presence.ts`   | `MTL201`, `MTL202`    | `[presence:required]`, `[presence:optional]`, `[presence:conditional:<text>]` on fields; unknown keys. |
 | `src/rules/format.ts`     | `MTL301`-`MTL305`     | `[format:constant:...]`, `[format:snake_case]`, `[format:kebab-case]`, `[format:elements:...]`, `[format:scheme:...]`. |
@@ -1235,6 +1879,20 @@ pending, ADR 0002). A negated-set lexer token needs a `TOKEN_SAMPLES` entry in
 Outside `src/rules/`: the engine core (frontmatter and heading extraction, comment
 binding, type inference), config loader, runner, reporters and CLI own `MTL9xx`.
 
+Disable directives (4.4), split by phase: A58 lexes the directive comments in the grammar
+(body HTML comments outside fences and code spans, frontmatter YAML comments) and exposes
+them on the target `DocumentModel` with line, column and the raw word and code tokens; the
+lexer and parser accept the six verbs of DIR2, `disable-file` included. A60
+adds the six `MTL020` to `MTL025` rules to `src/rules/syntax.ts` as phase `target`, step
+`directives` (the last entry of `TARGET_STEPS`, 4.1 step 7); the validation and range
+bookkeeping they share is `src/engine/directives.ts`. The engine core
+(`src/engine/pipeline.ts`) records the anchor line of each diagnostic (DIR5), applies the
+coverage rule (DIR7, 4.1 step 8) and returns the suppressed count to the runner and the
+reporters (DIR9). For `disable-file` the engine matches by code only (any anchor or
+none); line directives and ranges match by code and anchor line, and never a diagnostic
+without anchor. The JSON reporter has `summary.suppressed` between `filesWithWarnings` and
+`templatesChecked` (8.5). A62 documents the directives in the README.
+
 Coverage check (for the A9 consistency check): every code of 4.3 appears in exactly one
 category row, except the `MTL9xx` run diagnostics, which belong to the engine and have no
 rule file. Tags map to the categories by the codes they emit: presence tags emit codes in
@@ -1244,8 +1902,8 @@ their effect shows through `type.ts` codes.
 
 ## 10. Assumptions
 
-These choices go beyond the frozen sources. Review them before phases A6 and A9. Ids are
-`AS1` to `AS8` (they are not plan phases).
+These choices go beyond the frozen sources. Review them before phases A6 and A9 (AS9 to
+AS13: before A58 and A60; AS14: before A65). Ids are `AS1` to `AS14` (they are not plan phases).
 
 - AS1: `approvedPaths` is an addition. Legacy only had alias approvals; absolute values were
   never probed. The new key lets a project opt in per folder. Default (empty) keeps the legacy
@@ -1253,7 +1911,7 @@ These choices go beyond the frozen sources. Review them before phases A6 and A9.
 - AS2: A broken template exits 1 (as the wrapper did), a missing template exits 2.
 - AS3: `onEmpty` default is `warn` (legacy was an informational note).
 - AS4: Text output replaces the nested `FAIL name has errors:` / `WARN name has N warning(s):`
-  blocks of the legacy linter with one indented line per diagnostic. Messages are unchanged.
+  blocks of the legacy linter with one indented line per diagnostic (plus excerpt rows, EX1). Messages are unchanged.
 - AS5: Globs are case-sensitive on every OS, where PowerShell wildcards are case-insensitive
   on Windows.
 - AS6: A template file never lints itself (it is skipped when it matches its own pair).
@@ -1261,6 +1919,38 @@ These choices go beyond the frozen sources. Review them before phases A6 and A9.
 - AS8: `allowPrivateNetworks` is an addition. URL probes of `[io:exists]` refuse private,
   loopback, link-local and metadata addresses by default (SSRF guard); only private ranges can
   be opted in, the others are always blocked.
+- AS9: Disable directive syntax (4.4, DIR1, DIR2): keyword `md-template-lint`, verbs
+  `disable`, `disable-line`, `disable-next-line`, `disable-file`, `begin disable`, `end
+  disable` (six), codes separated by commas and/or whitespace, all case-insensitive, optional
+  ` -- reason`, no wildcard. Rationale: covers the three requested behaviours (inline, open
+  disable, block) with the ESLint vocabulary most users know, plus one explicit whole-file
+  verb for findings without a line; explicit codes keep suppressions reviewable.
+- AS10: Carriers (DIR3, DIR4): single-line HTML comments in the target body, YAML comments
+  (key-line trailing or column-1 whole-line) in the target frontmatter; never in templates,
+  fences, code spans or multi-line HTML comments. Rationale: HTML comments are invisible
+  when rendered; frontmatter findings anchor on key lines, which only take YAML comments.
+- AS11: Anchors and coverage (DIR5, DIR7): a diagnostic anchors on a target key or heading
+  line, or nowhere; an anchored one is covered by a line directive or range on or around
+  that line, and any one by a `disable-file` for its code placed anywhere in the target;
+  one without anchor ONLY by `disable-file` (never by a range, closed or not).
+  Rationale: a finding about the whole file has no line, so it needs an explicit whole-file
+  directive; any line or range rule would be arbitrary.
+- AS12: Suppressible set (DIR6): `MTL101` to `MTL899` only. `MTL001` to `MTL004`, `MTL010` to
+  `MTL013`, `MTL020` to `MTL025` and `MTL9xx` are not (`MTL022` when named). Rationale: only
+  findings about one parsed target's content are local to that file.
+- AS13: Reporting (DIR9): suppressed findings are dropped before counting and the exit code;
+  only a count is shown (text `Suppressed:` when greater than 0, JSON `summary.suppressed`
+  always). Rationale: suppression stays visible in CI without a new listing section; the
+  JSON change is additive (`schemaVersion` 1).
+- AS14: Source excerpt (8.1, 8.2, 8.3, 8.5; plan A65). The user confirmed that the "faulty
+  line" is the line that causes the finding, in the target or in the template. Decisions:
+  (a) a diagnostic without position quotes its anchor line (DIR5) when it has one, because
+  the anchor is cheap and unambiguous; one without both gets no excerpt; (b) the caret
+  exists only for a diagnostic with a column; (c) JSON `sourceLine` exists only next to a
+  `line` (an anchor-only excerpt is text-only, so JSON never carries a quoted line without
+  its number and DIR5 stays true); (d) the line is cut at 100 characters, with `...`;
+  (e) `--verify` quotes the template line of `MTL010` to `MTL013`. Rationale: see 8.1 and
+  8.2.
 
 ## 11. Legacy quirks and other changes
 
@@ -1331,3 +2021,23 @@ Behaviour that differs from legacy and is not one of the numbered defects.
     stays exact through BigInt; in `count` it is parsed with `parseInt` and prints inexactly.
   - Filename stem: a target path that ends with a separator has an empty stem, while Python
     `Path("dir/").stem` is `dir` (`[filename:case]`, `[value:filename]`).
+- C08: disable directives in target files (4.4, AS9 to AS13; plan A56 spec, A58 grammar and
+  parser, A60 engine and rules, A62 README). Legacy had no suppression: every comment of a
+  target was inert prose. The port reads `md-template-lint` comments in the target (HTML in
+  the body, YAML in the frontmatter) with six verbs (`disable-file` the only one for
+  findings without a line, DIR7), drops the covered diagnostics (4.1 step 8), reports
+  directive mistakes as `MTL020` to `MTL025` (4.1 step 7), and counts suppressions
+  (`Suppressed:`, `summary.suppressed`, 8.2, 8.5). Parity: a target without such a comment
+  gives the legacy diagnostics unchanged (the frozen corpus has none); JSON gains only the
+  always present `summary.suppressed` key. Rationale: users need a local, reviewable escape
+  hatch for one known exception without loosening the shared template.
+- C09: source excerpt (8.1 to 8.3, 8.5, AS14; plan A65). Legacy printed only the message.
+  The port quotes the offending source line under each diagnostic that has one, with a
+  caret when a column is known, in `pretty` and `plain`, and adds the optional string
+  `sourceLine` next to `line` in JSON and verify JSON. Messages, codes, counts, exit codes,
+  ordering and `schemaVersion` (1) are unchanged, except that the escaped set of `cleanText`
+  grows by the invisible format characters of EX3 (U+00AD, zero-width, tag characters and
+  the like), which now show as escapes in every echoed value. Text output of a file with findings gains
+  rows (a normalizer that drops the excerpt rows compares equal to the legacy layout, rows
+  start with a line number and ` | `). Rationale: the user finds the line without opening
+  the file.

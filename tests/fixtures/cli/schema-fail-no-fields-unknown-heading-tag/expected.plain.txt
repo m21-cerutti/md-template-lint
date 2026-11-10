@@ -13,6 +13,8 @@ Headings:
 
 Unknown tags found (typo or unimplemented feature):
   - Heading 'Overview [bogus]': unknown tag [bogus]
+      6 | ## Overview [bogus] [content:non-empty]
+        |             ^
 
 ========================
 Summary

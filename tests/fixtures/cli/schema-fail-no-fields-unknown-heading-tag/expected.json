@@ -17,7 +17,8 @@
         "severity": "warning",
         "message": "Heading 'Overview [bogus]': unknown tag [bogus]",
         "line": 6,
-        "column": 13
+        "column": 13,
+        "sourceLine": "## Overview [bogus] [content:non-empty]"
       }
     ]
   }

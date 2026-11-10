@@ -1,9 +1,16 @@
 /**
  * Category `syntax` (docs/spec.md 4.3, codes MTL001-MTL099): parse failures
- * (MTL001-MTL004) and template tag findings (MTL010-MTL013). The parser layer
- * reports only region, reason, location and subject (src/tags/listeners.ts);
- * this file owns the code, the severity and the message (ADR 0002).
+ * (MTL001-MTL004), template tag findings (MTL010-MTL013) and target directive
+ * warnings (MTL020-MTL025, spec 4.4). The parser layer reports only region,
+ * reason, location and subject (src/tags/listeners.ts); this file owns the
+ * code, the severity and the message (ADR 0002).
+ *
+ * The six directive rules share one analysis of the target directives
+ * (src/engine/directives.ts) and each keeps its own problems
+ * (`directiveDiagnostics`); each finding keeps its analysis index, so the
+ * pipeline restores the order of spec 4.1 step 7 across the six rules.
  */
+import { directiveDiagnostics } from "../engine/directives.js";
 import { defineRule, report, type AnyRule, type TemplateContext } from "../engine/rule.js";
 import type { Diagnostic } from "../engine/model.js";
 import type { TagFinding, TagFindingReason } from "../tags/ast.js";
@@ -124,6 +131,116 @@ const misplacedTag = defineRule({
     }),
 });
 
+const VERBS_EXPECTED =
+  "expected disable, disable-line, disable-next-line, disable-file, begin disable or end disable";
+
+const directiveMalformed = defineRule({
+  code: "MTL020",
+  name: "directive-malformed",
+  severity: "warning",
+  category: "syntax",
+  phase: "target",
+  step: "directives",
+  check: (context): Diagnostic[] => [
+    ...directiveDiagnostics(
+      context,
+      directiveMalformed,
+      "unknown-verb",
+      (problem) => `unknown directive '${problem.word}' (${VERBS_EXPECTED})`,
+    ),
+    ...directiveDiagnostics(
+      context,
+      directiveMalformed,
+      "no-code",
+      (problem) => `'${problem.verb}' needs at least one rule code`,
+    ),
+  ],
+});
+
+const directiveUnknownCode = defineRule({
+  code: "MTL021",
+  name: "directive-unknown-code",
+  severity: "warning",
+  category: "syntax",
+  phase: "target",
+  step: "directives",
+  check: (context): Diagnostic[] =>
+    directiveDiagnostics(
+      context,
+      directiveUnknownCode,
+      "unknown-code",
+      (problem) => `unknown rule code '${problem.token}'`,
+    ),
+});
+
+const directiveCodeNotSuppressible = defineRule({
+  code: "MTL022",
+  name: "directive-code-not-suppressible",
+  severity: "warning",
+  category: "syntax",
+  phase: "target",
+  step: "directives",
+  check: (context): Diagnostic[] =>
+    directiveDiagnostics(
+      context,
+      directiveCodeNotSuppressible,
+      "not-suppressible",
+      (problem) => `rule code ${problem.code} cannot be disabled`,
+    ),
+});
+
+const directiveEndWithoutBegin = defineRule({
+  code: "MTL023",
+  name: "directive-end-without-begin",
+  severity: "warning",
+  category: "syntax",
+  phase: "target",
+  step: "directives",
+  check: (context): Diagnostic[] =>
+    directiveDiagnostics(
+      context,
+      directiveEndWithoutBegin,
+      "end-without-begin",
+      (problem) =>
+        `'end disable ${problem.code}' has no open 'disable' or 'begin disable' for ${problem.code}`,
+    ),
+});
+
+const directiveBeginUnclosed = defineRule({
+  code: "MTL024",
+  name: "directive-begin-unclosed",
+  severity: "warning",
+  category: "syntax",
+  phase: "target",
+  step: "directives",
+  check: (context): Diagnostic[] =>
+    directiveDiagnostics(
+      context,
+      directiveBeginUnclosed,
+      "begin-unclosed",
+      (problem) =>
+        `'begin disable ${problem.code}' is never closed, it runs to the end of the file`,
+    ),
+});
+
+const directiveAlreadyDisabled = defineRule({
+  code: "MTL025",
+  name: "directive-already-disabled",
+  severity: "warning",
+  category: "syntax",
+  phase: "target",
+  step: "directives",
+  check: (context): Diagnostic[] =>
+    directiveDiagnostics(
+      context,
+      directiveAlreadyDisabled,
+      "already-disabled",
+      (problem) =>
+        `'${problem.verb} ${problem.code}' while ${problem.code} is already ` +
+        `disabled since line ${problem.open}`,
+    ),
+});
+
 export const rules: readonly AnyRule[] = [
   frontmatterMissing,
   yamlInvalid,
@@ -133,5 +250,11 @@ export const rules: readonly AnyRule[] = [
   unknownHeadingTag,
   malformedTag,
   misplacedTag,
+  directiveMalformed,
+  directiveUnknownCode,
+  directiveCodeNotSuppressible,
+  directiveEndWithoutBegin,
+  directiveBeginUnclosed,
+  directiveAlreadyDisabled,
   // new:rule inserts above this line
 ];

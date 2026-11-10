@@ -14,8 +14,14 @@ Headings:
 
 Unknown tags found (typo or unimplemented feature):
   - Field 'owner': unknown tag [optionl]
+      2 | owner: "string" # [optionl]
+        |                   ^
   - Field 'title': unknown tag [another-typo]
+      3 | title: "string" # [another-typo] [presence:optional]
+        |                   ^
   - Heading 'Overview [bogus]': unknown tag [bogus]
+      6 | ## Overview [bogus] [content:non-empty]
+        |             ^
 
 ========================
 Summary

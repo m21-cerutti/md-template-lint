@@ -1,0 +1,24 @@
+md-template-lint 1.0.0
+Config: md-template-lint.yml
+========================
+
+Template: templates/note.template.md
+Target:   docs/*.md (1 file(s))
+
+  FAIL docs/a.md
+      error MTL201 Field 'status': required but empty or missing
+      error MTL601 Heading: Missing required heading: 'Overview'
+
+========================
+Summary
+========================
+Total files:  1
+Passed:       0
+Failed:       1
+Warnings:     0 (in 0 file(s))
+Templates:    1 checked, 0 broken
+
+Failed files:
+  - docs/a.md
+
+========================

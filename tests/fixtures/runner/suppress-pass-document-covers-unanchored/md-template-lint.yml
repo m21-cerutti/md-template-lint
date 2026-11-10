@@ -1,0 +1,5 @@
+# Spec 4.4 worked example 3: disable-file and diagnostics without anchor.
+pairs:
+  - name: notes
+    template: templates/notes.template.md
+    include: notes/*.md

@@ -1,0 +1,5 @@
+  FAIL docs/a.md
+      error MTL201 Field 'status': required but empty or missing
+        3 | status:
+      error MTL701 Section 'Overview': [content:non-empty] section body is empty
+        11 | ## Overview

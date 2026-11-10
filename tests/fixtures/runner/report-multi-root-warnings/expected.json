@@ -70,6 +70,7 @@
     "failed": 1,
     "warnings": 2,
     "filesWithWarnings": 1,
+    "suppressed": 0,
     "templatesChecked": 1,
     "templatesBroken": 0,
     "runErrors": 0,

@@ -89,6 +89,7 @@
     "failed": 1,
     "warnings": 2,
     "filesWithWarnings": 2,
+    "suppressed": 0,
     "templatesChecked": 2,
     "templatesBroken": 1,
     "runErrors": 0,

@@ -1,0 +1,5 @@
+# pass-: a file without findings prints no excerpt row (spec 8.2, EX1).
+pairs:
+  - name: notes
+    template: templates/note.template.md
+    include: docs/*.md

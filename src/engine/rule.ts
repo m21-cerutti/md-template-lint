@@ -68,10 +68,17 @@ export const FIELD_STEPS = [
 export type FieldStep = (typeof FIELD_STEPS)[number];
 
 /**
- * Whole-target steps in run order (spec 4.1 steps 2, 4, 5, 6). `filename`
- * runs before the fields, the others after them.
+ * Whole-target steps in run order (spec 4.1 steps 2, 4, 5, 6, 7). `filename`
+ * runs before the fields, the others after them; `directives` (the target
+ * directive warnings MTL020 to MTL025) is last.
  */
-export const TARGET_STEPS = ["filename", "unknown-keys", "headings", "content"] as const;
+export const TARGET_STEPS = [
+  "filename",
+  "unknown-keys",
+  "headings",
+  "content",
+  "directives",
+] as const;
 
 export type TargetStep = (typeof TARGET_STEPS)[number];
 
@@ -147,6 +154,11 @@ export interface TargetContext {
   /** Target path as given to the engine (file name stem rules). */
   readonly targetPath: string;
   readonly env: RuleEnv;
+  /**
+   * Codes of the spec 4.3 tables: the registered rules plus the run diagnostics
+   * (`RUN_CODES`). A directive item outside this set is MTL021 (spec 4.4, DIR2).
+   */
+  readonly knownCodes: ReadonlySet<string>;
 }
 
 /** One template field of one target (spec 4.1 step 3). */
@@ -274,16 +286,18 @@ const SECTION_INDEX = new WeakMap<Diagnostic, number>();
 
 /**
  * A diagnostic about the template section at `index` in `template.sections`,
- * see `bySectionIndex` in the pipeline.
+ * see `bySectionIndex` in the pipeline. `anchorLine` is the target line of the
+ * checked section heading (spec 4.4 DIR5), see `anchorLineOf`.
  */
 export function reportSection(
   rule: Pick<AnyRule, "code" | "severity">,
   message: string,
   index: number,
+  anchorLine: number | null = null,
 ): Diagnostic {
   const diagnostic = report(rule, message);
   SECTION_INDEX.set(diagnostic, index);
-  return diagnostic;
+  return setAnchorLine(diagnostic, anchorLine);
 }
 
 /** Section index set by `reportSection`; 0 for any other diagnostic (sort key only). */
@@ -298,4 +312,62 @@ export function sectionIndexOf(diagnostic: Diagnostic): number {
  */
 export function recordedSectionIndex(diagnostic: Diagnostic): number | null {
   return SECTION_INDEX.get(diagnostic) ?? null;
+}
+
+/**
+ * Emission order of the `directives` step (spec 4.1 step 7): one sequence over
+ * the six directive rules (directive source order, item order, MTL024 last).
+ * A side table like `ITEM_INDEX`, read once by the pipeline after the step ran.
+ */
+const SEQUENCE = new WeakMap<Diagnostic, number>();
+
+/** A diagnostic at `position` with the sort key `sequence`, see `bySequence` in the pipeline. */
+export function reportSequenced(
+  rule: Pick<AnyRule, "code" | "severity">,
+  message: string,
+  position: SourcePosition | null,
+  sequence: number,
+): Diagnostic {
+  const diagnostic = report(rule, message, position);
+  SEQUENCE.set(diagnostic, sequence);
+  return diagnostic;
+}
+
+/** Sequence set by `reportSequenced`; 0 for any other diagnostic (sort key only). */
+export function sequenceOf(diagnostic: Diagnostic): number {
+  return SEQUENCE.get(diagnostic) ?? 0;
+}
+
+/**
+ * Target anchor line of a diagnostic (spec 4.4 DIR5): one 1-based line of the
+ * target file, or none. A side table, never a field of `Diagnostic`, so the
+ * reporters and the JSON output stay unchanged. The pipeline records it on the
+ * diagnostics it returns; a rule whose finding names one target line it alone
+ * knows (MTL202, the key line) records it with `reportOnLine`.
+ */
+const ANCHOR_LINE = new WeakMap<Diagnostic, number>();
+
+/** Record (or, with null, clear) the target anchor line of `diagnostic`; returns it. */
+export function setAnchorLine(diagnostic: Diagnostic, line: number | null): Diagnostic {
+  if (line === null) ANCHOR_LINE.delete(diagnostic);
+  else ANCHOR_LINE.set(diagnostic, line);
+  return diagnostic;
+}
+
+/**
+ * Target anchor line of `diagnostic` (1-based), or null when it has none: a
+ * diagnostic about the whole file (spec 4.4 DIR5), a template diagnostic, or
+ * one the pipeline did not return.
+ */
+export function anchorLineOf(diagnostic: Diagnostic): number | null {
+  return ANCHOR_LINE.get(diagnostic) ?? null;
+}
+
+/** A diagnostic anchored on target line `line` (spec 4.4 DIR5). */
+export function reportOnLine(
+  rule: Pick<AnyRule, "code" | "severity">,
+  message: string,
+  line: number,
+): Diagnostic {
+  return setAnchorLine(report(rule, message), line);
 }

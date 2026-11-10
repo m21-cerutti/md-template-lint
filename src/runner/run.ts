@@ -15,7 +15,8 @@
  *    broken (`MTL001` to `MTL004`): the files of this pair are not linted, other
  *    pairs still run (C02);
  * 5. each target is read (strict UTF-8) and checked with `io` rooted at the pair
- *    root (D11); aliases and approved paths come from the config.
+ *    root (D11); aliases and approved paths come from the config. Each diagnostic
+ *    gets its target source line from that same text (`excerpt.ts`, spec 8.1).
  *
  * File-list mode (`RunOptions.files`, spec 7.2): the listed files are matched against
  * each pair and root by path only (`list.ts`); a root or pair no file falls into is
@@ -28,10 +29,11 @@
  */
 import { displayPath, foldPath } from "../config/paths.js";
 import type { ConfigResult, PairConfig, RunDiagnostic } from "../config/types.js";
-import { checkTarget, type TemplateStatus } from "../engine/pipeline.js";
+import { lintTarget, type TemplateStatus } from "../engine/pipeline.js";
 import type { Diagnostic } from "../engine/model.js";
 import { createRegistry, runPhase, type RuleRegistry } from "../engine/registry.js";
 import type { RuleEnv, RuleIo } from "../engine/rule.js";
+import { withExcerpts } from "./excerpt.js";
 import { isDirectory, isRegularFile, readUtf8, samePath, templateProblem } from "./files.js";
 import {
   listedMatches,
@@ -40,8 +42,16 @@ import {
   type ListedFile,
   type ListedMatch,
 } from "./list.js";
-import { brokenReport, loadTemplate } from "./template.js";
-import type { Block, ExitCode, FileResult, PairBlock, RunResult, RunSummary } from "./types.js";
+import { brokenReport, loadTemplate, withoutText } from "./template.js";
+import type {
+  Block,
+  ExitCode,
+  FileResult,
+  PairBlock,
+  ReportedDiagnostic,
+  RunResult,
+  RunSummary,
+} from "./types.js";
 import { targetsOf } from "./walk.js";
 
 export interface RunOptions {
@@ -66,29 +76,36 @@ function parseErrorPrefix(diagnostic: Diagnostic): Diagnostic {
     : diagnostic;
 }
 
-function summarize(
-  blocks: readonly Block[],
-  checked: number,
-  broken: number,
-  runErrors: number,
-  runWarnings: number,
-): RunSummary {
+interface Counts {
+  readonly checked: number;
+  readonly broken: number;
+  readonly runErrors: number;
+  readonly runWarnings: number;
+  readonly suppressed: number;
+}
+
+/**
+ * Summary and exit code (spec 7.5, 8.2, 8.5). Suppressed diagnostics are already
+ * out of the file results, so they never count in warnings, failed or the exit code.
+ */
+function summarize(blocks: readonly Block[], counts: Counts): RunSummary {
   const files = blocks.flatMap((block) => (block.kind === "pair" ? block.files : []));
   const failed = files.filter((file) => file.status === "fail").length;
   const warnings = files.reduce((count, file) => count + file.warnings.length, 0);
   let exitCode: ExitCode = 0;
-  if (runErrors > 0) exitCode = 2;
-  else if (failed > 0 || broken > 0) exitCode = 1;
+  if (counts.runErrors > 0) exitCode = 2;
+  else if (failed > 0 || counts.broken > 0) exitCode = 1;
   return {
     files: files.length,
     passed: files.length - failed,
     failed,
     warnings,
     filesWithWarnings: files.filter((file) => file.warnings.length > 0).length,
-    templatesChecked: checked,
-    templatesBroken: broken,
-    runErrors,
-    runWarnings,
+    suppressed: counts.suppressed,
+    templatesChecked: counts.checked,
+    templatesBroken: counts.broken,
+    runErrors: counts.runErrors,
+    runWarnings: counts.runWarnings,
     exitCode,
   };
 }
@@ -101,6 +118,7 @@ function finish(
   checked: ReadonlySet<string>,
   broken: ReadonlyMap<string, string>,
   unmatched: readonly string[] = [],
+  suppressed = 0,
 ): RunResult {
   return {
     mode: "lint",
@@ -110,7 +128,13 @@ function finish(
     runErrors,
     runWarnings,
     unmatched,
-    summary: summarize(blocks, checked.size, broken.size, runErrors.length, runWarnings.length),
+    summary: summarize(blocks, {
+      checked: checked.size,
+      broken: broken.size,
+      runErrors: runErrors.length,
+      runWarnings: runWarnings.length,
+      suppressed,
+    }),
   };
 }
 
@@ -124,6 +148,8 @@ export async function runLint(loaded: ConfigResult, options: RunOptions): Promis
   const runWarnings: RunDiagnostic[] = [];
   const checked = new Set<string>();
   const broken = new Map<string, string>();
+  /** Diagnostics removed by disable directives, per pair-file lint (spec 4.4 DIR9). */
+  let suppressed = 0;
 
   const problems = new Map<string, Promise<"MTL910" | "MTL911" | null>>();
   const parsed = new Map<string, Promise<TemplateStatus>>();
@@ -141,7 +167,8 @@ export async function runLint(loaded: ConfigResult, options: RunOptions): Promis
   const parseOnce = (path: string): Promise<TemplateStatus> => {
     let hit = parsed.get(path);
     if (hit === undefined) {
-      hit = loadTemplate(registry, path);
+      // The template text is dropped here: a lint run never quotes a template line (EX8).
+      hit = loadTemplate(registry, path).then(withoutText);
       parsed.set(path, hit);
     }
     return hit;
@@ -186,13 +213,19 @@ export async function runLint(loaded: ConfigResult, options: RunOptions): Promis
     const read = await readUtf8(`${rootDir}/${relative}`);
     let found: Diagnostic[];
     if (read.ok) {
-      found = await checkTarget(registry, status.model, read.text, relative, env);
+      const linted = await lintTarget(registry, status.model, read.text, relative, env);
+      found = linted.diagnostics;
+      suppressed += linted.suppressed;
     } else {
       const failure = { reason: "file-unreadable", detail: read.detail } as const;
       const context = { phase: "parse", role: "target", failure } as const;
       found = await runPhase(registry, "parse", context);
     }
-    const diagnostics = found.map(parseErrorPrefix);
+    // Spec 8.1: the target line of each diagnostic, from the text just read (no second read).
+    const prefixed = found.map(parseErrorPrefix);
+    const diagnostics: readonly ReportedDiagnostic[] = read.ok
+      ? withExcerpts(prefixed, read.text)
+      : prefixed;
     const errors = diagnostics.filter((diagnostic) => diagnostic.severity === "error");
     const warnings = diagnostics.filter((diagnostic) => diagnostic.severity === "warning");
     return { path: relative, status: errors.length > 0 ? "fail" : "pass", errors, warnings };
@@ -313,5 +346,14 @@ export async function runLint(loaded: ConfigResult, options: RunOptions): Promis
     listed === null
       ? []
       : listed.filter((file) => !matchedAnywhere.has(file.key)).map((file) => file.shown);
-  return finish(config.display, blocks, runErrors, runWarnings, checked, broken, unmatched);
+  return finish(
+    config.display,
+    blocks,
+    runErrors,
+    runWarnings,
+    checked,
+    broken,
+    unmatched,
+    suppressed,
+  );
 }

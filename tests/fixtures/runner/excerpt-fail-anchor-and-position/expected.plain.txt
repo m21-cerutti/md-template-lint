@@ -1,0 +1,31 @@
+md-template-lint 1.0.0
+Config: md-template-lint.yml
+========================
+
+Template: templates/note.template.md
+Target:   docs/*.md (1 file(s))
+
+  FAIL docs/a.md
+      error MTL201 Field 'status': required but empty or missing
+        3 | status:
+      error MTL701 Section 'Overview': [content:non-empty] section body is empty
+        11 | ## Overview
+      warn  MTL202 Unknown key 'extra' not present in template
+        4 | extra: x
+      warn  MTL021 Directive on line 9: unknown rule code 'MTL999'
+        9 | <!-- md-template-lint disable-line MTL999 -->
+          | ^
+
+========================
+Summary
+========================
+Total files:  1
+Passed:       0
+Failed:       1
+Warnings:     2 (in 1 file(s))
+Templates:    1 checked, 0 broken
+
+Failed files:
+  - docs/a.md
+
+========================

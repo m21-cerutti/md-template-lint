@@ -21,7 +21,7 @@ their code ranges (spec 4.2, `src/engine/ranges.json`):
 
 | Category   | Range             | Scope                                |
 | ---------- | ----------------- | ------------------------------------ |
-| `syntax`   | `MTL001`-`MTL099` | parsing and template tag diagnostics |
+| `syntax`   | `MTL001`-`MTL099` | parsing, template tag and target directive diagnostics |
 | `filename` | `MTL100`-`MTL199` | rules on the target file name        |
 | `presence` | `MTL200`-`MTL299` | field presence, unknown keys         |
 | `format`   | `MTL300`-`MTL399` | value shape rules from tags          |
@@ -61,13 +61,15 @@ The test layout follows the phase, the same rule `pnpm run check:rules` applies:
 `parse` or `template` gets the template-only layout (`tests/syntax/`,
 `tests/fixtures/templates/`), phase `field` or `target` the pair layout (`tests/target/`,
 `tests/fixtures/pairs/`). Category `syntax` therefore gets the template-only layout without
-any flag.
+any flag; a `syntax` rule of phase `target` (the directive warnings `MTL020` to `MTL025`) has
+the pair layout (`tests/target/syntax/`, `tests/fixtures/pairs/`).
 
 Steps are the lists in `src/engine/rule.ts` and fix the emission order (spec 4.1):
 
 - `field` phase, `FIELD_STEPS`: `presence`, `constant`, `count`, `range`, `order`,
   `scheme`, `io`, `value-filename`, `case`, `elements`, `type`.
-- `target` phase, `TARGET_STEPS`: `filename`, `unknown-keys`, `headings`, `content`.
+- `target` phase, `TARGET_STEPS`: `filename`, `unknown-keys`, `headings`, `content`,
+  `directives` (the target directive warnings `MTL020` to `MTL025`, spec 4.4).
 
 Examples (names are illustrative; use a free code and a spec row of your own):
 
@@ -120,8 +122,13 @@ Rules of the road:
   enforce it).
 - Do not hand-edit `src/generated/`.
 - A rule that emits several findings in a step that needs item or section order uses
-  `reportItem` (io) or `reportSection` (content) from `src/engine/rule.ts`; see the
+  `reportItem` (io) or `reportSection` (content, optional 4th argument `anchorLine`) from
+  `src/engine/rule.ts`; see the
   "Emission order" section of [architecture.md](architecture.md#emission-order-spec-41-84).
+- A `target` rule whose finding is about one target line it alone knows records that line
+  as the anchor (`reportOnLine` or `setAnchorLine`, spec 4.4 DIR5), so a disable directive
+  can cover it; field findings get the key line from the pipeline. See "Anchor lines" in
+  [architecture.md](architecture.md#anchor-lines-spec-44-dir5).
 - Remove the code from `tests/consistency/pending-rules.json` once the check is real.
 
 ## 4. Write the tests and fixtures

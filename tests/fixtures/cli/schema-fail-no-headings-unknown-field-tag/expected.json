@@ -11,7 +11,8 @@
         "severity": "warning",
         "message": "Field 'owner': unknown tag [optionl]",
         "line": 2,
-        "column": 19
+        "column": 19,
+        "sourceLine": "owner: \"string\" # [optionl]"
       }
     ]
   }

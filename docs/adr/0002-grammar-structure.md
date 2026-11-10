@@ -19,7 +19,7 @@ A combined ANTLR grammar cannot declare lexer modes, so a grammar that separates
 ## Decision
 
 - Grammar files: `grammar/MdTemplateLexer.g4` (`lexer grammar`, region modes) and `grammar/MdTemplateParser.g4` (`parser grammar`, `tokenVocab = MdTemplateLexer`). Together they are the single source of tag syntax. No tag regex lives outside `grammar/*.g4`.
-- Lexer modes: `DEFAULT_MODE` (document start), `FM`, `FM_VALUE`, `FM_PLAIN`, `FM_FLOW`, `FM_TEXT` (frontmatter), `BODY`, `BODY_TEXT`, `FENCE_BACKTICK`, `FENCE_TILDE` (body and code fences), `TAG_TEXT`, `TAG_STRICT`, `TAG_FREE`, `TAG_SCHEME` (tag internals).
+- Lexer modes: `DEFAULT_MODE` (document start), `FM`, `FM_VALUE`, `FM_PLAIN`, `FM_FLOW`, `FM_TEXT` (frontmatter), `BODY`, `BODY_TEXT`, `FENCE_BACKTICK`, `FENCE_TILDE` (body and code fences), `TAG_TEXT`, `TAG_STRICT`, `TAG_FREE`, `TAG_SCHEME` (tag internals); added in A58: `DIRECTIVE_SCAN`, `DIRECTIVE` (target disable directives, spec 4.4).
 - Parser root: `document` = frontmatter + body, an unclosed frontmatter, or body only. Entry rules for tests: `fmInlineCommentEntry`, `fmFilenameLineEntry`, `bodyHeadingTextEntry`, `fmTagEntry`, `bodyTagEntry`.
 - Tags are parsed in two stages: a loose parse (stage 1, only type-hint words are keywords) and a strict re-lex of each bracket in mode `TAG_STRICT` (stage 2, all tag keywords). A known tag in the other region is reported as wrong-region (`MTL013`).
 - One embedded TypeScript action and predicate remain, for code fences only: `openFence()` and `closesFence()`. Modes cannot express that a closing fence is at least as long as the opening one.

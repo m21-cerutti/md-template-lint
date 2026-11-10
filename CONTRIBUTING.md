@@ -22,7 +22,7 @@ rule category), `src/` (engine, config, runner, reporters, CLI), `tests/`, `docs
 (spec, architecture, guides, ADRs), `templates/` (doc templates).
 Start with [docs/architecture.md](docs/architecture.md) and the contract
 [docs/spec.md](docs/spec.md). When code and spec disagree, fix one of them in the same
-change.
+change. The index of all the docs is [docs/README.md](docs/README.md).
 
 ## Quality gates
 
@@ -51,6 +51,10 @@ If a gate fails, find the root cause and fix it at the source. Do not silence a 
 and do not commit with `--no-verify`. A type or lint error that appears twice is a signal
 to stop and rethink, not to retry.
 
+The repository also lints its own docs against `templates/` with `md-template-lint.yml`; keep
+that run at exit 0. `.lintstagedrc.json` exists but is not wired to a hook. How to run it:
+[README](README.md#this-repository-lints-its-own-docs).
+
 `pnpm run smoke:pack` is optional because `pnpm add` fetches `yaml` and `antlr4ng`; add
 `-- --offline` when the pnpm store is warm, or `-- --tarball <file>` to test a tarball that
 already exists. CI runs the gates on three operating systems and Node 22.18, 24 and 26; a tag
@@ -73,7 +77,8 @@ agent. Prepare the commits; the owner pushes.
 
 ## Tests
 
-Test and fixture layout:
+The map of the test families and fixtures is [tests/README.md](tests/README.md); the how-to
+is [docs/guides/testing.md](docs/guides/testing.md). Test and fixture layout:
 
 | Path                                                             | Content                                                            |
 | ---------------------------------------------------------------- | ------------------------------------------------------------------ |
@@ -103,9 +108,11 @@ cases" and "Tests of config, runner, reporters and io".
 
 ## Scripts and configs are TypeScript
 
-Scripts (`scripts/*.ts`) and tool configs (`eslint.config.ts`) are TypeScript, run by Node
-type stripping (`node scripts/x.ts`, [ADR 0004](docs/adr/0004-typescript-scripts.md)). That
-means erasable syntax only: no enums, namespaces or parameter properties. Do not add `.js`,
+Scripts (`scripts/*.ts`) and tool configs (`eslint.config.ts`) are TypeScript. Scripts run
+through `tsx` (`tsx scripts/x.ts`, a devDependency, [ADR 0007](docs/adr/0007-tsx-script-runner.md);
+[ADR 0004](docs/adr/0004-typescript-scripts.md) chose TypeScript scripts). Use the `pnpm run`
+scripts; to run one by hand use `pnpm exec tsx scripts/x.ts`. Scripts may use any TypeScript
+syntax (enums, namespaces and parameter properties are allowed; `tsx` compiles them). Do not add `.js`,
 `.mjs` or `.cjs` files except in `src/generated/`, `dist/`, `coverage/`, `node_modules/`
 and `tmp/`. This is a guideline: no check enforces it (`pnpm run check:rules` does not), so
 review catches it. Do not use `any` in TypeScript sources.
@@ -134,7 +141,7 @@ an Architecture Decision Record in `docs/adr/`:
 2. Fill the frontmatter (`status` starts at `proposed`) and the sections Context,
    Decision, Consequences and Alternatives considered (keep at least one rejected
    option). Delete the authoring checklist and every tag marker before saving.
-3. Flip `status` to `accepted` once the decision is live. When a record replaces an older
+3. Flip `status` to `accepted` once the decision is live, or to `rejected` if turned down (`deprecated` when retired). When a record replaces an older
    one, set `supersedes` and mark the old record `superseded`.
 
 Existing records start at [0001-genesis](docs/adr/0001-genesis.md). A change to the behaviour

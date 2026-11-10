@@ -6,6 +6,7 @@
 import {
   defineRule,
   report,
+  reportOnLine,
   type AnyRule,
   type FieldContext,
   type TargetContext,
@@ -36,10 +37,13 @@ const unknownKey = defineRule({
   category: "presence",
   phase: "target",
   step: "unknown-keys",
+  // Anchored on the target key line (spec 4.4 DIR5).
   check: (context: TargetContext): Diagnostic[] =>
-    [...context.target.fields.keys()]
-      .filter((key) => !context.template.fields.has(key))
-      .map((key) => report(unknownKey, `Unknown key '${key}' not present in template`)),
+    [...context.target.fields.values()]
+      .filter((field) => !context.template.fields.has(field.key))
+      .map((field) =>
+        reportOnLine(unknownKey, `Unknown key '${field.key}' not present in template`, field.line),
+      ),
 });
 
 export const rules: readonly AnyRule[] = [

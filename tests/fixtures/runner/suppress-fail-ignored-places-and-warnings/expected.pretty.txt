@@ -1,0 +1,41 @@
+md-template-lint 1.0.0
+Config: md-template-lint.yml
+========================
+
+Template: templates/notes.template.md
+Target:   notes/*.md (1 file(s))
+
+  ✗ notes/ignored.md
+      error MTL601 Heading: Missing required heading: 'Notes'
+      error MTL601 Heading: Missing required heading: 'Overview'
+      error MTL601 Heading: Missing required heading: 'Details'
+      error MTL601 Heading: Missing required heading: 'Context'
+      warn  MTL020 Directive on line 12: unknown directive 'disabel' (expected disable, disable-line, disable-next-line, disable-file, begin disable or end disable)
+        12 | <!-- md-template-lint disabel MTL601 -->
+           | ^
+      warn  MTL021 Directive on line 13: unknown rule code 'MTL2O1'
+        13 | <!-- md-template-lint disable MTL2O1, MTL910 -->
+           | ^
+      warn  MTL022 Directive on line 13: rule code MTL910 cannot be disabled
+        13 | <!-- md-template-lint disable MTL2O1, MTL910 -->
+           | ^
+      warn  MTL023 Directive on line 14: 'end disable MTL202' has no open 'disable' or 'begin disable' for MTL202
+        14 | <!-- md-template-lint end disable MTL202 -->
+           | ^
+      warn  MTL020 Directive on line 15: 'begin disable' needs at least one rule code
+        15 | <!-- md-template-lint begin disable -->
+           | ^
+
+========================
+Summary
+========================
+Total files:  1
+Passed:       0
+Failed:       1
+Warnings:     5 (in 1 file(s))
+Templates:    1 checked, 0 broken
+
+Failed files:
+  - notes/ignored.md
+
+========================
