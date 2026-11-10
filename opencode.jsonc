@@ -1,0 +1,92 @@
+// opencode.jsonc - minimal project configuration for markdown-template-linter.
+// No model pin: the global config owns the default.
+// External directory access (corpus capture, phase A1) comes from the fenced TEMP block in the
+// GLOBAL opencode.jsonc; remove it at the end of A1. No personal path in this file.
+// Rows marked "TEMP corpus capture A1" are removed at the end of A1. Rows marked "removed in A37" go with the parity tool.
+{
+  "$schema": "https://opencode.ai/config.json",
+  "permissions": [
+    // Stack commands (Node/TypeScript with pnpm)
+    { "action": "shell", "resource": "npx vitest *", "effect": "allow" },
+    { "action": "shell", "resource": "npx tsc *", "effect": "allow" },
+    { "action": "shell", "resource": "node dist/*", "effect": "allow" },
+    { "action": "shell", "resource": "node scripts/*", "effect": "allow" },
+    { "action": "shell", "resource": "node --version", "effect": "allow" },
+    { "action": "shell", "resource": "python scripts/*.py*", "effect": "allow" },
+    { "action": "shell", "resource": "pwsh -NoProfile -File scripts/*", "effect": "allow" },
+
+    // pnpm (package manager, replaces npm)
+    { "action": "shell", "resource": "pnpm install*", "effect": "allow" },
+    { "action": "shell", "resource": "pnpm run *", "effect": "allow" },
+    { "action": "shell", "resource": "pnpm test*", "effect": "allow" },
+    { "action": "shell", "resource": "pnpm exec vitest *", "effect": "allow" },
+    { "action": "shell", "resource": "pnpm exec tsc *", "effect": "allow" },
+    { "action": "shell", "resource": "pnpm exec eslint *", "effect": "allow" },
+    { "action": "shell", "resource": "pnpm exec prettier *", "effect": "allow" },
+    { "action": "shell", "resource": "pnpm exec antlr-ng *", "effect": "allow" },
+    { "action": "shell", "resource": "pnpm pack*", "effect": "allow" },
+    { "action": "shell", "resource": "pnpm ls*", "effect": "allow" },
+    { "action": "shell", "resource": "pnpm --version", "effect": "allow" },
+    { "action": "shell", "resource": "pnpm install -g*", "effect": "ask" },
+    { "action": "shell", "resource": "pnpm install --global*", "effect": "ask" },
+    { "action": "shell", "resource": "pnpm i -g*", "effect": "ask" },
+    { "action": "shell", "resource": "pnpm i --global*", "effect": "ask" },
+    { "action": "shell", "resource": "pnpm install*--location*", "effect": "ask" },
+    { "action": "shell", "resource": "pnpm install * -g*", "effect": "ask" },
+    { "action": "shell", "resource": "pnpm install*--global*", "effect": "ask" },
+    { "action": "shell", "resource": "pnpm i * -g*", "effect": "ask" },
+    { "action": "shell", "resource": "pnpm i*--global*", "effect": "ask" },
+    { "action": "shell", "resource": "pnpm add * -g*", "effect": "ask" },
+    { "action": "shell", "resource": "pnpm add*--global*", "effect": "ask" },
+    { "action": "shell", "resource": "pnpm add -g*", "effect": "ask" },
+    { "action": "shell", "resource": "pnpm add --global*", "effect": "ask" },
+    { "action": "shell", "resource": "pnpm exec npm*", "effect": "deny" },
+    { "action": "shell", "resource": "pnpm dlx*", "effect": "deny" },
+    { "action": "shell", "resource": "pnpm -r publish*", "effect": "deny" },
+    { "action": "shell", "resource": "pnpm --filter * publish*", "effect": "deny" },
+    { "action": "shell", "resource": "pnpm *publish*", "effect": "deny" },
+    { "action": "shell", "resource": "pnpm publish*", "effect": "deny" },
+
+    // Parity harness against the frozen legacy snapshot (removed in A37)
+    { "action": "shell", "resource": "python legacy/*.py*", "effect": "allow" },
+    { "action": "shell", "resource": "pwsh -NoProfile -File legacy/*", "effect": "allow" },
+
+    // Legacy wrapper capture (phase A1 only): wrapper invocations only. Python runs via the permanent legacy/ and scripts/ rows above.
+    { "action": "shell", "resource": "pwsh -NoProfile -File *lint_markdown*.ps1*", "effect": "allow" }, // TEMP corpus capture A1
+    { "action": "shell", "resource": "pwsh -File *lint_markdown*.ps1*", "effect": "allow" }, // TEMP corpus capture A1
+
+    // Phase A34 only: global install verification
+    { "action": "shell", "resource": "where md-template-lint*", "effect": "allow" }, // TEMP A34 verification, remove in A37 if unused
+    { "action": "shell", "resource": "md-template-lint *", "effect": "allow" }, // TEMP A34 verification, remove in A37 if unused
+
+    // Safe read-only git. Denies after diff/log allows block --no-index, --output, --ext-diff and --textconv.
+    { "action": "shell", "resource": "git status *", "effect": "allow" },
+    { "action": "shell", "resource": "git diff *", "effect": "allow" },
+    { "action": "shell", "resource": "git log *", "effect": "allow" },
+    { "action": "shell", "resource": "git *--no-index*", "effect": "deny" },
+    { "action": "shell", "resource": "git *--output*", "effect": "deny" },
+    { "action": "shell", "resource": "git *--ext-diff*", "effect": "deny" },
+    { "action": "shell", "resource": "git *--textconv*", "effect": "deny" },
+
+    // Never push, add a remote, publish or recurse-delete
+    { "action": "shell", "resource": "git push*", "effect": "deny" },
+    { "action": "shell", "resource": "git remote add*", "effect": "deny" },
+    { "action": "shell", "resource": "git remote set-url*", "effect": "deny" },
+    { "action": "shell", "resource": "npm publish*", "effect": "deny" },
+    { "action": "shell", "resource": "Remove-Item*-r*", "effect": "deny" },
+
+    // SECRET GUARD: re-appended last so the allows above never win for secret-named arguments
+    { "action": "shell", "resource": "*.env*", "effect": "deny" },
+    { "action": "shell", "resource": "*secret*", "effect": "deny" },
+    { "action": "shell", "resource": "*credential*", "effect": "deny" },
+    { "action": "shell", "resource": "*.pem*", "effect": "deny" },
+    { "action": "shell", "resource": "*.key", "effect": "deny" },
+    { "action": "shell", "resource": "*.key *", "effect": "deny" },
+    { "action": "shell", "resource": "*id_rsa*", "effect": "deny" },
+    { "action": "shell", "resource": "*id_ed25519*", "effect": "deny" },
+    { "action": "shell", "resource": "*vault_password*", "effect": "deny" },
+    { "action": "shell", "resource": "*.kdbx*", "effect": "deny" },
+    { "action": "shell", "resource": "*.ssh/*", "effect": "deny" },
+    { "action": "shell", "resource": "*sensitive-guard*", "effect": "deny" }
+  ]
+}

@@ -1,0 +1,76 @@
+# Baseline .gitignore (project-setup). Keep the groups the project needs,
+# delete the rest, and add project-specific paths at the bottom.
+
+# --- Secrets (never commit) ---
+.env
+.env.*
+*.pem
+*.key
+*.pfx
+*.p12
+**/ssh/*
+*.kdbx
+.vault_password
+.become_password
+*.secret
+.ssh/
+id_rsa*
+id_ed25519*
+*.ppk
+.npmrc
+.pypirc
+# credential files only (not source such as credentials.py)
+*credentials*.json
+secrets.*
+*.tfstate*
+.envrc
+
+# --- Build / output ---
+dist/
+build/
+target/
+out/
+.next/
+coverage/
+htmlcov/
+.coverage
+.tox/
+*.tsbuildinfo
+*.egg-info/
+.venv/
+venv/
+
+# --- Language / tool caches ---
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+node_modules/
+.pnpm-store/
+.astro/
+.cache/
+npm-debug.log*
+
+# --- Logs and scratch ---
+*.log
+tmp/
+
+# --- opencode local state ---
+.opencode/session-archive.json
+.opencode/node_modules/
+.playwright-mcp/
+
+# --- OS / editor ---
+.DS_Store
+Thumbs.db
+.idea/
+# `.vscode/*` (not `.vscode/`): git cannot re-include a file of an excluded dir
+.vscode/*
+!.vscode/extensions.json
+
+# --- Project specific (md-template-lint) ---
+# Package tarballs from `pnpm pack`
+*.tgz
+# Every .env variant (also re-ignores .env.example on purpose)
+.env*
+# Plan and tracking live in tmp/PLAN.md (ignored above via tmp/)

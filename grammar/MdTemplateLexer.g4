@@ -1,0 +1,312 @@
+/*
+ * MdTemplateLexer.g4 - lexer of md-template-lint templates and targets.
+ *
+ * Normative for docs/spec.md section 2, together with MdTemplateParser.g4.
+ * No tag regex lives outside grammar/*.g4 (AGENTS.md). `pnpm run gen:parser`
+ * (scripts/gen-parser.ts, antlr-ng, no Java) writes the TypeScript lexer and
+ * parser to src/generated/. Never hand-edit that output.
+ *
+ * Lexer modes (the region separation of the Markdown document):
+ *
+ *   DEFAULT_MODE    start of the document: `---` opens the frontmatter, any
+ *                   other first line is a body line (body rules mirrored here)
+ *   FM              frontmatter, at the start of a line
+ *   FM_VALUE        frontmatter value start, after `key: ` (quotes, flow, `#`)
+ *   FM_PLAIN        rest of a frontmatter value (`<space>#` starts the comment)
+ *   FM_FLOW         inside a flow collection `[...]` / `{...}` (nested by push)
+ *   FM_TEXT         rest of a frontmatter line that is not a key line
+ *   BODY            body, at the start of a line
+ *   BODY_TEXT       rest of a plain body line
+ *   FENCE_BACKTICK  inside a ``` fence (no heading, no tag)
+ *   FENCE_TILDE     inside a ~~~ fence (no heading, no tag)
+ *   TAG_TEXT        text of an inline comment or of a heading (stage 1)
+ *   TAG_STRICT      one known-family bracket, re-lexed strictly (stage 2)
+ *   TAG_FREE        free text argument (`constant:`, `conditional:`)
+ *   TAG_SCHEME      scheme list argument (`scheme:`)
+ *
+ * The only embedded code is the fence length: a closing fence must use the
+ * same character (separate modes) and be AT LEAST AS LONG as the opening one
+ * (legacy `_closes_fence`). Lengths are unbounded, so one counter (set by an
+ * action on the opening line) and one predicate on the closing line remain.
+ *
+ * Input contract: line ends are normalized to LF and the text ends with LF
+ * (src/tags/parser.ts, spec 1.1), so every line rule can require `\n`.
+ *
+ * Adding a tag (touch list, see also MdTemplateParser.g4):
+ *   1. here: its keyword token(s) in mode TAG_STRICT only (tag keywords never
+ *      appear in stage 1, so there is no keyword-as-word list to update);
+ *   2. MdTemplateParser.g4: the fm* or body* tag rule and its alternative in
+ *      fmTagBody / bodyTagBody, plus tagFamily when it is a new family;
+ *   3. src/tags/ast.ts: the member of the FrontmatterTag or BodyTag union;
+ *   4. src/tags/visitors/<family>.ts: its visitor (and the family registry
+ *      list in src/tags/visitors/index.ts when it is a new family);
+ *   5. src/rules/<category>.ts (phase A9): the rule that consumes it.
+ * Then run `pnpm run gen:parser` and commit src/generated/.
+ */
+lexer grammar MdTemplateLexer;
+
+options {
+    caseInsensitive = true;
+}
+
+tokens {
+    NL, LBRACK, RBRACK, COLON, DASH, DOT, WS, OTHER, NUMBER, ALNUM,
+    H_OPEN, FENCE_OPEN, FENCE_NL, FENCE_LINE, FENCE_CLOSE,
+    BODY_TABLE_ROW, BODY_LIST_ITEM, BODY_HTML_COMMENT, BODY_BLANK,
+    BODY_TEXT_START, BODY_TEXT_REST,
+    FM_QUOTED, FM_PLAIN_TEXT, FM_FLOW_OPEN, FM_FLOW_CLOSE, FM_COMMENT_HASH
+}
+
+@members {
+    /** Marker length of the open fence (number of backticks or tildes). */
+    private fenceLength = 0;
+
+    /** Length of the backtick or tilde run that starts after the indentation. */
+    private static markerLength(text: string): number {
+        let index = 0;
+        while (text.charAt(index) === " " || text.charAt(index) === "\t") {
+            index += 1;
+        }
+        const marker = text.charAt(index);
+        let length = 0;
+        while (text.charAt(index + length) === marker) {
+            length += 1;
+        }
+        return length;
+    }
+
+    private openFence(): void {
+        this.fenceLength = MdTemplateLexer.markerLength(this.text);
+    }
+
+    private closesFence(): boolean {
+        return MdTemplateLexer.markerLength(this.text) >= this.fenceLength;
+    }
+}
+
+// ===========================================================================
+// Fragments shared by several modes
+// ===========================================================================
+
+fragment F_INDENT   : ([ \t] ([ \t] [ \t]?)?)? ;      // legacy `\s{0,3}`
+fragment F_HEADING  : '#' '#'? '#'? '#'? '#'? '#'? [ \t]+ ;
+fragment F_FENCE_BT : F_INDENT '```' '`'* ~'\n'* ;
+fragment F_FENCE_TL : F_INDENT '~~~' '~'* ~'\n'* ;
+fragment F_TABLE    : [ \t]* '|' ~'\n'* '|' [ \t]* '\n' ;
+fragment F_LIST     : [ \t]* ([-*+] | [0-9]+ [.)]) [ \t]+ ~'\n'* '\n' ;
+fragment F_HTML     : [ \t]* '<!--' ~'\n'* '-->' [ \t]* '\n' ;
+fragment F_BLANK    : [ \t]* '\n' ;
+fragment F_DQ       : '"' (~["\\\n] | '\\' ~'\n')* '"' ;
+fragment F_SQ       : '\'' (~['\n] | '\'\'')* '\'' ;
+fragment F_KEY      : F_DQ | F_SQ | ~[ \t\n#\-"'[{:] (~[:\n] | ':' ~[ \t\n:])* ;
+fragment F_WORD_CHAR : [\p{L}\p{N}_] ;
+
+// ===========================================================================
+// DEFAULT_MODE: start of the document
+// ===========================================================================
+
+// Legacy `\A---[ \t]*\n`: only the first line can open the frontmatter.
+FM_OPEN : '---' [ \t]* '\n' -> mode(FM) ;
+
+// Any other first line: the body line-start rules of mode BODY.
+DS_HEADING : F_HEADING -> type(H_OPEN), mode(BODY), pushMode(TAG_TEXT) ;
+DS_FENCE_BT : F_FENCE_BT { this.openFence(); } -> type(FENCE_OPEN), mode(FENCE_BACKTICK) ;
+DS_FENCE_TL : F_FENCE_TL { this.openFence(); } -> type(FENCE_OPEN), mode(FENCE_TILDE) ;
+DS_TABLE : F_TABLE -> type(BODY_TABLE_ROW), mode(BODY) ;
+DS_LIST : F_LIST -> type(BODY_LIST_ITEM), mode(BODY) ;
+DS_HTML : F_HTML -> type(BODY_HTML_COMMENT), mode(BODY) ;
+DS_BLANK : F_BLANK -> type(BODY_BLANK), mode(BODY) ;
+DS_CHAR : ~'\n' -> type(BODY_TEXT_START), mode(BODY_TEXT) ;
+
+// ===========================================================================
+// Frontmatter region
+// ===========================================================================
+
+mode FM;
+
+// Legacy `^---[ \t]*(\n|\Z)`: the first delimiter line closes the block.
+FM_CLOSE : '---' [ \t]* '\n' -> mode(BODY) ;
+FM_BLANK : F_BLANK ;
+// Whole-line comment (binds to no key) or the filename comment (spec 2.5).
+FM_LINE_HASH : [ \t]* '#' -> pushMode(TAG_TEXT) ;
+// Top-level key line `key: ...` (spec 2.1). Key without value: whole line.
+FM_KEY : F_KEY [ \t]* ':' [ \t]+ -> mode(FM_VALUE) ;
+FM_KEY_BARE : F_KEY [ \t]* ':' [ \t]* '\n' ;
+// Indented lines, list items, continuation lines: no key, no binding.
+FM_LINE_START : ~'\n' -> mode(FM_TEXT) ;
+
+mode FM_TEXT;
+
+FM_TEXT_REST : ~'\n'+ ;
+FT_NL : '\n' -> type(NL), mode(FM) ;
+
+mode FM_VALUE;
+
+FV_QUOTED : (F_DQ | F_SQ) -> type(FM_QUOTED), mode(FM_PLAIN) ;
+FV_FLOW_OPEN : [[{] -> type(FM_FLOW_OPEN), mode(FM_PLAIN), pushMode(FM_FLOW) ;
+FV_COMMENT : '#' -> type(FM_COMMENT_HASH), mode(FM), pushMode(TAG_TEXT) ;
+FV_NL : '\n' -> type(NL), mode(FM) ;
+FV_CHAR : ~'\n' -> type(FM_PLAIN_TEXT), mode(FM_PLAIN) ;
+
+mode FM_PLAIN;
+
+// `#` starts a comment only after a space or tab (spec 2.1).
+FP_COMMENT : [ \t]+ '#' -> type(FM_COMMENT_HASH), mode(FM), pushMode(TAG_TEXT) ;
+FP_WS : [ \t]+ -> type(FM_PLAIN_TEXT) ;
+FP_TEXT : ~[ \t\n]+ -> type(FM_PLAIN_TEXT) ;
+FP_NL : '\n' -> type(NL), mode(FM) ;
+
+mode FM_FLOW;
+
+FF_QUOTED : (F_DQ | F_SQ) -> type(FM_QUOTED) ;
+FF_OPEN : [[{] -> type(FM_FLOW_OPEN), pushMode(FM_FLOW) ;
+FF_CLOSE : [\]}] -> type(FM_FLOW_CLOSE), popMode ;
+FF_TEXT : ~[[\]{}"'\n]+ -> type(FM_PLAIN_TEXT) ;
+FF_QUOTE : ["'] -> type(FM_PLAIN_TEXT) ;
+// A flow value never spans lines here: the next line starts a new line.
+FF_NL : '\n' -> type(NL), mode(FM) ;
+
+// ===========================================================================
+// Body region
+// ===========================================================================
+
+mode BODY;
+
+// ATX heading, levels 1 to 6; its text is lexed in TAG_TEXT.
+B_HEADING : F_HEADING -> type(H_OPEN), pushMode(TAG_TEXT) ;
+B_FENCE_BT : F_FENCE_BT { this.openFence(); } -> type(FENCE_OPEN), mode(FENCE_BACKTICK) ;
+B_FENCE_TL : F_FENCE_TL { this.openFence(); } -> type(FENCE_OPEN), mode(FENCE_TILDE) ;
+B_TABLE : F_TABLE -> type(BODY_TABLE_ROW) ;
+B_LIST : F_LIST -> type(BODY_LIST_ITEM) ;
+// One-line HTML comment. Multi-line comments are plain lines, so headings
+// inside them still count (kept legacy limitation, spec 2.6).
+B_HTML : F_HTML -> type(BODY_HTML_COMMENT) ;
+B_BLANK : F_BLANK -> type(BODY_BLANK) ;
+B_CHAR : ~'\n' -> type(BODY_TEXT_START), mode(BODY_TEXT) ;
+
+mode BODY_TEXT;
+
+BT_REST : ~'\n'+ -> type(BODY_TEXT_REST) ;
+BT_NL : '\n' -> type(NL), mode(BODY) ;
+
+mode FENCE_BACKTICK;
+
+FB_CLOSE : F_INDENT '```' '`'* [ \t]* '\n' { this.closesFence() }? -> type(FENCE_CLOSE), mode(BODY) ;
+FB_NL : '\n' -> type(FENCE_NL) ;
+FB_LINE : ~'\n'+ -> type(FENCE_LINE) ;
+
+mode FENCE_TILDE;
+
+FT_CLOSE : F_INDENT '~~~' '~'* [ \t]* '\n' { this.closesFence() }? -> type(FENCE_CLOSE), mode(BODY) ;
+FTL_NL : '\n' -> type(FENCE_NL) ;
+FTL_LINE : ~'\n'+ -> type(FENCE_LINE) ;
+
+// ===========================================================================
+// Stage 1: comment and heading text. No tag keyword here, only the type-hint
+// words of spec 2.4 and generic word tokens.
+// ===========================================================================
+
+mode TAG_TEXT;
+
+T_NL : '\n' -> type(NL), popMode ;
+T_LBRACK : '[' -> type(LBRACK) ;
+T_RBRACK : ']' -> type(RBRACK) ;
+T_COLON : ':' -> type(COLON) ;
+T_DASH : '-' -> type(DASH) ;
+EQ : '=' ;
+// Trailing heading comment (legacy `<!--.*-->`, greedy to the last `-->`).
+HTML_COMMENT : '<!--' ~'\n'* '-->' ;
+
+// `YYYY-MM-DD` as a case-sensitive substring, like legacy `"YYYY-MM-DD" in comment`.
+DATE_PLACEHOLDER options { caseInsensitive = false; } : F_WORD_CHAR* 'YYYY-MM-DD' F_WORD_CHAR* ;
+TYPE : 'type' ;
+RULE : 'rule' ;
+ISO  : 'iso' ;
+URL  : 'url' ;
+LIEN : 'lien' ;
+PATH : 'path' ;
+// Alias marker `@<name>/` (legacy `@[\w-]+/`).
+ALIAS_MARK : '@' [\p{L}\p{N}_-]+ '/' ;
+
+T_NUMBER : [0-9]+ -> type(NUMBER) ;
+T_ALNUM : [a-z0-9]+ -> type(ALNUM) ;
+// A word with an underscore is WORD, one with a non-ASCII letter or digit is UWORD.
+WORD : [a-z0-9_]* '_' [a-z0-9_]* ;
+UWORD : F_WORD_CHAR+ ;
+T_WS : [ \t\f\u000B]+ -> type(WS) ;
+T_OTHER : . -> type(OTHER) ;
+
+// ===========================================================================
+// Stage 2: one bracket of a known family, lexed strictly. Tag keywords live
+// here only. On equal length the first rule wins: case-sensitive twins come
+// before their case-insensitive forms (antlr-ng warning 112 on the shadowed
+// lowercase spelling is intended).
+// ===========================================================================
+
+mode TAG_STRICT;
+
+S_LBRACK : '[' -> type(LBRACK) ;
+S_RBRACK : ']' -> type(RBRACK) ;
+S_COLON : ':' -> type(COLON) ;
+S_DASH : '-' -> type(DASH) ;
+S_DOT : '.' -> type(DOT) ;
+
+// Case-sensitive keywords (spec 2: the filename tag is fully case-sensitive).
+SNAKE_CASE_CS options { caseInsensitive = false; } : 'snake_case' ;
+KEBAB_CASE_CS options { caseInsensitive = false; } : 'kebab-case' ;
+CAMEL_CASE options { caseInsensitive = false; } : 'camelCase' ;
+PASCAL_CASE options { caseInsensitive = false; } : 'PascalCase' ;
+FILENAME_CS options { caseInsensitive = false; } : 'filename' ;
+CASE_CS options { caseInsensitive = false; } : 'case' ;
+
+// Families.
+PRESENCE : 'presence' ;
+FORMAT   : 'format' ;
+VALUE    : 'value' ;
+COUNT    : 'count' ;
+RANGE    : 'range' ;
+ORDER    : 'order' ;
+IO       : 'io' ;
+CONTENT  : 'content' ;
+
+// Arguments.
+REQUIRED      : 'required' ;
+OPTIONAL      : 'optional' ;
+EXIST         : 'exist' ;
+TEMPLATE_ONLY : 'template-only' ;
+ELEMENTS      : 'elements' ;
+SNAKE_CASE    : 'snake_case' ;
+KEBAB_CASE    : 'kebab-case' ;
+FILENAME      : 'filename' ;
+MIN           : 'min' ;
+MAX           : 'max' ;
+ASCENDING     : 'ascending' ;
+EXISTS        : 'exists' ;
+NON_EMPTY     : 'non-empty' ;
+TABLE         : 'table' ;
+LIST          : 'list' ;
+MIN_LINES     : 'min-lines' ;
+MAX_LINES     : 'max-lines' ;
+
+// Keywords followed by a free argument switch mode on their colon.
+CONDITIONAL_ARG : 'conditional:' -> pushMode(TAG_FREE) ;
+CONSTANT_ARG    : 'constant:' -> pushMode(TAG_FREE) ;
+SCHEME_ARG      : 'scheme:' -> pushMode(TAG_SCHEME) ;
+
+S_NUMBER : [0-9]+ -> type(NUMBER) ;
+S_WORD : [a-z0-9_]+ -> type(ALNUM) ;
+S_WS : [ \t\f\u000B]+ -> type(WS) ;
+S_OTHER : . -> type(OTHER) ;
+
+// `[^\]]*`: any text up to the closing bracket.
+mode TAG_FREE;
+
+FREE_TEXT : ~[\]\n]+ ;
+FREE_END : ']' -> type(RBRACK), popMode ;
+
+// `[A-Za-z0-9+.,\-]+`
+mode TAG_SCHEME;
+
+SCHEME_TEXT : [a-z0-9+.,-]+ ;
+SCHEME_END : ']' -> type(RBRACK), popMode ;
+SCHEME_OTHER : . -> type(OTHER) ;

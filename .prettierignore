@@ -1,0 +1,16 @@
+dist
+coverage
+node_modules
+tmp
+legacy
+tests/corpus
+tests/golden
+src/generated
+pnpm-lock.yaml
+*.md
+docs
+templates
+grammar
+.opencode
+scripts
+opencode.jsonc
