@@ -1,7 +1,7 @@
 ---
-name: short-skill-name  # [presence:required] [format:kebab-case]
-description: What the skill does and when to load it  # [presence:required]
-compatibility: opencode  # [presence:optional]
+name: short-skill-name # [presence:required] [format:kebab-case]
+description: What the skill does and when to load it # [presence:required]
+compatibility: opencode # [presence:optional]
 ---
 
 # Skill title [pattern:"{text}"]

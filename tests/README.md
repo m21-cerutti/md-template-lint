@@ -7,14 +7,14 @@ never read a real configuration.
 
 ## Test families
 
-| Family      | Path                                              | What it tests                                                                                              |
-| ----------- | ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| Family      | Path                                              | What it tests                                                                                                                          |
+| ----------- | ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
 | syntax      | `tests/syntax/syntax/<MTLxxx>-<name>.test.ts`     | One template-only code per file: `MTL001` to `MTL004`, `MTL010` to `MTL013`, `MTL015` and `MTL016`. A template run through `--verify`. |
-| target      | `tests/target/<category>/<MTLxxx>-<name>.test.ts` | One code per file that needs a template and a target. The pair is checked and linted.                       |
-| unit        | `tests/unit/`                                     | Engine, parser, config, runner, reporters, io, CLI, scripts and release packaging.                          |
-| integration | `tests/integration/rule-set.test.ts`              | The full ordered diagnostic list of one many-tag template (spec 4.1 and 8.4).                               |
-| consistency | `tests/consistency/`                              | No drift between grammar, visitors, AST kinds, rule files, code ranges, the spec and the fixture layout.    |
-| helpers     | `tests/helpers/`                                  | Shared test code, not tests: `fixtures.ts`, `verify.ts`, `directives.ts`, `cli.ts`, `run.ts`, `io.ts`.      |
+| target      | `tests/target/<category>/<MTLxxx>-<name>.test.ts` | One code per file that needs a template and a target. The pair is checked and linted.                                                  |
+| unit        | `tests/unit/`                                     | Engine, parser, config, runner, reporters, io, CLI, scripts and release packaging.                                                     |
+| integration | `tests/integration/rule-set.test.ts`              | The full ordered diagnostic list of one many-tag template (spec 4.1 and 8.4).                                                          |
+| consistency | `tests/consistency/`                              | No drift between grammar, visitors, AST kinds, rule files, code ranges, the spec and the fixture layout.                               |
+| helpers     | `tests/helpers/`                                  | Shared test code, not tests: `fixtures.ts`, `verify.ts`, `directives.ts`, `cli.ts`, `run.ts`, `io.ts`.                                 |
 
 The phase of a rule decides its family: a template-only code (phase `parse` or `template`) is a
 syntax test, every other code is a target test. `pnpm run check:rules` fails when a code has its
@@ -25,17 +25,17 @@ test or its fixtures in the wrong family.
 `tests/target/` has one folder per rule category. The code range of each is in the spec
 ([docs/spec.md](../docs/spec.md), section 4.2).
 
-| Folder                  | Codes in the folder                               |
-| ----------------------- | ------------------------------------------------- |
-| `tests/target/syntax/`  | `MTL020` to `MTL025` (disable directive problems) |
-| `tests/target/filename/`| `MTL101`, `MTL102`                                |
-| `tests/target/presence/`| `MTL201`, `MTL202`                                |
-| `tests/target/format/`  | `MTL301` to `MTL309` (`MTL306` to `MTL309`: step `shape`) |
-| `tests/target/bounds/`  | `MTL401` to `MTL407`                              |
-| `tests/target/type/`    | `MTL501` to `MTL517`                              |
-| `tests/target/heading/` | `MTL601` to `MTL604`, `MTL610` to `MTL612`        |
-| `tests/target/content/` | `MTL701` to `MTL705`                              |
-| `tests/target/io/`      | `MTL801` to `MTL805`                              |
+| Folder                   | Codes in the folder                                       |
+| ------------------------ | --------------------------------------------------------- |
+| `tests/target/syntax/`   | `MTL020` to `MTL025` (disable directive problems)         |
+| `tests/target/filename/` | `MTL101`, `MTL102`                                        |
+| `tests/target/presence/` | `MTL201`, `MTL202`                                        |
+| `tests/target/format/`   | `MTL301` to `MTL309` (`MTL306` to `MTL309`: step `shape`) |
+| `tests/target/bounds/`   | `MTL401` to `MTL407`                                      |
+| `tests/target/type/`     | `MTL501` to `MTL517`                                      |
+| `tests/target/heading/`  | `MTL601` to `MTL604`, `MTL610` to `MTL612`                |
+| `tests/target/content/`  | `MTL701` to `MTL705`                                      |
+| `tests/target/io/`       | `MTL801` to `MTL805`                                      |
 
 `tests/target/syntax/` holds the directive codes that need a target; do not confuse it with
 `tests/syntax/syntax/`, the template-only family. The run diagnostics `MTL901` and above are not
@@ -43,15 +43,15 @@ rules: their cases live in the config, runner and CLI unit tests.
 
 ### Unit tests
 
-| Path                       | Content                                                                                        |
-| -------------------------- | ---------------------------------------------------------------------------------------------- |
-| `tests/unit/cli/`          | The CLI through `runCli` (`exit`, `format`, `list`, `schema`, `usage`, `verify`, `version`, `wiring`, `main`, `layout`, `list-large`, `list-root-case`), and `spawn.test.ts`, which runs the built `dist/cli.js` as a process. |
-| `tests/unit/config/`       | Config loading: `bytes`, `discovery`, `glob`, `naming`, `paths`, `validate`.                    |
-| `tests/unit/runner/`       | The runner: `broken`, `empty`, `excerpt`, `expand`, `inputs`, `io-wiring`, `parse`, `suppress`, `unreadable`, `walk`. |
-| `tests/unit/reporters/`    | The output formats: `json`, `plain`, `pretty`, `excerpt`.                                       |
-| `tests/unit/io/`           | The production `RuleIo` (`address`, `connect-guard`, `exists`, `probe`, `probe-behaviour`), with a fake network. |
-| `tests/unit/smoke/`        | The `smoke:pack` and release script helpers (`helpers.test.ts`) and the GitHub Actions workflows plus the `package.json` publish settings (`workflows.test.ts`). |
-| `tests/unit/*.test.ts`     | Engine and parser: `anchors`, `content-whitespace`, `directives`, `document`, `engine`, `listeners`, `listeners-defensive`, `parser-comment-line`, `pipeline`, `regions`, `registry`, `sections`, `subheadings-tag`, `suppression`, `tags`, `values`, `visitors`. Scaffold: `new-rule` (`pnpm run new:rule`). Research spikes on the `yaml` package: `yaml-explore`, `yaml-spike`. |
+| Path                    | Content                                                                                                                                                                                                                                                                                                                                                                            |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tests/unit/cli/`       | The CLI through `runCli` (`exit`, `format`, `list`, `schema`, `usage`, `verify`, `version`, `wiring`, `main`, `layout`, `list-large`, `list-root-case`), and `spawn.test.ts`, which runs the built `dist/cli.js` as a process.                                                                                                                                                     |
+| `tests/unit/config/`    | Config loading: `bytes`, `discovery`, `glob`, `naming`, `paths`, `validate`.                                                                                                                                                                                                                                                                                                       |
+| `tests/unit/runner/`    | The runner: `broken`, `empty`, `excerpt`, `expand`, `inputs`, `io-wiring`, `parse`, `suppress`, `unreadable`, `walk`.                                                                                                                                                                                                                                                              |
+| `tests/unit/reporters/` | The output formats: `json`, `plain`, `pretty`, `excerpt`.                                                                                                                                                                                                                                                                                                                          |
+| `tests/unit/io/`        | The production `RuleIo` (`address`, `connect-guard`, `exists`, `probe`, `probe-behaviour`), with a fake network.                                                                                                                                                                                                                                                                   |
+| `tests/unit/smoke/`     | The `smoke:pack` and release script helpers (`helpers.test.ts`) and the GitHub Actions workflows plus the `package.json` publish settings (`workflows.test.ts`).                                                                                                                                                                                                                   |
+| `tests/unit/*.test.ts`  | Engine and parser: `anchors`, `content-whitespace`, `directives`, `document`, `engine`, `listeners`, `listeners-defensive`, `parser-comment-line`, `pipeline`, `regions`, `registry`, `sections`, `subheadings-tag`, `suppression`, `tags`, `values`, `visitors`. Scaffold: `new-rule` (`pnpm run new:rule`). Research spikes on the `yaml` package: `yaml-explore`, `yaml-spike`. |
 
 ### Consistency tests
 
@@ -68,20 +68,20 @@ are not implemented yet.
 All fixtures are under `tests/fixtures/`. A test asserts that its fixture folder holds exactly its
 cases, so a fixture without a case fails the run.
 
-| Folder                          | Used by                                   | Content                                                                              |
-| ------------------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------ |
-| `tests/fixtures/templates/`     | syntax tests                              | `<MTLxxx>/<case>.md`: one template per case, no target.                              |
-| `tests/fixtures/pairs/`         | target tests                              | `<MTLxxx>/<case>/template.md` and `target.md`: one pair per case.                    |
-| `tests/fixtures/rule-controls/` | target tests                              | `<MTLxxx>-<name>/`: controls outside the pass/fail split (for example "no tag, no diagnostic"). Today: `MTL101-no-filename-tag`. |
-| `tests/fixtures/integration/`   | `tests/integration/rule-set.test.ts`      | `<case>/template.md` and `target.md` of the many-tag template.                       |
-| `tests/fixtures/config/`        | `tests/unit/config/`                      | Projects with an `md-template-lint.yml` (groups `validate-`, `discover-`, `naming-`).|
-| `tests/fixtures/runner/`        | `tests/unit/runner/`, `tests/unit/reporters/` | Projects with config, templates, targets and `expected.*` output files (groups `inputs-`, `empty-`, `broken-`, `parse-`, `suppress-`, `excerpt-`, `expand-`, `io-`, `unreadable-`, `report-`). |
-| `tests/fixtures/cli/`           | `tests/unit/cli/`                         | Projects run through the CLI (groups `exit-`, `list-`, `verify-`, `schema-`, `format-`, `wiring-`, `usage-`, `suppress-`, `large-`). |
-| `tests/fixtures/directives/`    | `tests/unit/directives.test.ts`           | `<case>/document.md`: documents for the disable directive parser.                    |
-| `tests/fixtures/suppression/`   | `tests/unit/suppression.test.ts`          | `<case>/template.md` and `target.md`: suppression by disable directives.             |
-| `tests/fixtures/tags/`          | `tests/unit/parser-comment-line.test.ts`  | `<case>/document.md`: frontmatter comment lines and key comments of the parser.      |
-| `tests/fixtures/release/`       | `tests/unit/smoke/helpers.test.ts`        | JSON and tarball listings of the packaging checks, in `consumer/`, `manifest/`, `repository/` and `tarball/`. |
-| `tests/fixtures/smoke/`         | `tests/unit/smoke/helpers.test.ts`, `pnpm run smoke:pack` | `clean-project/`: the synthetic project that `smoke:pack` lints with the installed CLI. |
+| Folder                          | Used by                                                   | Content                                                                                                                                                                                        |
+| ------------------------------- | --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tests/fixtures/templates/`     | syntax tests                                              | `<MTLxxx>/<case>.md`: one template per case, no target.                                                                                                                                        |
+| `tests/fixtures/pairs/`         | target tests                                              | `<MTLxxx>/<case>/template.md` and `target.md`: one pair per case.                                                                                                                              |
+| `tests/fixtures/rule-controls/` | target tests                                              | `<MTLxxx>-<name>/`: controls outside the pass/fail split (for example "no tag, no diagnostic"). Today: `MTL101-no-filename-tag`.                                                               |
+| `tests/fixtures/integration/`   | `tests/integration/rule-set.test.ts`                      | `<case>/template.md` and `target.md` of the many-tag template.                                                                                                                                 |
+| `tests/fixtures/config/`        | `tests/unit/config/`                                      | Projects with an `md-template-lint.yml` (groups `validate-`, `discover-`, `naming-`).                                                                                                          |
+| `tests/fixtures/runner/`        | `tests/unit/runner/`, `tests/unit/reporters/`             | Projects with config, templates, targets and `expected.*` output files (groups `inputs-`, `empty-`, `broken-`, `parse-`, `suppress-`, `excerpt-`, `expand-`, `io-`, `unreadable-`, `report-`). |
+| `tests/fixtures/cli/`           | `tests/unit/cli/`                                         | Projects run through the CLI (groups `exit-`, `list-`, `verify-`, `schema-`, `format-`, `wiring-`, `usage-`, `suppress-`, `large-`).                                                           |
+| `tests/fixtures/directives/`    | `tests/unit/directives.test.ts`                           | `<case>/document.md`: documents for the disable directive parser.                                                                                                                              |
+| `tests/fixtures/suppression/`   | `tests/unit/suppression.test.ts`                          | `<case>/template.md` and `target.md`: suppression by disable directives.                                                                                                                       |
+| `tests/fixtures/tags/`          | `tests/unit/parser-comment-line.test.ts`                  | `<case>/document.md`: frontmatter comment lines and key comments of the parser.                                                                                                                |
+| `tests/fixtures/release/`       | `tests/unit/smoke/helpers.test.ts`                        | JSON and tarball listings of the packaging checks, in `consumer/`, `manifest/`, `repository/` and `tarball/`.                                                                                  |
+| `tests/fixtures/smoke/`         | `tests/unit/smoke/helpers.test.ts`, `pnpm run smoke:pack` | `clean-project/`: the synthetic project that `smoke:pack` lints with the installed CLI.                                                                                                        |
 
 Bytes that cannot be a text fixture (invalid UTF-8, a BOM with CRLF, symbolic links) are built in
 code in a temporary folder that the test removes.

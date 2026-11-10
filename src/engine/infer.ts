@@ -11,12 +11,7 @@ import { isAliasLike, isDateLike, isPathLike, isUrlLike } from "./values.js";
 const ENUM_SEPARATOR = " | ";
 
 /** Hints that a list value promotes to `list-of-<hint>` (step B). */
-export const LIST_PROMOTABLE_HINTS: ReadonlySet<string> = new Set([
-  "date",
-  "url",
-  "path",
-  "path-alias",
-]);
+export const LIST_PROMOTABLE_HINTS: ReadonlySet<string> = new Set(["date", "url", "path", "path-alias"]);
 
 function has(hints: readonly TypeHint[], kind: TypeHint["kind"]): boolean {
   return hints.some((hint) => hint.kind === kind);
@@ -32,10 +27,7 @@ export function declaredHint(value: YamlValue, comment: FrontmatterComment | nul
     if (KNOWN_TYPE_NAMES.has(token)) return token;
     if (value.includes(ENUM_SEPARATOR)) return "enum";
   }
-  const aliasHint = hints.some(
-    (hint) =>
-      hint.kind === "alias-marker" || (hint.kind === "bracket" && hint.name === "path-alias"),
-  );
+  const aliasHint = hints.some((hint) => hint.kind === "alias-marker" || (hint.kind === "bracket" && hint.name === "path-alias"));
   if (aliasHint || isAliasLike(value)) return "path-alias";
   if (comment === null || comment.text === "") return null;
   if (has(hints, "date-placeholder") || has(hints, "iso-word")) return "date";

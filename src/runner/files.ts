@@ -5,8 +5,7 @@
  */
 import { readFile, stat } from "node:fs/promises";
 
-export type ReadResult =
-  { readonly ok: true; readonly text: string } | { readonly ok: false; readonly detail: string };
+export type ReadResult = { readonly ok: true; readonly text: string } | { readonly ok: false; readonly detail: string };
 
 /** Strict UTF-8 read. The detail is path free (no personal path in a message). */
 export async function readUtf8(path: string): Promise<ReadResult> {
@@ -51,7 +50,6 @@ export async function templateProblem(path: string): Promise<"MTL910" | "MTL911"
 }
 
 /** Comparison key of a folded path: case-insensitive on Windows only. */
-export const pathKey = (path: string): string =>
-  process.platform === "win32" ? path.toLowerCase() : path;
+export const pathKey = (path: string): string => (process.platform === "win32" ? path.toLowerCase() : path);
 
 export const samePath = (a: string, b: string): boolean => pathKey(a) === pathKey(b);

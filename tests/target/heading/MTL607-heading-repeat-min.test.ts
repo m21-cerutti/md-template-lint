@@ -30,25 +30,14 @@ interface TestCase {
   readonly expected: readonly Expected[];
 }
 
-const belowMin = (
-  count: number,
-  pattern: string,
-  min: number,
-  line: number | null,
-  heading: string,
-  parent: string | null = null,
-): Expected => ({
-  message:
-    `Heading: ${parent === null ? "" : `Section '${parent}': `}${count} heading(s) match ` +
-    `[pattern:"${pattern}"], minimum is ${min}`,
+const belowMin = (count: number, pattern: string, min: number, line: number | null, heading: string, parent: string | null = null): Expected => ({
+  message: `Heading: ${parent === null ? "" : `Section '${parent}': `}${count} heading(s) match ` + `[pattern:"${pattern}"], minimum is ${min}`,
   line,
   heading,
 });
 
-const RELEASE_V = (count: number, min: number, line: number | null): Expected =>
-  belowMin(count, "v{semver}", min, line, "Release");
-const CHANGELOG = (count: number, line: number | null): Expected =>
-  belowMin(count, "[{semver}] - {date}", 4, line, "Release");
+const RELEASE_V = (count: number, min: number, line: number | null): Expected => belowMin(count, "v{semver}", min, line, "Release");
+const CHANGELOG = (count: number, line: number | null): Expected => belowMin(count, "[{semver}] - {date}", 4, line, "Release");
 
 /** Case -> fixture dir (same name) -> expected MTL607 findings. At least 1 pass- and 1 fail-. */
 const CASES: readonly TestCase[] = [
@@ -72,10 +61,7 @@ const CASES: readonly TestCase[] = [
   // Instance `v1.0.0` has one step (line 9), `v1.1.0` none (no anchor), `v1.2.0` two.
   {
     name: "fail-section-scope-one-finding-per-parent-instance",
-    expected: [
-      belowMin(1, "Step {digits}", 2, 9, "Step", "v1.0.0"),
-      belowMin(0, "Step {digits}", 2, null, "Step", "v1.1.0"),
-    ],
+    expected: [belowMin(1, "Step {digits}", 2, 9, "Step", "v1.0.0"), belowMin(0, "Step {digits}", 2, null, "Step", "v1.1.0")],
   },
   // `disable-line MTL607` on the first instance (the anchor, DIR5, DIR7): silenced.
   { name: "pass-disable-line-on-the-first-instance-silences-it", expected: [] },
@@ -136,28 +122,19 @@ const CASES: readonly TestCase[] = [
   },
 ];
 
-const read = (path: string): string =>
-  readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
+const read = (path: string): string => readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
 
 /** Every diagnostic (after suppression) for the pair of a fixture folder. */
 async function lintAll(name: string) {
   const fixture = `${DIR}/${name}`;
   const status = await checkTemplate(registry, read(`${fixture}/template.md`));
   if (status.status !== "ok") throw new Error("template is broken");
-  return checkTarget(
-    registry,
-    status.model,
-    read(`${fixture}/target.md`),
-    "target.md",
-    createEnv(),
-  );
+  return checkTarget(registry, status.model, read(`${fixture}/target.md`), "target.md", createEnv());
 }
 
 /** The errors of a fixture as [code, anchor line]. */
 async function errorsOf(name: string) {
-  return (await lintAll(name))
-    .filter((diagnostic) => diagnostic.severity === "error")
-    .map((diagnostic) => [diagnostic.code, anchorLineOf(diagnostic)]);
+  return (await lintAll(name)).filter((diagnostic) => diagnostic.severity === "error").map((diagnostic) => [diagnostic.code, anchorLineOf(diagnostic)]);
 }
 
 /** Result of `lintTarget` (findings and suppressed count) for a fixture folder. */
@@ -222,12 +199,8 @@ describe("MTL607 heading-repeat-min", () => {
   });
 
   it("default minimum: required zero instances is MTL605 only, optional gives nothing", async () => {
-    expect(await errorsOf("pass-default-minimum-required-zero-instances-gives-mtl605")).toEqual([
-      ["MTL605", null],
-    ]);
-    expect(await errorsOf("pass-default-minimum-optional-zero-instances-gives-nothing")).toEqual(
-      [],
-    );
+    expect(await errorsOf("pass-default-minimum-required-zero-instances-gives-mtl605")).toEqual([["MTL605", null]]);
+    expect(await errorsOf("pass-default-minimum-optional-zero-instances-gives-nothing")).toEqual([]);
   });
 
   it("a lead mismatch and an empty run: MTL606 on the sibling, then MTL607 (code order)", async () => {
@@ -245,15 +218,11 @@ describe("MTL607 heading-repeat-min", () => {
 
   it("no repeat heading: no MTL607 and nothing else from the min tag", async () => {
     expect(await errorsOf("pass-repeat-tag-without-pattern-is-ignored")).toEqual([]);
-    expect(
-      (await lintAll("pass-invalid-pattern-is-no-repeat-heading")).map((item) => item.code),
-    ).not.toContain(CODE);
+    expect((await lintAll("pass-invalid-pattern-is-no-repeat-heading")).map((item) => item.code)).not.toContain(CODE);
   });
 
   it("disable-line on the first instance: the baseline plus one directive", async () => {
-    expect(await errorsOf("fail-count-below-minimum-anchors-the-first-instance")).toEqual([
-      [CODE, 7],
-    ]);
+    expect(await errorsOf("fail-count-below-minimum-anchors-the-first-instance")).toEqual([[CODE, 7]]);
     const result = await lintResult("pass-disable-line-on-the-first-instance-silences-it");
     expect(result.diagnostics).toEqual([]);
     expect(result.suppressed).toBe(1);
@@ -267,28 +236,19 @@ describe("MTL607 heading-repeat-min", () => {
   });
 
   it("unchecked child: only the parent's own finding, no MTL607 and no MTL605", async () => {
-    expect(await errorsOf("pass-child-under-absent-parent-is-not-checked")).toEqual([
-      ["MTL601", null],
-    ]);
-    expect(await errorsOf("pass-child-under-mismatched-parent-is-not-checked")).toEqual([
-      ["MTL606", 7],
-    ]);
+    expect(await errorsOf("pass-child-under-absent-parent-is-not-checked")).toEqual([["MTL601", null]]);
+    expect(await errorsOf("pass-child-under-mismatched-parent-is-not-checked")).toEqual([["MTL606", 7]]);
     expect(await errorsOf("pass-child-under-template-only-parent-is-not-checked")).toEqual([]);
   });
 
   it("max only: one instance passes, zero instances is MTL605 only", async () => {
     expect(await errorsOf("pass-max-only-tag-is-no-minimum")).toEqual([]);
-    expect(await errorsOf("pass-max-only-tag-zero-instances-gives-mtl605")).toEqual([
-      ["MTL605", null],
-    ]);
+    expect(await errorsOf("pass-max-only-tag-zero-instances-gives-mtl605")).toEqual([["MTL605", null]]);
   });
 
   it("disable-line on instance 2 does not silence the finding on instance 1", async () => {
     const result = await lintResult("fail-disable-line-on-the-second-instance-does-not-silence-it");
-    expect(result.diagnostics.map((item) => [item.code, anchorLineOf(item)])).toContainEqual([
-      CODE,
-      7,
-    ]);
+    expect(result.diagnostics.map((item) => [item.code, anchorLineOf(item)])).toContainEqual([CODE, 7]);
     expect(result.suppressed).toBe(0);
   });
 

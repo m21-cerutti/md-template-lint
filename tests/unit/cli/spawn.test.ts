@@ -32,9 +32,7 @@ const missing = !existsSync(CLI);
 const stale = !missing && statSync(CLI).mtimeMs < newestSource();
 const usable = !missing && !stale;
 
-const VERSION = (
-  JSON.parse(readFileSync(join(REPO_ROOT, "package.json"), "utf8")) as { version: string }
-).version;
+const VERSION = (JSON.parse(readFileSync(join(REPO_ROOT, "package.json"), "utf8")) as { version: string }).version;
 
 function spawn(args: readonly string[], fixture?: string) {
   const env = { ...process.env };
@@ -52,12 +50,9 @@ describe("dist/cli.js as a process", () => {
     expect(missing).toBe(true);
   });
 
-  it.skipIf(!stale)(
-    "skipped: dist/cli.js is older than a file in src/, run `pnpm run build` to refresh it",
-    () => {
-      expect(stale).toBe(true);
-    },
-  );
+  it.skipIf(!stale)("skipped: dist/cli.js is older than a file in src/, run `pnpm run build` to refresh it", () => {
+    expect(stale).toBe(true);
+  });
 
   it.skipIf(!usable)("starts with a node shebang", () => {
     expect(readFileSync(CLI, "utf8").startsWith("#!/usr/bin/env node\n")).toBe(true);
@@ -78,9 +73,7 @@ describe("dist/cli.js as a process", () => {
     const run = spawn(["--bogus"]);
     expect(run.status).toBe(2);
     expect(run.stdout).toBe("");
-    expect(run.stderr).toBe(
-      "error MTL920: unknown option: --bogus\nTry 'md-template-lint --help' for usage.\n",
-    );
+    expect(run.stderr).toBe("error MTL920: unknown option: --bogus\nTry 'md-template-lint --help' for usage.\n");
   });
 
   it.skipIf(!usable)("a failing file is exit 1, with the report on stdout", () => {
@@ -106,19 +99,13 @@ describe("dist/cli.js as a process", () => {
   });
 
   it.skipIf(!usable)("--verify with a template argument works without a config", () => {
-    const run = spawn(
-      ["--verify", "templates/broken.template.md"],
-      "verify-fail-explicit-broken-template",
-    );
+    const run = spawn(["--verify", "templates/broken.template.md"], "verify-fail-explicit-broken-template");
     expect(run.status).toBe(1);
     expect(run.stdout).toContain("TEMPLATE ERROR: templates/broken.template.md");
   });
 
   it.skipIf(!usable)("--verify prints the schema table of a template", () => {
-    const run = spawn(
-      ["--verify", "--format", "plain", "templates/note.template.md"],
-      "verify-fail-explicit-broken-template",
-    );
+    const run = spawn(["--verify", "--format", "plain", "templates/note.template.md"], "verify-fail-explicit-broken-template");
     expect(run.status).toBe(0);
     // The dash line is as long as the header (20), presence is always the first rule.
     expect(run.stdout).toContain(`Field  Type    Rules\n${"-".repeat(20)}\n`);

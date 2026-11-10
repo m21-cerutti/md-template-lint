@@ -24,9 +24,7 @@ interface TestCase {
 }
 
 const unlisted = (parent: string, text: string, level: number, anchor: number): Expected => ({
-  message:
-    `Heading: Section '${parent}': heading '${text}' at level H${level} ` +
-    "is not in the template [content:subheadings:disallow]",
+  message: `Heading: Section '${parent}': heading '${text}' at level H${level} ` + "is not in the template [content:subheadings:disallow]",
   heading: text,
   anchor,
 });
@@ -88,11 +86,7 @@ const CASES: readonly TestCase[] = [
   {
     // Spec 2.6 variant: `#### Added` is not listed (`### Added` is level 3).
     name: "fail-changelog-added-at-level-four-variant",
-    expected: [
-      unlisted("Unreleased", "Added", 4, 9),
-      unlisted("Unreleased", "Details", 4, 13),
-      unlisted("Unreleased", "Misc", 3, 17),
-    ],
+    expected: [unlisted("Unreleased", "Added", 4, 9), unlisted("Unreleased", "Details", 4, 13), unlisted("Unreleased", "Misc", 3, 17)],
   },
   {
     // Spec 2.6 variant: `disable-line MTL612` on line 17 removes the `Misc` finding only.
@@ -251,21 +245,14 @@ const PASS_CODES: Readonly<Record<string, readonly string[]>> = {
   "pass-heading-like-text-in-code-fence-is-not-a-heading": [],
 };
 
-const read = (path: string): string =>
-  readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
+const read = (path: string): string => readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
 
 /** Every diagnostic for the pair of a fixture folder. */
 async function lintAll(name: string) {
   const fixture = `${DIR}/${name}`;
   const status = await checkTemplate(registry, read(`${fixture}/template.md`));
   if (status.status !== "ok") throw new Error(`${fixture}: template is broken`);
-  return checkTarget(
-    registry,
-    status.model,
-    read(`${fixture}/target.md`),
-    `${fixture}/target.md`,
-    createEnv(),
-  );
+  return checkTarget(registry, status.model, read(`${fixture}/target.md`), `${fixture}/target.md`, createEnv());
 }
 
 /** The MTL612 diagnostics for the pair of a fixture folder. */
@@ -297,9 +284,7 @@ describe("MTL612 heading-unlisted", () => {
   });
 
   it("every pass- case gives the full code list of PASS_CODES, not only no MTL612", async () => {
-    const passing = CASES.filter((testCase) => testCase.name.startsWith("pass-")).map(
-      (testCase) => testCase.name,
-    );
+    const passing = CASES.filter((testCase) => testCase.name.startsWith("pass-")).map((testCase) => testCase.name);
     expect(Object.keys(PASS_CODES).sort()).toEqual([...passing].sort());
     for (const name of passing) {
       const found = await lintAll(name);
@@ -314,9 +299,7 @@ describe("MTL612 heading-unlisted", () => {
 
   it("the match of a template-only heading gives MTL603, never also MTL612", async () => {
     const found = await lintAll("pass-template-only-match-gets-mtl603-only");
-    expect(found.map((diagnostic) => [diagnostic.code, anchorLineOf(diagnostic)])).toEqual([
-      ["MTL603", 11],
-    ]);
+    expect(found.map((diagnostic) => [diagnostic.code, anchorLineOf(diagnostic)])).toEqual([["MTL603", 11]]);
   });
 
   it("a template-only match outside the tagged subtree gives MTL603 only (spec 2.6)", async () => {
@@ -331,9 +314,7 @@ describe("MTL612 heading-unlisted", () => {
     ).toEqual([
       {
         code: "MTL603",
-        message:
-          "Heading: Heading 'Draft' is marked [presence:template-only] " +
-          "and must not appear in the linted file",
+        message: "Heading: Heading 'Draft' is marked [presence:template-only] " + "and must not appear in the linted file",
         heading: "Draft",
         anchor: 11,
       },
@@ -341,11 +322,8 @@ describe("MTL612 heading-unlisted", () => {
   });
 
   it("the deeper chain and the region end give MTL612 only", async () => {
-    const codes = async (name: string) =>
-      (await lintAll(name)).map((diagnostic) => [diagnostic.code, anchorLineOf(diagnostic)]);
-    expect(await codes("fail-listed-heading-under-unlisted-ancestor-does-not-reset")).toEqual([
-      ["MTL612", 11],
-    ]);
+    const codes = async (name: string) => (await lintAll(name)).map((diagnostic) => [diagnostic.code, anchorLineOf(diagnostic)]);
+    expect(await codes("fail-listed-heading-under-unlisted-ancestor-does-not-reset")).toEqual([["MTL612", 11]]);
     expect(await codes("fail-unlisted-heading-on-last-line-of-region")).toEqual([["MTL612", 11]]);
     // `### Second` (template parent `# Guide`) looks at `### First` (line 9) first: MTL610
     // anchored on the `# Guide` line (5), template line 7, before the tag (line 9, MTL612).
@@ -372,17 +350,9 @@ describe("MTL612 heading-unlisted", () => {
       const fixture = `${DIR}/${name}`;
       const status = await checkTemplate(registry, read(`${fixture}/template.md`));
       if (status.status !== "ok") throw new Error(`${fixture}: template is broken`);
-      const result = await lintTarget(
-        registry,
-        status.model,
-        read(`${fixture}/target.md`),
-        `${fixture}/target.md`,
-        createEnv(),
-      );
+      const result = await lintTarget(registry, status.model, read(`${fixture}/target.md`), `${fixture}/target.md`, createEnv());
       expect(result.suppressed).toBe(2);
-      expect(
-        result.diagnostics.map((diagnostic) => [diagnostic.code, anchorLineOf(diagnostic)]),
-      ).toEqual(left);
+      expect(result.diagnostics.map((diagnostic) => [diagnostic.code, anchorLineOf(diagnostic)])).toEqual(left);
     }
   });
 
@@ -397,12 +367,9 @@ describe("MTL612 heading-unlisted", () => {
   });
 
   it("full code lists: tag guards, template-only duplicate, MTL611 before MTL612, MTL612 before MTL610", async () => {
-    const codes = async (name: string) =>
-      (await lintAll(name)).map((diagnostic) => [diagnostic.code, anchorLineOf(diagnostic)]);
+    const codes = async (name: string) => (await lintAll(name)).map((diagnostic) => [diagnostic.code, anchorLineOf(diagnostic)]);
     expect(await codes("pass-template-only-tagged-heading-has-no-effect")).toEqual([["MTL603", 7]]);
-    expect(await codes("pass-tagged-heading-under-template-only-parent-has-no-effect")).toEqual([
-      ["MTL603", 7],
-    ]);
+    expect(await codes("pass-tagged-heading-under-template-only-parent-has-no-effect")).toEqual([["MTL603", 7]]);
     expect(await codes("pass-tagged-heading-under-missing-parent-has-no-effect")).toEqual([
       ["MTL601", null],
       ["MTL616", 7],
@@ -435,13 +402,7 @@ describe("MTL612 heading-unlisted", () => {
       const fixture = `${DIR}/${name}`;
       const status = await checkTemplate(registry, read(`${fixture}/template.md`));
       if (status.status !== "ok") throw new Error(`${fixture}: template is broken`);
-      const result = await lintTarget(
-        registry,
-        status.model,
-        read(`${fixture}/target.md`),
-        `${fixture}/target.md`,
-        createEnv(),
-      );
+      const result = await lintTarget(registry, status.model, read(`${fixture}/target.md`), `${fixture}/target.md`, createEnv());
       expect(result.suppressed).toBe(1);
       expect(result.diagnostics.map((diagnostic) => anchorLineOf(diagnostic))).toEqual([13, fixed]);
     }

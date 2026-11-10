@@ -13,8 +13,7 @@ const DIR = "tests/fixtures/pairs/MTL304";
 const OTHER_FORMAT_CODES = ["MTL301", "MTL302", "MTL303", "MTL305"];
 
 /** Spec 4.3 message of MTL304; `schemes` is the sorted, lowercased allow-list. */
-const message = (key: string, value: string, schemes: string): string =>
-  `Field '${key}': URL scheme of '${value}' is not allowed [format:scheme:${schemes}]`;
+const message = (key: string, value: string, schemes: string): string => `Field '${key}': URL scheme of '${value}' is not allowed [format:scheme:${schemes}]`;
 
 interface TestCase {
   readonly name: string;
@@ -60,28 +59,18 @@ const CASES: readonly TestCase[] = [
   },
   {
     name: "fail-two-fields-in-template-order",
-    expected: [
-      message("site", "http://example.com", "https"),
-      message("docs", "https://docs.example.com", "http"),
-    ],
+    expected: [message("site", "http://example.com", "https"), message("docs", "https://docs.example.com", "http")],
   },
 ];
 
-const read = (path: string): string =>
-  readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
+const read = (path: string): string => readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
 
 /** Diagnostics of this code, and of the other format codes, for the pair of a fixture folder. */
 async function lint(testCase: TestCase) {
   const fixture = `${DIR}/${testCase.name}`;
   const status = await checkTemplate(registry, read(`${fixture}/template.md`));
   if (status.status !== "ok") throw new Error(`${fixture}: template is broken`);
-  const found = await checkTarget(
-    registry,
-    status.model,
-    read(`${fixture}/target.md`),
-    `${fixture}/target.md`,
-    createEnv(),
-  );
+  const found = await checkTarget(registry, status.model, read(`${fixture}/target.md`), `${fixture}/target.md`, createEnv());
   return {
     own: found.filter((diagnostic) => diagnostic.code === CODE),
     others: found.filter((diagnostic) => OTHER_FORMAT_CODES.includes(diagnostic.code)),

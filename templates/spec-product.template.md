@@ -1,6 +1,6 @@
 ---
-title: Product specification  # [presence:required]
-last_updated: 2026-10-29  # [presence:required] [format:date] type=date
+title: Product specification # [presence:required]
+last_updated: 2026-10-29 # [presence:required] [format:date] type=date
 ---
 
 # Specification title [pattern:"{text}"]
@@ -19,9 +19,9 @@ One short paragraph: the problem, the audience, and the value delivered.
 
 ## Vocabulary [content:table]
 
-| Term | Meaning                                       |
-| ---- | --------------------------------------------- |
-| Term | One sentence, the same meaning everywhere.    |
+| Term | Meaning                                    |
+| ---- | ------------------------------------------ |
+| Term | One sentence, the same meaning everywhere. |
 
 ## Users [content:list]
 

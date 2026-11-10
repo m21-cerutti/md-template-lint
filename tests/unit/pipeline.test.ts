@@ -40,20 +40,13 @@ const fieldRule = (code: `MTL${string}`, category: Category, step: FieldStep) =>
     category,
     phase: "field",
     step,
-    check: (context: FieldContext): Diagnostic[] =>
-      step === "presence" || context.value === "bad"
-        ? [report(rule, `${step}:${context.key}`)]
-        : [],
+    check: (context: FieldContext): Diagnostic[] => (step === "presence" || context.value === "bad" ? [report(rule, `${step}:${context.key}`)] : []),
   });
   return rule;
 };
 
 /** A target rule that reports `<step>` when the target has a key named `bad`. */
-const targetRule = (
-  code: `MTL${string}`,
-  category: Category,
-  step: "filename" | "unknown-keys" | "headings" | "content",
-) => {
+const targetRule = (code: `MTL${string}`, category: Category, step: "filename" | "unknown-keys" | "headings" | "content") => {
   const rule = defineRule({
     code,
     name: step,
@@ -61,8 +54,7 @@ const targetRule = (
     category,
     phase: "target",
     step,
-    check: (context: TargetContext): Diagnostic[] =>
-      context.target.fields.has("bad") ? [report(rule, step)] : [],
+    check: (context: TargetContext): Diagnostic[] => (context.target.fields.has("bad") ? [report(rule, step)] : []),
   });
   return rule;
 };
@@ -88,10 +80,7 @@ const ioRule = defineRule({
 // Category order differs from step order on purpose: io (last category) runs before type.
 const ordered = registry({
   filename: [targetRule("MTL101", "filename", "filename")],
-  presence: [
-    fieldRule("MTL201", "presence", "presence"),
-    targetRule("MTL202", "presence", "unknown-keys"),
-  ],
+  presence: [fieldRule("MTL201", "presence", "presence"), targetRule("MTL202", "presence", "unknown-keys")],
   format: [fieldRule("MTL301", "format", "constant")],
   type: [fieldRule("MTL501", "type", "type")],
   heading: [targetRule("MTL601", "heading", "headings")],
@@ -118,29 +107,13 @@ describe("target pipeline: field-major order and the empty-value guard", () => {
   it("fails: filename, then each field by step, then target steps; errors before warnings", async () => {
     const target = "---\na: bad\nb: bad\nc: bad\nbad: 1\n---\n";
     const result = await checkTarget(ordered, await template(TEMPLATE), target, "t.md", env);
-    expect(messages(result)).toEqual([
-      "error filename",
-      "error constant:a",
-      "error type:a",
-      "error constant:b",
-      "error type:b",
-      "error constant:c",
-      "error type:c",
-      "error unknown-keys",
-      "error headings",
-      "error content",
-    ]);
+    expect(messages(result)).toEqual(["error filename", "error constant:a", "error type:a", "error constant:b", "error type:b", "error constant:c", "error type:c", "error unknown-keys", "error headings", "error content"]);
   });
 
   it("fails: a missing or empty value runs only the presence step (one guard)", async () => {
     const target = "---\na: bad\nc: ''\n---\n";
     const result = await checkTarget(ordered, await template(TEMPLATE), target, "t.md", env);
-    expect(messages(result)).toEqual([
-      "error constant:a",
-      "error type:a",
-      "error presence:b",
-      "error presence:c",
-    ]);
+    expect(messages(result)).toEqual(["error constant:a", "error type:a", "error presence:b", "error presence:c"]);
   });
 });
 
@@ -151,33 +124,17 @@ describe("target pipeline: async io checks (in-memory io, no network)", () => {
 
   it("passes: an existing path and a reachable URL", async () => {
     const model = await template(tpl);
-    expect(await checkTarget(ordered, model, "---\np: ./docs/a.md\n---\n", "t.md", probe)).toEqual(
-      [],
-    );
-    expect(
-      await checkTarget(ordered, model, "---\np: https://ok.test\n---\n", "t.md", probe),
-    ).toEqual([]);
+    expect(await checkTarget(ordered, model, "---\np: ./docs/a.md\n---\n", "t.md", probe)).toEqual([]);
+    expect(await checkTarget(ordered, model, "---\np: https://ok.test\n---\n", "t.md", probe)).toEqual([]);
   });
 
   it("fails: a missing path is a warning, after the errors", async () => {
-    const result = await checkTarget(
-      ordered,
-      await template(tpl),
-      "---\np: ./no.md\n---\n",
-      "t.md",
-      probe,
-    );
+    const result = await checkTarget(ordered, await template(tpl), "---\np: ./no.md\n---\n", "t.md", probe);
     expect(messages(result)).toEqual(["warning missing ./no.md"]);
   });
 
   it("fails: an unreachable URL carries the probe reason", async () => {
-    const result = await checkTarget(
-      ordered,
-      await template(tpl),
-      "---\np: https://down.test\n---\n",
-      "t.md",
-      probe,
-    );
+    const result = await checkTarget(ordered, await template(tpl), "---\np: https://down.test\n---\n", "t.md", probe);
     expect(messages(result)).toEqual(["warning url https://down.test: not probed"]);
   });
 
@@ -196,9 +153,7 @@ describe("target pipeline: async io checks (in-memory io, no network)", () => {
       ],
     });
     const model = await template(tpl);
-    await expect(checkTarget(stubbed, model, "---\np: v\n---\n", "t.md", env)).rejects.toThrow(
-      "not implemented: MTL301",
-    );
+    await expect(checkTarget(stubbed, model, "---\np: v\n---\n", "t.md", env)).rejects.toThrow("not implemented: MTL301");
   });
 });
 
@@ -212,8 +167,7 @@ describe("target pipeline: io step lists findings in item order across rules", (
       category: "io",
       phase: "field",
       step: "io",
-      check: (context: FieldContext): Diagnostic[] =>
-        indexes.map((index) => reportItem(rule, `${code}:${context.key}:${index}`, index)),
+      check: (context: FieldContext): Diagnostic[] => indexes.map((index) => reportItem(rule, `${code}:${context.key}:${index}`, index)),
     });
     return rule;
   };
@@ -234,16 +188,7 @@ describe("target pipeline: io step lists findings in item order across rules", (
     const status = await checkTemplate(itemRegistry, tpl);
     if (status.status !== "ok") throw new Error("template broken");
     const result = await checkTarget(itemRegistry, status.model, target, "t.md", env);
-    expect(result.map((d) => d.message)).toEqual([
-      "MTL801:p:0",
-      "MTL802:p:1",
-      "MTL801:p:2",
-      "MTL802:p:3",
-      "MTL801:q:0",
-      "MTL802:q:1",
-      "MTL801:q:2",
-      "MTL802:q:3",
-    ]);
+    expect(result.map((d) => d.message)).toEqual(["MTL801:p:0", "MTL802:p:1", "MTL801:p:2", "MTL802:p:3", "MTL801:q:0", "MTL802:q:1", "MTL801:q:2", "MTL802:q:3"]);
   });
 
   it("never lets the item index reach the diagnostic seen by reporters", async () => {
@@ -267,19 +212,7 @@ describe("target pipeline: env is a required argument", () => {
 });
 
 /** The 11 present-value steps of docs/spec.md 4.1 step 3, spelled out (not read from FIELD_STEPS). */
-const SPEC_STEP_ORDER = [
-  "constant",
-  "count",
-  "range",
-  "order",
-  "scheme",
-  "io",
-  "value-filename",
-  "case",
-  "elements",
-  "type",
-  "shape",
-] as const;
+const SPEC_STEP_ORDER = ["constant", "count", "range", "order", "scheme", "io", "value-filename", "case", "elements", "type", "shape"] as const;
 
 describe("target pipeline: per-field steps run in spec 4.1 order", () => {
   // One rule per step, registered in REVERSE spec order inside one category file.
@@ -293,8 +226,7 @@ describe("target pipeline: per-field steps run in spec 4.1 order", () => {
       category: "format",
       phase: "field",
       step,
-      check: (context: FieldContext): Diagnostic[] =>
-        step === "presence" || context.value === "bad" ? [report(rule, step)] : [],
+      check: (context: FieldContext): Diagnostic[] => (step === "presence" || context.value === "bad" ? [report(rule, step)] : []),
     });
     return rule;
   });
@@ -331,15 +263,7 @@ describe("target pipeline: headings step lists presence findings in template hea
     const found = await checkTarget(real, status.model, targetText, "t.md", env);
     return found.filter((d) => d.code.startsWith("MTL60"));
   };
-  const templateText = lines(
-    "---",
-    "a: x",
-    "---",
-    "## Alpha",
-    '## Beta [pattern:"{text}"]',
-    "## Draft notes [presence:template-only]",
-    "## Omega",
-  );
+  const templateText = lines("---", "a: x", "---", "## Alpha", '## Beta [pattern:"{text}"]', "## Draft notes [presence:template-only]", "## Omega");
 
   // Template level-2 positions: Alpha, Beta (`{text}` pattern), Omega; `Draft notes` is
   // template-only (not a position). Spec 2.10 steps 2 and 3: each position takes the next
@@ -355,22 +279,13 @@ describe("target pipeline: headings step lists presence findings in template hea
     // for Omega (no MTL605: the pattern position found a sibling).
     const target = lines("---", "a: x", "---", "# Top", "## Alpha", "## Omega");
     const found = await findings(templateText, target);
-    expect(found.map((d) => `${d.code} ${d.message}`)).toEqual([
-      "MTL601 Heading: Missing required heading: 'Omega'",
-    ]);
+    expect(found.map((d) => `${d.code} ${d.message}`)).toEqual(["MTL601 Heading: Missing required heading: 'Omega'"]);
   });
 
   it("fails: MTL601, MTL603 interleave by template heading, not by rule", async () => {
     // Alpha missing (601), Draft notes present (603), Omega missing (601).
     // Draft notes is an H1 here: levels match exactly (spec 2.6, change C10).
-    const template = lines(
-      "---",
-      "a: x",
-      "---",
-      "## Alpha",
-      "# Draft notes [presence:template-only]",
-      "## Omega",
-    );
+    const template = lines("---", "a: x", "---", "## Alpha", "# Draft notes [presence:template-only]", "## Omega");
     const target = lines("---", "a: x", "---", "# Draft notes");
     const found = await findings(template, target);
     expect(found.map((d) => `${d.code} ${d.message}`)).toEqual([
@@ -387,13 +302,9 @@ describe("target pipeline: headings step lists presence findings in template hea
     const status = await checkTemplate(real, text);
     if (status.status !== "ok") throw new Error("template broken");
     expect(status.warnings.map((d) => d.code)).toEqual(["MTL012"]);
-    expect(status.model.sections.map((section) => section.text)).toEqual([
-      "Intro [presence:exist]",
-    ]);
+    expect(status.model.sections.map((section) => section.text)).toEqual(["Intro [presence:exist]"]);
     const found = await findings(text, lines("---", "a: x", "---", "## Intro"));
-    expect(found.map((d) => `${d.code} ${d.message}`)).toEqual([
-      "MTL601 Heading: Missing required heading: 'Intro [presence:exist]'",
-    ]);
+    expect(found.map((d) => `${d.code} ${d.message}`)).toEqual(["MTL601 Heading: Missing required heading: 'Intro [presence:exist]'"]);
   });
 
   // A swapped Omega, Alpha: `Draft notes` is set aside (MTL603, step 1); the free siblings are
@@ -419,14 +330,7 @@ describe("target pipeline: headings step lists presence findings in template hea
   // An order ACROSS levels is what MTL604 still reports (spec 2.6 "Order"): the H2 `Alpha`
   // matches before the H1 `Top` that precedes it in the template.
   it("fails: the order finding (across levels) comes last and carries no heading", async () => {
-    const template = lines(
-      "---",
-      "a: x",
-      "---",
-      "# Top",
-      "## Alpha",
-      "## Draft notes [presence:template-only]",
-    );
+    const template = lines("---", "a: x", "---", "# Top", "## Alpha", "## Draft notes [presence:template-only]");
     const target = lines("---", "a: x", "---", "## Alpha", "# Top", "## Draft notes");
     const found = await findings(template, target);
     expect(found.map((d) => d.code)).toEqual(["MTL603", "MTL604"]);
@@ -450,71 +354,32 @@ describe("target pipeline: content step lists findings in template section order
   };
 
   it("passes: a target whose sections satisfy every content tag has no finding", async () => {
-    const templateText = lines(
-      "---",
-      "a: x",
-      "---",
-      "## A [content:table]",
-      "## B [content:non-empty]",
-    );
+    const templateText = lines("---", "a: x", "---", "## A [content:table]", "## B [content:non-empty]");
     const target = lines("---", "a: x", "---", "## A", "| x |", "## B", "text");
     expect(await findings(templateText, target)).toEqual([]);
   });
 
   it("fails: section A (MTL702) comes before section B (MTL701), not grouped by rule", async () => {
-    const templateText = lines(
-      "---",
-      "a: x",
-      "---",
-      "## A [content:table]",
-      "## B [content:non-empty]",
-    );
+    const templateText = lines("---", "a: x", "---", "## A [content:table]", "## B [content:non-empty]");
     const target = lines("---", "a: x", "---", "## A", "## B");
     const found = await findings(templateText, target);
-    expect(found.map((d) => `${d.code} ${d.message}`)).toEqual([
-      "MTL702 Section 'A': [content:table] no markdown table row found",
-      "MTL701 Section 'B': [content:non-empty] section body is empty",
-    ]);
+    expect(found.map((d) => `${d.code} ${d.message}`)).toEqual(["MTL702 Section 'A': [content:table] no markdown table row found", "MTL701 Section 'B': [content:non-empty] section body is empty"]);
   });
 
   it("fails: one section keeps registry order (MTL701 to MTL705), sections stay in template order", async () => {
-    const templateText = lines(
-      "---",
-      "a: x",
-      "---",
-      "## A [content:non-empty] [content:list] [content:min-lines:2]",
-      "## B [content:table] [content:max-lines:0]",
-    );
+    const templateText = lines("---", "a: x", "---", "## A [content:non-empty] [content:list] [content:min-lines:2]", "## B [content:table] [content:max-lines:0]");
     const target = lines("---", "a: x", "---", "## A", "## B", "text");
     const found = await findings(templateText, target);
-    expect(found.map((d) => `${d.code} ${d.message.split(":")[0]}`)).toEqual([
-      "MTL701 Section 'A'",
-      "MTL703 Section 'A'",
-      "MTL704 Section 'A'",
-      "MTL702 Section 'B'",
-      "MTL705 Section 'B'",
-    ]);
+    expect(found.map((d) => `${d.code} ${d.message.split(":")[0]}`)).toEqual(["MTL701 Section 'A'", "MTL703 Section 'A'", "MTL704 Section 'A'", "MTL702 Section 'B'", "MTL705 Section 'B'"]);
   });
 
   it("never lets the section index reach the diagnostic seen by reporters", async () => {
-    const templateText = lines(
-      "---",
-      "a: x",
-      "---",
-      "## A [content:table]",
-      "## B [content:non-empty]",
-    );
+    const templateText = lines("---", "a: x", "---", "## A [content:table]", "## B [content:non-empty]");
     const found = await findings(templateText, lines("---", "a: x", "---", "## A", "## B"));
     expect(found).toHaveLength(2);
     // The index is not a key; the only addition is the `heading` of the section (spec 8.1).
     for (const diagnostic of found) {
-      expect(Object.keys(diagnostic).sort()).toEqual([
-        "code",
-        "heading",
-        "message",
-        "position",
-        "severity",
-      ]);
+      expect(Object.keys(diagnostic).sort()).toEqual(["code", "heading", "message", "position", "severity"]);
     }
     expect(found.map((diagnostic) => diagnostic.heading)).toEqual(["A", "B"]);
   });

@@ -48,14 +48,7 @@ import type {
   TagSubject,
 } from "./ast.js";
 import { keySubject } from "./key.js";
-import {
-  createRecognizers,
-  DiagnosticCollector,
-  type GrammarError,
-  type PositionMap,
-  type SyntaxEvent,
-  type SyntaxEventLog,
-} from "./listeners.js";
+import { createRecognizers, DiagnosticCollector, type GrammarError, type PositionMap, type SyntaxEvent, type SyntaxEventLog } from "./listeners.js";
 import { BracketShapeVisitor } from "./visitors/brackets.js";
 import { DirectiveVisitor, scanComments } from "./visitors/directive.js";
 import { HeadingVisitor, peelHeading, type HeadingItemResult } from "./visitors/heading.js";
@@ -118,22 +111,17 @@ class ParseSession {
     push: boolean,
     private readonly origin: Origin,
   ) {
-    const created = createRecognizers(text, mode, push, (line, column) =>
-      this.position(line, column),
-    );
+    const created = createRecognizers(text, mode, push, (line, column) => this.position(line, column));
     this.parser = created.parser;
     this.log = created.log;
   }
 
   /** Absolute 1-based position of a 1-based line and 0-based column of the text. */
   position(line: number, column: number): SourcePosition {
-    return line === 1
-      ? { line: this.origin.line, column: this.origin.column + column }
-      : { line: this.origin.line + line - 1, column: column + 1 };
+    return line === 1 ? { line: this.origin.line, column: this.origin.column + column } : { line: this.origin.line + line - 1, column: column + 1 };
   }
 
-  readonly tokenPosition = (token: Token): SourcePosition =>
-    this.position(token.line, token.column);
+  readonly tokenPosition = (token: Token): SourcePosition => this.position(token.line, token.column);
 
   /** File line of a parsed rule: every rule of the document grammar has a first token. */
   lineOf(ctx: ParserRuleContext): number {
@@ -279,13 +267,7 @@ class ParseSession {
    * file position of the first content character. directiveEntry never
    * fails, so an event here is a grammar bug (a GrammarError).
    */
-  directive(
-    region: Region,
-    raw: string,
-    start: SourcePosition,
-    content: string,
-    origin: SourcePosition,
-  ): Directive | null {
+  directive(region: Region, raw: string, start: SourcePosition, content: string, origin: SourcePosition): Directive | null {
     const map: PositionMap = (_line, column) => ({
       line: origin.line,
       column: origin.column + column,
@@ -315,12 +297,7 @@ class ParseSession {
    * lines before `firstLine` (the frontmatter) and in `fenced` skipped.
    */
   bodyDirectives(source: string, firstLine: number, fenced: ReadonlySet<number>): Directive[] {
-    const { parser, log } = createRecognizers(
-      source,
-      MdTemplateLexer.DIRECTIVE_SCAN,
-      false,
-      (l, c) => this.position(l, c),
-    );
+    const { parser, log } = createRecognizers(source, MdTemplateLexer.DIRECTIVE_SCAN, false, (l, c) => this.position(l, c));
     const tree = parser.directiveScanEntry();
     this.collector.grammarErrors(log, "directiveScanEntry", () => "body");
     const directives: Directive[] = [];
@@ -360,12 +337,7 @@ function withSubject(list: readonly Finding[], subject: TagSubject | null): TagF
 // ---------------------------------------------------------------------------
 
 /** Inline comment items -> field tags, inert filename tags, hints and findings. */
-function buildComment(
-  session: ParseSession,
-  items: readonly ParserRuleContext[],
-  position: SourcePosition,
-  subject: TagSubject | null,
-): FrontmatterComment {
+function buildComment(session: ParseSession, items: readonly ParserRuleContext[], position: SourcePosition, subject: TagSubject | null): FrontmatterComment {
   const tags: FrontmatterFieldTag[] = [];
   const inertTags: FrontmatterInertTag[] = [];
   const findings: Finding[] = [];
@@ -430,12 +402,7 @@ function keyText(token: string): string {
  * of a key line (`hash` is FM_COMMENT_HASH, `content` its text). The YAML
  * side (key lines, multi-line values) is checked by src/engine/load.ts.
  */
-function frontmatterDirective(
-  session: ParseSession,
-  hash: Token,
-  content: string,
-  wholeLine: boolean,
-): Directive | null {
+function frontmatterDirective(session: ParseSession, hash: Token, content: string, wholeLine: boolean): Directive | null {
   const marker = hash.text ?? "#";
   // FM_LINE_HASH and FP_COMMENT include the spaces before `#`.
   const start = session.position(hash.line, hash.column + marker.length - 1);
@@ -444,11 +411,7 @@ function frontmatterDirective(
   return session.directive("frontmatter", `#${content}`, start, content, origin);
 }
 
-function buildFrontmatter(
-  session: ParseSession,
-  ctx: FrontmatterContext,
-  directives: Directive[],
-): Frontmatter {
+function buildFrontmatter(session: ParseSession, ctx: FrontmatterContext, directives: Directive[]): Frontmatter {
   const lines: FrontmatterLine[] = [];
   let filename: FrontmatterFilenameTag | null = null;
   let uniqueHeadingNames = false;
@@ -458,11 +421,7 @@ function buildFrontmatter(
   // Spec 2.1: a standalone comment line reports its UNKNOWN brackets only (known tags are inert
   // there, malformed or wrong-region ones are not reported), subject `Comment line N`.
   const reportUnknown = (line: number, results: readonly Classified<FrontmatterTag>[]) => {
-    const unknown = results.flatMap((result) =>
-      result !== null && "finding" in result && result.finding.reason === "unknown"
-        ? [result.finding]
-        : [],
-    );
+    const unknown = results.flatMap((result) => (result !== null && "finding" in result && result.finding.reason === "unknown" ? [result.finding] : []));
     session.collector.report(withSubject(unknown, { commentLine: line }));
   };
   for (const fmLine of ctx.fmLine()) {
@@ -472,19 +431,11 @@ function buildFrontmatter(
     let isDirective = false;
     if (body instanceof FmFilenameLineContext || body instanceof FmCommentLineContext) {
       const hash = body.FM_LINE_HASH().symbol;
-      const directive = frontmatterDirective(
-        session,
-        hash,
-        raw.slice((hash.text ?? "#").length),
-        true,
-      );
+      const directive = frontmatterDirective(session, hash, raw.slice((hash.text ?? "#").length), true);
       collect(directive);
       isDirective = directive !== null;
     }
-    if (
-      body instanceof FmFilenameLineContext &&
-      session.family(body.tagCandidate()) === "unique-names"
-    ) {
+    if (body instanceof FmFilenameLineContext && session.family(body.tagCandidate()) === "unique-names") {
       // `# [unique-headings-names:x]` alone: the template-wide switch with an argument (MTL012).
       const result = session.frontmatterTag(body.tagCandidate());
       session.collector.report("finding" in result ? withSubject([result.finding], null) : []);
@@ -505,10 +456,7 @@ function buildFrontmatter(
       // (spec 2.11), else a plain comment line (an unknown word is reported, `[rule]` and the
       // type names are inert).
       const result = session.classifyFrontmatter(body.tagBareBracket());
-      const tag =
-        result !== null && "tag" in result && result.tag.kind === "unique-names"
-          ? result.tag
-          : null;
+      const tag = result !== null && "tag" in result && result.tag.kind === "unique-names" ? result.tag : null;
       uniqueHeadingNames ||= tag !== null;
       if (tag === null) {
         reportUnknown(line, [result]);
@@ -560,10 +508,7 @@ function buildFrontmatter(
 // Body region
 // ---------------------------------------------------------------------------
 
-function buildHeadingText(
-  session: ParseSession,
-  items: readonly ParserRuleContext[],
-): HeadingSuffix {
+function buildHeadingText(session: ParseSession, items: readonly ParserRuleContext[]): HeadingSuffix {
   const peeled = peelHeading(items, (item): HeadingItemResult => session.classifyBody(item));
   return {
     text: peeled.text,
@@ -610,16 +555,7 @@ function buildBodyBlock(session: ParseSession, block: BodyBlockContext): BodyBlo
       closed: body.FENCE_CLOSE() !== null,
     };
   }
-  const kind =
-    body instanceof BodyHtmlCommentContext
-      ? "html-comment"
-      : body instanceof BodyTableRowContext
-        ? "table-row"
-        : body instanceof BodyListItemContext
-          ? "list-item"
-          : body instanceof BodyBlankLineContext
-            ? "blank"
-            : "text";
+  const kind = body instanceof BodyHtmlCommentContext ? "html-comment" : body instanceof BodyTableRowContext ? "table-row" : body instanceof BodyListItemContext ? "list-item" : body instanceof BodyBlankLineContext ? "blank" : "text";
   return { kind, line, raw };
 }
 
@@ -651,9 +587,7 @@ export function analyzeDocument(text: string): DocumentAnalysis {
   const fmCtx = tree.frontmatter();
   const unclosed = tree.fmUnclosed() !== null;
   const fmEnd = fmCtx?.stop?.line ?? 0;
-  session.collectStageOne("document", (event) =>
-    unclosed || event.position.line <= fmEnd ? "frontmatter" : "body",
-  );
+  session.collectStageOne("document", (event) => (unclosed || event.position.line <= fmEnd ? "frontmatter" : "body"));
   const grammarErrors = session.collector.errors;
   if (grammarErrors.length > 0) return { document: null, grammarErrors, findings: [] };
   const directives: Directive[] = [];
@@ -697,10 +631,7 @@ export function parseDocument(text: string): MarkdownDocument {
  * Region helper (not exported by the package): parse the inline comment of a
  * frontmatter key (the text after `#`). Every bracket is checked.
  */
-export function parseInlineComment(
-  text: string,
-  origin: Origin = DEFAULT_ORIGIN,
-): FrontmatterComment {
+export function parseInlineComment(text: string, origin: Origin = DEFAULT_ORIGIN): FrontmatterComment {
   const session = new ParseSession(normalizeLineEnds(text), MdTemplateLexer.TAG_TEXT, true, origin);
   const tree = session.parser.fmInlineCommentEntry();
   session.assertStageOne("fmInlineCommentEntry", "frontmatter");
@@ -726,16 +657,8 @@ export function parseHeadingSuffix(text: string, origin: Origin = DEFAULT_ORIGIN
  * filename comment" and gives `{ tag: null }` with no finding. A malformed
  * filename tag gives a `malformed` finding.
  */
-export function parseFilenameComment(
-  line: string,
-  origin: Origin = DEFAULT_ORIGIN,
-): FilenameComment {
-  const session = new ParseSession(
-    `${normalizeLineEnds(line)}\n`,
-    MdTemplateLexer.FM,
-    false,
-    origin,
-  );
+export function parseFilenameComment(line: string, origin: Origin = DEFAULT_ORIGIN): FilenameComment {
+  const session = new ParseSession(`${normalizeLineEnds(line)}\n`, MdTemplateLexer.FM, false, origin);
   const tree = session.parser.fmFilenameLineEntry();
   // Expected input here, not a grammar bug: the events stay in the session log.
   if (!session.log.isEmpty) return { tag: null, findings: [] };

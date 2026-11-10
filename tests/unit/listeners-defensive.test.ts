@@ -15,12 +15,7 @@ import { CharStream, CommonToken, TerminalNode } from "antlr4ng";
 import { describe, expect, it } from "vitest";
 import { MdTemplateLexer } from "../../src/generated/MdTemplateLexer.js";
 import { TagBareBracketContext, TagTypeEqContext } from "../../src/generated/MdTemplateParser.js";
-import {
-  LexerErrorListener,
-  ParserErrorListener,
-  SyntaxEventLog,
-  type PositionMap,
-} from "../../src/tags/listeners.js";
+import { LexerErrorListener, ParserErrorListener, SyntaxEventLog, type PositionMap } from "../../src/tags/listeners.js";
 import { InternalParseError } from "../../src/tags/parser.js";
 import { TypeHintListener } from "../../src/tags/visitors/hints.js";
 
@@ -78,9 +73,7 @@ describe("listeners: defensive branches", () => {
   });
 
   it("fails: InternalParseError.of refuses an empty error list", () => {
-    expect(() => InternalParseError.of([])).toThrow(
-      "internal: InternalParseError.of needs an error",
-    );
+    expect(() => InternalParseError.of([])).toThrow("internal: InternalParseError.of needs an error");
   });
 
   it("fails: TypeHintListener ignores type contexts that have no first token", () => {
@@ -99,8 +92,6 @@ describe("listeners: defensive branches", () => {
     const token = CommonToken.fromType(MdTemplateLexer.ISO);
     expect(token.text).toBeUndefined();
     listener.visitTerminal(new TerminalNode(token));
-    expect(listener.hints).toEqual([
-      { kind: "iso-word", position: { line: 1, column: 1 }, raw: "" },
-    ]);
+    expect(listener.hints).toEqual([{ kind: "iso-word", position: { line: 1, column: 1 }, raw: "" }]);
   });
 });

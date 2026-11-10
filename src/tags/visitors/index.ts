@@ -30,11 +30,4 @@ export const FRONTMATTER_TAG_VISITORS: readonly FamilyVisitor<FrontmatterTagData
   new FrontmatterUniqueNamesVisitor(),
 ];
 
-export const BODY_TAG_VISITORS: readonly FamilyVisitor<BodyTagData>[] = [
-  new BodyPresenceVisitor(),
-  new ContentVisitor(),
-  new PatternVisitor(),
-  new RepeatVisitor(),
-  new BodyOrderVisitor(),
-  new BodyUniqueNamesVisitor(),
-];
+export const BODY_TAG_VISITORS: readonly FamilyVisitor<BodyTagData>[] = [new BodyPresenceVisitor(), new ContentVisitor(), new PatternVisitor(), new RepeatVisitor(), new BodyOrderVisitor(), new BodyUniqueNamesVisitor()];

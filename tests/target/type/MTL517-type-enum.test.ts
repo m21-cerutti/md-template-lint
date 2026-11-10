@@ -20,12 +20,7 @@ interface Expected {
  * not one of the allowed options <pylist>`. Error for a required field,
  * warning for an optional or conditional one.
  */
-const outside = (
-  severity: Expected["severity"],
-  key: string,
-  value: string,
-  options: string,
-): Expected => ({
+const outside = (severity: Expected["severity"], key: string, value: string, options: string): Expected => ({
   severity,
   message: `Field '${key}' (type=enum): value '${value}' is not one of the allowed options ${options}`,
 });
@@ -71,11 +66,7 @@ const CASES: readonly TestCase[] = [
   // Conditional wins over optional and over required (spec 2.2 precedence).
   {
     name: "fail-conditional-field-gives-warning",
-    expected: [
-      outside("warning", "conditional_only", "published", DRAFT_ACCEPTED),
-      outside("warning", "conditional_and_optional", "published", DRAFT_ACCEPTED),
-      outside("warning", "conditional_and_required", "published", DRAFT_ACCEPTED),
-    ],
+    expected: [outside("warning", "conditional_only", "published", DRAFT_ACCEPTED), outside("warning", "conditional_and_optional", "published", DRAFT_ACCEPTED), outside("warning", "conditional_and_required", "published", DRAFT_ACCEPTED)],
   },
   // Precedence conditional > optional > required whatever the tag order
   // (legacy `parse_presence`): every combination is a warning.
@@ -117,11 +108,7 @@ const CASES: readonly TestCase[] = [
   // A list or mapping is never a member; it prints as its Python str.
   {
     name: "fail-list-and-mapping-values-are-never-members",
-    expected: [
-      outside("error", "list_value", "['draft', 'accepted']", DRAFT_ACCEPTED),
-      outside("error", "mapping_value", "{'state': 'draft'}", DRAFT_ACCEPTED),
-      outside("error", "single_item_list", "['draft']", DRAFT_ACCEPTED),
-    ],
+    expected: [outside("error", "list_value", "['draft', 'accepted']", DRAFT_ACCEPTED), outside("error", "mapping_value", "{'state': 'draft'}", DRAFT_ACCEPTED), outside("error", "single_item_list", "['draft']", DRAFT_ACCEPTED)],
   },
   // Options are split on the literal ` | `, trimmed, empty ones dropped; a
   // pipe without spaces stays inside an option.
@@ -138,10 +125,7 @@ const CASES: readonly TestCase[] = [
   // Options are listed as written: a duplicate is not removed.
   {
     name: "fail-duplicate-options-are-listed-as-written",
-    expected: [
-      outside("error", "duplicated", "b", "['a', 'a']"),
-      outside("error", "duplicated_with_padding", "c", "['a', 'a', 'b']"),
-    ],
+    expected: [outside("error", "duplicated", "b", "['a', 'a']"), outside("error", "duplicated_with_padding", "c", "['a', 'a', 'b']")],
   },
   // Values are compared as text, never as numbers: 1.0, 01, 1e0, +1 are not 1.
   {
@@ -155,10 +139,7 @@ const CASES: readonly TestCase[] = [
   },
   {
     name: "fail-numeric-and-unicode-options",
-    expected: [
-      outside("error", "numeric", "4", "['1', '2', '3']"),
-      outside("error", "unicode", "ete", "['été', 'hiver']"),
-    ],
+    expected: [outside("error", "numeric", "4", "['1', '2', '3']"), outside("error", "unicode", "ete", "['été', 'hiver']")],
   },
   // The options print with Python repr quoting; the value is printed as is.
   {
@@ -168,10 +149,7 @@ const CASES: readonly TestCase[] = [
   // Errors follow the template key order, not the target order.
   {
     name: "fail-two-fields-in-template-order",
-    expected: [
-      outside("error", "first", "published", DRAFT_ACCEPTED),
-      outside("error", "second", "w", "['x', 'y', 'z']"),
-    ],
+    expected: [outside("error", "first", "published", DRAFT_ACCEPTED), outside("error", "second", "w", "['x', 'y', 'z']")],
   },
   // Type from `type=enum` on a value that already holds the option list.
   {
@@ -180,21 +158,14 @@ const CASES: readonly TestCase[] = [
   },
 ];
 
-const read = (path: string): string =>
-  readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
+const read = (path: string): string => readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
 
 /** MTL517 diagnostics for the pair of a fixture folder. */
 async function lint(testCase: TestCase) {
   const fixture = `${DIR}/${testCase.name}`;
   const status = await checkTemplate(registry, read(`${fixture}/template.md`));
   if (status.status !== "ok") throw new Error(`${fixture}: template is broken`);
-  const found = await checkTarget(
-    registry,
-    status.model,
-    read(`${fixture}/target.md`),
-    `${fixture}/target.md`,
-    createEnv(),
-  );
+  const found = await checkTarget(registry, status.model, read(`${fixture}/target.md`), `${fixture}/target.md`, createEnv());
   return found.filter((diagnostic) => diagnostic.code === CODE);
 }
 

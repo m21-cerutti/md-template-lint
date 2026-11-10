@@ -33,8 +33,7 @@ export type ProbeFetch = (url: URL, init: ProbeInit) => Promise<ProbeResponse>;
 /** Resolve a host name to its addresses (injected in tests). */
 export type ResolveFn = (hostname: string) => Promise<readonly string[]>;
 
-export const defaultResolve: ResolveFn = async (hostname) =>
-  (await dnsLookup(hostname, { all: true, verbatim: true })).map((entry) => entry.address);
+export const defaultResolve: ResolveFn = async (hostname) => (await dnsLookup(hostname, { all: true, verbatim: true })).map((entry) => entry.address);
 
 /** Raised by the connect-time guard when the resolved address is not allowed. */
 export class BlockedAddressError extends Error {

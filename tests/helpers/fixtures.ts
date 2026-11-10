@@ -19,11 +19,9 @@ export const TSX_CLI = join(REPO_ROOT, "node_modules", "tsx", "dist", "cli.mjs")
 export type FixtureArea = "config" | "runner" | "cli" | "tags" | "directives" | "suppression";
 
 /** Absolute directory of fixture `name` under `tests/fixtures/<area>/`. */
-export const fixturePath = (area: FixtureArea, name: string): string =>
-  join(REPO_ROOT, "tests", "fixtures", area, name);
+export const fixturePath = (area: FixtureArea, name: string): string => join(REPO_ROOT, "tests", "fixtures", area, name);
 
-export const readFixture = (area: FixtureArea, name: string, file: string): string =>
-  readFileSync(join(fixturePath(area, name), file), "utf8");
+export const readFixture = (area: FixtureArea, name: string, file: string): string => readFileSync(join(fixturePath(area, name), file), "utf8");
 
 /**
  * Group prefixes of the areas that declare them. A directory of such an area that starts
@@ -31,18 +29,7 @@ export const readFixture = (area: FixtureArea, name: string, file: string): stri
  * and never noticed). `config` and `runner` keep their open list.
  */
 export const KNOWN_PREFIXES: Partial<Record<FixtureArea, readonly string[]>> = {
-  cli: [
-    "exit-",
-    "list-",
-    "large-",
-    "verify-",
-    "schema-",
-    "format-",
-    "wiring-",
-    "usage-",
-    "suppress-",
-    "template-",
-  ],
+  cli: ["exit-", "list-", "large-", "verify-", "schema-", "format-", "wiring-", "usage-", "suppress-", "template-"],
 };
 
 /** The names that start with none of `prefixes`, sorted. */
@@ -61,9 +48,7 @@ export function fixtureDirs(area: FixtureArea, prefix: string): string[] {
   const known = KNOWN_PREFIXES[area];
   const stray = known === undefined ? [] : strayNames(names, known);
   if (stray.length > 0) {
-    throw new Error(
-      `fixtures/${area}: directory with an unknown group prefix: ${stray.join(", ")}`,
-    );
+    throw new Error(`fixtures/${area}: directory with an unknown group prefix: ${stray.join(", ")}`);
   }
   return names.filter((name) => name.startsWith(prefix)).sort();
 }
@@ -72,15 +57,9 @@ export function fixtureDirs(area: FixtureArea, prefix: string): string[] {
  * The split rule of the project tests, for a group of fixtures named
  * `<prefix><case name>` where each case name starts with `pass-` or `fail-`.
  */
-export function expectSplit(
-  area: FixtureArea,
-  prefix: string,
-  cases: readonly { readonly name: string }[],
-): void {
+export function expectSplit(area: FixtureArea, prefix: string, cases: readonly { readonly name: string }[]): void {
   expectNameSplit(cases);
-  expect(fixtureDirs(area, prefix)).toEqual(
-    cases.map((testCase) => `${prefix}${testCase.name}`).sort(),
-  );
+  expect(fixtureDirs(area, prefix)).toEqual(cases.map((testCase) => `${prefix}${testCase.name}`).sort());
 }
 
 /** The split rule on the case names alone, for a group whose cases need no fixture directory each. */

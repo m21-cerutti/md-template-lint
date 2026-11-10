@@ -8,10 +8,7 @@ import { fixturePath } from "./fixtures.js";
 
 export const HOME = "/home/test";
 
-export async function runFixture(
-  name: string,
-  options: { readonly registry?: RuleRegistry; readonly io?: RuleIo } = {},
-): Promise<RunResult> {
+export async function runFixture(name: string, options: { readonly registry?: RuleRegistry; readonly io?: RuleIo } = {}): Promise<RunResult> {
   const cwd = fixturePath("runner", name);
   const loaded = await loadConfig({ cwd, home: HOME, boundary: cwd });
   return runLint(loaded, { io: options.io ?? createMemoryIo(), registry: options.registry });
@@ -19,9 +16,5 @@ export async function runFixture(
 
 /** `root:pair:path` of every linted file, in output order. */
 export function lintedFiles(result: RunResult): string[] {
-  return result.blocks.flatMap((block) =>
-    block.kind === "pair"
-      ? block.files.map((file) => `${block.root}:${block.pair}:${file.path}`)
-      : [],
-  );
+  return result.blocks.flatMap((block) => (block.kind === "pair" ? block.files.map((file) => `${block.root}:${block.pair}:${file.path}`) : []));
 }

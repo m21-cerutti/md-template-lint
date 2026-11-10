@@ -412,56 +412,16 @@ describe("matchesCaseStyle: legacy `re.match(...$)` parity", () => {
 describe("heading pattern format predicates (spec 2.10 'Each format', phase Pf)", () => {
   /** Predicate, accepted values, rejected values: from the 2.10 lists, exact text. */
   const cases: readonly (readonly [string, (value: string) => boolean, string[], string[]])[] = [
-    [
-      "isSnakecaseText",
-      isSnakecaseText,
-      ["my_heading", "step_2", "2_step", "épique_été", "данные_2"],
-      ["2026", "2026_10", "My_heading", "my-heading", "my__heading", "_x", "my heading", ""],
-    ],
-    [
-      "isCamelcaseText",
-      isCamelcaseText,
-      ["myHeading", "heading", "step2", "étéChaud"],
-      ["MyHeading", "my_heading", "2step", "2026", "my heading"],
-    ],
-    [
-      "isScreamcaseText",
-      isScreamcaseText,
-      ["MY_HEADING", "STEP_2", "ÉTÉ_2"],
-      ["2026", "My_Heading", "MY-HEADING", "MY__HEADING", "my_heading"],
-    ],
-    [
-      "isKebabcaseText",
-      isKebabcaseText,
-      ["my-heading", "step-2", "été-chaud"],
-      ["2026", "my_heading", "My-heading", "my--heading", "-x"],
-    ],
-    [
-      "isLowercaseText",
-      isLowercaseText,
-      ["release notes", "étape 2", "v1.2 notes"],
-      ["Release notes", "2026", "-", ""],
-    ],
-    [
-      "isUppercaseText",
-      isUppercaseText,
-      ["RELEASE NOTES", "ÉTAPE 2", "V1.2 NOTES"],
-      ["Release", "2026", ""],
-    ],
-    [
-      "isScientificNumber",
-      isScientificNumber,
-      ["1e5", "01e5", "1.5E-3", "-2e+10", "1.5", "7"],
-      ["1e", "e5", "1.5e-", "1e5.0", "+1e5"],
-    ],
+    ["isSnakecaseText", isSnakecaseText, ["my_heading", "step_2", "2_step", "épique_été", "данные_2"], ["2026", "2026_10", "My_heading", "my-heading", "my__heading", "_x", "my heading", ""]],
+    ["isCamelcaseText", isCamelcaseText, ["myHeading", "heading", "step2", "étéChaud"], ["MyHeading", "my_heading", "2step", "2026", "my heading"]],
+    ["isScreamcaseText", isScreamcaseText, ["MY_HEADING", "STEP_2", "ÉTÉ_2"], ["2026", "My_Heading", "MY-HEADING", "MY__HEADING", "my_heading"]],
+    ["isKebabcaseText", isKebabcaseText, ["my-heading", "step-2", "été-chaud"], ["2026", "my_heading", "My-heading", "my--heading", "-x"]],
+    ["isLowercaseText", isLowercaseText, ["release notes", "étape 2", "v1.2 notes"], ["Release notes", "2026", "-", ""]],
+    ["isUppercaseText", isUppercaseText, ["RELEASE NOTES", "ÉTAPE 2", "V1.2 NOTES"], ["Release", "2026", ""]],
+    ["isScientificNumber", isScientificNumber, ["1e5", "01e5", "1.5E-3", "-2e+10", "1.5", "7"], ["1e", "e5", "1.5e-", "1e5.0", "+1e5"]],
     ["isSignedDigits", isSignedDigits, ["42", "+42", "-7", "0"], ["+07", "--1", "+", "1.0"]],
     ["isHexDigits", isHexDigits, ["ff", "0A3F", "007", "7"], ["0x1f", "g1", "-1", ""]],
-    [
-      "isUidDigits",
-      isUidDigits,
-      ["U42", "a1b2", "42U", "user7"],
-      ["42", "abc", "U-42", "U 42", "É1"],
-    ],
+    ["isUidDigits", isUidDigits, ["U42", "a1b2", "42U", "user7"], ["42", "abc", "U-42", "U 42", "É1"]],
     ["isSemverCore", isSemverCore, ["1.2.0"], ["1.2.0-rc.1", "1.2.0+build", "1.2", "1.02.0"]],
     ["isSemverMajorMinor", isSemverMajorMinor, ["1.2", "0.10"], ["1.2.0", "01.2", "1"]],
     ["isYearMonth", isYearMonth, ["2026-10", "0001-12"], ["2026-13", "2026-00", "0000-10", "2026"]],
@@ -478,15 +438,13 @@ describe("heading pattern format predicates (spec 2.10 'Each format', phase Pf)"
 
   it("isPrecisionNumber: exactly N decimals, no exponent", () => {
     for (const value of ["1.50", "01.00", "-0.25"]) expect(isPrecisionNumber(value, 2)).toBe(true);
-    for (const value of ["1.5", "1.500", "1", "1.50e0"])
-      expect(isPrecisionNumber(value, 2), value).toBe(false);
+    for (const value of ["1.5", "1.500", "1", "1.50e0"]) expect(isPrecisionNumber(value, 2), value).toBe(false);
     expect(isPrecisionNumber("1.5", 1)).toBe(true);
   });
 
   it("isPaddedDigits: exactly N ASCII digits, leading zeros allowed, no sign", () => {
     for (const value of ["007", "042", "123"]) expect(isPaddedDigits(value, 3)).toBe(true);
-    for (const value of ["7", "0007", "-07", "1234"])
-      expect(isPaddedDigits(value, 3), value).toBe(false);
+    for (const value of ["7", "0007", "-07", "1234"]) expect(isPaddedDigits(value, 3), value).toBe(false);
     expect(isPaddedDigits("0007", 4)).toBe(true);
   });
 

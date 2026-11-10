@@ -8,13 +8,7 @@
  * the five codes. Each rule tags its findings with the item index (`reportItem`)
  * and the pipeline stable-sorts the `io` step of a field by it.
  */
-import {
-  defineRule,
-  reportItem,
-  URL_PROBE_TIMEOUT_MS,
-  type AnyRule,
-  type FieldContext,
-} from "../engine/rule.js";
+import { defineRule, reportItem, URL_PROBE_TIMEOUT_MS, type AnyRule, type FieldContext } from "../engine/rule.js";
 import type { Diagnostic } from "../engine/model.js";
 import { ALIAS_LIKE } from "../engine/values.js";
 
@@ -128,9 +122,7 @@ function planPath(context: FieldContext, value: string): Action {
   }
   if (ABSOLUTE.test(value)) {
     const approved = env.approvedPaths.some((directory) => isInside(value, directory));
-    return approved
-      ? { kind: "path", value, where: located(split(value)) }
-      : { kind: "absolute-skipped", value };
+    return approved ? { kind: "path", value, where: located(split(value)) } : { kind: "absolute-skipped", value };
   }
   return { kind: "path", value, where: located(joined(env.pairRoot, value)) };
 }
@@ -144,9 +136,7 @@ function planPath(context: FieldContext, value: string): Action {
  * position in the list (0 for a scalar).
  */
 function plans(context: FieldContext): Plan[] {
-  const tagged = (context.templateField.comment?.tags ?? []).some(
-    (tag) => tag.kind === "io-exists",
-  );
+  const tagged = (context.templateField.comment?.tags ?? []).some((tag) => tag.kind === "io-exists");
   const { value } = context;
   if (!tagged || value === null) return [];
   const type = context.templateField.type;
@@ -159,9 +149,7 @@ function plans(context: FieldContext): Plan[] {
   items.forEach((item, index) => {
     if (typeof item !== "string" || item.trim() === "") return;
     const trimmed = item.trim();
-    const action: Action = type.endsWith("path")
-      ? planPath(context, trimmed)
-      : { kind: "url", value: trimmed };
+    const action: Action = type.endsWith("path") ? planPath(context, trimmed) : { kind: "url", value: trimmed };
     out.push({ ...action, index });
   });
   return out;
@@ -179,17 +167,7 @@ const aliasUnapproved = defineRule({
   phase: "field",
   step: "io",
   check: (context: FieldContext): Diagnostic[] =>
-    plans(context).flatMap((plan) =>
-      plan.kind === "alias-unapproved"
-        ? [
-            reportItem(
-              aliasUnapproved,
-              `Field '${context.key}': alias '@${plan.name}/...' has no entry in config aliases, not checked`,
-              plan.index,
-            ),
-          ]
-        : [],
-    ),
+    plans(context).flatMap((plan) => (plan.kind === "alias-unapproved" ? [reportItem(aliasUnapproved, `Field '${context.key}': alias '@${plan.name}/...' has no entry in config aliases, not checked`, plan.index)] : [])),
 });
 
 /**
@@ -207,13 +185,7 @@ const aliasPathMissing = defineRule({
     const out: Diagnostic[] = [];
     for (const plan of plans(context)) {
       if (plan.kind !== "alias-path" || (await context.env.io.exists(plan.where.probe))) continue;
-      out.push(
-        reportItem(
-          aliasPathMissing,
-          `Field '${context.key}': aliased path '@${plan.name}/${plan.rest}' resolved to ${plan.where.resolved} — does not exist`,
-          plan.index,
-        ),
-      );
+      out.push(reportItem(aliasPathMissing, `Field '${context.key}': aliased path '@${plan.name}/${plan.rest}' resolved to ${plan.where.resolved} — does not exist`, plan.index));
     }
     return out;
   },
@@ -232,15 +204,7 @@ const absoluteSkipped = defineRule({
   step: "io",
   check: (context: FieldContext): Diagnostic[] =>
     plans(context).flatMap((plan) =>
-      plan.kind === "absolute-skipped"
-        ? [
-            reportItem(
-              absoluteSkipped,
-              `Field '${context.key}': absolute path '${plan.value}' skipped by [io:exists] (not checked); add it under approvedPaths in the config`,
-              plan.index,
-            ),
-          ]
-        : [],
+      plan.kind === "absolute-skipped" ? [reportItem(absoluteSkipped, `Field '${context.key}': absolute path '${plan.value}' skipped by [io:exists] (not checked); add it under approvedPaths in the config`, plan.index)] : [],
     ),
 });
 
@@ -259,21 +223,14 @@ const pathMissing = defineRule({
     const out: Diagnostic[] = [];
     for (const plan of plans(context)) {
       if (plan.kind !== "path" || (await context.env.io.exists(plan.where.probe))) continue;
-      out.push(
-        reportItem(
-          pathMissing,
-          `Field '${context.key}': path '${plan.value}' does not exist (resolved: ${plan.where.resolved})`,
-          plan.index,
-        ),
-      );
+      out.push(reportItem(pathMissing, `Field '${context.key}': path '${plan.value}' does not exist (resolved: ${plan.where.resolved})`, plan.index));
     }
     return out;
   },
 });
 
 /** At most `REASON_MAX_LENGTH` characters, cut with `...` (legacy `probe_url_reachable`). */
-const shortReason = (reason: string): string =>
-  reason.length > REASON_MAX_LENGTH ? `${reason.slice(0, REASON_MAX_LENGTH - 3)}...` : reason;
+const shortReason = (reason: string): string => (reason.length > REASON_MAX_LENGTH ? `${reason.slice(0, REASON_MAX_LENGTH - 3)}...` : reason);
 
 /**
  * `[io:exists]` on a URL value: the probe (HEAD, then GET, 5 second timeout,
@@ -292,13 +249,7 @@ const urlUnreachable = defineRule({
       if (plan.kind !== "url") continue;
       const probe = await context.env.io.probeUrl(plan.value, URL_PROBE_TIMEOUT_MS);
       if (probe.reachable) continue;
-      out.push(
-        reportItem(
-          urlUnreachable,
-          `Field '${context.key}': URL '${plan.value}' not reachable (${shortReason(probe.reason)})`,
-          plan.index,
-        ),
-      );
+      out.push(reportItem(urlUnreachable, `Field '${context.key}': URL '${plan.value}' not reachable (${shortReason(probe.reason)})`, plan.index));
     }
     return out;
   },

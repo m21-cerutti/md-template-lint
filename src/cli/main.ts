@@ -20,11 +20,7 @@ export function failureReason(error: unknown): string {
 }
 
 /** `runCli`, never throwing: an unexpected failure is exit 2 with a fixed-shape message. */
-export async function execute(
-  argv: readonly string[],
-  env: CliEnv | (() => CliEnv),
-  run: CliRunner = runCli,
-): Promise<CliResult> {
+export async function execute(argv: readonly string[], env: CliEnv | (() => CliEnv), run: CliRunner = runCli): Promise<CliResult> {
   try {
     // A thunk, so that reading the process (`process.cwd()` throws when the directory
     // was deleted) is covered by the same guard.

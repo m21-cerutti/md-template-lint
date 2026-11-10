@@ -5,8 +5,7 @@
 import { describe, expect, it } from "vitest";
 import { parseDocument } from "yaml";
 
-const load = (src: string): unknown =>
-  parseDocument(src, { schema: "failsafe", uniqueKeys: false }).toJS();
+const load = (src: string): unknown => parseDocument(src, { schema: "failsafe", uniqueKeys: false }).toJS();
 
 describe("yaml loading spike (spec 1.2)", () => {
   it("keeps every scalar as a string (no coercion)", () => {

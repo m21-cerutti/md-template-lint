@@ -20,26 +20,14 @@ import { foldPath } from "../../../src/config/paths.js";
 import { verifyPaths } from "../../../src/runner/verify.js";
 import { HOME } from "../../helpers/run.js";
 import { expectNameSplit } from "../../helpers/fixtures.js";
-import {
-  templatesDir,
-  verifyFixture,
-  type VerifyCase,
-  type VerifyDiagnostic,
-} from "../../helpers/verify.js";
+import { templatesDir, verifyFixture, type VerifyCase, type VerifyDiagnostic } from "../../helpers/verify.js";
 
 const CODE = "MTL018";
 const DIR = "tests/fixtures/templates/MTL018";
 const SECTION = "Optional headings with a minimum:";
 
 /** The MTL018 finding of spec 4.3 on heading `heading`, its `min` tag `tag` with `N` `min`. */
-const conflict = (
-  heading: string,
-  tag: string,
-  min: number,
-  line: number,
-  column: number,
-  sourceLine: string,
-): VerifyDiagnostic => ({
+const conflict = (heading: string, tag: string, min: number, line: number, column: number, sourceLine: string): VerifyDiagnostic => ({
   code: CODE,
   severity: "error",
   message: `Heading '${heading}': tag ${tag} contradicts [presence:optional] (a minimum of ${min} requires the heading)`,
@@ -49,106 +37,32 @@ const conflict = (
 });
 
 /** A failing case: template FAIL, exit 1, its errors (then warnings) in source order. */
-const fail = (
-  { name }: { readonly name: string },
-  ...diagnostics: VerifyDiagnostic[]
-): VerifyCase => ({ name, exitCode: 1, status: "fail", diagnostics });
+const fail = ({ name }: { readonly name: string }, ...diagnostics: VerifyDiagnostic[]): VerifyCase => ({ name, exitCode: 1, status: "fail", diagnostics });
 /** A passing case: no MTL018, so ok and exit 0; tag warnings may remain (MTL014, MTL015). */
-const pass = (
-  { name }: { readonly name: string },
-  ...diagnostics: VerifyDiagnostic[]
-): VerifyCase => ({ name, exitCode: 0, status: "ok", diagnostics });
+const pass = ({ name }: { readonly name: string }, ...diagnostics: VerifyDiagnostic[]): VerifyCase => ({ name, exitCode: 0, status: "ok", diagnostics });
 
 /** Case -> fixture `<name>.md` -> expected `--verify` result. */
 const CASES: readonly VerifyCase[] = [
   // `min:1`: the presence tag after the `min` tag.
-  fail(
-    { name: "fail-optional-min-one" },
-    conflict(
-      "Release",
-      "[repeat-rules:same-level:min:1]",
-      1,
-      5,
-      33,
-      '## Release [pattern:"{semver}"] [repeat-rules:same-level:min:1] [presence:optional]',
-    ),
-  ),
+  fail({ name: "fail-optional-min-one" }, conflict("Release", "[repeat-rules:same-level:min:1]", 1, 5, 33, '## Release [pattern:"{semver}"] [repeat-rules:same-level:min:1] [presence:optional]')),
   // `min:3` on a section-scope heading (H3 under `## Steps`).
-  fail(
-    { name: "fail-optional-min-three" },
-    conflict(
-      "Step",
-      "[repeat-rules:same-level:min:3]",
-      3,
-      7,
-      36,
-      '### Step [pattern:"Step {digits}"] [repeat-rules:same-level:min:3] [presence:optional]',
-    ),
-  ),
+  fail({ name: "fail-optional-min-three" }, conflict("Step", "[repeat-rules:same-level:min:3]", 3, 7, 36, '### Step [pattern:"Step {digits}"] [repeat-rules:same-level:min:3] [presence:optional]')),
   // The presence tag before the `min` tag: the position is still the `[` of the `min` tag.
-  fail(
-    { name: "fail-presence-tag-before-min-tag" },
-    conflict(
-      "Release",
-      "[repeat-rules:same-level:min:2]",
-      2,
-      5,
-      53,
-      '## Release [pattern:"{semver}"] [presence:optional] [repeat-rules:same-level:min:2]',
-    ),
-  ),
+  fail({ name: "fail-presence-tag-before-min-tag" }, conflict("Release", "[repeat-rules:same-level:min:2]", 2, 5, 53, '## Release [pattern:"{semver}"] [presence:optional] [repeat-rules:same-level:min:2]')),
   // The presence tag after the `min` tag (another heading and pattern than min-one).
-  fail(
-    { name: "fail-presence-tag-after-min-tag" },
-    conflict(
-      "Version",
-      "[repeat-rules:same-level:min:2]",
-      2,
-      5,
-      34,
-      '## Version [pattern:"v{digits}"] [repeat-rules:same-level:min:2] [presence:optional]',
-    ),
-  ),
+  fail({ name: "fail-presence-tag-after-min-tag" }, conflict("Version", "[repeat-rules:same-level:min:2]", 2, 5, 34, '## Version [pattern:"v{digits}"] [repeat-rules:same-level:min:2] [presence:optional]')),
   // Two headings, two findings (one per heading, each at its own `min` tag): `Errors: 2`.
   fail(
     { name: "fail-two-headings-two-findings" },
-    conflict(
-      "Release",
-      "[repeat-rules:same-level:min:2]",
-      2,
-      5,
-      33,
-      '## Release [pattern:"{semver}"] [repeat-rules:same-level:min:2] [presence:optional]',
-    ),
-    conflict(
-      "Hotfix",
-      "[repeat-rules:same-level:min:3]",
-      3,
-      7,
-      39,
-      '## Hotfix [pattern:"hotfix {digits}"] [repeat-rules:same-level:min:3] [presence:optional]',
-    ),
+    conflict("Release", "[repeat-rules:same-level:min:2]", 2, 5, 33, '## Release [pattern:"{semver}"] [repeat-rules:same-level:min:2] [presence:optional]'),
+    conflict("Hotfix", "[repeat-rules:same-level:min:3]", 3, 7, 39, '## Hotfix [pattern:"hotfix {digits}"] [repeat-rules:same-level:min:3] [presence:optional]'),
   ),
   // Spec 2.6 precedence is conditional, template-only, OPTIONAL, then required: optional wins
   // over required whichever tag comes first in the line.
   fail(
     { name: "fail-required-and-optional-tags-optional-wins-in-both-orders" },
-    conflict(
-      "A",
-      "[repeat-rules:same-level:min:2]",
-      2,
-      5,
-      28,
-      '## A [pattern:"a{digits}"] [repeat-rules:same-level:min:2] [presence:required] [presence:optional]',
-    ),
-    conflict(
-      "B",
-      "[repeat-rules:same-level:min:3]",
-      3,
-      7,
-      28,
-      '## B [pattern:"b{digits}"] [repeat-rules:same-level:min:3] [presence:optional] [presence:required]',
-    ),
+    conflict("A", "[repeat-rules:same-level:min:2]", 2, 5, 28, '## A [pattern:"a{digits}"] [repeat-rules:same-level:min:2] [presence:required] [presence:optional]'),
+    conflict("B", "[repeat-rules:same-level:min:3]", 3, 7, 28, '## B [pattern:"b{digits}"] [repeat-rules:same-level:min:3] [presence:optional] [presence:required]'),
   ),
   // `min:0` and `min:02` are malformed (spec 2.10: N is 1 or more, no leading zero): MTL012,
   // the bracket stays in the heading text, there is no `min` tag and so no MTL018.
@@ -157,24 +71,18 @@ const CASES: readonly VerifyCase[] = [
     {
       code: "MTL012",
       severity: "warning",
-      message:
-        "Heading 'Release [pattern:\"{semver}\"] [repeat-rules:same-level:min:0]': " +
-        "malformed tag [repeat-rules:same-level:min:0]",
+      message: "Heading 'Release [pattern:\"{semver}\"] [repeat-rules:same-level:min:0]': " + "malformed tag [repeat-rules:same-level:min:0]",
       line: 5,
       column: 62,
-      sourceLine:
-        '## Release [pattern:"{semver}"] [repeat-rules:same-level:min:0] [presence:optional]',
+      sourceLine: '## Release [pattern:"{semver}"] [repeat-rules:same-level:min:0] [presence:optional]',
     },
     {
       code: "MTL012",
       severity: "warning",
-      message:
-        "Heading 'Hotfix [pattern:\"{digits}\"] [repeat-rules:same-level:min:02]': " +
-        "malformed tag [repeat-rules:same-level:min:02]",
+      message: "Heading 'Hotfix [pattern:\"{digits}\"] [repeat-rules:same-level:min:02]': " + "malformed tag [repeat-rules:same-level:min:02]",
       line: 7,
       column: 61,
-      sourceLine:
-        '## Hotfix [pattern:"{digits}"] [repeat-rules:same-level:min:02] [presence:optional]',
+      sourceLine: '## Hotfix [pattern:"{digits}"] [repeat-rules:same-level:min:02] [presence:optional]',
     },
   ),
   // Required by default and by tag: the `min` is the only minimum.
@@ -191,8 +99,7 @@ const CASES: readonly VerifyCase[] = [
     {
       code: "MTL015",
       severity: "warning",
-      message:
-        "Heading 'Release': tag [repeat-rules:same-level:min:2] has no effect (the heading has no [pattern:...])",
+      message: "Heading 'Release': tag [repeat-rules:same-level:min:2] has no effect (the heading has no [pattern:...])",
       line: 5,
       column: 12,
       sourceLine: "## Release [repeat-rules:same-level:min:2] [presence:optional]",
@@ -207,8 +114,7 @@ const CASES: readonly VerifyCase[] = [
       message: "Heading 'Release': invalid pattern [pattern:\"{semver\"] (unmatched '{')",
       line: 5,
       column: 22,
-      sourceLine:
-        '## Release [pattern:"{semver"] [repeat-rules:same-level:min:2] [presence:optional]',
+      sourceLine: '## Release [pattern:"{semver"] [repeat-rules:same-level:min:2] [presence:optional]',
     },
   ),
 ];
@@ -218,20 +124,17 @@ const registry = createRegistry();
 /** Stdout and exit code of `--verify --format <format> [--quiet] <name>.md` on a fixture. */
 async function verifyRun(format: string, name: string, quiet = false) {
   const cwd = foldPath(templatesDir(CODE));
-  const run = await runCli(
-    ["--verify", "--format", format, ...(quiet ? ["--quiet"] : []), `${name}.md`],
-    {
-      cwd,
-      home: HOME,
-      boundary: cwd,
-      isTty: false,
-      noColor: false,
-      version: "9.9.9",
-      createIo: () => {
-        throw new Error("--verify must not build the io");
-      },
+  const run = await runCli(["--verify", "--format", format, ...(quiet ? ["--quiet"] : []), `${name}.md`], {
+    cwd,
+    home: HOME,
+    boundary: cwd,
+    isTty: false,
+    noColor: false,
+    version: "9.9.9",
+    createIo: () => {
+      throw new Error("--verify must not build the io");
     },
-  );
+  });
   expect(run.stderr).toBe("");
   return run;
 }
@@ -240,11 +143,7 @@ async function verifyRun(format: string, name: string, quiet = false) {
 const item = (diagnostic: VerifyDiagnostic): string[] => {
   const line = diagnostic.line ?? 0;
   const column = diagnostic.column ?? 0;
-  return [
-    `  - ${diagnostic.message} (line ${line}, column ${column})`,
-    `      ${line} | ${diagnostic.sourceLine ?? ""}`,
-    `      ${" ".repeat(String(line).length)} | ${" ".repeat(column - 1)}^`,
-  ];
+  return [`  - ${diagnostic.message} (line ${line}, column ${column})`, `      ${line} | ${diagnostic.sourceLine ?? ""}`, `      ${" ".repeat(String(line).length)} | ${" ".repeat(column - 1)}^`];
 };
 
 describe("MTL018 heading-optional-min-conflict (--verify)", () => {
@@ -265,9 +164,7 @@ describe("MTL018 heading-optional-min-conflict (--verify)", () => {
       const has = testCase.diagnostics.some((diagnostic) => diagnostic.code === CODE);
       expect(has, testCase.name).toBe(testCase.name.startsWith("fail-"));
     }
-    expect(readdirSync(templatesDir(CODE)).sort()).toEqual(
-      CASES.map((testCase) => `${testCase.name}.md`).sort(),
-    );
+    expect(readdirSync(templatesDir(CODE)).sort()).toEqual(CASES.map((testCase) => `${testCase.name}.md`).sort());
   });
 
   for (const { name, ...expected } of CASES) {
@@ -277,9 +174,7 @@ describe("MTL018 heading-optional-min-conflict (--verify)", () => {
   }
 
   it("is counted apart from the warnings (checkTemplate errors, summary.errors)", async () => {
-    const text =
-      "---\ntitle: x\n---\n\n## A [repeat-rules:same-level:min:1]\n\n" +
-      '## B [pattern:"{semver}"] [repeat-rules:same-level:min:1] [presence:optional]\n';
+    const text = "---\ntitle: x\n---\n\n## A [repeat-rules:same-level:min:1]\n\n" + '## B [pattern:"{semver}"] [repeat-rules:same-level:min:1] [presence:optional]\n';
     const status = await checkTemplate(registry, text);
     if (status.status !== "ok") throw new Error("template is broken");
     expect(status.errors.map(({ code }) => code)).toEqual([CODE]);
@@ -300,26 +195,20 @@ describe("MTL018 heading-optional-min-conflict (--verify)", () => {
   });
 
   it("only the first min tag is effective: one finding, its tag and N", async () => {
-    const text =
-      '---\ntitle: x\n---\n\n## V [pattern:"{digits}"] [repeat-rules:same-level] ' +
-      "[repeat-rules:same-level:min:2] [repeat-rules:same-level:min:5] [presence:optional]\n";
+    const text = '---\ntitle: x\n---\n\n## V [pattern:"{digits}"] [repeat-rules:same-level] ' + "[repeat-rules:same-level:min:2] [repeat-rules:same-level:min:5] [presence:optional]\n";
     const status = await checkTemplate(registry, text);
     if (status.status !== "ok") throw new Error("template is broken");
     expect(status.warnings).toEqual([]);
     expect(status.errors.map(({ message, position }) => ({ message, position }))).toEqual([
       {
-        message:
-          "Heading 'V': tag [repeat-rules:same-level:min:2] contradicts [presence:optional] " +
-          "(a minimum of 2 requires the heading)",
+        message: "Heading 'V': tag [repeat-rules:same-level:min:2] contradicts [presence:optional] " + "(a minimum of 2 requires the heading)",
         position: { line: 5, column: 53 },
       },
     ]);
   });
 
   it("a template-only heading with a min is no repeat heading: MTL015, no MTL018", async () => {
-    const text =
-      '---\ntitle: x\n---\n\n## Draft [pattern:"{semver}"] [repeat-rules:same-level:min:1] ' +
-      "[presence:optional] [presence:template-only]\n";
+    const text = '---\ntitle: x\n---\n\n## Draft [pattern:"{semver}"] [repeat-rules:same-level:min:1] ' + "[presence:optional] [presence:template-only]\n";
     const status = await checkTemplate(registry, text);
     if (status.status !== "ok") throw new Error("template is broken");
     expect(status.errors).toEqual([]);
@@ -331,9 +220,7 @@ describe("MTL018 heading-optional-min-conflict (--verify)", () => {
     if (status.status !== "ok") throw new Error("template is broken");
     const target = "---\ntitle: x\n---\n\n## Notes\n\n<!-- md-template-lint disable MTL018 -->\n";
     const result = await lintTarget(registry, status.model, target, "target.md", createEnv());
-    expect(result.diagnostics.map(({ code, message }) => ({ code, message }))).toEqual([
-      { code: "MTL022", message: "Directive on line 7: rule code MTL018 cannot be disabled" },
-    ]);
+    expect(result.diagnostics.map(({ code, message }) => ({ code, message }))).toEqual([{ code: "MTL022", message: "Directive on line 7: rule code MTL018 cannot be disabled" }]);
   });
 });
 

@@ -5,15 +5,7 @@
  */
 import { defineRule, report, type AnyRule, type FieldContext } from "../engine/rule.js";
 import { isList, type Diagnostic } from "../engine/model.js";
-import {
-  isIsoDate,
-  isSemver,
-  isValidDateValue,
-  isValidUrlValue,
-  matchesCaseStyle,
-  pyRepr,
-  valueText,
-} from "../engine/values.js";
+import { isIsoDate, isSemver, isValidDateValue, isValidUrlValue, matchesCaseStyle, pyRepr, valueText } from "../engine/values.js";
 import type { ValueShape } from "../tags/ast.js";
 
 /**
@@ -30,18 +22,11 @@ const constantMismatch = defineRule({
   phase: "field",
   step: "constant",
   check: (context: FieldContext): Diagnostic[] => {
-    const tag = (context.templateField.comment?.tags ?? []).find(
-      (candidate) => candidate.kind === "format-constant",
-    );
+    const tag = (context.templateField.comment?.tags ?? []).find((candidate) => candidate.kind === "format-constant");
     if (tag === undefined || context.value === null) return [];
     const { value } = context;
     if (value === tag.value) return [];
-    return [
-      report(
-        constantMismatch,
-        `Field '${context.key}': expected constant value '${tag.value}', got '${valueText(value)}'`,
-      ),
-    ];
+    return [report(constantMismatch, `Field '${context.key}': expected constant value '${tag.value}', got '${valueText(value)}'`)];
   },
 });
 
@@ -60,18 +45,11 @@ const caseMismatch = defineRule({
   phase: "field",
   step: "case",
   check: (context: FieldContext): Diagnostic[] => {
-    const tag = (context.templateField.comment?.tags ?? []).find(
-      (candidate) => candidate.kind === "format-case",
-    );
+    const tag = (context.templateField.comment?.tags ?? []).find((candidate) => candidate.kind === "format-case");
     const { value } = context;
     if (tag === undefined || typeof value !== "string") return [];
     if (matchesCaseStyle(tag.style, value)) return [];
-    return [
-      report(
-        caseMismatch,
-        `Field '${context.key}': value '${value}' does not match required format [${tag.style}]`,
-      ),
-    ];
+    return [report(caseMismatch, `Field '${context.key}': value '${value}' does not match required format [${tag.style}]`)];
   },
 });
 
@@ -91,19 +69,12 @@ const elementsCaseMismatch = defineRule({
   phase: "field",
   step: "elements",
   check: (context: FieldContext): Diagnostic[] => {
-    const tag = (context.templateField.comment?.tags ?? []).find(
-      (candidate) => candidate.kind === "format-elements",
-    );
+    const tag = (context.templateField.comment?.tags ?? []).find((candidate) => candidate.kind === "format-elements");
     const { value } = context;
     if (tag === undefined || value === null || !isList(value)) return [];
     const bad = value.map(valueText).filter((item) => !matchesCaseStyle(tag.style, item));
     if (bad.length === 0) return [];
-    return [
-      report(
-        elementsCaseMismatch,
-        `Field '${context.key}': list contains entries not matching [format:elements:${tag.style}]: ${pyRepr(bad)}`,
-      ),
-    ];
+    return [report(elementsCaseMismatch, `Field '${context.key}': list contains entries not matching [format:elements:${tag.style}]: ${pyRepr(bad)}`)];
   },
 });
 
@@ -114,14 +85,9 @@ const elementsCaseMismatch = defineRule({
  * `re.search`); an empty list after trimming means no restriction. Schemes
  * come lowercased from the tag; a set drops duplicates.
  */
-function schemeAllowList(
-  context: FieldContext,
-  type: "url" | "list-of-url",
-): { readonly allowed: ReadonlySet<string>; readonly text: string } | null {
+function schemeAllowList(context: FieldContext, type: "url" | "list-of-url"): { readonly allowed: ReadonlySet<string>; readonly text: string } | null {
   if (context.templateField.type !== type) return null;
-  const tag = (context.templateField.comment?.tags ?? []).find(
-    (candidate) => candidate.kind === "format-scheme",
-  );
+  const tag = (context.templateField.comment?.tags ?? []).find((candidate) => candidate.kind === "format-scheme");
   if (tag === undefined || tag.schemes.length === 0) return null;
   const sorted = [...new Set(tag.schemes)].sort();
   return { allowed: new Set(sorted), text: sorted.join(",") };
@@ -144,12 +110,7 @@ const schemeDisallowed = defineRule({
     const { value } = context;
     if (list === null || typeof value !== "string") return [];
     if (!isValidUrlValue(value) || isValidUrlValue(value, list.allowed)) return [];
-    return [
-      report(
-        schemeDisallowed,
-        `Field '${context.key}': URL scheme of '${value}' is not allowed [format:scheme:${list.text}]`,
-      ),
-    ];
+    return [report(schemeDisallowed, `Field '${context.key}': URL scheme of '${value}' is not allowed [format:scheme:${list.text}]`)];
   },
 });
 
@@ -169,17 +130,9 @@ const schemeDisallowedItem = defineRule({
     const list = schemeAllowList(context, "list-of-url");
     const { value } = context;
     if (list === null || value === null || !isList(value)) return [];
-    const bad = value.filter(
-      (item): item is string =>
-        typeof item === "string" && isValidUrlValue(item) && !isValidUrlValue(item, list.allowed),
-    );
+    const bad = value.filter((item): item is string => typeof item === "string" && isValidUrlValue(item) && !isValidUrlValue(item, list.allowed));
     if (bad.length === 0) return [];
-    return [
-      report(
-        schemeDisallowedItem,
-        `Field '${context.key}': list contains URLs with a disallowed scheme ${pyRepr(bad)} [format:scheme:${list.text}]`,
-      ),
-    ];
+    return [report(schemeDisallowedItem, `Field '${context.key}': list contains URLs with a disallowed scheme ${pyRepr(bad)} [format:scheme:${list.text}]`)];
   },
 });
 
@@ -189,9 +142,7 @@ const schemeDisallowedItem = defineRule({
  * when the field has neither.
  */
 function scalarShape(context: FieldContext): ValueShape | null {
-  const tag = (context.templateField.comment?.tags ?? []).find(
-    (candidate) => candidate.kind === "format-shape",
-  );
+  const tag = (context.templateField.comment?.tags ?? []).find((candidate) => candidate.kind === "format-shape");
   return tag === undefined ? null : tag.shape;
 }
 
@@ -213,12 +164,7 @@ const semverMismatch = defineRule({
     const { value } = context;
     if (scalarShape(context) !== "semver" || typeof value !== "string") return [];
     if (isSemver(value)) return [];
-    return [
-      report(
-        semverMismatch,
-        `Field '${context.key}': value '${value}' is not a semantic version [format:semver]`,
-      ),
-    ];
+    return [report(semverMismatch, `Field '${context.key}': value '${value}' is not a semantic version [format:semver]`)];
   },
 });
 
@@ -243,12 +189,7 @@ const dateFormatMismatch = defineRule({
     if (scalarShape(context) !== "date" || typeof value !== "string") return [];
     if (isIsoDate(value)) return [];
     if (context.templateField.type === "date" && !isValidDateValue(value)) return [];
-    return [
-      report(
-        dateFormatMismatch,
-        `Field '${context.key}': value '${value}' is not a YYYY-MM-DD date [format:date]`,
-      ),
-    ];
+    return [report(dateFormatMismatch, `Field '${context.key}': value '${value}' is not a YYYY-MM-DD date [format:date]`)];
   },
 });
 
@@ -258,9 +199,7 @@ const dateFormatMismatch = defineRule({
  * 2.1). Null when the field has neither.
  */
 function elementsShape(context: FieldContext): ValueShape | null {
-  const tag = (context.templateField.comment?.tags ?? []).find(
-    (candidate) => candidate.kind === "format-elements-shape",
-  );
+  const tag = (context.templateField.comment?.tags ?? []).find((candidate) => candidate.kind === "format-elements-shape");
   return tag === undefined ? null : tag.shape;
 }
 
@@ -284,12 +223,7 @@ const elementsSemverMismatch = defineRule({
     if (elementsShape(context) !== "semver" || value === null || !isList(value)) return [];
     const bad = value.map(valueText).filter((item) => !isSemver(item));
     if (bad.length === 0) return [];
-    return [
-      report(
-        elementsSemverMismatch,
-        `Field '${context.key}': list contains entries not matching [format:elements:semver]: ${pyRepr(bad)}`,
-      ),
-    ];
+    return [report(elementsSemverMismatch, `Field '${context.key}': list contains entries not matching [format:elements:semver]: ${pyRepr(bad)}`)];
   },
 });
 
@@ -319,12 +253,7 @@ const elementsDateMismatch = defineRule({
       .map(valueText)
       .filter((item) => !isIsoDate(item));
     if (bad.length === 0) return [];
-    return [
-      report(
-        elementsDateMismatch,
-        `Field '${context.key}': list contains entries not matching [format:elements:date]: ${pyRepr(bad)}`,
-      ),
-    ];
+    return [report(elementsDateMismatch, `Field '${context.key}': list contains entries not matching [format:elements:date]: ${pyRepr(bad)}`)];
   },
 });
 

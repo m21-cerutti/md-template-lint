@@ -36,9 +36,7 @@ export type Bound = "min" | "max";
 type Fm<T> = Located & { readonly region: "frontmatter" } & T;
 
 /** spec 2.2 */
-export type FrontmatterPresenceTag =
-  | Fm<{ readonly kind: "presence"; readonly mode: "required" | "optional" }>
-  | Fm<{ readonly kind: "presence"; readonly mode: "conditional"; readonly detail: string }>;
+export type FrontmatterPresenceTag = Fm<{ readonly kind: "presence"; readonly mode: "required" | "optional" }> | Fm<{ readonly kind: "presence"; readonly mode: "conditional"; readonly detail: string }>;
 
 /** spec 2.3 */
 export type FrontmatterValueTag =
@@ -123,8 +121,7 @@ export type BodyContentTag =
        * `subheadings-disallow` is `[content:subheadings:disallow]` (spec 2.6, ADR 0009);
        * `subheadings-no-extra` is `[content:subheadings:no-extra]` (spec 2.10).
        */
-      readonly check:
-        "non-empty" | "table" | "list" | "subheadings-disallow" | "subheadings-no-extra";
+      readonly check: "non-empty" | "table" | "list" | "subheadings-disallow" | "subheadings-no-extra";
     }>
   | Body<{ readonly kind: "content-lines"; readonly bound: Bound; readonly value: number }>;
 
@@ -232,8 +229,7 @@ export const BODY_TAG_KINDS = Object.keys(BODY_KIND_SET) as BodyTag["kind"][];
  * the filename comment; `commentLine` is the 1-based file line of a standalone frontmatter
  * comment line.
  */
-export type TagSubject =
-  { readonly field: string } | { readonly heading: string } | { readonly commentLine: number };
+export type TagSubject = { readonly field: string } | { readonly heading: string } | { readonly commentLine: number };
 
 /**
  * Why a bracket is a problem. Mapping to codes is the registry's job; see
@@ -368,13 +364,7 @@ export type BodyBlock = BodyHeading | BodyFence | BodyLine;
 // ---------------------------------------------------------------------------
 
 /** Canonical lowercase verb of DIR1. */
-export type DirectiveVerb =
-  | "disable"
-  | "disable-line"
-  | "disable-next-line"
-  | "disable-file"
-  | "begin disable"
-  | "end disable";
+export type DirectiveVerb = "disable" | "disable-line" | "disable-next-line" | "disable-file" | "begin disable" | "end disable";
 
 /** One item of the code list as written (validated as a code later, DIR2). */
 export interface DirectiveItem {

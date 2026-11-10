@@ -7,13 +7,7 @@
  */
 import type { Diagnostic } from "../engine/model.js";
 import type { RunDiagnostic } from "../config/types.js";
-import type {
-  FileResult,
-  PairBlock,
-  ReportedDiagnostic,
-  RunResult,
-  TemplateReport,
-} from "../runner/types.js";
+import type { FileResult, PairBlock, ReportedDiagnostic, RunResult, TemplateReport } from "../runner/types.js";
 import { excerptRows } from "./excerpt.js";
 import { cleanText } from "./sanitize.js";
 
@@ -70,19 +64,11 @@ function diagnosticLine(diagnostic: Diagnostic): string {
 
 /** Stderr line of a run error. Config errors name their location (spec 6.6). */
 function runErrorLine(diagnostic: RunDiagnostic): string {
-  const where =
-    diagnostic.file !== undefined && diagnostic.line !== undefined
-      ? ` (${diagnostic.file}:${diagnostic.line}:${diagnostic.column ?? 1})`
-      : "";
+  const where = diagnostic.file !== undefined && diagnostic.line !== undefined ? ` (${diagnostic.file}:${diagnostic.line}:${diagnostic.column ?? 1})` : "";
   return cleanText(`error ${diagnostic.code}: ${diagnostic.message}${where}`);
 }
 
-function render(
-  result: RunResult,
-  options: TextOptions,
-  glyphs: Glyphs,
-  color: boolean,
-): ReportOutput {
+function render(result: RunResult, options: TextOptions, glyphs: Glyphs, color: boolean): ReportOutput {
   const quiet = options.quiet === true;
   const out: string[] = [];
   const line = (tone: Tone, text: string): void => {
@@ -101,10 +87,7 @@ function render(
 
   const fileLines = (file: FileResult): void => {
     if (quiet && file.status === "pass") return;
-    line(
-      file.status === "pass" ? "green" : "red",
-      `  ${file.status === "pass" ? glyphs.pass : glyphs.fail} ${cleanText(file.path)}`,
-    );
+    line(file.status === "pass" ? "green" : "red", `  ${file.status === "pass" ? glyphs.pass : glyphs.fail} ${cleanText(file.path)}`);
     diagnosticLines(quiet ? file.errors : [...file.errors, ...file.warnings]);
   };
 
@@ -143,10 +126,7 @@ function render(
   for (const block of result.blocks) {
     if (block.kind === "pair") pairLines(block);
     else if (!quiet) {
-      line(
-        "gray",
-        `${glyphs.info} ${block.diagnostic.code} ${cleanText(block.diagnostic.message)}`,
-      );
+      line("gray", `${glyphs.info} ${block.diagnostic.code} ${cleanText(block.diagnostic.message)}`);
       out.push("");
     }
   }
@@ -161,9 +141,7 @@ function render(
     line("yellow", `Warnings:     ${summary.warnings} (in ${summary.filesWithWarnings} file(s))`);
     // Spec 8.2, 4.4 DIR9: only when greater than 0, never as `0`.
     if (summary.suppressed > 0) out.push(`Suppressed:   ${summary.suppressed}`);
-    out.push(
-      `Templates:    ${summary.templatesChecked} checked, ${summary.templatesBroken} broken`,
-    );
+    out.push(`Templates:    ${summary.templatesChecked} checked, ${summary.templatesBroken} broken`);
     if (summary.runErrors > 0) line("red", `Run errors:   ${summary.runErrors}`);
     if (summary.runWarnings > 0) line("yellow", `Run warnings: ${summary.runWarnings}`);
     out.push("");
@@ -180,35 +158,20 @@ function render(
       for (const path of result.failedTemplates) line("red", `  - ${cleanText(path)}`);
       out.push("");
     }
-    const failed = result.blocks.flatMap((block) =>
-      block.kind === "pair"
-        ? block.files
-            .filter((file) => file.status === "fail")
-            .map((file) =>
-              block.root === "project" ? file.path : `${file.path} (root '${block.root}')`,
-            )
-        : [],
-    );
+    const failed = result.blocks.flatMap((block) => (block.kind === "pair" ? block.files.filter((file) => file.status === "fail").map((file) => (block.root === "project" ? file.path : `${file.path} (root '${block.root}')`)) : []));
     if (failed.length > 0) {
       line("red", "Failed files:");
       for (const path of failed) line("red", `  - ${cleanText(path)}`);
       out.push("");
     }
-    const clean =
-      summary.failed === 0 &&
-      summary.templatesBroken === 0 &&
-      result.failedTemplates.length === 0 &&
-      summary.runErrors === 0;
+    const clean = summary.failed === 0 && summary.templatesBroken === 0 && result.failedTemplates.length === 0 && summary.runErrors === 0;
     if (clean && summary.files > 0) line("green", "All files passed!");
     else if (clean) line("gray", "No files linted.");
     line("cyan", RULE);
   }
 
-  const stderr = result.runErrors.map((diagnostic) =>
-    paint("red", runErrorLine(diagnostic), color),
-  );
-  const text = (lines: readonly string[]): string =>
-    lines.length === 0 ? "" : `${lines.join("\n")}\n`;
+  const stderr = result.runErrors.map((diagnostic) => paint("red", runErrorLine(diagnostic), color));
+  const text = (lines: readonly string[]): string => (lines.length === 0 ? "" : `${lines.join("\n")}\n`);
   return { stdout: text(out), stderr: text(stderr) };
 }
 

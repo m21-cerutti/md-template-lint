@@ -33,9 +33,7 @@ const CASES: readonly Case[] = [
   {
     name: "fail-yaml-syntax-error",
     file: "md-template-lint.yml.txt",
-    errors: [
-      { code: "MTL902", line: 5, message: `cannot parse ${FILE}.txt: Flow sequence`, prefix: true },
-    ],
+    errors: [{ code: "MTL902", line: 5, message: `cannot parse ${FILE}.txt: Flow sequence`, prefix: true }],
   },
   {
     name: "fail-empty-file",
@@ -537,8 +535,7 @@ const CASES: readonly Case[] = [
   },
 ];
 
-const load = (name: string, file = FILE) =>
-  loadConfig({ cwd: fixturePath("config", `${GROUP}${name}`), configPath: file, home: HOME });
+const load = (name: string, file = FILE) => loadConfig({ cwd: fixturePath("config", `${GROUP}${name}`), configPath: file, home: HOME });
 
 describe("config validation: layout", () => {
   it("has at least 1 pass- case, at least 1 fail- case, one directory each", () => {
@@ -560,8 +557,7 @@ describe("config validation: errors name file, line and key (spec 6.6)", () => {
         expect(error?.file).toBe(testCase.file ?? FILE);
         expect(error?.line).toBe(expected.line);
         expect(error?.key).toBe(expected.key);
-        if (expected.prefix === true)
-          expect(error?.message.startsWith(expected.message)).toBe(true);
+        if (expected.prefix === true) expect(error?.message.startsWith(expected.message)).toBe(true);
         else expect(error?.message).toBe(expected.message);
       });
     });
@@ -595,11 +591,7 @@ describe("config validation: a valid config (spec 6.3)", () => {
     ]);
     expect([...config.aliases]).toEqual([["assets", `${dir}/assets`]]);
     expect(config.approvedPaths).toEqual(["/home/test/notes"]);
-    expect(config.pairs.map((pair) => pair.name)).toEqual([
-      "adr",
-      "agent.template",
-      "agent.template-2",
-    ]);
+    expect(config.pairs.map((pair) => pair.name)).toEqual(["adr", "agent.template", "agent.template-2"]);
     const [adr, agents, star] = config.pairs;
     expect(adr?.onEmpty).toBe("error");
     expect(adr?.roots).toEqual(["project"]);

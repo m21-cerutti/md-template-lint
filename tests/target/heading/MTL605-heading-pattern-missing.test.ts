@@ -89,8 +89,7 @@ const CASES: readonly TestCase[] = [
   },
 ];
 
-const read = (path: string): string =>
-  readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
+const read = (path: string): string => readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
 
 /** Every diagnostic for a template and a target text. */
 async function lintText(template: string, target: string) {
@@ -107,9 +106,7 @@ async function lintAll(name: string) {
 
 /** The errors of a lint as [code, message, anchor line]. */
 async function errorsOf(found: ReturnType<typeof lintText>) {
-  return (await found)
-    .filter((diagnostic) => diagnostic.severity === "error")
-    .map((diagnostic) => [diagnostic.code, diagnostic.message, anchorLineOf(diagnostic)]);
+  return (await found).filter((diagnostic) => diagnostic.severity === "error").map((diagnostic) => [diagnostic.code, diagnostic.message, anchorLineOf(diagnostic)]);
 }
 
 const head = "---\ntitle: x\n---\n\n";
@@ -139,9 +136,7 @@ describe("MTL605 heading-pattern-missing", () => {
   for (const testCase of CASES) {
     it(`${testCase.name}: ${DIR}/${testCase.name}`, async () => {
       const found = (await lintAll(testCase.name)).filter((diagnostic) => diagnostic.code === CODE);
-      expect(
-        found.map((diagnostic) => ({ message: diagnostic.message, heading: diagnostic.heading })),
-      ).toEqual(testCase.expected);
+      expect(found.map((diagnostic) => ({ message: diagnostic.message, heading: diagnostic.heading }))).toEqual(testCase.expected);
       for (const diagnostic of found) {
         expect(diagnostic.severity).toBe("error");
         // No anchor (spec 4.4 DIR5) and the template-line sort key is cleared.
@@ -168,60 +163,33 @@ describe("MTL605 heading-pattern-missing", () => {
   });
 
   it("a pattern heading is never MTL601 or MTL610 (spec 2.10: MTL605 replaces them)", async () => {
-    for (const name of [
-      "fail-literal-pattern-whose-next-sibling-differs",
-      "fail-owner-example-d-literal-pattern-takes-the-only-sibling",
-      "fail-section-scope-placeholder-pattern-with-no-sibling-left",
-    ]) {
+    for (const name of ["fail-literal-pattern-whose-next-sibling-differs", "fail-owner-example-d-literal-pattern-takes-the-only-sibling", "fail-section-scope-placeholder-pattern-with-no-sibling-left"]) {
       const codes = (await lintAll(name)).map((diagnostic) => diagnostic.code);
       expect(codes).toEqual(["MTL605"]);
     }
     // A required placeholder position with a sibling left takes it as a mismatch (spec 2.10
     // step 3c, phase P4): MTL606 only, never MTL601 or MTL605.
-    const codes = (
-      await lintAll("pass-placeholder-pattern-with-a-sibling-left-is-not-missing")
-    ).map((diagnostic) => diagnostic.code);
+    const codes = (await lintAll("pass-placeholder-pattern-with-a-sibling-left-is-not-missing")).map((diagnostic) => diagnostic.code);
     expect(codes).toEqual(["MTL606"]);
   });
 
   it("the pattern match is the parent of its section-scope children (MTL610 names it)", async () => {
     const template = `${head}# C\n\n## Release [pattern:"[{semver}] - {date}"]\n\n### Added\n`;
-    expect(await errorsOf(lintText(template, `${head}# C\n\n## [1.2.0] - 2026-03-01\n`))).toEqual([
-      [
-        "MTL610",
-        "Heading: Section '[1.2.0] - 2026-03-01': missing required heading 'Added' (H3)",
-        7,
-      ],
-    ]);
+    expect(await errorsOf(lintText(template, `${head}# C\n\n## [1.2.0] - 2026-03-01\n`))).toEqual([["MTL610", "Heading: Section '[1.2.0] - 2026-03-01': missing required heading 'Added' (H3)", 7]]);
   });
 
   it("content rules read the section the pattern matched", async () => {
     // Spec 2.6 "Content tags": a pattern heading is labelled with the matched target text and
     // the pattern as written, `Section '{text}' (pattern "{pattern}")`.
     const template = `${head}# C\n\n## Release [pattern:"v{semver}"] [content:non-empty]\n`;
-    expect(await errorsOf(lintText(template, `${head}# C\n\n## v1.2.0\n`))).toEqual([
-      [
-        "MTL701",
-        `Section 'v1.2.0' (pattern "v{semver}"): [content:non-empty] section body is empty`,
-        7,
-      ],
-    ]);
+    expect(await errorsOf(lintText(template, `${head}# C\n\n## v1.2.0\n`))).toEqual([["MTL701", `Section 'v1.2.0' (pattern "v{semver}"): [content:non-empty] section body is empty`, 7]]);
     expect(await errorsOf(lintText(template, `${head}# C\n\n## v1.2.0\n\nText.\n`))).toEqual([]);
   });
 
   it("MTL612 lists a target heading that a pattern of the subtree matches (spec 2.6)", async () => {
-    const template =
-      `${head}# C\n\n## Unreleased [content:subheadings:disallow]\n\n` +
-      '### Added [pattern:"Added {text}"] [presence:optional]\n';
+    const template = `${head}# C\n\n## Unreleased [content:subheadings:disallow]\n\n` + '### Added [pattern:"Added {text}"] [presence:optional]\n';
     const target = (child: string) => `${head}# C\n\n## Unreleased\n\n### ${child}\n`;
     expect(await errorsOf(lintText(template, target("Added stuff")))).toEqual([]);
-    expect(await errorsOf(lintText(template, target("Misc")))).toEqual([
-      [
-        "MTL612",
-        "Heading: Section 'Unreleased': heading 'Misc' at level H3 is not in the template " +
-          "[content:subheadings:disallow]",
-        9,
-      ],
-    ]);
+    expect(await errorsOf(lintText(template, target("Misc")))).toEqual([["MTL612", "Heading: Section 'Unreleased': heading 'Misc' at level H3 is not in the template " + "[content:subheadings:disallow]", 9]]);
   });
 });

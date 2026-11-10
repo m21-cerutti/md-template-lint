@@ -10,13 +10,10 @@ import { createEnv } from "../../../src/engine/rule.js";
 const registry = createRegistry();
 const CODE = "MTL504";
 const DIR = "tests/fixtures/pairs/MTL504";
-const DETAIL =
-  "value is not a valid calendar date in an accepted format " +
-  "(YYYY-MM-DD / YYYY-MM / YYYY / DD/MM/YYYY / present / présent)";
+const DETAIL = "value is not a valid calendar date in an accepted format " + "(YYYY-MM-DD / YYYY-MM / YYYY / DD/MM/YYYY / present / présent)";
 
 /** `Field '<key>' (type=date): <detail>` for each key, in the given order. */
-const invalid = (...keys: string[]): string[] =>
-  keys.map((key) => `Field '${key}' (type=date): ${DETAIL}`);
+const invalid = (...keys: string[]): string[] => keys.map((key) => `Field '${key}' (type=date): ${DETAIL}`);
 
 /** Case -> fixture -> expected result: at least 1 passing case and 1 failing case. */
 const CASES = [
@@ -38,14 +35,7 @@ const CASES = [
   {
     name: "fail-month-and-day-out-of-range",
     fixture: "tests/fixtures/pairs/MTL504/fail-month-and-day-out-of-range",
-    expected: invalid(
-      "month_thirteen",
-      "day_forty",
-      "month_zero",
-      "day_zero",
-      "april_thirty_first",
-      "both_out_of_range",
-    ),
+    expected: invalid("month_thirteen", "day_forty", "month_zero", "day_zero", "april_thirty_first", "both_out_of_range"),
   },
   {
     name: "fail-year-month-with-month-thirteen",
@@ -85,26 +75,12 @@ const CASES = [
   {
     name: "fail-day-above-month-length",
     fixture: "tests/fixtures/pairs/MTL504/fail-day-above-month-length",
-    expected: invalid(
-      "january_thirty_second",
-      "june_thirty_first",
-      "september_thirty_first",
-      "november_thirty_first",
-      "non_leap_february_twenty_ninth_slash",
-    ),
+    expected: invalid("january_thirty_second", "june_thirty_first", "september_thirty_first", "november_thirty_first", "non_leap_february_twenty_ninth_slash"),
   },
   {
     name: "fail-slash-and-year-width-and-extra-text",
     fixture: "tests/fixtures/pairs/MTL504/fail-slash-and-year-width-and-extra-text",
-    expected: invalid(
-      "slash_trailing_text",
-      "slash_leading_text",
-      "slash_three_digit_day",
-      "slash_five_digit_year",
-      "year_five_digits",
-      "year_three_digits",
-      "year_month_three_digit_year",
-    ),
+    expected: invalid("slash_trailing_text", "slash_leading_text", "slash_three_digit_day", "slash_five_digit_year", "year_five_digits", "year_three_digits", "year_month_three_digit_year"),
   },
   {
     name: "fail-list-in-date-field",
@@ -128,20 +104,13 @@ const CASES = [
   },
 ] as const;
 
-const read = (path: string): string =>
-  readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
+const read = (path: string): string => readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
 
 /** Diagnostics of this code for the pair of a fixture folder. */
 async function lint(fixture: string) {
   const status = await checkTemplate(registry, read(`${fixture}/template.md`));
   if (status.status !== "ok") throw new Error(`${fixture}: template is broken`);
-  const found = await checkTarget(
-    registry,
-    status.model,
-    read(`${fixture}/target.md`),
-    `${fixture}/target.md`,
-    createEnv(),
-  );
+  const found = await checkTarget(registry, status.model, read(`${fixture}/target.md`), `${fixture}/target.md`, createEnv());
   return found.filter((diagnostic) => diagnostic.code === CODE);
 }
 
@@ -175,16 +144,12 @@ describe("MTL504 type-date", () => {
     expect(failing.length).toBeGreaterThanOrEqual(1);
     expect(passing.length + failing.length).toBe(CASES.length);
     expect(CASES.filter((testCase) => testCase.expected.length === 0)).toEqual(passing);
-    expect(CASES.map((testCase) => testCase.fixture)).toEqual(
-      CASES.map((testCase) => `${DIR}/${testCase.name}`),
-    );
+    expect(CASES.map((testCase) => testCase.fixture)).toEqual(CASES.map((testCase) => `${DIR}/${testCase.name}`));
     // Orphan detection: no directory at any depth besides the cases, and each holds only the pair.
     const names = CASES.map((testCase) => testCase.name).sort();
     const tree = listTree();
     expect(tree.dirs).toEqual(names);
-    expect(tree.files).toEqual(
-      names.flatMap((name) => [`${name}/target.md`, `${name}/template.md`]).sort(),
-    );
+    expect(tree.files).toEqual(names.flatMap((name) => [`${name}/target.md`, `${name}/template.md`]).sort());
   });
 
   for (const testCase of CASES) {

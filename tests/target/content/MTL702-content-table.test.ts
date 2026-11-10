@@ -11,8 +11,7 @@ const registry = createRegistry();
 const CODE = "MTL702";
 const DIR = "tests/fixtures/pairs/MTL702";
 const MESSAGE = "Section 'Results': [content:table] no markdown table row found";
-const OVERVIEW =
-  "Section 'Overview' (pattern \"{text}\"): [content:table] no markdown table row found";
+const OVERVIEW = "Section 'Overview' (pattern \"{text}\"): [content:table] no markdown table row found";
 
 /**
  * Case -> expected MTL702 messages, plus the template warning codes
@@ -85,9 +84,7 @@ const CASES = [
     // of `## Hub`, `### First` (prose only), and its table rule is checked there; the table
     // under the later `### Slot` does not count. The label names the target text `First`.
     name: "fail-section-scope-pattern-heading-checks-the-sibling-at-its-position",
-    expected: [
-      `Section 'Hub > First' (pattern "{text}"): [content:table] no markdown table row found`,
-    ],
+    expected: [`Section 'Hub > First' (pattern "{text}"): [content:table] no markdown table row found`],
     warnings: [],
   },
   {
@@ -109,24 +106,19 @@ const CASES = [
     // line 9 (`Epic B - Release`) has none. The label is the target text plus the pattern as
     // written, not the template text `Epic A - Title` (spec 2.6 "Content tags").
     name: "fail-pattern-heading-label-worked-example-7-j",
-    expected: [
-      `Section 'Epic B - Release' (pattern "Epic {char} - {text}"): [content:table] no markdown table row found`,
-    ],
+    expected: [`Section 'Epic B - Release' (pattern "Epic {char} - {text}"): [content:table] no markdown table row found`],
     warnings: [],
   },
   {
     // Spec 2.6, section scope: `{parent}` is the matched target parent (`Epic A`, matched by
     // the parent's pattern), `{text}` the target text `Step 2`, then the child's own pattern.
     name: "fail-section-scope-pattern-heading-label-names-the-parent-match",
-    expected: [
-      `Section 'Epic A > Step 2' (pattern "Step {number}"): [content:table] no markdown table row found`,
-    ],
+    expected: [`Section 'Epic A > Step 2' (pattern "Step {number}"): [content:table] no markdown table row found`],
     warnings: [],
   },
 ] as const;
 
-const read = (path: string): string =>
-  readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
+const read = (path: string): string => readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
 
 /** Every directory and file under DIR, at any depth, as sorted `/`-separated relative paths. */
 function listTree(): { dirs: string[]; files: string[] } {
@@ -145,13 +137,7 @@ async function lint(testCase: { readonly name: string }) {
   const fixture = `${DIR}/${testCase.name}`;
   const status = await checkTemplate(registry, read(`${fixture}/template.md`));
   if (status.status !== "ok") throw new Error(`${fixture}: template is broken`);
-  const found = await checkTarget(
-    registry,
-    status.model,
-    read(`${fixture}/target.md`),
-    `${fixture}/target.md`,
-    createEnv(),
-  );
+  const found = await checkTarget(registry, status.model, read(`${fixture}/target.md`), `${fixture}/target.md`, createEnv());
   return {
     found: found.filter((diagnostic) => diagnostic.code === CODE),
     warnings: status.warnings,
@@ -180,9 +166,7 @@ describe("MTL702 content-table", () => {
     const names = CASES.map((testCase) => testCase.name).sort();
     const tree = listTree();
     expect(tree.dirs).toEqual(names);
-    expect(tree.files).toEqual(
-      names.flatMap((name) => [`${name}/target.md`, `${name}/template.md`]).sort(),
-    );
+    expect(tree.files).toEqual(names.flatMap((name) => [`${name}/target.md`, `${name}/template.md`]).sort());
   });
 
   for (const testCase of CASES) {

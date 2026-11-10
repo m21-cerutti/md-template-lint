@@ -17,8 +17,7 @@ const DIR = "tests/fixtures/pairs/MTL604";
 // MTL605: the missing-heading code of a pattern heading (spec 2.10 step 3c).
 const HEADING_CODES = ["MTL601", "MTL603", CODE, "MTL605"];
 
-const order = (template: string, target: string): string =>
-  `Heading: Heading order mismatch: template order ${template} vs target order ${target}`;
+const order = (template: string, target: string): string => `Heading: Heading order mismatch: template order ${template} vs target order ${target}`;
 
 /** Case -> fixture -> expected result: at least 1 passing case and 1 failing case. */
 const CASES = [
@@ -41,11 +40,8 @@ const CASES = [
     // Summary looks at `Actions`: missing; Risks (absent, optional) takes nothing; Actions takes it.
     // `Summary` (line 7) comes later: the hint.
     name: "fail-later-heading-first-in-target-leaves-the-earlier-one-missing",
-    fixture:
-      "tests/fixtures/pairs/MTL604/fail-later-heading-first-in-target-leaves-the-earlier-one-missing",
-    expected: [
-      "Heading: Missing required heading: 'Summary' (found later at line 7, out of order)",
-    ],
+    fixture: "tests/fixtures/pairs/MTL604/fail-later-heading-first-in-target-leaves-the-earlier-one-missing",
+    expected: ["Heading: Missing required heading: 'Summary' (found later at line 7, out of order)"],
   },
   {
     // Beta (template first) looks at `Alpha` (line 5): missing. Alpha takes line 5; the later
@@ -66,15 +62,13 @@ const CASES = [
     // (optional) looks at `Gamma`, does not match and takes nothing; Gamma takes it; the later
     // `Beta` is in the tail (an extra, allowed). No error, and no order problem.
     name: "pass-present-optional-heading-after-later-heading-is-an-extra",
-    fixture:
-      "tests/fixtures/pairs/MTL604/pass-present-optional-heading-after-later-heading-is-an-extra",
+    fixture: "tests/fixtures/pairs/MTL604/pass-present-optional-heading-after-later-heading-is-an-extra",
     expected: [],
   },
   {
     // Same for `[presence:conditional:...]` (matches like optional, spec 2.6).
     name: "pass-present-conditional-heading-after-later-heading-is-an-extra",
-    fixture:
-      "tests/fixtures/pairs/MTL604/pass-present-conditional-heading-after-later-heading-is-an-extra",
+    fixture: "tests/fixtures/pairs/MTL604/pass-present-conditional-heading-after-later-heading-is-an-extra",
     expected: [],
   },
   {
@@ -83,10 +77,7 @@ const CASES = [
     // template line 9). Findings in template order.
     name: "fail-pattern-heading-without-sibling-left-is-missing",
     fixture: "tests/fixtures/pairs/MTL604/fail-pattern-heading-without-sibling-left-is-missing",
-    expected: [
-      'Heading: missing required heading matching [pattern:"{text}"] (H2)',
-      "Heading: Missing required heading: 'Beta'",
-    ],
+    expected: ['Heading: missing required heading matching [pattern:"{text}"] (H2)', "Heading: Missing required heading: 'Beta'"],
   },
   {
     // Texts are case sensitive: Alpha looks at `beta`, Beta looks at `beta` (case differs): both
@@ -94,19 +85,14 @@ const CASES = [
     // no sibling has the exact text `Beta`: no hint.
     name: "fail-case-differing-heading-takes-nothing-both-missing",
     fixture: "tests/fixtures/pairs/MTL604/fail-case-differing-heading-takes-nothing-both-missing",
-    expected: [
-      "Heading: Missing required heading: 'Alpha' (found later at line 7, out of order)",
-      "Heading: Missing required heading: 'Beta'",
-    ],
+    expected: ["Heading: Missing required heading: 'Alpha' (found later at line 7, out of order)", "Heading: Missing required heading: 'Beta'"],
   },
   {
     // The MTL601 message is the raw text between single quotes (the python repr is only for the
     // MTL604 lists, next case). The swapped heading (line 7) gives the hint.
     name: "fail-swapped-heading-text-with-quote-is-missing",
     fixture: "tests/fixtures/pairs/MTL604/fail-swapped-heading-text-with-quote-is-missing",
-    expected: [
-      "Heading: Missing required heading: 'Alpha's notes' (found later at line 7, out of order)",
-    ],
+    expected: ["Heading: Missing required heading: 'Alpha's notes' (found later at line 7, out of order)"],
   },
   {
     // Order across levels: the H2 `Beta` matches (line 5) before the H1 `Alpha's notes` (line
@@ -154,20 +140,13 @@ const CASES = [
   },
 ] as const;
 
-const read = (path: string): string =>
-  readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
+const read = (path: string): string => readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
 
 /** Every diagnostic for the pair of a fixture folder. */
 async function lintAll(fixture: string) {
   const status = await checkTemplate(registry, read(`${fixture}/template.md`));
   if (status.status !== "ok") throw new Error(`${fixture}: template is broken`);
-  return checkTarget(
-    registry,
-    status.model,
-    read(`${fixture}/target.md`),
-    `${fixture}/target.md`,
-    createEnv(),
-  );
+  return checkTarget(registry, status.model, read(`${fixture}/target.md`), `${fixture}/target.md`, createEnv());
 }
 
 /** Heading diagnostics (MTL601 to MTL605) for the pair of a fixture folder. */

@@ -5,12 +5,7 @@
  * routable address that is reached.
  */
 import { describe, expect, it } from "vitest";
-import {
-  BlockedAddressError,
-  createGuardedLookup,
-  createRealIo,
-  type ResolveFn,
-} from "../../../src/io/index.js";
+import { BlockedAddressError, createGuardedLookup, createRealIo, type ResolveFn } from "../../../src/io/index.js";
 
 interface Answer {
   readonly error: NodeJS.ErrnoException | null;
@@ -66,8 +61,7 @@ describe("createGuardedLookup", () => {
   it("fails: no address and a failing resolver keep a DNS error code", async () => {
     const none = await lookupOf(answers(), "a.example.com", false);
     expect(none.error?.code).toBe("ENOTFOUND");
-    const failing: ResolveFn = () =>
-      Promise.reject(Object.assign(new Error("x"), { code: "EAI_AGAIN" }));
+    const failing: ResolveFn = () => Promise.reject(Object.assign(new Error("x"), { code: "EAI_AGAIN" }));
     const failed = await lookupOf(failing, "a.example.com", false);
     expect(failed.error?.code).toBe("EAI_AGAIN");
   });

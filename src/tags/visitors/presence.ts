@@ -3,10 +3,7 @@
  * tags. Rules fmPresenceTag and bodyPresenceTag; one visitor per region,
  * because the two regions accept different modes.
  */
-import type {
-  BodyPresenceTagContext,
-  FmPresenceTagContext,
-} from "../../generated/MdTemplateParser.js";
+import type { BodyPresenceTagContext, FmPresenceTagContext } from "../../generated/MdTemplateParser.js";
 import { FamilyVisitor, type BodyTagData, type FrontmatterTagData } from "./base.js";
 
 /** `[presence:required|optional|conditional:<text>]` in a key comment. */

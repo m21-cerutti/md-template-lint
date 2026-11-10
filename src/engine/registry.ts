@@ -15,17 +15,7 @@ import { rules as presence } from "../rules/presence.js";
 import { rules as syntax } from "../rules/syntax.js";
 import { rules as type } from "../rules/type.js";
 import { codeNumber, type Diagnostic } from "./model.js";
-import {
-  CATEGORIES,
-  CATEGORY_RANGES,
-  FIELD_STEPS,
-  TARGET_STEPS,
-  type AnyRule,
-  type Category,
-  type Phase,
-  type PhaseContexts,
-  type Rule,
-} from "./rule.js";
+import { CATEGORIES, CATEGORY_RANGES, FIELD_STEPS, TARGET_STEPS, type AnyRule, type Category, type Phase, type PhaseContexts, type Rule } from "./rule.js";
 
 /** The category files, keyed by category. */
 export const RULE_FILES: Readonly<Record<Category, readonly AnyRule[]>> = {
@@ -74,9 +64,7 @@ function stepProblem(rule: AnyRule): string | null {
 }
 
 /** Load and validate the rule files. Throws RegistryError on a contract violation. */
-export function createRegistry(
-  files: Readonly<Record<Category, readonly AnyRule[]>> = RULE_FILES,
-): RuleRegistry {
+export function createRegistry(files: Readonly<Record<Category, readonly AnyRule[]>> = RULE_FILES): RuleRegistry {
   const rules: AnyRule[] = [];
   const byCode = new Map<string, AnyRule>();
   const byCategory = new Map<Category, readonly AnyRule[]>();
@@ -116,10 +104,7 @@ export function rulesOf<P extends Phase>(registry: RuleRegistry, phase: P): Rule
  * Run `rules` on `context` one after the other, awaiting each check, so the
  * emission order is the order of `rules` even when checks are async.
  */
-export async function runRules<P extends Phase>(
-  rules: readonly Rule<P>[],
-  context: PhaseContexts[P],
-): Promise<Diagnostic[]> {
+export async function runRules<P extends Phase>(rules: readonly Rule<P>[], context: PhaseContexts[P]): Promise<Diagnostic[]> {
   const out: Diagnostic[] = [];
   for (const rule of rules) {
     const check = rule.check as (context: PhaseContexts[P]) => ReturnType<typeof rule.check>;
@@ -129,10 +114,6 @@ export async function runRules<P extends Phase>(
 }
 
 /** Run every rule of `phase` on `context`, registry order. */
-export function runPhase<P extends Phase>(
-  registry: RuleRegistry,
-  phase: P,
-  context: PhaseContexts[P],
-): Promise<Diagnostic[]> {
+export function runPhase<P extends Phase>(registry: RuleRegistry, phase: P, context: PhaseContexts[P]): Promise<Diagnostic[]> {
   return runRules(rulesOf(registry, phase), context);
 }

@@ -101,10 +101,7 @@ export function sourceLines(text: string): readonly string[] {
  * `diagnostics` with the `excerpt` of the ones that have a source line in `text`, the
  * text of the file they belong to. The same objects come back when none has one.
  */
-export function withExcerpts(
-  diagnostics: readonly Diagnostic[],
-  text: string,
-): ReportedDiagnostic[] {
+export function withExcerpts(diagnostics: readonly Diagnostic[], text: string): ReportedDiagnostic[] {
   if (diagnostics.length === 0) return [];
   const lines = sourceLines(text);
   /** Prepared lines of this file by line number: one pass per line, however many diagnostics. */

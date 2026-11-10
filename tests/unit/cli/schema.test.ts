@@ -67,28 +67,17 @@ const CASES: readonly Case[] = [
   {
     // Fields first, then headings; an unknown heading tag stays in the heading text.
     name: "fail-unknown-tags",
-    shows: [
-      "Unknown tags found (typo or unimplemented feature):",
-      "  - Field 'owner': unknown tag [optionl]",
-      "  - Heading 'Overview [bogus]': unknown tag [bogus]",
-    ],
+    shows: ["Unknown tags found (typo or unimplemented feature):", "  - Field 'owner': unknown tag [optionl]", "  - Heading 'Overview [bogus]': unknown tag [bogus]"],
     lacks: ["Filename:", "Malformed tags", "Misplaced tags"],
   },
   {
     name: "fail-malformed-tags",
-    shows: [
-      "Malformed tags:",
-      "  - Field 'tags': malformed tag [count:min:abc] (line 2, column 26)",
-    ],
+    shows: ["Malformed tags:", "  - Field 'tags': malformed tag [count:min:abc] (line 2, column 26)"],
     lacks: ["Filename:", "Unknown tags", "Misplaced tags"],
   },
   {
     name: "fail-misplaced-tags",
-    shows: [
-      "Misplaced tags:",
-      "  - Field 'title': tag [content:non-empty] is not valid in frontmatter (line 2, column 19)",
-      "  - Heading 'Body [value:filename]': tag [value:filename] is not valid in a heading (line 5, column 9)",
-    ],
+    shows: ["Misplaced tags:", "  - Field 'title': tag [content:non-empty] is not valid in frontmatter (line 2, column 19)", "  - Heading 'Body [value:filename]': tag [value:filename] is not valid in a heading (line 5, column 9)"],
     lacks: ["Filename:", "Unknown tags", "Malformed tags"],
   },
   {
@@ -117,8 +106,7 @@ const CASES: readonly Case[] = [
     name: "pass-pattern-heading-tokens",
     shows: [
       '  ## Release (presence:required, pattern:"[{semver}] - {date}", repeat-rules:same-level)',
-      '  ### Step (presence:required, pattern:"Step {digits}", repeat-rules:same-level, ' +
-        "repeat-rules:same-level:min:2, repeat-rules:same-level:max:5, content:non-empty, content:list)",
+      '  ### Step (presence:required, pattern:"Step {digits}", repeat-rules:same-level, ' + "repeat-rules:same-level:min:2, repeat-rules:same-level:max:5, content:non-empty, content:list)",
     ],
     lacks: ["Invalid patterns", "min:9", "Other {text}", "Filename:"],
   },
@@ -192,8 +180,7 @@ const CASES: readonly Case[] = [
     name: "fail-worked-example-7-j-order-without-repeat",
     shows: [
       "  FAIL template.md",
-      '  ## Epic A - Title (presence:required, pattern:"Epic {char} - {text}", order:ascending, ' +
-        "content:table)",
+      '  ## Epic A - Title (presence:required, pattern:"Epic {char} - {text}", order:ascending, ' + "content:table)",
       "Order tags without repeat:",
       "  - Heading 'Epic A - Title': tag [order:ascending] needs [repeat-rules:same-level] (an order compares the repeats of one heading) (line 5, column 52)",
       "Templates:    1 checked, 0 broken\nErrors:       1\nWarnings:     0",
@@ -206,11 +193,7 @@ const CASES: readonly Case[] = [
     // then one blank line; the per-heading token prints last in the heading's rules list,
     // after `content:subheadings:no-extra` (written here before it).
     name: "pass-unique-headings-names-switches",
-    shows: [
-      "Filename: [filename:case:kebab-case]\nUnique heading names: [unique-headings-names]\n\n",
-      "  ## Usage (presence:required, content:non-empty, content:subheadings:no-extra, " +
-        "unique-headings-names)",
-    ],
+    shows: ["Filename: [filename:case:kebab-case]\nUnique heading names: [unique-headings-names]\n\n", "  ## Usage (presence:required, content:non-empty, content:subheadings:no-extra, " + "unique-headings-names)"],
     lacks: ["Conflicting tags", "Unknown tags", "Malformed tags"],
   },
   {
@@ -218,10 +201,7 @@ const CASES: readonly Case[] = [
     // stands in place of the `Filename:` line (no `Filename:` line) and is followed by one blank
     // line; JSON `filenameCase` is null and `uniqueHeadingNames` true.
     name: "pass-unique-headings-names-without-filename",
-    shows: [
-      "PASS template.md\nUnique heading names: [unique-headings-names]\n\nField  Type    Rules",
-      "  ## Usage (presence:required, unique-headings-names)",
-    ],
+    shows: ["PASS template.md\nUnique heading names: [unique-headings-names]\n\nField  Type    Rules", "  ## Usage (presence:required, unique-headings-names)"],
     lacks: ["Filename:", "Conflicting tags", "Unknown tags", "Malformed tags"],
   },
   {
@@ -229,10 +209,7 @@ const CASES: readonly Case[] = [
     // NO `Unique heading names:` line, no blank line before the table (no `filename:case` either);
     // JSON `uniqueHeadingNames` false.
     name: "pass-unique-headings-names-per-heading-only",
-    shows: [
-      "PASS template.md\nField  Type    Rules",
-      "  ## Usage (presence:required, unique-headings-names)",
-    ],
+    shows: ["PASS template.md\nField  Type    Rules", "  ## Usage (presence:required, unique-headings-names)"],
     lacks: ["Unique heading names:", "Filename:", "Conflicting tags", "Unknown tags"],
   },
   {
@@ -244,24 +221,19 @@ const CASES: readonly Case[] = [
   {
     // No frontmatter field (`{}`): the table is its header and the dash line only (spec 8.3).
     name: "fail-no-fields-unknown-heading-tag",
-    shows: [
-      "Filename: [filename:case:kebab-case]",
-      "Field  Type  Rules\n------------------\n\nHeadings:",
-    ],
+    shows: ["Filename: [filename:case:kebab-case]", "Field  Type  Rules\n------------------\n\nHeadings:"],
     lacks: ["\n\n\n"],
   },
 ];
 
 const dir = (name: string): string => fixturePath("cli", `${GROUP}${name}`);
 /** An expected-output file with `\r\n` read as `\n` (a checkout may convert line ends). */
-const expectedFile = (name: string, file: string): string =>
-  readFileSync(join(dir(name), file), "utf8").replaceAll("\r\n", "\n");
+const expectedFile = (name: string, file: string): string => readFileSync(join(dir(name), file), "utf8").replaceAll("\r\n", "\n");
 
 /** The separator line of the text reports (spec 8.3). */
 const RULE_LINE = "========================\nSummary";
 
-const plainRun = (fixture: string) =>
-  runCliIn(fixture, ["--verify", "--format", "plain", "template.md"]);
+const plainRun = (fixture: string) => runCliIn(fixture, ["--verify", "--format", "plain", "template.md"]);
 
 describe("cli --verify schema: layout", () => {
   it("has at least 1 pass- case, at least 1 fail- case, one directory each", () => {
@@ -294,16 +266,9 @@ describe("cli --verify schema: text (spec 8.3)", () => {
     });
 
     it(`${testCase.name}: JSON templates are the expected file`, async () => {
-      const run = await runCliIn(`${GROUP}${testCase.name}`, [
-        "--verify",
-        "--format",
-        "json",
-        "template.md",
-      ]);
+      const run = await runCliIn(`${GROUP}${testCase.name}`, ["--verify", "--format", "json", "template.md"]);
       expect(run.exitCode).toBe(testCase.exitCode ?? 0);
-      expect(parseJson(run.stdout).templates).toEqual(
-        JSON.parse(expectedFile(testCase.name, "expected.json")) as unknown,
-      );
+      expect(parseJson(run.stdout).templates).toEqual(JSON.parse(expectedFile(testCase.name, "expected.json")) as unknown);
     });
   }
 });
@@ -321,11 +286,7 @@ describe("cli --verify schema: details", () => {
   it("the table columns are padded to the widest name and type, rules unpadded", async () => {
     const run = await plainRun(PASS);
     const rows = run.stdout.split("\n").filter((line) => /^(id|milestones|plain) /.test(line));
-    expect(rows).toEqual([
-      "id          string        presence:required, value:filename",
-      "milestones  list-of-date  presence:required, order:ascending",
-      "plain       string        presence:required",
-    ]);
+    expect(rows).toEqual(["id          string        presence:required, value:filename", "milestones  list-of-date  presence:required, order:ascending", "plain       string        presence:required"]);
     expect(rows.every((row) => row === row.trimEnd())).toBe(true);
   });
 
@@ -369,13 +330,7 @@ describe("cli --verify schema: details", () => {
 
   it("--quiet keeps the fail header and both error sections of worked example 5", async () => {
     const fixture = `${GROUP}fail-worked-example-5-both-errors`;
-    const run = await runCliIn(fixture, [
-      "--verify",
-      "--format",
-      "plain",
-      "--quiet",
-      "template.md",
-    ]);
+    const run = await runCliIn(fixture, ["--verify", "--format", "plain", "--quiet", "template.md"]);
     expect(run.exitCode).toBe(1);
     const full = expectedFile("fail-worked-example-5-both-errors", "expected.plain.txt");
     const sections = full.slice(full.indexOf("Duplicate patterns:"), full.indexOf(RULE_LINE));
@@ -384,37 +339,19 @@ describe("cli --verify schema: details", () => {
 
   it("--quiet keeps the fail header and the child order section of worked example 3", async () => {
     const name = "fail-worked-example-3-child-order";
-    const run = await runCliIn(`${GROUP}${name}`, [
-      "--verify",
-      "--format",
-      "plain",
-      "--quiet",
-      "template.md",
-    ]);
+    const run = await runCliIn(`${GROUP}${name}`, ["--verify", "--format", "plain", "--quiet", "template.md"]);
     expect(run.exitCode).toBe(1);
     const full = expectedFile(name, "expected.plain.txt");
-    const sections = full.slice(
-      full.indexOf("Child headings out of level order:"),
-      full.indexOf(RULE_LINE),
-    );
+    const sections = full.slice(full.indexOf("Child headings out of level order:"), full.indexOf(RULE_LINE));
     expect(run.stdout).toBe(`  FAIL template.md\n${sections}`);
   });
 
   it("--quiet keeps the fail header and the order section of worked example 7 J", async () => {
     const name = "fail-worked-example-7-j-order-without-repeat";
-    const run = await runCliIn(`${GROUP}${name}`, [
-      "--verify",
-      "--format",
-      "plain",
-      "--quiet",
-      "template.md",
-    ]);
+    const run = await runCliIn(`${GROUP}${name}`, ["--verify", "--format", "plain", "--quiet", "template.md"]);
     expect(run.exitCode).toBe(1);
     const full = expectedFile(name, "expected.plain.txt");
-    const sections = full.slice(
-      full.indexOf("Order tags without repeat:"),
-      full.indexOf(RULE_LINE),
-    );
+    const sections = full.slice(full.indexOf("Order tags without repeat:"), full.indexOf(RULE_LINE));
     expect(run.stdout).toBe(`  FAIL template.md\n${sections}`);
   });
 
@@ -432,12 +369,7 @@ describe("cli --verify schema: details", () => {
   });
 
   it("the filename convention is null in JSON when the template declares none", async () => {
-    const run = await runCliIn(`${GROUP}fail-unknown-tags`, [
-      "--verify",
-      "--format",
-      "json",
-      "template.md",
-    ]);
+    const run = await runCliIn(`${GROUP}fail-unknown-tags`, ["--verify", "--format", "json", "template.md"]);
     const json = JSON.parse(run.stdout) as { templates: { filenameCase: unknown }[] };
     expect(json.templates[0]?.filenameCase).toBeNull();
   });
@@ -445,18 +377,8 @@ describe("cli --verify schema: details", () => {
   it("uniqueHeadingNames is true only for the template-wide switch, never for the heading tag", async () => {
     // Spec 2.11, 8.5: always present, false without the frontmatter switch.
     const flags: Record<string, boolean> = {};
-    for (const name of [
-      "pass-unique-headings-names-switches",
-      "pass-unique-headings-names-without-filename",
-      "pass-unique-headings-names-per-heading-only",
-      "fail-unknown-tags",
-    ]) {
-      const run = await runCliIn(`${GROUP}${name}`, [
-        "--verify",
-        "--format",
-        "json",
-        "template.md",
-      ]);
+    for (const name of ["pass-unique-headings-names-switches", "pass-unique-headings-names-without-filename", "pass-unique-headings-names-per-heading-only", "fail-unknown-tags"]) {
+      const run = await runCliIn(`${GROUP}${name}`, ["--verify", "--format", "json", "template.md"]);
       flags[name] = parseJson(run.stdout).templates?.[0]?.uniqueHeadingNames ?? false;
     }
     expect(flags).toEqual({
@@ -475,14 +397,7 @@ describe("cli --verify schema: echoed text is sanitised", () => {
     folder = mkdtempSync(join(tmpdir(), "mtl-cli-schema-"));
     // Written from JS escapes: the YAML escape `\e` is an ESC byte in the field name, and the
     // heading and the constant carry a raw ESC. No control character is stored in a file of the repo.
-    const template = [
-      "---",
-      '"a\\eb": "string" # [format:constant:v\u001bw]',
-      "---",
-      "",
-      "## Head\u001bing [content:non-empty]",
-      "",
-    ].join("\n");
+    const template = ["---", '"a\\eb": "string" # [format:constant:v\u001bw]', "---", "", "## Head\u001bing [content:non-empty]", ""].join("\n");
     writeFileSync(join(folder, "esc.template.md"), template);
   });
 

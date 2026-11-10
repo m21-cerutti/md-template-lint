@@ -28,8 +28,7 @@ export class HeadingVisitor extends FamilyVisitor<HeadingParts> {
 }
 
 /** Classification of one heading item by the orchestrator (stage 2 included). */
-export type HeadingItemResult =
-  { readonly tag: BodyTag } | { readonly finding: Omit<TagFinding, "subject"> } | null;
+export type HeadingItemResult = { readonly tag: BodyTag } | { readonly finding: Omit<TagFinding, "subject"> } | null;
 
 export interface PeeledHeading {
   readonly text: string;
@@ -43,12 +42,8 @@ function tokenType(item: ParserRuleContext): number | null {
 }
 
 /** Peel recognized body tags from the right of the heading text items. */
-export function peelHeading(
-  items: readonly ParserRuleContext[],
-  classify: (item: ParserRuleContext) => HeadingItemResult,
-): PeeledHeading {
-  const isWs = (index: number): boolean =>
-    tokenType(items[index] as ParserRuleContext) === MdTemplateLexer.WS;
+export function peelHeading(items: readonly ParserRuleContext[], classify: (item: ParserRuleContext) => HeadingItemResult): PeeledHeading {
+  const isWs = (index: number): boolean => tokenType(items[index] as ParserRuleContext) === MdTemplateLexer.WS;
   let end = items.length;
   while (end > 0 && isWs(end - 1)) end -= 1;
   if (end > 0 && tokenType(items[end - 1] as ParserRuleContext) === MdTemplateLexer.HTML_COMMENT) {

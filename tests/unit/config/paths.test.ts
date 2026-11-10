@@ -3,13 +3,7 @@
  * slash, relative paths, `\` read as `/`, `..` folded. Pure functions, table driven.
  */
 import { describe, expect, it } from "vitest";
-import {
-  displayPath,
-  foldPath,
-  isAbsolutePath,
-  relativeInside,
-  resolvePath,
-} from "../../../src/config/paths.js";
+import { displayPath, foldPath, isAbsolutePath, relativeInside, resolvePath } from "../../../src/config/paths.js";
 
 const HOME = "/home/test";
 const WIN_HOME = "C:\\Users\\test";
@@ -48,10 +42,8 @@ describe("resolvePath", () => {
 describe("isAbsolutePath", () => {
   const absolute = ["/x", "\\x", "C:/x", "c:\\x", "//server/share", "C:\\"];
   const relative = ["x", "./x", "../x", "C:x", "~/x", "", "x/C:/y"];
-  for (const value of absolute)
-    it(`absolute: ${JSON.stringify(value)}`, () => expect(isAbsolutePath(value)).toBe(true));
-  for (const value of relative)
-    it(`relative: ${JSON.stringify(value)}`, () => expect(isAbsolutePath(value)).toBe(false));
+  for (const value of absolute) it(`absolute: ${JSON.stringify(value)}`, () => expect(isAbsolutePath(value)).toBe(true));
+  for (const value of relative) it(`relative: ${JSON.stringify(value)}`, () => expect(isAbsolutePath(value)).toBe(false));
 });
 
 describe("foldPath, relativeInside, displayPath", () => {

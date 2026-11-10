@@ -1,6 +1,6 @@
 ---
-title: Architecture overview  # [presence:required]
-last_updated: 2026-10-29  # [presence:required] [format:date] type=date
+title: Architecture overview # [presence:required]
+last_updated: 2026-10-29 # [presence:required] [format:date] type=date
 ---
 
 # Architecture title [pattern:"{text}"]
@@ -23,10 +23,10 @@ Sources: `path/to/entry-point`, `path/to/main-module`
 
 ## Legend [content:table]
 
-| Symbol          | Meaning                              |
-| --------------- | ------------------------------------ |
-| Solid arrow     | Direct call or data flow.            |
-| Dashed arrow    | Asynchronous or optional dependency. |
+| Symbol       | Meaning                              |
+| ------------ | ------------------------------------ |
+| Solid arrow  | Direct call or data flow.            |
+| Dashed arrow | Asynchronous or optional dependency. |
 
 ## Layering rules [presence:optional] [content:list]
 

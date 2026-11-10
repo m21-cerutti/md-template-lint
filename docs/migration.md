@@ -149,18 +149,18 @@ pairs:
 History and mapping note. The old tools no longer exist; this shows what replaces each
 call.
 
-| Old call                                       | New                                                                     |
-| ---------------------------------------------- | ----------------------------------------------------------------------- |
-| any per-project wrapper script                 | `md-template-lint` (multi-root config for the multi-project layout)     |
-| Python linter `<template> <file> [<file>...]`  | `md-template-lint <file> [<file>...]` (template from the matching pair) |
+| Old call                                      | New                                                                     |
+| --------------------------------------------- | ----------------------------------------------------------------------- |
+| any per-project wrapper script                | `md-template-lint` (multi-root config for the multi-project layout)     |
+| Python linter `<template> <file> [<file>...]` | `md-template-lint <file> [<file>...]` (template from the matching pair) |
 | Python linter `<template>` (parse only)       | `md-template-lint --verify <template>` (no config needed)               |
-| `--pattern <regex>` (regex on the file name)   | dropped: an `include` glob of a pair, recursion explicit with `**`      |
-| `--dir <path>`                                 | dropped: the folder is part of the `include` glob (or a `roots` entry)  |
-| `--ignore <regex>` (repeatable)                | dropped: `exclude` glob(s) of the pair                                  |
-| `--base-dir <path>` (for `[io:exists]`)        | dropped: relative paths resolve against the root of the pair            |
-| `--help`, `-h`                                 | `--help`, `-h`                                                          |
-| no arguments (usage error, exit 1)             | `md-template-lint` lints the whole config; this is not an error         |
-| (none)                                         | `--config <path>`, `--format text\|plain\|json`, `--quiet`, `--version` |
+| `--pattern <regex>` (regex on the file name)  | dropped: an `include` glob of a pair, recursion explicit with `**`      |
+| `--dir <path>`                                | dropped: the folder is part of the `include` glob (or a `roots` entry)  |
+| `--ignore <regex>` (repeatable)               | dropped: `exclude` glob(s) of the pair                                  |
+| `--base-dir <path>` (for `[io:exists]`)       | dropped: relative paths resolve against the root of the pair            |
+| `--help`, `-h`                                | `--help`, `-h`                                                          |
+| no arguments (usage error, exit 1)            | `md-template-lint` lints the whole config; this is not an error         |
+| (none)                                        | `--config <path>`, `--format text\|plain\|json`, `--quiet`, `--version` |
 
 Exit codes: the old tools returned 1 for a lint failure, a missing input and a usage
 error alike. The CLI returns `0` clean, `1` lint failure or broken template, `2` usage,
@@ -197,33 +197,33 @@ D18 in section 5, assumptions in section 10, kept quirks and other changes in se
 The comparison with the old linter accepted only documented divergences
 ([ADR 0006](adr/0006-parity-reached.md)). What a migrating user will notice:
 
-| Id            | Change                                                                                                                                                                                          |
-| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| D01           | Agent and skill pairs now find their templates (`agent.template.md`, `skill.template.md`) and are really linted. A missing template is always an error (`MTL910`, exit 2), never a silent skip. |
-| D02, C03      | A missing root is `MTL909`; an empty file set is `MTL913` with a severity from `onEmpty` (default `warn`). `No files linted.` replaces `All files passed!` when nothing was linted.             |
-| D03           | Output order is fixed: roots in declaration order, pairs in config order, files sorted.                                                                                                         |
-| D04           | One path resolver for config values: `~` expands, `C:/x` is absolute, `\` is read as `/`.                                                                                                       |
-| D05           | One process per run; each template is parsed once.                                                                                                                                              |
-| D06           | `Warnings:` counts warning diagnostics (and shows the number of files with warnings); the summary has extra lines for run warnings and run errors.                                              |
-| D07           | `--pattern`, `--dir`, `--ignore` and the regex `exclude` are replaced by globs in the config.                                                                                                   |
-| D08, D15, D18 | Every printed path is relative to its root and uses `/`, so same-named files in different folders can be told apart.                                                                            |
-| D09           | Exit codes: 0 clean, 1 lint failure or broken template, 2 usage, config or missing-input error.                                                                                                 |
-| D11           | `[io:exists]` relative paths resolve against the pair root, not the working directory; `--base-dir` is gone.                                                                                    |
-| D12           | The global alias file is replaced by `aliases` and `approvedPaths` in the project config (see "Aliases and approved paths"). `MTL801` and `MTL803` name the config.                             |
-| D14           | A missing project root no longer aborts the run; the other roots are linted.                                                                                                                    |
-| D16, C02      | A broken template is printed once as `TEMPLATE ERROR: <template> - <message>`; the `(skipping remaining ...)` line is gone.                                                                     |
-| C01           | A file argument that does not exist is `MTL912`; the other files are still linted (exit 2 at the end).                                                                                          |
-| C04           | A template path that is a directory is `MTL911` (exit 2), not a broken template.                                                                                                                |
-| C05           | A valid tag in the wrong region (a heading tag in frontmatter, or the reverse) is the warning `MTL013`, shown by `--verify`.                                                                    |
-| C07           | New output formats (`--format text\|plain\|json`); `[io:exists]` URL probes are hardened (no redirects, private ranges refused unless `allowPrivateNetworks`).                                  |
-| AS4           | One indented line per diagnostic instead of the nested `FAIL ... has errors:` / `WARN ... has N warning(s):` blocks, followed by the offending source line (and a caret row when the column is known, C09). The messages are unchanged.                                                |
-| AS5           | Globs are case-sensitive on every OS (PowerShell wildcards were case-insensitive on Windows).                                                                                                   |
-| AS6           | A template file never lints itself when it matches the `include` of its own pair.                                                                                                               |
-| C10           | Every heading level (H1 to H6) is checked, levels are matched exactly. BREAKING, see "H3 and deeper headings are checked".                                                                      |
+| Id            | Change                                                                                                                                                                                                                                                                                  |
+| ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| D01           | Agent and skill pairs now find their templates (`agent.template.md`, `skill.template.md`) and are really linted. A missing template is always an error (`MTL910`, exit 2), never a silent skip.                                                                                         |
+| D02, C03      | A missing root is `MTL909`; an empty file set is `MTL913` with a severity from `onEmpty` (default `warn`). `No files linted.` replaces `All files passed!` when nothing was linted.                                                                                                     |
+| D03           | Output order is fixed: roots in declaration order, pairs in config order, files sorted.                                                                                                                                                                                                 |
+| D04           | One path resolver for config values: `~` expands, `C:/x` is absolute, `\` is read as `/`.                                                                                                                                                                                               |
+| D05           | One process per run; each template is parsed once.                                                                                                                                                                                                                                      |
+| D06           | `Warnings:` counts warning diagnostics (and shows the number of files with warnings); the summary has extra lines for run warnings and run errors.                                                                                                                                      |
+| D07           | `--pattern`, `--dir`, `--ignore` and the regex `exclude` are replaced by globs in the config.                                                                                                                                                                                           |
+| D08, D15, D18 | Every printed path is relative to its root and uses `/`, so same-named files in different folders can be told apart.                                                                                                                                                                    |
+| D09           | Exit codes: 0 clean, 1 lint failure or broken template, 2 usage, config or missing-input error.                                                                                                                                                                                         |
+| D11           | `[io:exists]` relative paths resolve against the pair root, not the working directory; `--base-dir` is gone.                                                                                                                                                                            |
+| D12           | The global alias file is replaced by `aliases` and `approvedPaths` in the project config (see "Aliases and approved paths"). `MTL801` and `MTL803` name the config.                                                                                                                     |
+| D14           | A missing project root no longer aborts the run; the other roots are linted.                                                                                                                                                                                                            |
+| D16, C02      | A broken template is printed once as `TEMPLATE ERROR: <template> - <message>`; the `(skipping remaining ...)` line is gone.                                                                                                                                                             |
+| C01           | A file argument that does not exist is `MTL912`; the other files are still linted (exit 2 at the end).                                                                                                                                                                                  |
+| C04           | A template path that is a directory is `MTL911` (exit 2), not a broken template.                                                                                                                                                                                                        |
+| C05           | A valid tag in the wrong region (a heading tag in frontmatter, or the reverse) is the warning `MTL013`, shown by `--verify`.                                                                                                                                                            |
+| C07           | New output formats (`--format text\|plain\|json`); `[io:exists]` URL probes are hardened (no redirects, private ranges refused unless `allowPrivateNetworks`).                                                                                                                          |
+| AS4           | One indented line per diagnostic instead of the nested `FAIL ... has errors:` / `WARN ... has N warning(s):` blocks, followed by the offending source line (and a caret row when the column is known, C09). The messages are unchanged.                                                 |
+| AS5           | Globs are case-sensitive on every OS (PowerShell wildcards were case-insensitive on Windows).                                                                                                                                                                                           |
+| AS6           | A template file never lints itself when it matches the `include` of its own pair.                                                                                                                                                                                                       |
+| C10           | Every heading level (H1 to H6) is checked, levels are matched exactly. BREAKING, see "H3 and deeper headings are checked".                                                                                                                                                              |
 | C10           | Headings are matched by position: an extra heading before or between template headings shifts the match, extras after the last one give the warning `MTL616`, a swapped pair is `MTL601` with a hint, template errors fail lint runs. BREAKING, see "Headings are matched by position". |
-| C10           | `[presence:exist]` is removed (a malformed tag, `MTL012`; the heading is then reported missing) and `MTL602` is retired. BREAKING, see "The `exist` presence tag is removed". |
-| C11           | A template field of type `date` or `list-of-date` without a `[format:date]` or `[format:elements:date]` tag gives the warning `MTL016` in `--verify` only (exit code unchanged). Not breaking. |
-| C12           | Order tags compare the heading text, an order tag without repeat tag is the template error `MTL030`, `{int}` is renamed `{digits}`, `{text}` case formats refuse digits only. BREAKING for templates that use them, see "Other changes for heading tags". |
+| C10           | `[presence:exist]` is removed (a malformed tag, `MTL012`; the heading is then reported missing) and `MTL602` is retired. BREAKING, see "The `exist` presence tag is removed".                                                                                                           |
+| C11           | A template field of type `date` or `list-of-date` without a `[format:date]` or `[format:elements:date]` tag gives the warning `MTL016` in `--verify` only (exit code unchanged). Not breaking.                                                                                          |
+| C12           | Order tags compare the heading text, an order tag without repeat tag is the template error `MTL030`, `{int}` is renamed `{digits}`, `{text}` case formats refuse digits only. BREAKING for templates that use them, see "Other changes for heading tags".                               |
 
 Kept on purpose from the old linter (spec 11.1, quirks Q01 to Q08): for example the
 Python-style list text in some messages (`['a', 'b']`), and that unknown and malformed
@@ -256,12 +256,12 @@ released in version 0.2.0. Read it before you upgrade a project that has templat
 
 ### New codes and tag
 
-| Code     | Kind     | Meaning                                                                                              |
-| -------- | -------- | ---------------------------------------------------------------------------------------------------- |
-| `MTL610` | error    | A required heading of level 3 to 6 is missing in the section of its parent.                          |
-| `MTL611` | error    | The headings of one parent are not in template order inside its section.                             |
-| `MTL612` | error    | A heading the template does not list sits under a heading tagged `[content:subheadings:disallow]`.   |
-| `MTL015` | warning  | A heading tag has no effect (for example a tag on a `[presence:template-only]` heading, or a tag that needs a `[pattern:...]`). |
+| Code     | Kind    | Meaning                                                                                                                         |
+| -------- | ------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `MTL610` | error   | A required heading of level 3 to 6 is missing in the section of its parent.                                                     |
+| `MTL611` | error   | The headings of one parent are not in template order inside its section.                                                        |
+| `MTL612` | error   | A heading the template does not list sits under a heading tagged `[content:subheadings:disallow]`.                              |
+| `MTL015` | warning | A heading tag has no effect (for example a tag on a `[presence:template-only]` heading, or a tag that needs a `[pattern:...]`). |
 
 `[content:subheadings:disallow]` is the error opt-out for extra headings in a whole subtree
 (`[content:subheadings:no-extra]`, `MTL615`, is the second one: it covers the direct children
@@ -371,12 +371,12 @@ What happens to a template that still uses it:
 Migration table. The text written before the tag is an author hint only and is never
 compared:
 
-| Before                                        | After                                                                                                                                                                     |
-| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `# ADR [presence:exist]`                      | `# ADR - Title [pattern:"ADR - {text}"]`, or `# Title [pattern:"{text}"]` for any H1                                                                                      |
-| `## Epic A - Title [presence:exist]`          | `## Epic A - Title [pattern:"Epic {char} - {text}"] [repeat-rules:same-level] [order:ascending]` (one heading per epic, epics in letter order)                            |
-| `## Changes [presence:exist] [content:table]` | `## Changes [content:table]` when the heading text is fixed (plain required heading)                                                                                      |
-| `### Version [presence:exist]`                | `### 0.0.0 [pattern:"{semver}"]`                                                                                                                                          |
+| Before                                        | After                                                                                                                                          |
+| --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `# ADR [presence:exist]`                      | `# ADR - Title [pattern:"ADR - {text}"]`, or `# Title [pattern:"{text}"]` for any H1                                                           |
+| `## Epic A - Title [presence:exist]`          | `## Epic A - Title [pattern:"Epic {char} - {text}"] [repeat-rules:same-level] [order:ascending]` (one heading per epic, epics in letter order) |
+| `## Changes [presence:exist] [content:table]` | `## Changes [content:table]` when the heading text is fixed (plain required heading)                                                           |
+| `### Version [presence:exist]`                | `### 0.0.0 [pattern:"{semver}"]`                                                                                                               |
 
 One difference: `{text}` refuses a purely numeric text, so a heading such as `## 2026`
 needs `{digits}`, `{number}` or `{date:format:year}`. A numeric heading with a leading zero

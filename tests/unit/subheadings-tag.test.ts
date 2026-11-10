@@ -7,8 +7,7 @@ import { describe, expect, it } from "vitest";
 import { parseDocument, type BodyHeading } from "../../src/index.js";
 
 const doc = (...lines: string[]) => parseDocument(lines.join("\n"));
-const headings = (result: ReturnType<typeof parseDocument>): BodyHeading[] =>
-  result.body.filter((b): b is BodyHeading => b.kind === "heading");
+const headings = (result: ReturnType<typeof parseDocument>): BodyHeading[] => result.body.filter((b): b is BodyHeading => b.kind === "heading");
 const DISALLOW = "[content:subheadings:disallow]";
 
 describe("[content:subheadings:disallow] on headings", () => {
@@ -34,14 +33,7 @@ describe("[content:subheadings:disallow] on headings", () => {
   });
 
   it("is peeled on every level of one nested document", () => {
-    const result = doc(
-      "# Changelog",
-      `## Unreleased ${DISALLOW}`,
-      `### Added ${DISALLOW}`,
-      `#### Details ${DISALLOW}`,
-      `##### Notes ${DISALLOW}`,
-      `###### Misc ${DISALLOW}`,
-    );
+    const result = doc("# Changelog", `## Unreleased ${DISALLOW}`, `### Added ${DISALLOW}`, `#### Details ${DISALLOW}`, `##### Notes ${DISALLOW}`, `###### Misc ${DISALLOW}`);
     expect(result.findings).toEqual([]);
     expect(headings(result).map((h) => [h.level, h.text, h.tags.map((t) => t.kind)])).toEqual([
       [1, "Changelog", []],
@@ -95,9 +87,7 @@ describe("[content:subheadings:disallow] in a frontmatter comment is misplaced (
     ]);
     const key = result.frontmatter?.lines[0];
     expect(key?.kind === "key" ? key.comment?.tags : null).toEqual([]);
-    expect(headings(result)).toMatchObject([
-      { level: 4, text: "Deep", tags: [{ kind: "content", check: "subheadings-disallow" }] },
-    ]);
+    expect(headings(result)).toMatchObject([{ level: 4, text: "Deep", tags: [{ kind: "content", check: "subheadings-disallow" }] }]);
   });
 });
 
@@ -133,9 +123,7 @@ describe("[content:subheadings:disallow] with a second tag on the same heading",
 
   it("keeps the tag and reports a malformed neighbour on an H3 heading", () => {
     const result = doc(`### Unreleased [content:subheadings] ${DISALLOW}`);
-    expect(result.findings).toMatchObject([
-      { region: "body", reason: "malformed", tag: "[content:subheadings]" },
-    ]);
+    expect(result.findings).toMatchObject([{ region: "body", reason: "malformed", tag: "[content:subheadings]" }]);
     expect(headings(result)).toMatchObject([
       {
         text: "Unreleased [content:subheadings]",

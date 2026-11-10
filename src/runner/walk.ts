@@ -13,10 +13,7 @@ import { matchesGlob, type CompiledGlob } from "../config/glob.js";
  */
 export async function listFiles(rootDir: string, bases: readonly string[]): Promise<string[]> {
   const unique = [...new Set(bases)];
-  const starts = unique.filter(
-    (base) =>
-      !unique.some((other) => other !== base && (other === "" || base.startsWith(`${other}/`))),
-  );
+  const starts = unique.filter((base) => !unique.some((other) => other !== base && (other === "" || base.startsWith(`${other}/`))));
   const found = new Set<string>();
 
   async function walk(relative: string): Promise<void> {
@@ -70,18 +67,10 @@ async function existsWithExactCase(rootDir: string, base: string): Promise<boole
 }
 
 /** Targets of a pair below a root: a match of an include and of no exclude (spec 6.3). */
-export async function targetsOf(
-  rootDir: string,
-  includes: readonly CompiledGlob[],
-  excludes: readonly CompiledGlob[],
-): Promise<string[]> {
+export async function targetsOf(rootDir: string, includes: readonly CompiledGlob[], excludes: readonly CompiledGlob[]): Promise<string[]> {
   const files = await listFiles(
     rootDir,
     includes.map((glob) => glob.base),
   );
-  return files.filter(
-    (path) =>
-      includes.some((glob) => matchesGlob(glob, path)) &&
-      !excludes.some((glob) => matchesGlob(glob, path)),
-  );
+  return files.filter((path) => includes.some((glob) => matchesGlob(glob, path)) && !excludes.some((glob) => matchesGlob(glob, path)));
 }

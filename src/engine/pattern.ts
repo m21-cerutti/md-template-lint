@@ -140,14 +140,7 @@ export interface PatternMatch {
  * cut never splits a surrogate pair. `failed` remembers the (piece, start)
  * pairs known to have no cut, so a long heading stays linear per placeholder.
  */
-function cut(
-  pieces: readonly PatternPiece[],
-  chars: readonly string[],
-  whole: boolean,
-  at = 0,
-  from = 0,
-  failed = new Set<number>(),
-): string[] | null {
+function cut(pieces: readonly PatternPiece[], chars: readonly string[], whole: boolean, at = 0, from = 0, failed = new Set<number>()): string[] | null {
   const piece = pieces[at];
   if (piece === undefined) return !whole || from === chars.length ? [] : null;
   const key = at * (chars.length + 1) + from;
@@ -217,8 +210,7 @@ export function orderToken(tag: OrderTag): string {
 export const orderTagText = (tag: OrderTag): string => `[${orderToken(tag)}]`;
 
 const ASCII_DIGIT = /^[0-9]$/;
-const isAsciiDigit = (char: string | undefined): boolean =>
-  char !== undefined && ASCII_DIGIT.test(char);
+const isAsciiDigit = (char: string | undefined): boolean => char !== undefined && ASCII_DIGIT.test(char);
 /**
  * The digits-onward part of a NUMERIC TEXT (spec 2.10) at the start of a text: each part is
  * greedy and optional parts are taken when present, so the match is the LONGEST prefix.
@@ -243,8 +235,7 @@ export function firstNumber(text: string): number | null {
   if (start < 0) return null;
   const digits = UNSIGNED_NUMERIC.exec(chars.slice(start).join(""))?.[0] ?? "";
   const beforeSign = chars[start - 2];
-  const signed =
-    chars[start - 1] === "-" && (beforeSign === undefined || !LETTER_OR_DIGIT.test(beforeSign));
+  const signed = chars[start - 1] === "-" && (beforeSign === undefined || !LETTER_OR_DIGIT.test(beforeSign));
   return Number(`${signed ? "-" : ""}${digits}`);
 }
 
@@ -286,8 +277,7 @@ export function firstSemver(text: string): string | null {
 }
 
 /** Compares two numeric identifiers without leading zeros (any length) by value. */
-const compareDigits = (a: string, b: string): number =>
-  a.length !== b.length ? a.length - b.length : a < b ? -1 : a > b ? 1 : 0;
+const compareDigits = (a: string, b: string): number => (a.length !== b.length ? a.length - b.length : a < b ? -1 : a > b ? 1 : 0);
 
 /** Compares two pre-release identifiers (SemVer 2.0.0 section 11.4.1 to 11.4.3). */
 function compareIdentifier(a: string, b: string): number {

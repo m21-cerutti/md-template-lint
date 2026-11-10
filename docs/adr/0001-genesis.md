@@ -37,8 +37,8 @@ The linter is a TypeScript package named `md-template-lint` (MIT, Node >=22, ESM
 
 ## Alternatives considered
 
-| Option | Pros | Cons | Verdict |
-| --- | --- | --- | --- |
-| TypeScript + ANTLR (antlr-ng) | split lexer and parser grammars (ADR 0002), typed AST, pnpm install (ADR 0003), no Java | build step, generated parser to maintain | Chosen |
-| Keep Python script + wrappers | no work, already works | per-project copies, regex sprawl, no npm story | Rejected |
-| TypeScript with hand-written regexes | no parser toolchain | repeats the legacy regex sprawl | Rejected |
+| Option                               | Pros                                                                                    | Cons                                           | Verdict  |
+| ------------------------------------ | --------------------------------------------------------------------------------------- | ---------------------------------------------- | -------- |
+| TypeScript + ANTLR (antlr-ng)        | split lexer and parser grammars (ADR 0002), typed AST, pnpm install (ADR 0003), no Java | build step, generated parser to maintain       | Chosen   |
+| Keep Python script + wrappers        | no work, already works                                                                  | per-project copies, regex sprawl, no npm story | Rejected |
+| TypeScript with hand-written regexes | no parser toolchain                                                                     | repeats the legacy regex sprawl                | Rejected |

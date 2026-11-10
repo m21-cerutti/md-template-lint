@@ -29,10 +29,7 @@ beforeAll(() => {
   mkdirSync(join(project, "docs"));
   mkdirSync(join(project, "templates"));
   copyFileSync(join(SOURCE, "md-template-lint.yml"), join(project, "md-template-lint.yml"));
-  copyFileSync(
-    join(SOURCE, "templates", "note.template.md"),
-    join(project, "templates", "note.template.md"),
-  );
+  copyFileSync(join(SOURCE, "templates", "note.template.md"), join(project, "templates", "note.template.md"));
   for (const name of names) copyFileSync(join(SOURCE, "docs", "a.md"), join(project, name));
 });
 

@@ -40,24 +40,9 @@ import { createRegistry, runPhase, type RuleRegistry } from "../engine/registry.
 import type { RuleEnv, RuleIo } from "../engine/rule.js";
 import { withExcerpts } from "./excerpt.js";
 import { isDirectory, isRegularFile, readUtf8, samePath, templateProblem } from "./files.js";
-import {
-  listedMatches,
-  resolveFileList,
-  type FileListInput,
-  type ListedFile,
-  type ListedMatch,
-} from "./list.js";
+import { listedMatches, resolveFileList, type FileListInput, type ListedFile, type ListedMatch } from "./list.js";
 import { brokenReport, loadTemplate, withoutText, type LintTemplate } from "./template.js";
-import type {
-  Block,
-  ExitCode,
-  FileResult,
-  PairBlock,
-  ReportedDiagnostic,
-  RunResult,
-  RunSummary,
-  TemplateReport,
-} from "./types.js";
+import type { Block, ExitCode, FileResult, PairBlock, ReportedDiagnostic, RunResult, RunSummary, TemplateReport } from "./types.js";
 import { targetsOf } from "./walk.js";
 
 export interface RunOptions {
@@ -77,9 +62,7 @@ const PARSE_CODES = new Set(["MTL001", "MTL002", "MTL003", "MTL004"]);
 
 /** Spec 4.1 step 1: a parse failure of a target is printed `Parse error: <message>`. */
 function parseErrorPrefix(diagnostic: Diagnostic): Diagnostic {
-  return PARSE_CODES.has(diagnostic.code)
-    ? { ...diagnostic, message: `Parse error: ${diagnostic.message}` }
-    : diagnostic;
+  return PARSE_CODES.has(diagnostic.code) ? { ...diagnostic, message: `Parse error: ${diagnostic.message}` } : diagnostic;
 }
 
 interface Counts {
@@ -189,18 +172,12 @@ export async function runLint(loaded: ConfigResult, options: RunOptions): Promis
   };
 
   // File-list mode (spec 7.2): the arguments, and the ones some pair accepted.
-  const listed: readonly ListedFile[] | null =
-    options.files === undefined ? null : resolveFileList(options.files);
+  const listed: readonly ListedFile[] | null = options.files === undefined ? null : resolveFileList(options.files);
   const matchedAnywhere = new Set<string>();
   const missingReported = new Set<string>();
 
   /** Keep the listed targets that exist; each missing one is `MTL912`, once per file. */
-  const existingTargets = async (
-    matches: readonly ListedMatch[],
-    pair: PairConfig,
-    rootName: string,
-    rootDir: string,
-  ): Promise<string[]> => {
+  const existingTargets = async (matches: readonly ListedMatch[], pair: PairConfig, rootName: string, rootDir: string): Promise<string[]> => {
     const files: string[] = [];
     for (const match of matches) {
       if (await isRegularFile(`${rootDir}/${match.relative}`)) files.push(match.relative);
@@ -218,12 +195,7 @@ export async function runLint(loaded: ConfigResult, options: RunOptions): Promis
     return files;
   };
 
-  const lintFile = async (
-    status: Extract<LintTemplate, { status: "ok" }>,
-    rootDir: string,
-    env: RuleEnv,
-    relative: string,
-  ): Promise<FileResult> => {
+  const lintFile = async (status: Extract<LintTemplate, { status: "ok" }>, rootDir: string, env: RuleEnv, relative: string): Promise<FileResult> => {
     const read = await readUtf8(`${rootDir}/${relative}`);
     let found: Diagnostic[];
     if (read.ok) {
@@ -237,20 +209,13 @@ export async function runLint(loaded: ConfigResult, options: RunOptions): Promis
     }
     // Spec 8.1: the target line of each diagnostic, from the text just read (no second read).
     const prefixed = found.map(parseErrorPrefix);
-    const diagnostics: readonly ReportedDiagnostic[] = read.ok
-      ? withExcerpts(prefixed, read.text)
-      : prefixed;
+    const diagnostics: readonly ReportedDiagnostic[] = read.ok ? withExcerpts(prefixed, read.text) : prefixed;
     const errors = diagnostics.filter((diagnostic) => diagnostic.severity === "error");
     const warnings = diagnostics.filter((diagnostic) => diagnostic.severity === "warning");
     return { path: relative, status: errors.length > 0 ? "fail" : "pass", errors, warnings };
   };
 
-  const runPair = async (
-    pair: PairConfig,
-    rootName: string,
-    rootDir: string,
-    matches: readonly ListedMatch[] | null,
-  ): Promise<void> => {
+  const runPair = async (pair: PairConfig, rootName: string, rootDir: string, matches: readonly ListedMatch[] | null): Promise<void> => {
     let files: string[] = [];
     if (matches !== null) {
       files = await existingTargets(matches, pair, rootName, rootDir);
@@ -280,9 +245,7 @@ export async function runLint(loaded: ConfigResult, options: RunOptions): Promis
     }
 
     if (matches === null) {
-      files = (await targetsOf(rootDir, pair.includeGlobs, pair.excludeGlobs)).filter(
-        (relative) => !samePath(foldPath(`${rootDir}/${relative}`), pair.templatePath),
-      );
+      files = (await targetsOf(rootDir, pair.includeGlobs, pair.excludeGlobs)).filter((relative) => !samePath(foldPath(`${rootDir}/${relative}`), pair.templatePath));
       if (files.length === 0) {
         if (pair.onEmpty === "ignore") return;
         const diagnostic: RunDiagnostic = {
@@ -362,19 +325,6 @@ export async function runLint(loaded: ConfigResult, options: RunOptions): Promis
     }
     for (const pair of pairs) await runPair(pair, rootName, rootDir, matches?.get(pair) ?? null);
   }
-  const unmatched =
-    listed === null
-      ? []
-      : listed.filter((file) => !matchedAnywhere.has(file.key)).map((file) => file.shown);
-  return finish(
-    config.display,
-    blocks,
-    runErrors,
-    runWarnings,
-    checked,
-    broken,
-    failedTemplates,
-    unmatched,
-    suppressed,
-  );
+  const unmatched = listed === null ? [] : listed.filter((file) => !matchedAnywhere.has(file.key)).map((file) => file.shown);
+  return finish(config.display, blocks, runErrors, runWarnings, checked, broken, failedTemplates, unmatched, suppressed);
 }

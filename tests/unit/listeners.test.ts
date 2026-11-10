@@ -5,16 +5,11 @@
  */
 import { describe, expect, it } from "vitest";
 import { MdTemplateLexer } from "../../src/generated/MdTemplateLexer.js";
-import {
-  createRecognizers,
-  DiagnosticCollector,
-  type PositionMap,
-} from "../../src/tags/listeners.js";
+import { createRecognizers, DiagnosticCollector, type PositionMap } from "../../src/tags/listeners.js";
 import { analyzeDocument, InternalParseError } from "../../src/tags/parser.js";
 
 /** Text line 1 starts at file line 10, column 5 (as for a bracket inside a file). */
-const offset: PositionMap = (line, column) =>
-  line === 1 ? { line: 10, column: 5 + column } : { line: 9 + line, column: column + 1 };
+const offset: PositionMap = (line, column) => (line === 1 ? { line: 10, column: 5 + column } : { line: 9 + line, column: column + 1 });
 
 const findingsOf = (...lines: string[]) =>
   analyzeDocument(lines.join("\n")).findings.map((f) => ({
@@ -28,9 +23,7 @@ const findingsOf = (...lines: string[]) =>
 
 describe("listeners: fixture table", () => {
   it("passes: clean input collects no grammar error and no finding", () => {
-    const analysis = analyzeDocument(
-      "---\nid: x # [presence:optional] [date]\n---\n## Notes [content:list]\n",
-    );
+    const analysis = analyzeDocument("---\nid: x # [presence:optional] [date]\n---\n## Notes [content:list]\n");
     expect(analysis.grammarErrors).toEqual([]);
     expect(analysis.findings).toEqual([]);
     expect(analysis.document).not.toBeNull();

@@ -26,10 +26,8 @@ const registry = createRegistry();
 const missing = (key: string) => `MTL201 Field '${key}': required but empty or missing`;
 const unknown = (key: string) => `MTL202 Unknown key '${key}' not present in template`;
 const EMPTY = "MTL701 Section 'Overview': [content:non-empty] section body is empty";
-const PATH_MISSING =
-  "MTL804 Field 'logo': path 'docs/missing.png' does not exist (resolved: docs/missing.png)";
-const directive = (code: string, line: number, column: number, text: string) =>
-  `${code} Directive on line ${line}: ${text} @${line}:${column}`;
+const PATH_MISSING = "MTL804 Field 'logo': path 'docs/missing.png' does not exist (resolved: docs/missing.png)";
+const directive = (code: string, line: number, column: number, text: string) => `${code} Directive on line ${line}: ${text} @${line}:${column}`;
 
 interface Case {
   readonly name: string;
@@ -64,32 +62,14 @@ const CASES: readonly Case[] = [
   { name: "pass-begin-end-inclusive", reported: [], suppressed: 3 },
   {
     name: "fail-begin-end-outside-range",
-    reported: [
-      missing("status"),
-      unknown("other"),
-      directive(
-        "MTL024",
-        3,
-        1,
-        "'begin disable MTL201' is never closed, it runs to the end of the file",
-      ),
-    ],
+    reported: [missing("status"), unknown("other"), directive("MTL024", 3, 1, "'begin disable MTL201' is never closed, it runs to the end of the file")],
     suppressed: 1,
   },
   // end disable: closes on its own line, nothing after it is covered.
   { name: "pass-end-disable-closes-on-its-line", reported: [], suppressed: 2 },
   {
     name: "fail-end-disable-stops-coverage",
-    reported: [
-      EMPTY,
-      unknown("extra"),
-      directive(
-        "MTL023",
-        11,
-        1,
-        "'end disable MTL701' has no open 'disable' or 'begin disable' for MTL701",
-      ),
-    ],
+    reported: [EMPTY, unknown("extra"), directive("MTL023", 11, 1, "'end disable MTL701' has no open 'disable' or 'begin disable' for MTL701")],
     suppressed: 0,
   },
   // disable-file: anywhere, with or without anchor, by code only. `## Appendix` is in the tail
@@ -104,16 +84,7 @@ const CASES: readonly Case[] = [
   // (MTL020 with the current verb list), so nothing is suppressed.
   {
     name: "fail-old-verb-disable-document-unknown",
-    reported: [
-      missing("status"),
-      directive(
-        "MTL020",
-        9,
-        1,
-        "unknown directive 'disable-document' (expected disable, disable-line, " +
-          "disable-next-line, disable-file, begin disable or end disable)",
-      ),
-    ],
+    reported: [missing("status"), directive("MTL020", 9, 1, "unknown directive 'disable-document' (expected disable, disable-line, " + "disable-next-line, disable-file, begin disable or end disable)")],
     suppressed: 0,
   },
   // DIR4: a template is never read for directives; fences and code spans are inert.
@@ -134,25 +105,13 @@ const CASES: readonly Case[] = [
   { name: "pass-multi-line-value-anchors-on-key-line", reported: [], suppressed: 1 },
   {
     name: "fail-filename-comment-line-is-prose",
-    reported: [
-      unknown("extra"),
-      directive("MTL021", 6, 1, "unknown rule code '[filename:case:kebab-case]'"),
-    ],
+    reported: [unknown("extra"), directive("MTL021", 6, 1, "unknown rule code '[filename:case:kebab-case]'")],
     suppressed: 1,
   },
   {
     // Columns count code points: `é` and the astral `😀` are one column each.
     name: "fail-non-ascii-before-comment-column",
-    reported: [
-      directive("MTL021", 4, 11, "unknown rule code 'MTL999'"),
-      directive(
-        "MTL020",
-        11,
-        8,
-        "unknown directive 'disabel' (expected disable, disable-line, disable-next-line, " +
-          "disable-file, begin disable or end disable)",
-      ),
-    ],
+    reported: [directive("MTL021", 4, 11, "unknown rule code 'MTL999'"), directive("MTL020", 11, 8, "unknown directive 'disabel' (expected disable, disable-line, disable-next-line, " + "disable-file, begin disable or end disable)")],
     suppressed: 1,
   },
   { name: "pass-reason-after-tab", reported: [], suppressed: 2 },
@@ -163,33 +122,12 @@ const CASES: readonly Case[] = [
     // one per code in the order written in that directive (MTL701 before MTL202).
     name: "fail-directive-warnings-order",
     reported: [
-      directive(
-        "MTL020",
-        11,
-        1,
-        "unknown directive 'disabel' (expected disable, disable-line, disable-next-line, " +
-          "disable-file, begin disable or end disable)",
-      ),
+      directive("MTL020", 11, 1, "unknown directive 'disabel' (expected disable, disable-line, disable-next-line, " + "disable-file, begin disable or end disable)"),
       directive("MTL021", 12, 1, "unknown rule code 'MTL2O1'"),
-      directive(
-        "MTL023",
-        13,
-        1,
-        "'end disable MTL301' has no open 'disable' or 'begin disable' for MTL301",
-      ),
+      directive("MTL023", 13, 1, "'end disable MTL301' has no open 'disable' or 'begin disable' for MTL301"),
       directive("MTL025", 14, 1, "'disable MTL202' while MTL202 is already disabled since line 4"),
-      directive(
-        "MTL024",
-        4,
-        1,
-        "'begin disable MTL701' is never closed, it runs to the end of the file",
-      ),
-      directive(
-        "MTL024",
-        4,
-        1,
-        "'begin disable MTL202' is never closed, it runs to the end of the file",
-      ),
+      directive("MTL024", 4, 1, "'begin disable MTL701' is never closed, it runs to the end of the file"),
+      directive("MTL024", 4, 1, "'begin disable MTL202' is never closed, it runs to the end of the file"),
     ],
     suppressed: 1,
   },
@@ -213,8 +151,7 @@ const CASES: readonly Case[] = [
   },
 ];
 
-const read = (name: string, file: string): string =>
-  readFileSync(`${fixturePath("suppression", name)}/${file}`, "utf8");
+const read = (name: string, file: string): string => readFileSync(`${fixturePath("suppression", name)}/${file}`, "utf8");
 
 const shown = (diagnostic: Diagnostic): string => {
   const text = `${diagnostic.code} ${diagnostic.message}`;
@@ -235,14 +172,9 @@ async function lint(name: string) {
 describe("suppression by target directives (spec 4.4)", () => {
   it("has at least 1 pass- case and at least 1 fail- case, one fixture dir each", () => {
     expectSplit("suppression", "", CASES);
-    expect(CASES.filter((testCase) => testCase.reported.length === 0)).toEqual(
-      CASES.filter((testCase) => testCase.name.startsWith("pass-")),
-    );
+    expect(CASES.filter((testCase) => testCase.reported.length === 0)).toEqual(CASES.filter((testCase) => testCase.name.startsWith("pass-")));
     for (const testCase of CASES) {
-      expect(readdirSync(fixturePath("suppression", testCase.name)).sort()).toEqual([
-        "target.md",
-        "template.md",
-      ]);
+      expect(readdirSync(fixturePath("suppression", testCase.name)).sort()).toEqual(["target.md", "template.md"]);
     }
   });
 
@@ -273,12 +205,7 @@ describe("suppression by target directives (spec 4.4)", () => {
     const lines = read("pass-disable-file-anywhere", "target.md").split("\n");
     const bare = [...lines.slice(0, -2), ""].join("\n");
     const plain = await lintTarget(registry, status.model, bare, "t.md", createEnv());
-    expect(plain.diagnostics.map(shown)).toEqual([
-      missing("status"),
-      EMPTY,
-      unknown("extra"),
-      "MTL616 Heading: 1 extra heading(s) at level H2 after the template headings: ['Appendix']",
-    ]);
+    expect(plain.diagnostics.map(shown)).toEqual([missing("status"), EMPTY, unknown("extra"), "MTL616 Heading: 1 extra heading(s) at level H2 after the template headings: ['Appendix']"]);
     expect(plain.suppressed).toBe(0);
     expect(result.suppressed).toBe(plain.diagnostics.length);
   });
@@ -309,29 +236,18 @@ describe("directive codes against the spec tables", () => {
     if (status.status !== "ok") throw new Error("template is broken");
     const target = `---\ntitle: Notes\n---\n\n<!-- md-template-lint disable ${codes.join(" ")} -->\n`;
     const { diagnostics } = await lintTarget(registry, status.model, target, "t.md", createEnv());
-    expect(diagnostics.map((diagnostic) => diagnostic.message)).toEqual(
-      codes.map((code) => `Directive on line 5: rule code ${code} cannot be disabled`),
-    );
+    expect(diagnostics.map((diagnostic) => diagnostic.message)).toEqual(codes.map((code) => `Directive on line 5: rule code ${code} cannot be disabled`));
     expect(diagnostics.every((diagnostic) => diagnostic.code === "MTL022")).toBe(true);
   });
 
   it("control characters in the MTL020 word and the MTL021 token are escaped on output (8.2)", async () => {
     const status = await checkTemplate(registry, "---\ntitle: Notes\n---\n");
     if (status.status !== "ok") throw new Error("template is broken");
-    const target =
-      "---\ntitle: Notes\n---\n\n" +
-      "<!-- md-template-lint dis\u0001abel MTL202 -->\n" +
-      "<!-- md-template-lint disable-line MTL\u001b[2J -->\n";
+    const target = "---\ntitle: Notes\n---\n\n" + "<!-- md-template-lint dis\u0001abel MTL202 -->\n" + "<!-- md-template-lint disable-line MTL\u001b[2J -->\n";
     const { diagnostics } = await lintTarget(registry, status.model, target, "t.md", createEnv());
     // The diagnostic keeps the text as written; every reporter prints it through cleanText.
-    expect(
-      diagnostics.map((diagnostic) => [diagnostic.code, cleanText(diagnostic.message)]),
-    ).toEqual([
-      [
-        "MTL020",
-        "Directive on line 5: unknown directive 'dis\\x01abel' (expected disable, disable-line, " +
-          "disable-next-line, disable-file, begin disable or end disable)",
-      ],
+    expect(diagnostics.map((diagnostic) => [diagnostic.code, cleanText(diagnostic.message)])).toEqual([
+      ["MTL020", "Directive on line 5: unknown directive 'dis\\x01abel' (expected disable, disable-line, " + "disable-next-line, disable-file, begin disable or end disable)"],
       ["MTL021", "Directive on line 6: unknown rule code 'MTL\\x1b[2J'"],
     ]);
   });

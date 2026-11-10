@@ -23,12 +23,7 @@ const env = createEnv({
     ["winstore", "C:\\store\\assets"],
     ["a-b_9", "ab-root"],
   ]),
-  io: createMemoryIo([
-    "assets-root/logo.png",
-    "assets-root/a.png",
-    "assets-root/b.png",
-    "assets-root/img/../gone.png",
-  ]),
+  io: createMemoryIo(["assets-root/logo.png", "assets-root/a.png", "assets-root/b.png", "assets-root/img/../gone.png"]),
 });
 
 /** Case -> fixture -> expected result: at least 1 passing case and 1 failing case. */
@@ -41,30 +36,22 @@ const CASES = [
   {
     name: "fail-aliased-path-does-not-exist",
     fixture: "tests/fixtures/pairs/MTL802/fail-aliased-path-does-not-exist",
-    expected: [
-      "Field 'logo': aliased path '@assets/gone.png' resolved to assets-root/gone.png — does not exist",
-    ],
+    expected: ["Field 'logo': aliased path '@assets/gone.png' resolved to assets-root/gone.png — does not exist"],
   },
   {
     name: "fail-nested-rest-keeps-sub-folders",
     fixture: "tests/fixtures/pairs/MTL802/fail-nested-rest-keeps-sub-folders",
-    expected: [
-      "Field 'logo': aliased path '@assets/img/deep/logo.png' resolved to assets-root/img/deep/logo.png — does not exist",
-    ],
+    expected: ["Field 'logo': aliased path '@assets/img/deep/logo.png' resolved to assets-root/img/deep/logo.png — does not exist"],
   },
   {
     name: "fail-dot-dot-in-rest-is-printed-unfolded",
     fixture: "tests/fixtures/pairs/MTL802/fail-dot-dot-in-rest-is-printed-unfolded",
-    expected: [
-      "Field 'logo': aliased path '@assets/img/../gone.png' resolved to assets-root/img/../gone.png — does not exist",
-    ],
+    expected: ["Field 'logo': aliased path '@assets/img/../gone.png' resolved to assets-root/img/../gone.png — does not exist"],
   },
   {
     name: "fail-alias-name-uses-dash-underscore-digit",
     fixture: "tests/fixtures/pairs/MTL802/fail-alias-name-uses-dash-underscore-digit",
-    expected: [
-      "Field 'logo': aliased path '@a-b_9/gone.png' resolved to ab-root/gone.png — does not exist",
-    ],
+    expected: ["Field 'logo': aliased path '@a-b_9/gone.png' resolved to ab-root/gone.png — does not exist"],
   },
   {
     name: "fail-root-prefixed-rest-is-stripped-under-alias-root",
@@ -78,34 +65,22 @@ const CASES = [
   {
     name: "fail-list-reports-only-missing-items-in-order",
     fixture: "tests/fixtures/pairs/MTL802/fail-list-reports-only-missing-items-in-order",
-    expected: [
-      "Field 'images': aliased path '@assets/z.png' resolved to assets-root/z.png — does not exist",
-      "Field 'images': aliased path '@assets/y.png' resolved to assets-root/y.png — does not exist",
-    ],
+    expected: ["Field 'images': aliased path '@assets/z.png' resolved to assets-root/z.png — does not exist", "Field 'images': aliased path '@assets/y.png' resolved to assets-root/y.png — does not exist"],
   },
   {
     name: "fail-alias-dir-with-backslashes-printed-with-slashes",
     fixture: "tests/fixtures/pairs/MTL802/fail-alias-dir-with-backslashes-printed-with-slashes",
-    expected: [
-      "Field 'logo': aliased path '@winstore/logo.png' resolved to C:/store/assets/logo.png — does not exist",
-    ],
+    expected: ["Field 'logo': aliased path '@winstore/logo.png' resolved to C:/store/assets/logo.png — does not exist"],
   },
 ] as const;
 
-const read = (path: string): string =>
-  readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
+const read = (path: string): string => readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
 
 /** Diagnostics of this code for the pair of a fixture folder. */
 async function lint(fixture: string) {
   const status = await checkTemplate(registry, read(`${fixture}/template.md`));
   if (status.status !== "ok") throw new Error(`${fixture}: template is broken`);
-  const found = await checkTarget(
-    registry,
-    status.model,
-    read(`${fixture}/target.md`),
-    `${fixture}/target.md`,
-    env,
-  );
+  const found = await checkTarget(registry, status.model, read(`${fixture}/target.md`), `${fixture}/target.md`, env);
   return found.filter((diagnostic) => diagnostic.code === CODE);
 }
 
@@ -139,16 +114,12 @@ describe("MTL802 alias-path-missing", () => {
     expect(failing.length).toBeGreaterThanOrEqual(1);
     expect(passing.length + failing.length).toBe(CASES.length);
     expect(CASES.filter((testCase) => testCase.expected.length === 0)).toEqual(passing);
-    expect(CASES.map((testCase) => testCase.fixture)).toEqual(
-      CASES.map((testCase) => `${DIR}/${testCase.name}`),
-    );
+    expect(CASES.map((testCase) => testCase.fixture)).toEqual(CASES.map((testCase) => `${DIR}/${testCase.name}`));
     // Orphan detection: no directory at any depth besides the cases, and each holds only the pair.
     const names = CASES.map((testCase) => testCase.name).sort();
     const tree = listTree();
     expect(tree.dirs).toEqual(names);
-    expect(tree.files).toEqual(
-      names.flatMap((name) => [`${name}/target.md`, `${name}/template.md`]).sort(),
-    );
+    expect(tree.files).toEqual(names.flatMap((name) => [`${name}/target.md`, `${name}/template.md`]).sort());
   });
 
   for (const testCase of CASES) {

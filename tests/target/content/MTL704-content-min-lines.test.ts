@@ -12,8 +12,7 @@ const CODE = "MTL704";
 const DIR = "tests/fixtures/pairs/MTL704";
 
 /** Expected message of section 'Steps' with minimum `n` and `count` non-blank lines. */
-const message = (n: number, count: number): string =>
-  `Section 'Steps': [content:min-lines:${n}] only ${count} non-blank line(s)`;
+const message = (n: number, count: number): string => `Section 'Steps': [content:min-lines:${n}] only ${count} non-blank line(s)`;
 
 /**
  * Case -> expected MTL704 messages, plus the template warning codes
@@ -104,16 +103,12 @@ const CASES = [
     // Spec 2.6: each instance of a repeat heading is checked and labelled with its own target
     // text; `Sprint 3` has 2 lines and passes.
     name: "fail-repeat-pattern-instances-labelled-by-own-text",
-    expected: [
-      `Section 'Sprint 1' (pattern "Sprint {number}"): [content:min-lines:2] only 1 non-blank line(s)`,
-      `Section 'Sprint 2' (pattern "Sprint {number}"): [content:min-lines:2] only 1 non-blank line(s)`,
-    ],
+    expected: [`Section 'Sprint 1' (pattern "Sprint {number}"): [content:min-lines:2] only 1 non-blank line(s)`, `Section 'Sprint 2' (pattern "Sprint {number}"): [content:min-lines:2] only 1 non-blank line(s)`],
     warnings: [],
   },
 ] as const;
 
-const read = (path: string): string =>
-  readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
+const read = (path: string): string => readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
 
 /** Every directory and file under DIR, at any depth, as sorted `/`-separated relative paths. */
 function listTree(): { dirs: string[]; files: string[] } {
@@ -132,13 +127,7 @@ async function lint(testCase: { readonly name: string }) {
   const fixture = `${DIR}/${testCase.name}`;
   const status = await checkTemplate(registry, read(`${fixture}/template.md`));
   if (status.status !== "ok") throw new Error(`${fixture}: template is broken`);
-  const found = await checkTarget(
-    registry,
-    status.model,
-    read(`${fixture}/target.md`),
-    `${fixture}/target.md`,
-    createEnv(),
-  );
+  const found = await checkTarget(registry, status.model, read(`${fixture}/target.md`), `${fixture}/target.md`, createEnv());
   return {
     found: found.filter((diagnostic) => diagnostic.code === CODE),
     warnings: status.warnings,
@@ -167,9 +156,7 @@ describe("MTL704 content-min-lines", () => {
     const names = CASES.map((testCase) => testCase.name).sort();
     const tree = listTree();
     expect(tree.dirs).toEqual(names);
-    expect(tree.files).toEqual(
-      names.flatMap((name) => [`${name}/target.md`, `${name}/template.md`]).sort(),
-    );
+    expect(tree.files).toEqual(names.flatMap((name) => [`${name}/target.md`, `${name}/template.md`]).sort());
   });
 
   it("anchors a section-scope finding on the target heading line (DIR5)", async () => {

@@ -16,8 +16,7 @@ export type FormatName = (typeof FORMAT_NAMES)[number];
 
 export type UsageCode = "MTL920" | "MTL921" | "MTL922";
 
-export const SYNTAX_DOC_URL =
-  "https://github.com/m21-cerutti/markdown-template-linter/blob/main/docs/syntax-reference.md";
+export const SYNTAX_DOC_URL = "https://github.com/m21-cerutti/md-template-lint/blob/main/docs/syntax-reference.md";
 export const SYNTAX_DOC_REMINDER = `Template syntax reference: ${SYNTAX_DOC_URL}`;
 
 export interface CliOptions {
@@ -29,11 +28,7 @@ export interface CliOptions {
   readonly files: readonly string[];
 }
 
-export type ParsedArgs =
-  | { readonly kind: "help" }
-  | { readonly kind: "version" }
-  | { readonly kind: "usage-error"; readonly code: UsageCode; readonly message: string }
-  | { readonly kind: "run"; readonly options: CliOptions };
+export type ParsedArgs = { readonly kind: "help" } | { readonly kind: "version" } | { readonly kind: "usage-error"; readonly code: UsageCode; readonly message: string } | { readonly kind: "run"; readonly options: CliOptions };
 
 export const USAGE = [
   "Usage:",
@@ -65,8 +60,7 @@ const error = (code: UsageCode, message: string): ParsedArgs => ({
   message,
 });
 
-const isFormat = (value: string): value is FormatName =>
-  (FORMAT_NAMES as readonly string[]).includes(value);
+const isFormat = (value: string): value is FormatName => (FORMAT_NAMES as readonly string[]).includes(value);
 
 /** Parse the arguments after `node cli.js` (`process.argv.slice(2)`). */
 export function parseArgs(argv: readonly string[]): ParsedArgs {
@@ -100,15 +94,11 @@ export function parseArgs(argv: readonly string[]): ParsedArgs {
           index += 1;
         }
       }
-      if (value === undefined || value === "")
-        return error("MTL921", `${name} requires an argument`);
+      if (value === undefined || value === "") return error("MTL921", `${name} requires an argument`);
       if (name === "--config") configPath = value;
       else if (isFormat(value)) format = value;
       else {
-        return error(
-          "MTL922",
-          `invalid value '${cleanText(value)}' for --format (expected text, plain or json)`,
-        );
+        return error("MTL922", `invalid value '${cleanText(value)}' for --format (expected text, plain or json)`);
       }
     } else if (arg.startsWith("-") && arg !== "-") {
       return error("MTL920", `unknown option: ${cleanText(arg)}`);

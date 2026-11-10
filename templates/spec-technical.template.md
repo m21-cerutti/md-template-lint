@@ -1,6 +1,6 @@
 ---
-title: Technical specification  # [presence:required]
-last_updated: 2026-10-29  # [presence:required] [format:date] type=date
+title: Technical specification # [presence:required]
+last_updated: 2026-10-29 # [presence:required] [format:date] type=date
 ---
 
 # Specification title [pattern:"{text}"]
@@ -19,9 +19,9 @@ unchanged.
 
 ## Requirements [content:table]
 
-| Id | Requirement                         | Verified by       |
-| -- | ----------------------------------- | ----------------- |
-| R1 | One checkable statement ("must ...") | test or check name |
+| Id  | Requirement                          | Verified by        |
+| --- | ------------------------------------ | ------------------ |
+| R1  | One checkable statement ("must ...") | test or check name |
 
 ## Interfaces [content:non-empty]
 
@@ -30,8 +30,8 @@ for grammars and examples.
 
 ## Errors and codes [content:table]
 
-| Code | Name       | Severity | When                  |
-| ---- | ---------- | -------- | --------------------- |
+| Code | Name       | Severity | When                    |
+| ---- | ---------- | -------- | ----------------------- |
 | E001 | short-name | error    | The condition, exactly. |
 
 ## Assumptions [presence:optional] [content:list]

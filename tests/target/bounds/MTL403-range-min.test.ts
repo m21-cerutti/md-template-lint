@@ -11,8 +11,7 @@ const CODE = "MTL403";
 const DIR = "tests/fixtures/pairs/MTL403";
 
 /** Spec 4.3 message of MTL403: raw target text, parsed bound in Python repr style. */
-const message = (key: string, value: string, min: string): string =>
-  `Field '${key}': value ${value} is below range:min ${min}`;
+const message = (key: string, value: string, min: string): string => `Field '${key}': value ${value} is below range:min ${min}`;
 
 interface TestCase {
   readonly name: string;
@@ -112,12 +111,7 @@ const CASES: readonly TestCase[] = [
   // NO type guard: string, int, float and date typed template fields are all checked.
   {
     name: "fail-no-type-guard-checks-any-field-type",
-    expected: [
-      message("string_typed", "1", "5"),
-      message("int_typed", "2", "5"),
-      message("float_typed", "3.5", "5"),
-      message("date_typed", "4", "5"),
-    ],
+    expected: [message("string_typed", "1", "5"), message("int_typed", "2", "5"), message("float_typed", "3.5", "5"), message("date_typed", "4", "5")],
     // Spec 2.9: `date_typed` is a date field without [format:date].
     warnings: ["MTL016"],
   },
@@ -138,30 +132,19 @@ const CASES: readonly TestCase[] = [
   // both bounds reports only the violated minimum.
   {
     name: "fail-multi-field-errors-follow-template-order",
-    expected: [
-      message("first", "1", "5"),
-      message("third", "2", "5"),
-      message("both_bounds", "1", "5"),
-    ],
+    expected: [message("first", "1", "5"), message("third", "2", "5"), message("both_bounds", "1", "5")],
     warnings: [],
   },
 ];
 
-const read = (path: string): string =>
-  readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
+const read = (path: string): string => readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
 
 /** MTL403 diagnostics and template warnings for the pair of a fixture folder. */
 async function lint(testCase: TestCase) {
   const fixture = `${DIR}/${testCase.name}`;
   const status = await checkTemplate(registry, read(`${fixture}/template.md`));
   if (status.status !== "ok") throw new Error(`${fixture}: template is broken`);
-  const found = await checkTarget(
-    registry,
-    status.model,
-    read(`${fixture}/target.md`),
-    `${fixture}/target.md`,
-    createEnv(),
-  );
+  const found = await checkTarget(registry, status.model, read(`${fixture}/target.md`), `${fixture}/target.md`, createEnv());
   return {
     found: found.filter((diagnostic) => diagnostic.code === CODE),
     warnings: status.warnings,

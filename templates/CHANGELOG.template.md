@@ -1,5 +1,5 @@
 ---
-last_updated: 2026-10-30  # [presence:required] [format:date] type=date
+last_updated: 2026-10-30 # [presence:required] [format:date] type=date
 ---
 
 # Changelog
@@ -64,7 +64,7 @@ Changelog and the project uses semantic versioning.
 - Save as `CHANGELOG.md` at the repository root. Keep the frontmatter and
   refresh `last_updated` on every change.
 - Write release headings as Keep a Changelog does: `## [1.0.0] - 2026-01-01`,
-  a version in square brackets, then ` - `, then an ISO date. The `## Release`
+  a version in square brackets, then `-`, then an ISO date. The `## Release`
   heading is a pattern (`[{semver}] - {date}`): its text `Release` is only a
   label, and every `## [X.Y.Z] - YYYY-MM-DD` heading in the real file is
   checked against it. `## Unreleased` stays a plain heading.

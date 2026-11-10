@@ -42,11 +42,7 @@ export function scanComments(tokens: readonly Token[]): CommentSpan[] {
     if (token === undefined) break;
     if (token.type === MdTemplateLexer.SCAN_TICKS) {
       const length = (token.text ?? "").length;
-      const close = findFrom(
-        tokens,
-        index + 1,
-        (next) => next.type === MdTemplateLexer.SCAN_TICKS && (next.text ?? "").length === length,
-      );
+      const close = findFrom(tokens, index + 1, (next) => next.type === MdTemplateLexer.SCAN_TICKS && (next.text ?? "").length === length);
       index = close < 0 ? index + 1 : close + 1;
     } else if (token.type === MdTemplateLexer.SCAN_OPEN) {
       const close = findFrom(tokens, index + 1, (next) => next.type === MdTemplateLexer.SCAN_CLOSE);

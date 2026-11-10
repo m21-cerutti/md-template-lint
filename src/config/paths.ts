@@ -77,8 +77,7 @@ export function relativeInside(path: string, directory: string, ignoreCase = fal
   const below = split(foldPath(path));
   const base = split(foldPath(directory));
   if (below.prefix.toLowerCase() !== base.prefix.toLowerCase()) return null;
-  const same = (a: string | undefined, b: string): boolean =>
-    a !== undefined && (ignoreCase ? a.toLowerCase() === b.toLowerCase() : a === b);
+  const same = (a: string | undefined, b: string): boolean => a !== undefined && (ignoreCase ? a.toLowerCase() === b.toLowerCase() : a === b);
   if (!base.segments.every((segment, index) => same(below.segments[index], segment))) return null;
   const rest = below.segments.slice(base.segments.length).join("/");
   return rest === "" ? "." : rest;

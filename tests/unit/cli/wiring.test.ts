@@ -60,11 +60,7 @@ describe("cli io wiring", () => {
 
   it("fail-one-io-for-two-roots: the same io lints every root", async () => {
     const run = await runCliIn(`${GROUP}fail-one-io-for-two-roots`, ["--format", "json"]);
-    expect(lintedOf(parseJson(run.stdout))).toEqual([
-      "first:notes:docs/a.md",
-      "second:notes:docs/b.md",
-      "second:more:more/c.md",
-    ]);
+    expect(lintedOf(parseJson(run.stdout))).toEqual(["first:notes:docs/a.md", "second:notes:docs/b.md", "second:more:more/c.md"]);
     expect(run.ioCalls).toHaveLength(1);
   });
 

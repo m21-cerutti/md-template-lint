@@ -17,11 +17,7 @@ export interface CliRun extends CliResult {
   readonly ioCalls: readonly RealIoOptions[];
 }
 
-export async function runCliIn(
-  fixture: string,
-  args: readonly string[],
-  env: Partial<CliEnv> = {},
-): Promise<CliRun> {
+export async function runCliIn(fixture: string, args: readonly string[], env: Partial<CliEnv> = {}): Promise<CliRun> {
   const cwd = foldPath(fixturePath("cli", fixture));
   const ioCalls: RealIoOptions[] = [];
   const createIo = (options: RealIoOptions): RuleIo => {
@@ -76,11 +72,7 @@ export interface JsonRun {
 export const parseJson = (stdout: string): JsonRun => JSON.parse(stdout) as JsonRun;
 
 /** `root:pair:path` of every linted file of a JSON run, in output order. */
-export const lintedOf = (json: JsonRun): string[] =>
-  json.results.flatMap((block) =>
-    block.files.map((file) => `${block.root}:${block.pair}:${file.path}`),
-  );
+export const lintedOf = (json: JsonRun): string[] => json.results.flatMap((block) => block.files.map((file) => `${block.root}:${block.pair}:${file.path}`));
 
 /** Absolute, `/`-separated path of a file inside a fixture. */
-export const fixtureFile = (fixture: string, file: string): string =>
-  foldPath(`${fixturePath("cli", fixture)}/${file}`);
+export const fixtureFile = (fixture: string, file: string): string => foldPath(`${fixturePath("cli", fixture)}/${file}`);

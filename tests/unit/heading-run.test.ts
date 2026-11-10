@@ -8,13 +8,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { loadDocument } from "../../src/engine/load.js";
-import {
-  matchHeadings,
-  type DocumentModel,
-  type HeadingMatch,
-  type HeadingPosition,
-  type HeadingRun,
-} from "../../src/engine/model.js";
+import { matchHeadings, type DocumentModel, type HeadingMatch, type HeadingPosition, type HeadingRun } from "../../src/engine/model.js";
 
 const FRONTMATTER = ["---", "title: x", "---", ""];
 
@@ -25,8 +19,7 @@ function load(body: readonly string[]): DocumentModel {
 }
 
 /** `matchHeadings` of two bodies, in template order. */
-const run = (template: readonly string[], target: readonly string[]): HeadingMatch[] =>
-  matchHeadings(load(template), load(target));
+const run = (template: readonly string[], target: readonly string[]): HeadingMatch[] => matchHeadings(load(template), load(target));
 
 const must = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) throw new Error("missing entry");
@@ -34,12 +27,10 @@ const must = <T>(value: T | null | undefined): T => {
 };
 
 /** File lines of target sections (a view for `toEqual`). */
-const lines = (sections: readonly { readonly line: number }[]): number[] =>
-  sections.map((section) => section.line);
+const lines = (sections: readonly { readonly line: number }[]): number[] => sections.map((section) => section.line);
 
 /** The positions of a run: template index -> matched file line (null: took nothing). */
-const taken = (found: HeadingRun): [number, number | null][] =>
-  found.positions.map((position) => [position.index, position.match?.line ?? null]);
+const taken = (found: HeadingRun): [number, number | null][] => found.positions.map((position) => [position.index, position.match?.line ?? null]);
 
 /** The position of the template heading `index` (an index in `template.sections`). */
 const positionOf = (items: readonly HeadingMatch[], index: number): HeadingPosition => {
@@ -92,9 +83,7 @@ describe("HeadingRun: one run per level and scope (spec 2.6 'Sequence', 2.10 'Po
   it("the run walks the siblings in file order, one position takes at most one sibling, no skipping", () => {
     // `B` looks at the extra `X` (L6): no match, takes nothing; `C` looks at `X` too. The cursor
     // never goes forward over a sibling, so `B` (L7) and `C` (L8) are never reached.
-    const found = must(
-      must(run(["## A", "## B", "## C"], ["## A", "## X", "## B", "## C"])[0]).run,
-    );
+    const found = must(must(run(["## A", "## B", "## C"], ["## A", "## X", "## B", "## C"])[0]).run);
     expect(taken(found)).toEqual([
       [0, 5],
       [1, null],
@@ -105,10 +94,7 @@ describe("HeadingRun: one run per level and scope (spec 2.6 'Sequence', 2.10 'Po
 
   it("the tail starts after the last sibling taken (the cursor), an absent optional takes nothing", () => {
     // `B` (optional) looks at `C` (L6): no match. `C` takes L6. `X` (L7) and `B` (L8) are left.
-    const found = must(
-      must(run(["## A", "## B [presence:optional]", "## C"], ["## A", "## C", "## X", "## B"])[0])
-        .run,
-    );
+    const found = must(must(run(["## A", "## B [presence:optional]", "## C"], ["## A", "## C", "## X", "## B"])[0]).run);
     expect(taken(found)).toEqual([
       [0, 5],
       [1, null],
@@ -118,9 +104,7 @@ describe("HeadingRun: one run per level and scope (spec 2.6 'Sequence', 2.10 'Po
   });
 
   it("a conditional heading matches like an optional one: it takes a matching sibling, else nothing", () => {
-    const found = must(
-      must(run(["## A", "## B [presence:conditional:x]"], ["## A", "## B", "## C"])[0]).run,
-    );
+    const found = must(must(run(["## A", "## B [presence:conditional:x]"], ["## A", "## B", "## C"])[0]).run);
     expect(taken(found)).toEqual([
       [0, 5],
       [1, 6],
@@ -130,10 +114,7 @@ describe("HeadingRun: one run per level and scope (spec 2.6 'Sequence', 2.10 'Po
 
   it("a required {text} position takes the next sibling whatever its text, and only one", () => {
     // Spec 2.10 step 3c (the migration of the dropped `exist` tag, 2.6 "Dropped tag").
-    const found = must(
-      must(run(["## A", '## B [pattern:"{text}"]', "## C"], ["## A", "## Any", "## C", "## D"])[0])
-        .run,
-    );
+    const found = must(must(run(["## A", '## B [pattern:"{text}"]', "## C"], ["## A", "## Any", "## C", "## D"])[0]).run);
     expect(taken(found)).toEqual([
       [0, 5],
       [1, 6],
@@ -152,10 +133,7 @@ describe("HeadingRun: one run per level and scope (spec 2.6 'Sequence', 2.10 'Po
   it("the position index is the index of the template heading in template.sections", () => {
     // Template sections: 0 `# Top`, 1 `## A`, 2 `### Inner`, 3 `## B`. The level-2 run has the
     // positions 1 and 3 (not 0..1): indices name template headings, not ranks in the run.
-    const items = run(
-      ["# Top", "## A", "### Inner", "## B"],
-      ["# Top", "## A", "### Inner", "## B"],
-    );
+    const items = run(["# Top", "## A", "### Inner", "## B"], ["# Top", "## A", "### Inner", "## B"]);
     expect(taken(must(must(items[1]).run))).toEqual([
       [1, 6],
       [3, 8],
@@ -249,10 +227,7 @@ describe("HeadingRun in section scope: one run per level and per parent match (s
 
   it("the run of one parent is not reused for another: a sibling of P is no sibling of Q", () => {
     // `### X` of `## Q` finds only `### Z` in its own section: missing, although `### X` is in P.
-    const items = run(
-      ["# Guide", "## P", "### X", "## Q", "### X"],
-      ["# Guide", "## P", "### X", "## Q", "### Z"],
-    );
+    const items = run(["# Guide", "## P", "### X", "## Q", "### X"], ["# Guide", "## P", "### X", "## Q", "### Z"]);
     expect(must(items[2]).match?.line).toBe(7);
     expect(must(items[4]).match).toBeNull();
     expect(lines(must(must(items[4]).run).siblings)).toEqual([9]);
@@ -326,10 +301,7 @@ describe("HeadingPosition.repeatMisses: tail siblings of a repeat heading (2.10 
     // `Release` takes L5, `Tag` takes L6 (`vNext`), `Stray` (L7) ends the run. L8 `v0.9.0`
     // matches both patterns: `Release` (first in template order) lists it. L9 `vBeta` matches
     // `v{text}` only: `Tag` lists it. L7 matches neither.
-    const items = run(
-      [RELEASE, '## Tag [pattern:"v{text}"] [repeat-rules:same-level]'],
-      ["## v1.0.0", "## vNext", "## Stray", "## v0.9.0", "## vBeta"],
-    );
+    const items = run([RELEASE, '## Tag [pattern:"v{text}"] [repeat-rules:same-level]'], ["## v1.0.0", "## vNext", "## Stray", "## v0.9.0", "## vBeta"]);
     expect(lines(positionOf(items, 0).instances)).toEqual([5]);
     expect(lines(positionOf(items, 1).instances)).toEqual([6]);
     expect(lines(must(items[0]).run?.tail ?? [])).toEqual([7, 8, 9]);
@@ -347,19 +319,13 @@ describe("HeadingPosition.repeatMisses: tail siblings of a repeat heading (2.10 
   });
 
   it("a literal-pattern repeat heading is a repeat position too (2.10 'Kinds')", () => {
-    const items = run(
-      ['## Entry [pattern:"Entry"] [repeat-rules:same-level]'],
-      ["## Entry", "## Other", "## Entry"],
-    );
+    const items = run(['## Entry [pattern:"Entry"] [repeat-rules:same-level]'], ["## Entry", "## Other", "## Entry"]);
     expect(lines(positionOf(items, 0).repeatMisses)).toEqual([7]);
   });
 
   it("a set-aside sibling is not in the tail, so it is never listed", () => {
     // L7 `v9.9.9` is set aside by the template-only heading (MTL603's), although it matches `R`.
-    const items = run(
-      [RELEASE, "## v9.9.9 [presence:template-only]"],
-      ["## v1.0.0", "## Stray", "## v9.9.9"],
-    );
+    const items = run([RELEASE, "## v9.9.9 [presence:template-only]"], ["## v1.0.0", "## Stray", "## v9.9.9"]);
     const found = must(items[0]).run;
     expect(lines(found?.setAside ?? [])).toEqual([7]);
     expect(lines(found?.tail ?? [])).toEqual([6]);
@@ -369,10 +335,7 @@ describe("HeadingPosition.repeatMisses: tail siblings of a repeat heading (2.10 
   it("in section scope only the tail of its own parent section counts", () => {
     // `S` takes L6, `Notes` (L7) ends the run, L8 `Step 2` is in the tail; L10 `Step 3` lies in
     // the section of `## Q`, outside the section of `## P`.
-    const items = run(
-      ["## P", '### S [pattern:"Step {digits}"] [repeat-rules:same-level]'],
-      ["## P", "### Step 1", "### Notes", "### Step 2", "## Q", "### Step 3"],
-    );
+    const items = run(["## P", '### S [pattern:"Step {digits}"] [repeat-rules:same-level]'], ["## P", "### Step 1", "### Notes", "### Step 2", "## Q", "### Step 3"]);
     const found = positionOf(items, 1);
     expect(lines(found.instances)).toEqual([6]);
     expect(lines(must(items[1]).run?.tail ?? [])).toEqual([7, 8]);
@@ -420,10 +383,7 @@ describe("HeadingPosition.foundLater: the MTL601 'found later' hint (spec 2.10 s
 
   it("a set-aside sibling with the text gives no hint (it is outside the run)", () => {
     // The template-only `Alpha` sets L6 aside; the required `Alpha` (index 2) finds nothing.
-    const items = run(
-      ["## Alpha [presence:template-only]", "## Beta", "## Alpha"],
-      ["## Beta", "## Alpha"],
-    );
+    const items = run(["## Alpha [presence:template-only]", "## Beta", "## Alpha"], ["## Beta", "## Alpha"]);
     const found = must(items[2]).run;
     expect(lines(found?.setAside ?? [])).toEqual([6]);
     expect(positionOf(items, 2).match).toBeNull();
@@ -440,10 +400,7 @@ describe("HeadingPosition.foundLater: the MTL601 'found later' hint (spec 2.10 s
 
   it("the named sibling can be taken later by another position: still no match change", () => {
     // `Alpha` takes nothing at L5 (hint L6); the repeat `{text}` position then takes L5 and L6.
-    const items = run(
-      ["## Alpha", '## X [pattern:"{text}"] [repeat-rules:same-level]'],
-      ["## Beta", "## Alpha"],
-    );
+    const items = run(["## Alpha", '## X [pattern:"{text}"] [repeat-rules:same-level]'], ["## Beta", "## Alpha"]);
     expect(positionOf(items, 0).foundLater?.line).toBe(6);
     expect(lines(positionOf(items, 1).instances)).toEqual([5, 6]);
     expect(must(items[0]).run?.tail).toEqual([]);

@@ -75,15 +75,12 @@ const CASES = [
     // spec 2.6), checked once per instance of the repeat parent; `{parent}` is the instance
     // text `[1.0.0] - 2026-01-10` (line 15), whose `### Added` (line 17) has no list item.
     name: "fail-exact-heading-under-pattern-parent-worked-example-1-changelog",
-    expected: [
-      "Section '[1.0.0] - 2026-01-10 > Added': [content:list] no markdown list item found",
-    ],
+    expected: ["Section '[1.0.0] - 2026-01-10 > Added': [content:list] no markdown list item found"],
     warnings: [],
   },
 ] as const;
 
-const read = (path: string): string =>
-  readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
+const read = (path: string): string => readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
 
 /** Every directory and file under DIR, at any depth, as sorted `/`-separated relative paths. */
 function listTree(): { dirs: string[]; files: string[] } {
@@ -102,13 +99,7 @@ async function lint(testCase: { readonly name: string }) {
   const fixture = `${DIR}/${testCase.name}`;
   const status = await checkTemplate(registry, read(`${fixture}/template.md`));
   if (status.status !== "ok") throw new Error(`${fixture}: template is broken`);
-  const found = await checkTarget(
-    registry,
-    status.model,
-    read(`${fixture}/target.md`),
-    `${fixture}/target.md`,
-    createEnv(),
-  );
+  const found = await checkTarget(registry, status.model, read(`${fixture}/target.md`), `${fixture}/target.md`, createEnv());
   return {
     found: found.filter((diagnostic) => diagnostic.code === CODE),
     warnings: status.warnings,
@@ -137,9 +128,7 @@ describe("MTL703 content-list", () => {
     const names = CASES.map((testCase) => testCase.name).sort();
     const tree = listTree();
     expect(tree.dirs).toEqual(names);
-    expect(tree.files).toEqual(
-      names.flatMap((name) => [`${name}/target.md`, `${name}/template.md`]).sort(),
-    );
+    expect(tree.files).toEqual(names.flatMap((name) => [`${name}/target.md`, `${name}/template.md`]).sort());
   });
 
   it("anchors a section-scope finding on the target heading line (DIR5)", async () => {

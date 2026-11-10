@@ -36,8 +36,7 @@ export function parseIPv4(text: string): number[] | null {
 
 /** IPv6 as eight 16-bit groups. Handles `::` and an embedded IPv4 tail; strips a zone id. */
 export function parseIPv6(text: string): number[] | null {
-  const bare =
-    (text.startsWith("[") && text.endsWith("]") ? text.slice(1, -1) : text).split("%")[0] ?? "";
+  const bare = (text.startsWith("[") && text.endsWith("]") ? text.slice(1, -1) : text).split("%")[0] ?? "";
   if (!bare.includes(":")) return null;
   // An embedded IPv4 tail (`::ffff:1.2.3.4`) becomes its two hex groups.
   let head = bare;
@@ -84,17 +83,11 @@ function classifyV4(octets: readonly number[]): AddressClass {
   return "public";
 }
 
-const embedded = (high: number, low: number): number[] => [
-  high >> 8,
-  high & 0xff,
-  low >> 8,
-  low & 0xff,
-];
+const embedded = (high: number, low: number): number[] => [high >> 8, high & 0xff, low >> 8, low & 0xff];
 
 function classifyV6(g: readonly number[]): AddressClass {
   const at = (index: number): number => g[index] ?? 0;
-  const zeros = (from: number, to: number): boolean =>
-    g.slice(from, to).every((group) => group === 0);
+  const zeros = (from: number, to: number): boolean => g.slice(from, to).every((group) => group === 0);
   // IPv4-mapped (::ffff:a.b.c.d), IPv4-compatible (::a.b.c.d), :: and ::1.
   if (zeros(0, 5) && (at(5) === 0xffff || at(5) === 0)) return "blocked";
   // IPv4-translated (::ffff:0:a.b.c.d, SIIT).

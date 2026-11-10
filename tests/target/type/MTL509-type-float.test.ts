@@ -26,20 +26,12 @@ const CASES = [
   {
     name: "fail-sign-and-dash-forms",
     fixture: "tests/fixtures/pairs/MTL509/fail-sign-and-dash-forms",
-    expected: [
-      "Field 'plus' (type=float): value is not a valid float",
-      "Field 'lone_minus' (type=float): value is not a valid float",
-      "Field 'double_minus' (type=float): value is not a valid float",
-    ],
+    expected: ["Field 'plus' (type=float): value is not a valid float", "Field 'lone_minus' (type=float): value is not a valid float", "Field 'double_minus' (type=float): value is not a valid float"],
   },
   {
     name: "fail-decimal-exponent-nan-and-infinity-text",
     fixture: "tests/fixtures/pairs/MTL509/fail-decimal-exponent-nan-and-infinity-text",
-    expected: [
-      "Field 'scaled' (type=float): value is not a valid float",
-      "Field 'not_a_number' (type=float): value is not a valid float",
-      "Field 'infinite' (type=float): value is not a valid float",
-    ],
+    expected: ["Field 'scaled' (type=float): value is not a valid float", "Field 'not_a_number' (type=float): value is not a valid float", "Field 'infinite' (type=float): value is not a valid float"],
   },
   {
     name: "fail-comma-decimal-is-not-a-float",
@@ -73,20 +65,13 @@ const CASES = [
   },
 ] as const;
 
-const read = (path: string): string =>
-  readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
+const read = (path: string): string => readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
 
 /** Diagnostics of this code for the pair of a fixture folder. */
 async function lint(fixture: string) {
   const status = await checkTemplate(registry, read(`${fixture}/template.md`));
   if (status.status !== "ok") throw new Error(`${fixture}: template is broken`);
-  const found = await checkTarget(
-    registry,
-    status.model,
-    read(`${fixture}/target.md`),
-    `${fixture}/target.md`,
-    createEnv(),
-  );
+  const found = await checkTarget(registry, status.model, read(`${fixture}/target.md`), `${fixture}/target.md`, createEnv());
   return found.filter((diagnostic) => diagnostic.code === CODE);
 }
 
@@ -120,16 +105,12 @@ describe("MTL509 type-float", () => {
     expect(failing.length).toBeGreaterThanOrEqual(1);
     expect(passing.length + failing.length).toBe(CASES.length);
     expect(CASES.filter((testCase) => testCase.expected.length === 0)).toEqual(passing);
-    expect(CASES.map((testCase) => testCase.fixture)).toEqual(
-      CASES.map((testCase) => `${DIR}/${testCase.name}`),
-    );
+    expect(CASES.map((testCase) => testCase.fixture)).toEqual(CASES.map((testCase) => `${DIR}/${testCase.name}`));
     // Orphan detection: no directory at any depth besides the cases, and each holds only the pair.
     const names = CASES.map((testCase) => testCase.name).sort();
     const tree = listTree();
     expect(tree.dirs).toEqual(names);
-    expect(tree.files).toEqual(
-      names.flatMap((name) => [`${name}/target.md`, `${name}/template.md`]).sort(),
-    );
+    expect(tree.files).toEqual(names.flatMap((name) => [`${name}/target.md`, `${name}/template.md`]).sort());
   });
 
   for (const testCase of CASES) {

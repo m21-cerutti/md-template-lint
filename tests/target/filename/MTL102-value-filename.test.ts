@@ -11,8 +11,7 @@ const CODE = "MTL102";
 const DIR = "tests/fixtures/pairs/MTL102";
 
 /** Spec 4.3 message of MTL102. */
-const message = (key: string, stem: string, got: string): string =>
-  `Field '${key}': expected value to equal filename '${stem}' ([value:filename]), got '${got}'`;
+const message = (key: string, stem: string, got: string): string => `Field '${key}': expected value to equal filename '${stem}' ([value:filename]), got '${got}'`;
 
 interface TestCase {
   readonly name: string;
@@ -104,21 +103,14 @@ const CASES: readonly TestCase[] = [
   },
 ];
 
-const read = (path: string): string =>
-  readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
+const read = (path: string): string => readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
 
 /** Diagnostics of this code for the pair of a fixture folder. */
 async function lint(testCase: TestCase) {
   const fixture = `${DIR}/${testCase.name}`;
   const status = await checkTemplate(registry, read(`${fixture}/template.md`));
   if (status.status !== "ok") throw new Error(`${fixture}: template is broken`);
-  const found = await checkTarget(
-    registry,
-    status.model,
-    read(`${fixture}/target.md`),
-    `${fixture}/${testCase.targetName ?? "target.md"}`,
-    createEnv(),
-  );
+  const found = await checkTarget(registry, status.model, read(`${fixture}/target.md`), `${fixture}/${testCase.targetName ?? "target.md"}`, createEnv());
   return found.filter((diagnostic) => diagnostic.code === CODE);
 }
 

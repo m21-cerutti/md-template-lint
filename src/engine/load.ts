@@ -6,29 +6,11 @@
  * (H1 to H6, with parents), inferred types.
  */
 import { readFile } from "node:fs/promises";
-import {
-  isAlias,
-  isCollection,
-  isMap,
-  isScalar,
-  isSeq,
-  LineCounter,
-  parseDocument as parseYaml,
-  visit,
-  type Document,
-} from "yaml";
+import { isAlias, isCollection, isMap, isScalar, isSeq, LineCounter, parseDocument as parseYaml, visit, type Document } from "yaml";
 import type { BodyHeading, FrontmatterComment, TagFinding } from "../tags/ast.js";
 import { analyzeDocument, InternalParseError, normalizeLineEnds } from "../tags/parser.js";
 import { inferType } from "./infer.js";
-import type {
-  DocumentModel,
-  Field,
-  HeadingLevel,
-  LoadResult,
-  ParseFailure,
-  Section,
-  YamlValue,
-} from "./model.js";
+import type { DocumentModel, Field, HeadingLevel, LoadResult, ParseFailure, Section, YamlValue } from "./model.js";
 
 function fail(reason: ParseFailure["reason"], detail = ""): LoadResult {
   return { ok: false, failure: { reason, detail } };
@@ -37,8 +19,7 @@ function fail(reason: ParseFailure["reason"], detail = ""): LoadResult {
 /** A YAML node as a failsafe value: scalars are strings, an empty value is "". */
 function toValue(node: unknown, doc: Document): YamlValue {
   if (isAlias(node)) return toValue(node.resolve(doc), doc);
-  if (isScalar(node))
-    return node.value === null || node.value === undefined ? "" : String(node.value);
+  if (isScalar(node)) return node.value === null || node.value === undefined ? "" : String(node.value);
   if (isSeq(node)) return node.items.map((item) => toValue(item, doc));
   if (isMap(node)) {
     const map = new Map<string, YamlValue>();
@@ -149,20 +130,11 @@ export function loadDocument(text: string): LoadResult {
   // filename / unique-names lines and the standalone comment lines outside a multi-line value.
   const interior = valueInteriorLines(yaml, lineCounter, frontmatter.startLine);
   const findings = analysis.findings.filter(
-    (finding: TagFinding) =>
-      finding.region === "body" ||
-      keyLines.has(finding.position.line) ||
-      filenameLines.has(finding.position.line) ||
-      (commentLines.has(finding.position.line) && !interior.has(finding.position.line)),
+    (finding: TagFinding) => finding.region === "body" || keyLines.has(finding.position.line) || filenameLines.has(finding.position.line) || (commentLines.has(finding.position.line) && !interior.has(finding.position.line)),
   );
   // Spec 4.4 DIR3: frontmatter directives on YAML top-level key lines and on
   // whole-line comments outside a multi-line value; every body directive.
-  const directives = document.directives.filter(
-    (directive) =>
-      directive.region === "body" ||
-      keyLines.has(directive.line) ||
-      (commentLines.has(directive.line) && !interior.has(directive.line)),
-  );
+  const directives = document.directives.filter((directive) => directive.region === "body" || keyLines.has(directive.line) || (commentLines.has(directive.line) && !interior.has(directive.line)));
   const headings = document.body.filter((block): block is BodyHeading => block.kind === "heading");
   const fileLines = normalizeLineEnds(text).split("\n");
   const model: DocumentModel = {

@@ -15,12 +15,7 @@ import type { Diagnostic, DocumentModel } from "../../../src/engine/model.js";
 import { runCli } from "../../../src/cli/run.js";
 import { foldPath } from "../../../src/config/paths.js";
 import { HOME } from "../../helpers/run.js";
-import {
-  expectTemplateCases,
-  templatesDir,
-  verifyFixture,
-  type VerifyCase,
-} from "../../helpers/verify.js";
+import { expectTemplateCases, templatesDir, verifyFixture, type VerifyCase } from "../../helpers/verify.js";
 
 const CODE = "MTL015";
 const DIR = "tests/fixtures/templates/MTL015";
@@ -53,14 +48,7 @@ const conflict = (heading: string, tag: string, column: number, sourceLine: stri
 const NO_PATTERN = "(the heading has no [pattern:...])";
 
 /** An MTL015 warning on line 7 with an explicit reason. */
-const reasoned = (
-  heading: string,
-  tag: string,
-  column: number,
-  sourceLine: string,
-  reason: string,
-  line = 7,
-) =>
+const reasoned = (heading: string, tag: string, column: number, sourceLine: string, reason: string, line = 7) =>
   ({
     code: CODE,
     severity: "warning",
@@ -70,19 +58,14 @@ const reasoned = (
     sourceLine,
   }) as const;
 
-const REPEATS =
-  "## R [repeat-rules:same-level:max:4] [repeat-rules:same-level:max:5] [repeat-rules:same-level]";
-const DRAFT_PATTERN_REPEAT =
-  '## Draft [presence:template-only] [pattern:"Draft {text}"] [repeat-rules:same-level]';
+const REPEATS = "## R [repeat-rules:same-level:max:4] [repeat-rules:same-level:max:5] [repeat-rules:same-level]";
+const DRAFT_PATTERN_REPEAT = '## Draft [presence:template-only] [pattern:"Draft {text}"] [repeat-rules:same-level]';
 
 const ORDERS = "## R [repeat-rules:same-level] [order:first:date:descending] [order:ascending]";
-const DRAFT_ALL =
-  '## Draft [presence:template-only] [pattern:"D {text}"] [repeat-rules:same-level] [order:descending]';
+const DRAFT_ALL = '## Draft [presence:template-only] [pattern:"D {text}"] [repeat-rules:same-level] [order:descending]';
 
-const DRAFT_ORDER =
-  '## Draft [content:subheadings:disallow] [pattern:"x {text}"] [presence:template-only] [pattern:"y"]';
-const DRAFT_INVALID =
-  '## Draft [presence:template-only] [pattern:"{x}"] [content:subheadings:disallow]';
+const DRAFT_ORDER = '## Draft [content:subheadings:disallow] [pattern:"x {text}"] [presence:template-only] [pattern:"y"]';
+const DRAFT_INVALID = '## Draft [presence:template-only] [pattern:"{x}"] [content:subheadings:disallow]';
 
 /** Case -> fixture `<name>.md` -> expected `--verify` result. */
 const CASES: readonly VerifyCase[] = [
@@ -92,14 +75,7 @@ const CASES: readonly VerifyCase[] = [
     name: "fail-template-only-pattern-tag",
     exitCode: 0,
     status: "ok",
-    diagnostics: [
-      conflict(
-        "Draft",
-        '[pattern:"Draft {text}"]',
-        35,
-        '## Draft [presence:template-only] [pattern:"Draft {text}"]',
-      ),
-    ],
+    diagnostics: [conflict("Draft", '[pattern:"Draft {text}"]', 35, '## Draft [presence:template-only] [pattern:"Draft {text}"]')],
   },
   // Only the effective (first) pattern tag is reported; findings in tag order: the disallow
   // tag at column 10 (30 characters), then the first pattern tag at column 41.
@@ -107,10 +83,7 @@ const CASES: readonly VerifyCase[] = [
     name: "fail-template-only-first-pattern-tag-only-in-tag-order",
     exitCode: 0,
     status: "ok",
-    diagnostics: [
-      conflict("Draft", TAG, 10, DRAFT_ORDER),
-      conflict("Draft", '[pattern:"x {text}"]', 41, DRAFT_ORDER),
-    ],
+    diagnostics: [conflict("Draft", TAG, 10, DRAFT_ORDER), conflict("Draft", '[pattern:"x {text}"]', 41, DRAFT_ORDER)],
   },
   // Spec 2.7: an invalid pattern (MTL014, at its `{`, column 45) gets no MTL015 for its
   // pattern tag; the disallow tag (column 51) keeps its MTL015.
@@ -138,15 +111,7 @@ const CASES: readonly VerifyCase[] = [
     name: "fail-repeat-tag-without-pattern",
     exitCode: 0,
     status: "ok",
-    diagnostics: [
-      reasoned(
-        "Releases",
-        "[repeat-rules:same-level]",
-        13,
-        "## Releases [repeat-rules:same-level]",
-        NO_PATTERN,
-      ),
-    ],
+    diagnostics: [reasoned("Releases", "[repeat-rules:same-level]", 13, "## Releases [repeat-rules:same-level]", NO_PATTERN)],
   },
   // Spec 2.10 "first tag of a kind wins": three repeat kinds (same-level, min, max), so the
   // first tag of each kind is reported, in tag order: max:4 at column 6 (`## R ` is 5), the
@@ -159,14 +124,7 @@ const CASES: readonly VerifyCase[] = [
     diagnostics: [
       reasoned("R", "[repeat-rules:same-level:max:4]", 6, REPEATS, NO_PATTERN),
       reasoned("R", "[repeat-rules:same-level]", 70, REPEATS, NO_PATTERN),
-      reasoned(
-        "S",
-        "[repeat-rules:same-level:min:2]",
-        6,
-        "## S [repeat-rules:same-level:min:2]",
-        NO_PATTERN,
-        9,
-      ),
+      reasoned("S", "[repeat-rules:same-level:min:2]", 6, "## S [repeat-rules:same-level:min:2]", NO_PATTERN, 9),
     ],
   },
   // Spec 2.7: pattern and repeat tags on a template-only heading are ignored: the pattern tag
@@ -175,24 +133,14 @@ const CASES: readonly VerifyCase[] = [
     name: "fail-template-only-pattern-and-repeat-tags",
     exitCode: 0,
     status: "ok",
-    diagnostics: [
-      conflict("Draft", '[pattern:"Draft {text}"]', 35, DRAFT_PATTERN_REPEAT),
-      conflict("Draft", "[repeat-rules:same-level]", 60, DRAFT_PATTERN_REPEAT),
-    ],
+    diagnostics: [conflict("Draft", '[pattern:"Draft {text}"]', 35, DRAFT_PATTERN_REPEAT), conflict("Draft", "[repeat-rules:same-level]", 60, DRAFT_PATTERN_REPEAT)],
   },
   // A template-only heading without a pattern: the template-only reason (the first cause).
   {
     name: "fail-template-only-repeat-tag-without-pattern",
     exitCode: 0,
     status: "ok",
-    diagnostics: [
-      conflict(
-        "Draft",
-        "[repeat-rules:same-level:max:2]",
-        35,
-        "## Draft [presence:template-only] [repeat-rules:same-level:max:2]",
-      ),
-    ],
+    diagnostics: [conflict("Draft", "[repeat-rules:same-level:max:2]", 35, "## Draft [presence:template-only] [repeat-rules:same-level:max:2]")],
   },
   // Spec 2.7: an invalid pattern (MTL014 at its `{`, column 22) has a pattern tag, so its repeat
   // tag gets no MTL015 (one cause, one warning); `Notes` (no pattern tag) gets one at column 10.
@@ -209,14 +157,7 @@ const CASES: readonly VerifyCase[] = [
         column: 22,
         sourceLine: '## Release [pattern:"{x}"] [repeat-rules:same-level]',
       },
-      reasoned(
-        "Notes",
-        "[repeat-rules:same-level]",
-        10,
-        "## Notes [repeat-rules:same-level]",
-        NO_PATTERN,
-        9,
-      ),
+      reasoned("Notes", "[repeat-rules:same-level]", 10, "## Notes [repeat-rules:same-level]", NO_PATTERN, 9),
     ],
   },
   // A repeat tag on a pattern heading takes effect, before or after the pattern tag.
@@ -228,15 +169,7 @@ const CASES: readonly VerifyCase[] = [
     name: "fail-order-tag-without-pattern",
     exitCode: 0,
     status: "ok",
-    diagnostics: [
-      reasoned(
-        "Unreleased",
-        "[order:ascending]",
-        35,
-        "## Unreleased [presence:optional] [order:ascending]",
-        NO_PATTERN,
-      ),
-    ],
+    diagnostics: [reasoned("Unreleased", "[order:ascending]", 35, "## Unreleased [presence:optional] [order:ascending]", NO_PATTERN)],
   },
   // The repeat tag (column 6) and the FIRST order tag (column 32: the repeat tag is 25
   // characters, then a space) are reported; the second order tag is not (first tag wins).
@@ -244,24 +177,14 @@ const CASES: readonly VerifyCase[] = [
     name: "fail-order-tags-without-pattern-first-only",
     exitCode: 0,
     status: "ok",
-    diagnostics: [
-      reasoned("R", "[repeat-rules:same-level]", 6, ORDERS, NO_PATTERN),
-      reasoned("R", "[order:first:date:descending]", 32, ORDERS, NO_PATTERN),
-    ],
+    diagnostics: [reasoned("R", "[repeat-rules:same-level]", 6, ORDERS, NO_PATTERN), reasoned("R", "[order:first:date:descending]", 32, ORDERS, NO_PATTERN)],
   },
   // Spec 2.7: an order tag on a template-only heading: the template-only reason (first cause).
   {
     name: "fail-template-only-order-tag",
     exitCode: 0,
     status: "ok",
-    diagnostics: [
-      conflict(
-        "Draft",
-        "[order:first:semver:ascending]",
-        35,
-        "## Draft [presence:template-only] [order:first:semver:ascending]",
-      ),
-    ],
+    diagnostics: [conflict("Draft", "[order:first:semver:ascending]", 35, "## Draft [presence:template-only] [order:first:semver:ascending]")],
   },
   // Pattern (35), repeat (56: the pattern tag is 20 characters, a space) and order (82: the
   // repeat tag is 25 characters, a space) tags on a template-only heading: one finding each,
@@ -270,11 +193,7 @@ const CASES: readonly VerifyCase[] = [
     name: "fail-template-only-pattern-repeat-and-order-tags",
     exitCode: 0,
     status: "ok",
-    diagnostics: [
-      conflict("Draft", '[pattern:"D {text}"]', 35, DRAFT_ALL),
-      conflict("Draft", "[repeat-rules:same-level]", 56, DRAFT_ALL),
-      conflict("Draft", "[order:descending]", 82, DRAFT_ALL),
-    ],
+    diagnostics: [conflict("Draft", '[pattern:"D {text}"]', 35, DRAFT_ALL), conflict("Draft", "[repeat-rules:same-level]", 56, DRAFT_ALL), conflict("Draft", "[order:descending]", 82, DRAFT_ALL)],
   },
   // Spec 2.7: an invalid pattern (MTL014 at its `{`, column 22): no MTL015 for its repeat and
   // order tags (one cause, one warning); `Notes` (no pattern tag) gets one at column 10.
@@ -307,37 +226,21 @@ const CASES: readonly VerifyCase[] = [
     name: "fail-template-only-then-disallow",
     exitCode: 0,
     status: "ok",
-    diagnostics: [
-      warning(
-        "Authoring checklist",
-        7,
-        49,
-        `## Authoring checklist [presence:template-only] ${TAG}`,
-      ),
-    ],
+    diagnostics: [warning("Authoring checklist", 7, 49, `## Authoring checklist [presence:template-only] ${TAG}`)],
   },
   // The tag first, then template-only.
   {
     name: "fail-disallow-then-template-only",
     exitCode: 0,
     status: "ok",
-    diagnostics: [
-      warning(
-        "Authoring checklist",
-        7,
-        24,
-        `## Authoring checklist ${TAG} [presence:template-only]`,
-      ),
-    ],
+    diagnostics: [warning("Authoring checklist", 7, 24, `## Authoring checklist ${TAG} [presence:template-only]`)],
   },
   // Every level is read (change C10): an H3 heading.
   {
     name: "fail-template-only-disallow-at-h3",
     exitCode: 0,
     status: "ok",
-    diagnostics: [
-      warning("Notes for authors", 9, 48, `### Notes for authors [presence:template-only] ${TAG}`),
-    ],
+    diagnostics: [warning("Notes for authors", 9, 48, `### Notes for authors [presence:template-only] ${TAG}`)],
   },
   // Spec 2.6 precedence: conditional beats template-only, so the heading is conditional.
   {
@@ -351,29 +254,21 @@ const CASES: readonly VerifyCase[] = [
     name: "fail-required-template-only-with-disallow",
     exitCode: 0,
     status: "ok",
-    diagnostics: [
-      warning("Notes", 7, 55, `## Notes [presence:required] [presence:template-only] ${TAG}`),
-    ],
+    diagnostics: [warning("Notes", 7, 55, `## Notes [presence:required] [presence:template-only] ${TAG}`)],
   },
   // The tag written twice: one finding per tag (spec 2.7), each at its own column.
   {
     name: "fail-disallow-written-twice",
     exitCode: 0,
     status: "ok",
-    diagnostics: [
-      warning("Notes", 7, 35, `## Notes [presence:template-only] ${TAG} ${TAG}`),
-      warning("Notes", 7, 66, `## Notes [presence:template-only] ${TAG} ${TAG}`),
-    ],
+    diagnostics: [warning("Notes", 7, 35, `## Notes [presence:template-only] ${TAG} ${TAG}`), warning("Notes", 7, 66, `## Notes [presence:template-only] ${TAG} ${TAG}`)],
   },
   // Two template-only headings with the tag: two warnings, in template order.
   {
     name: "fail-two-template-only-headings",
     exitCode: 0,
     status: "ok",
-    diagnostics: [
-      warning("Checklist", 7, 39, `## Checklist [presence:template-only] ${TAG}`),
-      warning("Review notes", 11, 42, `## Review notes [presence:template-only] ${TAG}`),
-    ],
+    diagnostics: [warning("Checklist", 7, 39, `## Checklist [presence:template-only] ${TAG}`), warning("Review notes", 11, 42, `## Review notes [presence:template-only] ${TAG}`)],
   },
   // Another content tag on a template-only heading is not a defined reason (spec 2.7).
   {
@@ -387,42 +282,21 @@ const CASES: readonly VerifyCase[] = [
     name: "fail-template-only-disallow-at-h1",
     exitCode: 0,
     status: "ok",
-    diagnostics: [
-      warning(
-        "Authoring checklist",
-        5,
-        48,
-        `# Authoring checklist [presence:template-only] ${TAG}`,
-      ),
-    ],
+    diagnostics: [warning("Authoring checklist", 5, 48, `# Authoring checklist [presence:template-only] ${TAG}`)],
   },
   // Spec 8.2 EX4: a column counts characters. BMP letters and CJK: one column each, tag at 60.
   {
     name: "fail-non-ascii-heading-column-counts-characters",
     exitCode: 0,
     status: "ok",
-    diagnostics: [
-      warning(
-        "Überprüfung der Änderungen 日本語",
-        7,
-        60,
-        `## Überprüfung der Änderungen 日本語 [presence:template-only] ${TAG}`,
-      ),
-    ],
+    diagnostics: [warning("Überprüfung der Änderungen 日本語", 7, 60, `## Überprüfung der Änderungen 日本語 [presence:template-only] ${TAG}`)],
   },
   // Spec 8.2 EX4: a character outside the BMP (a surrogate pair in UTF-16) is ONE column.
   {
     name: "fail-astral-heading-column-counts-code-points",
     exitCode: 0,
     status: "ok",
-    diagnostics: [
-      warning(
-        "Liste 🙂 de vérification",
-        7,
-        53,
-        `## Liste 🙂 de vérification [presence:template-only] ${TAG}`,
-      ),
-    ],
+    diagnostics: [warning("Liste 🙂 de vérification", 7, 53, `## Liste 🙂 de vérification [presence:template-only] ${TAG}`)],
   },
   // Phase P7b (spec 2.6, 2.7): `[content:subheadings:no-extra]` on a template-only heading has
   // no effect either. Column 49, as for the disallow tag on the same heading.
@@ -430,24 +304,14 @@ const CASES: readonly VerifyCase[] = [
     name: "fail-template-only-then-no-extra",
     exitCode: 0,
     status: "ok",
-    diagnostics: [
-      conflict(
-        "Authoring checklist",
-        NO_EXTRA,
-        49,
-        `## Authoring checklist [presence:template-only] ${NO_EXTRA}`,
-      ),
-    ],
+    diagnostics: [conflict("Authoring checklist", NO_EXTRA, 49, `## Authoring checklist [presence:template-only] ${NO_EXTRA}`)],
   },
   // Both sub-heading tags: one finding each, in tag order (disallow at 35, no-extra at 66).
   {
     name: "fail-template-only-disallow-and-no-extra",
     exitCode: 0,
     status: "ok",
-    diagnostics: [
-      conflict("Notes", TAG, 35, `## Notes [presence:template-only] ${TAG} ${NO_EXTRA}`),
-      conflict("Notes", NO_EXTRA, 66, `## Notes [presence:template-only] ${TAG} ${NO_EXTRA}`),
-    ],
+    diagnostics: [conflict("Notes", TAG, 35, `## Notes [presence:template-only] ${TAG} ${NO_EXTRA}`), conflict("Notes", NO_EXTRA, 66, `## Notes [presence:template-only] ${TAG} ${NO_EXTRA}`)],
   },
   // The no-extra tag on a heading that is not template-only takes effect.
   { name: "pass-no-extra-without-template-only", exitCode: 0, status: "ok", diagnostics: [] },
@@ -457,14 +321,7 @@ const CASES: readonly VerifyCase[] = [
     name: "fail-template-only-with-unique-headings-names",
     exitCode: 0,
     status: "ok",
-    diagnostics: [
-      conflict(
-        "Usage",
-        "[unique-headings-names]",
-        35,
-        "## Usage [presence:template-only] [unique-headings-names]",
-      ),
-    ],
+    diagnostics: [conflict("Usage", "[unique-headings-names]", 35, "## Usage [presence:template-only] [unique-headings-names]")],
   },
   // A conflict on line 7 and a misplaced field tag on line 9, in source order (the section
   // order of the text report is pinned below).
@@ -473,12 +330,7 @@ const CASES: readonly VerifyCase[] = [
     exitCode: 0,
     status: "ok",
     diagnostics: [
-      warning(
-        "Authoring checklist",
-        7,
-        49,
-        `## Authoring checklist [presence:template-only] ${TAG}`,
-      ),
+      warning("Authoring checklist", 7, 49, `## Authoring checklist [presence:template-only] ${TAG}`),
       {
         code: "MTL013",
         severity: "warning",
@@ -500,19 +352,12 @@ async function model(text: string): Promise<DocumentModel> {
 }
 
 async function lint(template: string, target: string): Promise<Diagnostic[]> {
-  const result = await lintTarget(
-    registry,
-    await model(template),
-    target,
-    "target.md",
-    createEnv(),
-  );
+  const result = await lintTarget(registry, await model(template), target, "target.md", createEnv());
   expect(result.suppressed).toBe(0);
   return result.diagnostics;
 }
 
-const template = (tags: string): string =>
-  `---\ntitle: x\n---\n\n# Guide\n\n## Authoring checklist ${tags}\n`;
+const template = (tags: string): string => `---\ntitle: x\n---\n\n# Guide\n\n## Authoring checklist ${tags}\n`;
 
 describe("MTL015 heading-tag-conflict (--verify)", () => {
   it("is registered in category syntax, warning, phase template", () => {
@@ -545,9 +390,7 @@ describe("MTL015 heading-tag-conflict (--verify)", () => {
   it("is not suppressible: a target directive naming it is MTL022 (DIR6)", async () => {
     const target = "---\ntitle: x\n---\n\n# Guide\n\n<!-- md-template-lint disable MTL015 -->\n";
     const found = await lint(template(`[presence:template-only] ${TAG}`), target);
-    expect(found.map(({ code, message }) => ({ code, message }))).toEqual([
-      { code: "MTL022", message: "Directive on line 7: rule code MTL015 cannot be disabled" },
-    ]);
+    expect(found.map(({ code, message }) => ({ code, message }))).toEqual([{ code: "MTL022", message: "Directive on line 7: rule code MTL015 cannot be disabled" }]);
   });
 });
 
@@ -581,30 +424,20 @@ const item = (heading: string, line: number, column: number, source: string): st
 const TEXT_CASES: readonly { readonly name: string; readonly items: readonly string[][] }[] = [
   {
     name: "fail-template-only-then-disallow",
-    items: [
-      item("Authoring checklist", 7, 49, `## Authoring checklist [presence:template-only] ${TAG}`),
-    ],
+    items: [item("Authoring checklist", 7, 49, `## Authoring checklist [presence:template-only] ${TAG}`)],
   },
   {
     name: "fail-template-only-disallow-at-h3",
-    items: [
-      item("Notes for authors", 9, 48, `### Notes for authors [presence:template-only] ${TAG}`),
-    ],
+    items: [item("Notes for authors", 9, 48, `### Notes for authors [presence:template-only] ${TAG}`)],
   },
   {
     name: "fail-two-template-only-headings",
-    items: [
-      item("Checklist", 7, 39, `## Checklist [presence:template-only] ${TAG}`),
-      item("Review notes", 11, 42, `## Review notes [presence:template-only] ${TAG}`),
-    ],
+    items: [item("Checklist", 7, 39, `## Checklist [presence:template-only] ${TAG}`), item("Review notes", 11, 42, `## Review notes [presence:template-only] ${TAG}`)],
   },
   // Spec 2.7: the tag written twice gives one finding per tag, each at its own column.
   {
     name: "fail-disallow-written-twice",
-    items: [
-      item("Notes", 7, 35, `## Notes [presence:template-only] ${TAG} ${TAG}`),
-      item("Notes", 7, 66, `## Notes [presence:template-only] ${TAG} ${TAG}`),
-    ],
+    items: [item("Notes", 7, 35, `## Notes [presence:template-only] ${TAG} ${TAG}`), item("Notes", 7, 66, `## Notes [presence:template-only] ${TAG} ${TAG}`)],
   },
   // Spec 2.6 precedence: template-only beats required; the heading text is `Notes`.
   {
@@ -613,32 +446,16 @@ const TEXT_CASES: readonly { readonly name: string; readonly items: readonly str
   },
   {
     name: "fail-template-only-disallow-at-h1",
-    items: [
-      item("Authoring checklist", 5, 48, `# Authoring checklist [presence:template-only] ${TAG}`),
-    ],
+    items: [item("Authoring checklist", 5, 48, `# Authoring checklist [presence:template-only] ${TAG}`)],
   },
   // Spec 8.2 EX4: characters, not UTF-16 units; the caret sits under the tag.
   {
     name: "fail-non-ascii-heading-column-counts-characters",
-    items: [
-      item(
-        "Überprüfung der Änderungen 日本語",
-        7,
-        60,
-        `## Überprüfung der Änderungen 日本語 [presence:template-only] ${TAG}`,
-      ),
-    ],
+    items: [item("Überprüfung der Änderungen 日本語", 7, 60, `## Überprüfung der Änderungen 日本語 [presence:template-only] ${TAG}`)],
   },
   {
     name: "fail-astral-heading-column-counts-code-points",
-    items: [
-      item(
-        "Liste 🙂 de vérification",
-        7,
-        53,
-        `## Liste 🙂 de vérification [presence:template-only] ${TAG}`,
-      ),
-    ],
+    items: [item("Liste 🙂 de vérification", 7, 53, `## Liste 🙂 de vérification [presence:template-only] ${TAG}`)],
   },
   { name: "pass-disallow-without-template-only", items: [] },
   { name: "pass-template-only-without-disallow", items: [] },
@@ -682,12 +499,7 @@ describe("MTL015 in the --verify text report (spec 8.3 `Conflicting tags:`)", ()
         "        | ".concat(" ".repeat(9), "^"),
         "",
         "Conflicting tags:",
-        ...item(
-          "Authoring checklist",
-          7,
-          49,
-          `## Authoring checklist [presence:template-only] ${TAG}`,
-        ),
+        ...item("Authoring checklist", 7, 49, `## Authoring checklist [presence:template-only] ${TAG}`),
         "",
       ];
       expect(out.slice(start, start + expected.length)).toEqual(expected);

@@ -10,13 +10,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { loadDocument } from "../../src/engine/load.js";
-import {
-  headingPresence,
-  matchHeadings,
-  type DocumentModel,
-  type HeadingMatch,
-  type Section,
-} from "../../src/engine/model.js";
+import { headingPresence, matchHeadings, type DocumentModel, type HeadingMatch, type Section } from "../../src/engine/model.js";
 
 const FRONTMATTER = ["---", "title: x", "---", ""];
 
@@ -157,9 +151,7 @@ describe("Section.endLine and Section.parent (spec 2.6 'Levels, parents and scop
   });
 
   it("CRLF line ends give the same lines, end lines and parents", () => {
-    expect(load(BODY, "\r\n").sections.map(sectionView)).toEqual(
-      load(BODY).sections.map(sectionView),
-    );
+    expect(load(BODY, "\r\n").sections.map(sectionView)).toEqual(load(BODY).sections.map(sectionView));
   });
 
   it("recognized tags are peeled at every level; an unrecognized bracket stays in the text", () => {
@@ -332,9 +324,7 @@ describe("matchHeadings scope (spec 2.6: FILE scope for H1, H2 and no template p
   });
 
   it("levels match exactly at every level: the same text at another level is no match", () => {
-    expect(must(matched(["## Context"], ["# Context", "### Context"]).get("Context")).match).toBe(
-      null,
-    );
+    expect(must(matched(["## Context"], ["# Context", "### Context"]).get("Context")).match).toBe(null);
     expect(must(matched(["# Context"], ["## Context"]).get("Context")).match).toBeNull();
     expect(must(matched(["## Context"], ["## Context"]).get("Context")).match).toBe(5);
   });

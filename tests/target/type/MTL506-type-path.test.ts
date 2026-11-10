@@ -13,8 +13,7 @@ const DETAIL = "value does not look like a valid path";
 const DIR = "tests/fixtures/pairs/MTL506";
 
 /** `Field '<key>' (type=path): <detail>` for each key, in the given order. */
-const invalid = (...keys: string[]): string[] =>
-  keys.map((key) => `Field '${key}' (type=path): ${DETAIL}`);
+const invalid = (...keys: string[]): string[] => keys.map((key) => `Field '${key}' (type=path): ${DETAIL}`);
 
 /** Case -> fixture -> expected result: at least 1 passing case and 1 failing case. */
 const CASES = [
@@ -31,13 +30,7 @@ const CASES = [
   {
     name: "fail-unanchored-without-extension",
     fixture: `${DIR}/fail-unanchored-without-extension`,
-    expected: invalid(
-      "not_applicable",
-      "qa_slash_test",
-      "and_slash_or",
-      "unanchored_directory",
-      "extension_before_trailing_slash",
-    ),
+    expected: invalid("not_applicable", "qa_slash_test", "and_slash_or", "unanchored_directory", "extension_before_trailing_slash"),
   },
   {
     name: "fail-extension-longer-than-five-or-empty",
@@ -47,12 +40,7 @@ const CASES = [
   {
     name: "fail-whitespace-inside",
     fixture: `${DIR}/fail-whitespace-inside`,
-    expected: invalid(
-      "space_in_file_name",
-      "space_in_directory",
-      "tab_in_directory",
-      "non_breaking_space_in_directory",
-    ),
+    expected: invalid("space_in_file_name", "space_in_directory", "tab_in_directory", "non_breaking_space_in_directory"),
   },
   {
     name: "fail-padded-value-is-not-trimmed",
@@ -62,15 +50,7 @@ const CASES = [
   {
     name: "fail-forbidden-characters",
     fixture: `${DIR}/fail-forbidden-characters`,
-    expected: invalid(
-      "less_than",
-      "greater_than",
-      "double_quote",
-      "pipe",
-      "question_mark",
-      "asterisk",
-      "control_character",
-    ),
+    expected: invalid("less_than", "greater_than", "double_quote", "pipe", "question_mark", "asterisk", "control_character"),
   },
   {
     name: "fail-colon-outside-drive-prefix",
@@ -100,10 +80,7 @@ const CASES = [
   {
     name: "fail-two-fields-in-template-order",
     fixture: `${DIR}/fail-two-fields-in-template-order`,
-    expected: [
-      "Field 'first' (type=path): expected a scalar, got a list",
-      `Field 'second' (type=path): ${DETAIL}`,
-    ],
+    expected: ["Field 'first' (type=path): expected a scalar, got a list", `Field 'second' (type=path): ${DETAIL}`],
   },
   {
     name: "fail-type-inferred-from-template-path-value",
@@ -122,20 +99,13 @@ const CASES = [
   },
 ] as const;
 
-const read = (path: string): string =>
-  readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
+const read = (path: string): string => readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
 
 /** Diagnostics of this code for the pair of a fixture folder. */
 async function lint(fixture: string) {
   const status = await checkTemplate(registry, read(`${fixture}/template.md`));
   if (status.status !== "ok") throw new Error(`${fixture}: template is broken`);
-  const found = await checkTarget(
-    registry,
-    status.model,
-    read(`${fixture}/target.md`),
-    `${fixture}/target.md`,
-    createEnv(),
-  );
+  const found = await checkTarget(registry, status.model, read(`${fixture}/target.md`), `${fixture}/target.md`, createEnv());
   return found.filter((diagnostic) => diagnostic.code === CODE);
 }
 
@@ -169,16 +139,12 @@ describe("MTL506 type-path", () => {
     expect(failing.length).toBeGreaterThanOrEqual(1);
     expect(passing.length + failing.length).toBe(CASES.length);
     expect(CASES.filter((testCase) => testCase.expected.length === 0)).toEqual(passing);
-    expect(CASES.map((testCase) => testCase.fixture)).toEqual(
-      CASES.map((testCase) => `${DIR}/${testCase.name}`),
-    );
+    expect(CASES.map((testCase) => testCase.fixture)).toEqual(CASES.map((testCase) => `${DIR}/${testCase.name}`));
     // Orphan detection: no directory at any depth besides the cases, and each holds only the pair.
     const names = CASES.map((testCase) => testCase.name).sort();
     const tree = listTree();
     expect(tree.dirs).toEqual(names);
-    expect(tree.files).toEqual(
-      names.flatMap((name) => [`${name}/target.md`, `${name}/template.md`]).sort(),
-    );
+    expect(tree.files).toEqual(names.flatMap((name) => [`${name}/target.md`, `${name}/template.md`]).sort());
   });
 
   for (const testCase of CASES) {

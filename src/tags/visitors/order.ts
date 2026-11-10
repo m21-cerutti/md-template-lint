@@ -13,14 +13,7 @@ export class OrderVisitor extends FamilyVisitor<FrontmatterTagData> {
 
 export class BodyOrderVisitor extends FamilyVisitor<BodyTagData> {
   override visitBodyOrderTag = (ctx: BodyOrderTagContext): BodyTagData => {
-    const by =
-      ctx.FIRST() === null
-        ? "text"
-        : ctx.NUMBER_WORD() !== null
-          ? "first-number"
-          : ctx.DATE() !== null
-            ? "first-date"
-            : "first-semver";
+    const by = ctx.FIRST() === null ? "text" : ctx.NUMBER_WORD() !== null ? "first-number" : ctx.DATE() !== null ? "first-date" : "first-semver";
     return {
       kind: "order",
       direction: ctx.DESCENDING() !== null ? "descending" : "ascending",

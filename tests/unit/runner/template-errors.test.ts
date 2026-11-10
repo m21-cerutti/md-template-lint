@@ -22,8 +22,7 @@ async function run(name: string): Promise<RunResult> {
   return runLint(loaded, { io: createMemoryIo() });
 }
 
-const pairs = (result: RunResult): PairBlock[] =>
-  result.blocks.flatMap((block) => (block.kind === "pair" ? [block] : []));
+const pairs = (result: RunResult): PairBlock[] => result.blocks.flatMap((block) => (block.kind === "pair" ? [block] : []));
 
 describe("runner template errors (spec 7.5, 8.2)", () => {
   it("fail-duplicate-pattern-worked-example: fail entry with the MTL017 excerpt, target linted, exit 1", async () => {
@@ -37,8 +36,7 @@ describe("runner template errors (spec 7.5, 8.2)", () => {
         {
           code: "MTL017",
           severity: "error",
-          message:
-            "Heading 'Notes': matches the same headings as the previous heading 'Notes' (line 5)",
+          message: "Heading 'Notes': matches the same headings as the previous heading 'Notes' (line 5)",
           position: { line: 7, column: 4 },
           excerpt: {
             line: 7,

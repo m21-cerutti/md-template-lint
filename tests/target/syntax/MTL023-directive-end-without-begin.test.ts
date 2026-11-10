@@ -1,18 +1,11 @@
 /** MTL023 directive-end-without-begin (src/rules/syntax.ts, docs/spec.md 4.3, 4.4 DIR8). */
 import { describe, expect, it } from "vitest";
-import {
-  at,
-  expectCases,
-  expectDirectiveRule,
-  findingsOf,
-  type Found,
-} from "../../helpers/directives.js";
+import { at, expectCases, expectDirectiveRule, findingsOf, type Found } from "../../helpers/directives.js";
 
 const CODE = "MTL023";
 const DIR = "tests/fixtures/pairs/MTL023";
 
-const noOpen = (code: string): string =>
-  `'end disable ${code}' has no open 'disable' or 'begin disable' for ${code}`;
+const noOpen = (code: string): string => `'end disable ${code}' has no open 'disable' or 'begin disable' for ${code}`;
 
 interface TestCase {
   readonly name: string;

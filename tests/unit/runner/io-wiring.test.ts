@@ -31,35 +31,17 @@ describe("runner io wiring", () => {
 
     // Per file, in template field order: local, aliased, (unlisted: not asked), approved,
     // (elsewhere: not asked). The alias directory is a config path, not a root path.
-    expect(asked).toEqual([
-      `${project}/img/a.png`,
-      `${project}/assets/logo.png`,
-      "/srv/approved/x.png",
-      `${other}/img/a.png`,
-      `${project}/assets/logo.png`,
-      "/srv/approved/x.png",
-    ]);
+    expect(asked).toEqual([`${project}/img/a.png`, `${project}/assets/logo.png`, "/srv/approved/x.png", `${other}/img/a.png`, `${project}/assets/logo.png`, "/srv/approved/x.png"]);
 
     const blocks = result.blocks.flatMap((block) => (block.kind === "pair" ? [block] : []));
     expect(blocks.map((block) => block.root)).toEqual(["project", "other"]);
-    const warnings = blocks.map((block) =>
-      (block.files[0]?.warnings ?? []).map((warning) => [warning.code, warning.message]),
-    );
+    const warnings = blocks.map((block) => (block.files[0]?.warnings ?? []).map((warning) => [warning.code, warning.message]));
     const expected = (root: string) => [
       ["MTL804", `Field 'local': path 'img/a.png' does not exist (resolved: ${root}/img/a.png)`],
-      [
-        "MTL802",
-        `Field 'aliased': aliased path '@assets/logo.png' resolved to ${project}/assets/logo.png — does not exist`,
-      ],
+      ["MTL802", `Field 'aliased': aliased path '@assets/logo.png' resolved to ${project}/assets/logo.png — does not exist`],
       ["MTL801", "Field 'unlisted': alias '@nope/...' has no entry in config aliases, not checked"],
-      [
-        "MTL804",
-        "Field 'approved': path '/srv/approved/x.png' does not exist (resolved: /srv/approved/x.png)",
-      ],
-      [
-        "MTL803",
-        "Field 'elsewhere': absolute path '/srv/other/y.png' skipped by [io:exists] (not checked); add it under approvedPaths in the config",
-      ],
+      ["MTL804", "Field 'approved': path '/srv/approved/x.png' does not exist (resolved: /srv/approved/x.png)"],
+      ["MTL803", "Field 'elsewhere': absolute path '/srv/other/y.png' skipped by [io:exists] (not checked); add it under approvedPaths in the config"],
     ];
     expect(warnings).toEqual([expected(project), expected(other)]);
     // Every finding of [io:exists] is a warning: the run stays clean (spec 2.8).

@@ -67,13 +67,10 @@ async function lint(options: CliOptions, env: CliEnv, version: string): Promise<
   const create = env.createIo ?? createRealIo;
   // One io per run: it holds the URL probe cache and the run budget. A failed config
   // lints nothing, so it needs none.
-  const io = loaded.ok
-    ? create({ allowPrivateNetworks: loaded.config.allowPrivateNetworks })
-    : createMemoryIo();
+  const io = loaded.ok ? create({ allowPrivateNetworks: loaded.config.allowPrivateNetworks }) : createMemoryIo();
   const result = await runLint(loaded, {
     io,
-    files:
-      options.files.length > 0 ? { cwd: env.cwd, home: env.home, paths: options.files } : undefined,
+    files: options.files.length > 0 ? { cwd: env.cwd, home: env.home, paths: options.files } : undefined,
   });
   const format = FORMATS[options.format];
   const output = report(result, {
@@ -123,9 +120,7 @@ export async function runCli(argv: readonly string[], env: CliEnv): Promise<CliR
       return usageFailure(parsed.code, parsed.message);
     case "run": {
       const version = env.version ?? readVersion();
-      return parsed.options.verify
-        ? verify(parsed.options, env, version)
-        : lint(parsed.options, env, version);
+      return parsed.options.verify ? verify(parsed.options, env, version) : lint(parsed.options, env, version);
     }
   }
 }

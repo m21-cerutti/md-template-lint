@@ -30,16 +30,8 @@ interface TestCase {
   readonly expected: readonly Expected[];
 }
 
-const mismatch = (
-  text: string,
-  pattern: string,
-  piece: string,
-  line: number,
-  parent: string | null = null,
-): Expected => ({
-  message:
-    `Heading: ${parent === null ? "" : `Section '${parent}': `}heading '${text}' does not match ` +
-    `[pattern:"${pattern}"] at ${piece}`,
+const mismatch = (text: string, pattern: string, piece: string, line: number, parent: string | null = null): Expected => ({
+  message: `Heading: ${parent === null ? "" : `Section '${parent}': `}heading '${text}' does not match ` + `[pattern:"${pattern}"] at ${piece}`,
   line,
   heading: text,
 });
@@ -148,28 +140,19 @@ const CASES: readonly TestCase[] = [
   { name: "fail-mismatch-is-left-out-of-the-order-list", expected: [NOTES_AT_V(5)] },
 ];
 
-const read = (path: string): string =>
-  readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
+const read = (path: string): string => readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
 
 /** Every diagnostic (after suppression) for the pair of a fixture folder. */
 async function lintAll(name: string) {
   const fixture = `${DIR}/${name}`;
   const status = await checkTemplate(registry, read(`${fixture}/template.md`));
   if (status.status !== "ok") throw new Error("template is broken");
-  return checkTarget(
-    registry,
-    status.model,
-    read(`${fixture}/target.md`),
-    "target.md",
-    createEnv(),
-  );
+  return checkTarget(registry, status.model, read(`${fixture}/target.md`), "target.md", createEnv());
 }
 
 /** The errors of a fixture as [code, anchor line]. */
 async function errorsOf(name: string) {
-  return (await lintAll(name))
-    .filter((diagnostic) => diagnostic.severity === "error")
-    .map((diagnostic) => [diagnostic.code, anchorLineOf(diagnostic)]);
+  return (await lintAll(name)).filter((diagnostic) => diagnostic.severity === "error").map((diagnostic) => [diagnostic.code, anchorLineOf(diagnostic)]);
 }
 
 describe("MTL606 heading-pattern-mismatch", () => {
@@ -229,17 +212,13 @@ describe("MTL606 heading-pattern-mismatch", () => {
   it("worked example 1: after the mismatch the run takes the instances (MTL703 on line 17)", async () => {
     const found = await lintAll("fail-worked-example-1-bracketed-unreleased");
     const content = found.filter((diagnostic) => diagnostic.code === "MTL703");
-    expect(content.map((diagnostic) => [diagnostic.message, anchorLineOf(diagnostic)])).toEqual([
-      ["Section '[1.0.0] - 2026-01-10 > Added': [content:list] no markdown list item found", 17],
-    ]);
+    expect(content.map((diagnostic) => [diagnostic.message, anchorLineOf(diagnostic)])).toEqual([["Section '[1.0.0] - 2026-01-10 > Added': [content:list] no markdown list item found", 17]]);
     // MTL606 is printed first (template line 9 before the content step).
     expect(found[0]?.code).toBe(CODE);
   });
 
   it("no sibling left: MTL605 only, never MTL606 (spec 2.10 'Consequences')", async () => {
-    expect(await errorsOf("pass-no-sibling-left-gives-mtl605-not-mtl606")).toEqual([
-      ["MTL605", null],
-    ]);
+    expect(await errorsOf("pass-no-sibling-left-gives-mtl605-not-mtl606")).toEqual([["MTL605", null]]);
   });
 
   it("an optional placeholder position takes nothing: the next literal takes the sibling", async () => {
@@ -247,29 +226,17 @@ describe("MTL606 heading-pattern-mismatch", () => {
   });
 
   it("a mismatch is not a match: no content, child, MTL612 or order finding", async () => {
-    for (const name of [
-      "fail-mismatch-is-not-a-match-no-content-or-child-check",
-      "fail-mismatch-is-not-also-mtl612",
-      "fail-mismatch-is-left-out-of-the-order-list",
-    ]) {
+    for (const name of ["fail-mismatch-is-not-a-match-no-content-or-child-check", "fail-mismatch-is-not-also-mtl612", "fail-mismatch-is-left-out-of-the-order-list"]) {
       expect((await lintAll(name)).map((diagnostic) => diagnostic.code)).toEqual([CODE]);
     }
   });
 
   it("disable-line: the pair is the unsuppressed baseline plus one directive", async () => {
-    expect(
-      (await lintAll("fail-file-scope-placeholder-takes-a-mismatch")).map((item) => item.code),
-    ).toEqual([CODE]);
+    expect((await lintAll("fail-file-scope-placeholder-takes-a-mismatch")).map((item) => item.code)).toEqual([CODE]);
     const fixture = `${DIR}/pass-disable-line-silences-it`;
     const status = await checkTemplate(registry, read(`${fixture}/template.md`));
     if (status.status !== "ok") throw new Error("template is broken");
-    const result = await lintTarget(
-      registry,
-      status.model,
-      read(`${fixture}/target.md`),
-      "target.md",
-      createEnv(),
-    );
+    const result = await lintTarget(registry, status.model, read(`${fixture}/target.md`), "target.md", createEnv());
     expect(result.diagnostics).toEqual([]);
     expect(result.suppressed).toBe(1);
   });

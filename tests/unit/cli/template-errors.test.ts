@@ -22,18 +22,12 @@ import { lintedOf, parseJson, runCliIn } from "../../helpers/cli.js";
 
 const GROUP = "template-";
 const TEMPLATE = "templates/versions.template.md";
-const MTL017 =
-  "      error MTL017 Heading 'Notes': matches the same headings as the previous heading 'Notes' (line 5)\n" +
-  "        7 | ## Notes [presence:optional]\n" +
-  "          |    ^\n";
+const MTL017 = "      error MTL017 Heading 'Notes': matches the same headings as the previous heading 'Notes' (line 5)\n" + "        7 | ## Notes [presence:optional]\n" + "          |    ^\n";
 const MTL018 =
   "      error MTL018 Heading 'Release': tag [repeat-rules:same-level:min:2] contradicts [presence:optional] (a minimum of 2 requires the heading)\n" +
   '        9 | ## Release [pattern:"{semver}"] [repeat-rules:same-level:min:2] [presence:optional]\n' +
   `          | ${" ".repeat(32)}^\n`;
-const MTL019 =
-  "      error MTL019 Heading 'Steps' (H3): comes after the deeper child 'Details' (H4, line 9) under 'Setup'\n" +
-  "        11 | ### Steps\n" +
-  "           | ^\n";
+const MTL019 = "      error MTL019 Heading 'Steps' (H3): comes after the deeper child 'Details' (H4, line 9) under 'Setup'\n" + "        11 | ### Steps\n" + "           | ^\n";
 const MTL030 =
   "      error MTL030 Heading 'Epic A - Title': tag [order:ascending] needs [repeat-rules:same-level] (an order compares the repeats of one heading)\n" +
   '        5 | ## Epic A - Title [pattern:"Epic {char} - {text}"] [order:ascending] [content:table]\n' +
@@ -86,10 +80,7 @@ const CASES: readonly Case[] = [
     name: "fail-worked-example-5-both-errors",
     exitCode: 1,
     linted: ["project:versions:notes/a.md"],
-    plain: [
-      `  FAIL ${TEMPLATE} (template)\n${MTL017}${MTL018}  PASS notes/a.md\n`,
-      "Failed templates:",
-    ],
+    plain: [`  FAIL ${TEMPLATE} (template)\n${MTL017}${MTL018}  PASS notes/a.md\n`, "Failed templates:"],
     absent: ["All files passed!", "Failed files:"],
   },
   {
@@ -112,10 +103,7 @@ const CASES: readonly Case[] = [
     name: "fail-worked-example-7-j-order-without-repeat",
     exitCode: 1,
     linted: ["project:epics:notes/a.md"],
-    plain: [
-      `  FAIL templates/epics.template.md (template)\n${MTL030}  PASS notes/a.md\n`,
-      "Failed templates:\n  - templates/epics.template.md\n",
-    ],
+    plain: [`  FAIL templates/epics.template.md (template)\n${MTL030}  PASS notes/a.md\n`, "Failed templates:\n  - templates/epics.template.md\n"],
     absent: ["All files passed!", "Failed files:", "MTL609"],
   },
   {
@@ -123,12 +111,7 @@ const CASES: readonly Case[] = [
     name: "fail-two-pairs-one-template",
     exitCode: 1,
     linted: ["project:notes:notes/a.md", "project:more:more/b.md"],
-    plain: [
-      `  FAIL ${TEMPLATE} (template)\n${MTL017}  PASS notes/a.md\n`,
-      `  FAIL ${TEMPLATE} (template)\n${MTL017}  PASS more/b.md\n`,
-      "Templates:    1 checked, 0 broken\n",
-      `Failed templates:\n  - ${TEMPLATE}\n\n========================\n`,
-    ],
+    plain: [`  FAIL ${TEMPLATE} (template)\n${MTL017}  PASS notes/a.md\n`, `  FAIL ${TEMPLATE} (template)\n${MTL017}  PASS more/b.md\n`, "Templates:    1 checked, 0 broken\n", `Failed templates:\n  - ${TEMPLATE}\n\n========================\n`],
     absent: ["All files passed!", "Failed files:"],
   },
   {
@@ -151,10 +134,7 @@ const CASES: readonly Case[] = [
     name: "fail-several-errors-sorted-by-line-then-code",
     exitCode: 1,
     linted: ["project:all:notes/a.md"],
-    plain: [
-      `  FAIL templates/all.template.md (template)\n${SEVERAL}  PASS notes/a.md\n`,
-      "Failed templates:\n  - templates/all.template.md\n",
-    ],
+    plain: [`  FAIL templates/all.template.md (template)\n${SEVERAL}  PASS notes/a.md\n`, "Failed templates:\n  - templates/all.template.md\n"],
     absent: ["All files passed!", "Failed files:"],
   },
   {
@@ -164,11 +144,7 @@ const CASES: readonly Case[] = [
     exitCode: 2,
     stderr: "error MTL910: template not found: templates/missing.template.md (pair 'ghost')\n",
     linted: ["project:versions:notes/a.md"],
-    plain: [
-      `  FAIL ${TEMPLATE} (template)\n${MTL017}  PASS notes/a.md\n`,
-      "Run errors:   1\n",
-      `Failed templates:\n  - ${TEMPLATE}\n`,
-    ],
+    plain: [`  FAIL ${TEMPLATE} (template)\n${MTL017}  PASS notes/a.md\n`, "Run errors:   1\n", `Failed templates:\n  - ${TEMPLATE}\n`],
     absent: ["All files passed!", "Failed files:"],
   },
   {
@@ -182,8 +158,7 @@ const CASES: readonly Case[] = [
       `  FAIL ${TEMPLATE} (template)\n${MTL017}  PASS notes/a.md\n`,
       "  TEMPLATE ERROR: templates/broken.template.md - File must have YAML frontmatter (---...---)\n",
       "Templates:    2 checked, 1 broken\n",
-      "Broken templates:\n  - templates/broken.template.md - File must have YAML frontmatter (---...---)\n\n" +
-        `Failed templates:\n  - ${TEMPLATE}\n`,
+      "Broken templates:\n  - templates/broken.template.md - File must have YAML frontmatter (---...---)\n\n" + `Failed templates:\n  - ${TEMPLATE}\n`,
     ],
     absent: ["All files passed!", "Failed files:", "more/b.md"],
   },
@@ -193,11 +168,7 @@ const CASES: readonly Case[] = [
     name: "pass-failed-template-of-an-empty-pair-is-not-parsed",
     exitCode: 0,
     linted: [],
-    plain: [
-      "INFO MTL913 no files matched pair 'versions' in root 'project'\n",
-      "Templates:    0 checked, 0 broken\n",
-      "No files linted.\n",
-    ],
+    plain: ["INFO MTL913 no files matched pair 'versions' in root 'project'\n", "Templates:    0 checked, 0 broken\n", "No files linted.\n"],
     absent: ["(template)", "Failed templates:", "MTL017", "All files passed!"],
   },
   {
@@ -212,8 +183,7 @@ const CASES: readonly Case[] = [
 
 const fixture = (name: string): string => `${GROUP}${name}`;
 /** An expected-output file with `\r\n` read as `\n` (a checkout may convert line ends). */
-const expectedFile = (name: string, file: string): string =>
-  readFileSync(join(fixturePath("cli", fixture(name)), file), "utf8").replaceAll("\r\n", "\n");
+const expectedFile = (name: string, file: string): string => readFileSync(join(fixturePath("cli", fixture(name)), file), "utf8").replaceAll("\r\n", "\n");
 
 function expectInOrder(text: string, fragments: readonly string[]): void {
   let from = 0;
@@ -296,11 +266,7 @@ for (const [NAME, title] of WORKED_EXAMPLES)
         results: { template: object }[];
         summary: object;
       };
-      expect(Object.keys(document.results[0]?.template ?? {})).toEqual([
-        "path",
-        "status",
-        "diagnostics",
-      ]);
+      expect(Object.keys(document.results[0]?.template ?? {})).toEqual(["path", "status", "diagnostics"]);
       expect(Object.keys(document.summary)).not.toContain("templatesFailed");
     });
   });
@@ -367,9 +333,7 @@ describe("cli template errors: shared template and warnings", () => {
     expect(count(text.stdout, `  - ${TEMPLATE}\n`)).toBe(1);
     const quiet = await runCliIn(fixture("fail-two-pairs-one-template"), ["--quiet"]);
     expect(count(quiet.stdout, `  ✗ ${TEMPLATE} (template)\n`)).toBe(2);
-    const json = JSON.parse(
-      (await runCliIn(fixture("fail-two-pairs-one-template"), ["--format", "json"])).stdout,
-    ) as { results: { template: { status: string; diagnostics: object[] } }[] };
+    const json = JSON.parse((await runCliIn(fixture("fail-two-pairs-one-template"), ["--format", "json"])).stdout) as { results: { template: { status: string; diagnostics: object[] } }[] };
     expect(json.results.map((block) => block.template.status)).toEqual(["fail", "fail"]);
     expect(json.results.map((block) => block.template.diagnostics.length)).toEqual([1, 1]);
   });
@@ -390,20 +354,10 @@ describe("cli template errors: shared template and warnings", () => {
 
   it("several errors: --verify prints the four sections in code order, exit 1", async () => {
     const name = "fail-several-errors-sorted-by-line-then-code";
-    const run = await runCliIn(fixture(name), [
-      "--verify",
-      "--format",
-      "plain",
-      "templates/all.template.md",
-    ]);
+    const run = await runCliIn(fixture(name), ["--verify", "--format", "plain", "templates/all.template.md"]);
     expect(run.exitCode).toBe(1);
     const out = run.stdout.split("\n");
-    const at = [
-      "Duplicate patterns:",
-      "Optional headings with a minimum:",
-      "Child headings out of level order:",
-      "Order tags without repeat:",
-    ].map((section) => out.indexOf(section));
+    const at = ["Duplicate patterns:", "Optional headings with a minimum:", "Child headings out of level order:", "Order tags without repeat:"].map((section) => out.indexOf(section));
     expect(at.every((index) => index > 0)).toBe(true);
     expect([...at].sort((a, b) => a - b)).toEqual(at);
     expect(out).toContain("Errors:       4");
@@ -448,9 +402,7 @@ describe("cli template errors: shared template and warnings", () => {
   });
 
   it("pass-warnings-only: JSON template is ok with no diagnostics, --quiet prints nothing", async () => {
-    const json = JSON.parse(
-      (await runCliIn(fixture("pass-warnings-only"), ["--format", "json"])).stdout,
-    ) as { results: { template: object }[] };
+    const json = JSON.parse((await runCliIn(fixture("pass-warnings-only"), ["--format", "json"])).stdout) as { results: { template: object }[] };
     expect(json.results[0]?.template).toEqual({ path: TEMPLATE, status: "ok" });
     expect(await runCliIn(fixture("pass-warnings-only"), ["--quiet"])).toMatchObject({
       stdout: "",

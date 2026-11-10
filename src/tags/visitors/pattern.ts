@@ -8,21 +8,11 @@
  * problem from the left, an `invalid` piece with its `MTL014` reason (the rule
  * itself is phase P2).
  */
-import type {
-  BodyPatternTagContext,
-  PatternPieceContext,
-} from "../../generated/MdTemplateParser.js";
+import type { BodyPatternTagContext, PatternPieceContext } from "../../generated/MdTemplateParser.js";
 import type { PatternPiece, PatternPlaceholderName } from "../ast.js";
 import { FamilyVisitor, type BodyTagData } from "./base.js";
 
-const PLACEHOLDER_NAMES: readonly PatternPlaceholderName[] = [
-  "text",
-  "number",
-  "digits",
-  "semver",
-  "date",
-  "char",
-];
+const PLACEHOLDER_NAMES: readonly PatternPlaceholderName[] = ["text", "number", "digits", "semver", "date", "char"];
 
 /** Per placeholder: its formats, each mapped to "needs an argument". `char` has none. */
 const FORMATS = new Map<PatternPlaceholderName, ReadonlyMap<string, boolean>>([
@@ -96,10 +86,7 @@ function placeholder(raw: string, offset: number): PatternPiece {
   const name = PLACEHOLDER_NAMES.find((candidate) => candidate === written.toLowerCase());
   if (name === undefined) return invalid(`unknown placeholder ${raw}`, offset);
   if (parts.length === 1) return { kind: "placeholder", name, format: null, argument: null, raw };
-  const shaped =
-    (parts.length === 3 || parts.length === 4) &&
-    parts[1]?.toLowerCase() === "format" &&
-    parts.every((part) => part !== "");
+  const shaped = (parts.length === 3 || parts.length === 4) && parts[1]?.toLowerCase() === "format" && parts.every((part) => part !== "");
   if (!shaped) return invalid(`malformed placeholder ${raw}`, offset);
   const formatText = parts[2] ?? "";
   const format = formatText.toLowerCase();

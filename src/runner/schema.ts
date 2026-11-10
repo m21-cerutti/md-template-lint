@@ -49,9 +49,7 @@ function fieldRules(field: Field): string[] {
   const shape = tags.flatMap((tag) => (tag.kind === "format-shape" ? [tag] : []))[0];
   if (shape !== undefined) rules.push(`format:${shape.shape}`);
   // Then the first elements shape tag (MTL308 `semver`, MTL309 `date`).
-  const elementsShape = tags.flatMap((tag) =>
-    tag.kind === "format-elements-shape" ? [tag] : [],
-  )[0];
+  const elementsShape = tags.flatMap((tag) => (tag.kind === "format-elements-shape" ? [tag] : []))[0];
   if (elementsShape !== undefined) rules.push(`format:elements:${elementsShape.shape}`);
   if (tags.some((tag) => tag.kind === "value-filename")) rules.push("value:filename");
 
@@ -81,10 +79,7 @@ function fieldRules(field: Field): string[] {
 /** Heading presence precedence (spec 2.6): conditional, template-only, optional, required. */
 function headingRules(section: Section): string[] {
   const modes = section.tags.flatMap((tag) => (tag.kind === "presence" ? [tag.mode] : []));
-  const mode =
-    (["conditional", "template-only", "optional"] as const).find((candidate) =>
-      modes.includes(candidate),
-    ) ?? "required";
+  const mode = (["conditional", "template-only", "optional"] as const).find((candidate) => modes.includes(candidate)) ?? "required";
   const rules: string[] = [presenceToken(mode, section.tags)];
   // Spec 8.3 (change C12): the pattern and repeat tags right after presence, the first tag
   // of each kind, as written (an invalid pattern, MTL014, prints too), then the first order
@@ -95,11 +90,7 @@ function headingRules(section: Section): string[] {
   for (const bound of ["none", "min", "max"] as const) {
     const repeat = repeats.find((tag) => tag.bound === bound);
     if (repeat === undefined) continue;
-    rules.push(
-      bound === "none"
-        ? "repeat-rules:same-level"
-        : `repeat-rules:same-level:${bound}:${repeat.n ?? ""}`,
-    );
+    rules.push(bound === "none" ? "repeat-rules:same-level" : `repeat-rules:same-level:${bound}:${repeat.n ?? ""}`);
   }
   const order = section.tags.find((tag) => tag.kind === "order");
   if (order?.kind === "order") rules.push(orderToken(order));

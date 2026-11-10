@@ -1,23 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { loadDocument } from "../../src/engine/load.js";
 import type { BodyHeading, FrontmatterLine } from "../../src/tags/ast.js";
-import {
-  analyzeDocument,
-  InternalParseError,
-  parseDocument,
-  parseFilenameComment,
-  parseHeadingSuffix,
-  parseInlineComment,
-} from "../../src/tags/parser.js";
+import { analyzeDocument, InternalParseError, parseDocument, parseFilenameComment, parseHeadingSuffix, parseInlineComment } from "../../src/tags/parser.js";
 
-const reasons = (text: string): string[] =>
-  parseInlineComment(text).findings.map((f) => `${f.region} ${f.reason} ${f.tag}`);
+const reasons = (text: string): string[] => parseInlineComment(text).findings.map((f) => `${f.region} ${f.reason} ${f.tag}`);
 
 describe("frontmatter presence tags", () => {
   it("parses required, optional and conditional", () => {
-    const { tags, findings } = parseInlineComment(
-      "[presence:required] [PRESENCE:Optional] [presence:conditional: only when risky ]",
-    );
+    const { tags, findings } = parseInlineComment("[presence:required] [PRESENCE:Optional] [presence:conditional: only when risky ]");
     expect(findings).toEqual([]);
     expect(tags).toMatchObject([
       { region: "frontmatter", kind: "presence", mode: "required", raw: "[presence:required]" },
@@ -34,9 +24,7 @@ describe("frontmatter presence tags", () => {
 describe("frontmatter value tags", () => {
   it("parses format, value, count, range, order and io tags", () => {
     const { tags, findings } = parseInlineComment(
-      "[format:constant: v1 ] [format:snake_case] [format:elements:Kebab-Case] " +
-        "[format:scheme:HTTPS,] [value:filename] [count:min:1] [count:max:5] " +
-        "[range:min:-2.50] [range:max:007] [order:ascending] [io:exists]",
+      "[format:constant: v1 ] [format:snake_case] [format:elements:Kebab-Case] " + "[format:scheme:HTTPS,] [value:filename] [count:min:1] [count:max:5] " + "[range:min:-2.50] [range:max:007] [order:ascending] [io:exists]",
     );
     expect(findings).toEqual([]);
     expect(tags).toMatchObject([
@@ -57,9 +45,7 @@ describe("frontmatter value tags", () => {
   it("parses a scheme list and rejects spaces in it", () => {
     const [tag] = parseInlineComment("[format:scheme:HTTPS,ftp,]").tags;
     expect(tag).toMatchObject({ kind: "format-scheme", schemes: ["https", "ftp"] });
-    expect(reasons("[format:scheme:https, ftp]")).toEqual([
-      "frontmatter malformed [format:scheme:https, ftp]",
-    ]);
+    expect(reasons("[format:scheme:https, ftp]")).toEqual(["frontmatter malformed [format:scheme:https, ftp]"]);
   });
 
   it("reports bad arguments as malformed with line and column", () => {
@@ -135,11 +121,7 @@ describe("frontmatter value tags", () => {
 
 describe("unknown and inert brackets in a comment", () => {
   it("reports tag-shaped unknown brackets", () => {
-    expect(reasons("[foo:bar] [foo] [Filename:case:snake_case]")).toEqual([
-      "frontmatter unknown [foo:bar]",
-      "frontmatter unknown [foo]",
-      "frontmatter unknown [Filename:case:snake_case]",
-    ]);
+    expect(reasons("[foo:bar] [foo] [Filename:case:snake_case]")).toEqual(["frontmatter unknown [foo:bar]", "frontmatter unknown [foo]", "frontmatter unknown [Filename:case:snake_case]"]);
   });
 
   it("ignores prose, the rule marker and type tokens", () => {
@@ -147,9 +129,7 @@ describe("unknown and inert brackets in a comment", () => {
   });
 
   it("keeps the filename tag after a key apart, as an inert tag", () => {
-    const { tags, inertTags, findings } = parseInlineComment(
-      "[presence:optional] [filename:case:snake_case]",
-    );
+    const { tags, inertTags, findings } = parseInlineComment("[presence:optional] [filename:case:snake_case]");
     expect(findings).toEqual([]);
     expect(tags).toMatchObject([{ kind: "presence", mode: "optional" }]);
     expect(inertTags).toMatchObject([{ kind: "filename-case", convention: "snake_case" }]);
@@ -168,9 +148,7 @@ describe("unknown and inert brackets in a comment", () => {
 
 describe("type hints", () => {
   it("collects every hint form in source order", () => {
-    const { hints } = parseInlineComment(
-      "type = List-Of-Int [Date] YYYY-MM-DD iso url lien path @gen-1/ [path-alias]",
-    );
+    const { hints } = parseInlineComment("type = List-Of-Int [Date] YYYY-MM-DD iso url lien path @gen-1/ [path-alias]");
     expect(hints.map((h) => ("name" in h ? `${h.kind}:${h.name}` : h.kind))).toEqual([
       "type-eq:list-of-int",
       "bracket:date",
@@ -208,9 +186,7 @@ describe("filename comment", () => {
       kind: "filename-case",
       convention: "camelCase",
     });
-    expect(parseFilenameComment("  #[filename:case:PascalCase]  ").tag?.convention).toBe(
-      "PascalCase",
-    );
+    expect(parseFilenameComment("  #[filename:case:PascalCase]  ").tag?.convention).toBe("PascalCase");
   });
 
   it("reports a bad convention as malformed, located", () => {
@@ -227,13 +203,7 @@ describe("filename comment", () => {
   });
 
   it("ignores other line shapes", () => {
-    for (const line of [
-      "id: x # [filename:case:snake_case]",
-      "# [Filename:case:snake_case]",
-      "# [filename:case:snake_case] extra",
-      "# [presence:optional]",
-      "# plain comment",
-    ]) {
+    for (const line of ["id: x # [filename:case:snake_case]", "# [Filename:case:snake_case]", "# [filename:case:snake_case] extra", "# [presence:optional]", "# plain comment"]) {
       expect(parseFilenameComment(line)).toEqual({ tag: null, findings: [] });
     }
   });
@@ -248,17 +218,12 @@ describe("heading suffix", () => {
       { region: "body", kind: "content-lines", bound: "min", value: 3 },
     ]);
     // The leftover trailing bracket is tag-shaped and unknown (legacy split_heading_tags).
-    expect(result.findings).toMatchObject([
-      { region: "body", reason: "unknown", tag: "[x]", subject: { heading: "Overview [x]" } },
-    ]);
+    expect(result.findings).toMatchObject([{ region: "body", reason: "unknown", tag: "[x]", subject: { heading: "Overview [x]" } }]);
     expect(parseHeadingSuffix("Overview (x) [presence:optional]").findings).toEqual([]);
   });
 
   it("parses every body tag", () => {
-    const result = parseHeadingSuffix(
-      "A [presence:required] [presence:template-only] " +
-        "[presence:conditional:x] [content:non-empty] [content:table] [content:list] [content:max-lines:9]",
-    );
+    const result = parseHeadingSuffix("A [presence:required] [presence:template-only] " + "[presence:conditional:x] [content:non-empty] [content:table] [content:list] [content:max-lines:9]");
     expect(result.text).toBe("A");
     expect(result.tags).toHaveLength(7);
     expect(result.findings).toEqual([]);
@@ -268,9 +233,7 @@ describe("heading suffix", () => {
     const result = parseHeadingSuffix("Intro [presence:exist]", { line: 7, column: 4 });
     expect(result.text).toBe("Intro [presence:exist]");
     expect(result.tags).toEqual([]);
-    expect(result.findings).toMatchObject([
-      { region: "body", reason: "malformed", tag: "[presence:exist]", offending: "exist" },
-    ]);
+    expect(result.findings).toMatchObject([{ region: "body", reason: "malformed", tag: "[presence:exist]", offending: "exist" }]);
     // Located (spec 2.7): the heading text starts at column 4 of line 7, `Intro ` is 6
     // characters, `[presence:` 10 more, so `exist` (the argument that does not fit) is at 4 + 16.
     expect(result.findings[0]?.position).toEqual({ line: 7, column: 20 });
@@ -280,9 +243,7 @@ describe("heading suffix", () => {
     const result = parseHeadingSuffix("Notes [presenc:optional]");
     expect(result.text).toBe("Notes [presenc:optional]");
     expect(result.tags).toEqual([]);
-    expect(result.findings.map((f) => `${f.reason} ${f.tag}`)).toEqual([
-      "unknown [presenc:optional]",
-    ]);
+    expect(result.findings.map((f) => `${f.reason} ${f.tag}`)).toEqual(["unknown [presenc:optional]"]);
   });
 
   it("reports a malformed trailing tag, located", () => {
@@ -306,9 +267,7 @@ describe("heading suffix", () => {
     });
     expect(result.text).toBe("Notes [count:min:1]");
     expect(result.tags).toHaveLength(1);
-    expect(result.findings).toMatchObject([
-      { reason: "wrong-region", region: "body", position: { line: 5, column: 10 } },
-    ]);
+    expect(result.findings).toMatchObject([{ reason: "wrong-region", region: "body", position: { line: 5, column: 10 } }]);
   });
 
   it("drops a trailing HTML comment and ignores prose brackets", () => {
@@ -331,27 +290,18 @@ describe("heading suffix", () => {
  */
 describe("unique heading names tag (spec 2.11)", () => {
   const lines = (...text: string[]) => text.join("\n");
-  const headingsOf = (text: string): BodyHeading[] =>
-    parseDocument(text).body.filter((b): b is BodyHeading => b.kind === "heading");
+  const headingsOf = (text: string): BodyHeading[] => parseDocument(text).body.filter((b): b is BodyHeading => b.kind === "heading");
   /** The findings a load keeps (spec 2.1: key lines, standalone comment lines, the body). */
   const loadedFindings = (text: string) => {
     const result = loadDocument(text);
     if (!result.ok) throw new Error(`load failed: ${result.failure.reason}`);
     return result.model.findings;
   };
-  const kinds = (fmLines: readonly FrontmatterLine[] | undefined) =>
-    (fmLines ?? []).map((l) => l.kind);
+  const kinds = (fmLines: readonly FrontmatterLine[] | undefined) => (fmLines ?? []).map((l) => l.kind);
 
   describe("on a heading (per-heading switch)", () => {
     it("parses at every heading level H1 to H6 and is peeled from the text", () => {
-      const text = lines(
-        "# One [unique-headings-names]",
-        "## Two [unique-headings-names]",
-        "### Three [unique-headings-names]",
-        "#### Four [unique-headings-names]",
-        "##### Five [unique-headings-names]",
-        "###### Six [unique-headings-names]",
-      );
+      const text = lines("# One [unique-headings-names]", "## Two [unique-headings-names]", "### Three [unique-headings-names]", "#### Four [unique-headings-names]", "##### Five [unique-headings-names]", "###### Six [unique-headings-names]");
       const tag = { region: "body", kind: "unique-names", raw: "[unique-headings-names]" };
       expect(headingsOf(text)).toMatchObject([
         { level: 1, text: "One", tags: [tag] },
@@ -376,9 +326,7 @@ describe("unique heading names tag (spec 2.11)", () => {
     });
 
     it("is peeled together with other trailing tags, in any order", () => {
-      const after = parseHeadingSuffix(
-        'Release [pattern:"[{semver}] - {date}"] [repeat-rules:same-level] [unique-headings-names]',
-      );
+      const after = parseHeadingSuffix('Release [pattern:"[{semver}] - {date}"] [repeat-rules:same-level] [unique-headings-names]');
       expect(after.findings).toEqual([]);
       expect(after.text).toBe("Release");
       expect(after.tags.map((t) => t.kind)).toEqual(["pattern", "repeat", "unique-names"]);
@@ -423,9 +371,7 @@ describe("unique heading names tag (spec 2.11)", () => {
       const result = parseHeadingSuffix("Notes [unique-heading-names]");
       expect(result.text).toBe("Notes [unique-heading-names]");
       expect(result.tags).toEqual([]);
-      expect(result.findings).toMatchObject([
-        { region: "body", reason: "unknown", tag: "[unique-heading-names]" },
-      ]);
+      expect(result.findings).toMatchObject([{ region: "body", reason: "unknown", tag: "[unique-heading-names]" }]);
     });
   });
 
@@ -451,13 +397,7 @@ describe("unique heading names tag (spec 2.11)", () => {
     });
 
     it("written on two lines counts once, with no finding", () => {
-      const text = lines(
-        "---",
-        "# [unique-headings-names]",
-        "a: x",
-        "# [unique-headings-names]",
-        "---",
-      );
+      const text = lines("---", "# [unique-headings-names]", "a: x", "# [unique-headings-names]", "---");
       expect(parseDocument(text).frontmatter?.uniqueHeadingNames).toBe(true);
       expect(loadedFindings(text)).toEqual([]);
     });
@@ -474,11 +414,7 @@ describe("unique heading names tag (spec 2.11)", () => {
     });
 
     it("on a comment line with other text or tags it is inert and not reported", () => {
-      for (const comment of [
-        "# note [unique-headings-names]",
-        "# [unique-headings-names] note",
-        "# [presence:optional] [unique-headings-names]",
-      ]) {
+      for (const comment of ["# note [unique-headings-names]", "# [unique-headings-names] note", "# [presence:optional] [unique-headings-names]"]) {
         const text = lines("---", comment, "a: x", "---");
         expect(parseDocument(text).frontmatter?.uniqueHeadingNames).toBe(false);
         expect(loadedFindings(text)).toEqual([]);
@@ -489,9 +425,7 @@ describe("unique heading names tag (spec 2.11)", () => {
       for (const written of ["[unique-headings-names:x]", "[unique-headings-names:]"]) {
         const text = lines("---", `# ${written}`, "a: x", "---");
         expect(parseDocument(text).frontmatter?.uniqueHeadingNames).toBe(false);
-        expect(loadedFindings(text)).toMatchObject([
-          { region: "frontmatter", reason: "malformed", tag: written, position: { line: 2 } },
-        ]);
+        expect(loadedFindings(text)).toMatchObject([{ region: "frontmatter", reason: "malformed", tag: written, position: { line: 2 } }]);
       }
     });
 
@@ -518,9 +452,7 @@ describe("unique heading names tag (spec 2.11)", () => {
 
     it("an argument after a key is malformed (MTL012)", () => {
       const text = lines("---", "n: x # [unique-headings-names:x]", "---");
-      expect(loadedFindings(text)).toMatchObject([
-        { region: "frontmatter", reason: "malformed", subject: { field: "n" } },
-      ]);
+      expect(loadedFindings(text)).toMatchObject([{ region: "frontmatter", reason: "malformed", subject: { field: "n" } }]);
     });
 
     it("a typo after a key is an unknown tag (MTL010)", () => {
@@ -620,9 +552,7 @@ describe("unknown tags on frontmatter comment lines (spec 2.1)", () => {
 
   it("keeps `# [unique-headings-names:x]` alone malformed with no comment-line subject", () => {
     const found = loadedFindings(lines("---", "# [unique-headings-names:x]", "a: x", "---"));
-    expect(found).toMatchObject([
-      { reason: "malformed", tag: "[unique-headings-names:x]", subject: null },
-    ]);
+    expect(found).toMatchObject([{ reason: "malformed", tag: "[unique-headings-names:x]", subject: null }]);
     expect(found).toHaveLength(1);
   });
 });

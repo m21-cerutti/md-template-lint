@@ -11,8 +11,7 @@ const CODE = "MTL407";
 const DIR = "tests/fixtures/pairs/MTL407";
 
 /** Spec 4.3 message of MTL407: both items as written (not stripped, not repr). */
-const message = (key: string, prev: string, item: string): string =>
-  `Field '${key}': dates are not in ascending order ('${prev}' comes before '${item}') [order:ascending]`;
+const message = (key: string, prev: string, item: string): string => `Field '${key}': dates are not in ascending order ('${prev}' comes before '${item}') [order:ascending]`;
 
 interface TestCase {
   readonly name: string;
@@ -90,20 +89,14 @@ const CASES: readonly TestCase[] = [
   // marker after a date is not.
   {
     name: "fail-marker-ties-with-max-date-and-sorts-after-others",
-    expected: [
-      message("case_variants", "présent", "2026-02-01"),
-      message("max_date_after_marker", "9999-12-31", "9999-12-30"),
-    ],
+    expected: [message("case_variants", "présent", "2026-02-01"), message("max_date_after_marker", "9999-12-31", "9999-12-30")],
     warnings: noDateFormat(2),
   },
   // One error per decreasing adjacent pair; after a violation the previous
   // date moves on (03-01 then 04-01 is fine), so there are exactly two errors.
   {
     name: "fail-each-decreasing-pair-reported-in-list-order",
-    expected: [
-      message("dates", "2026-05-01", "2026-03-01"),
-      message("dates", "2026-04-01", "2026-02-01"),
-    ],
+    expected: [message("dates", "2026-05-01", "2026-03-01"), message("dates", "2026-04-01", "2026-02-01")],
     warnings: noDateFormat(1),
   },
   // The pair forms between neighbouring VALID items: a word, an impossible day,
@@ -118,11 +111,7 @@ const CASES: readonly TestCase[] = [
   // fine, `YYYY-MM` sorts as the 1st and `YYYY` as January 1st.
   {
     name: "fail-slash-and-iso-forms-compare-by-calendar-date",
-    expected: [
-      message("dates", "01/03/2026", "2026-02-15"),
-      message("dates", "15/02/2026", "2026-02"),
-      message("dates", "2026-02", "2026"),
-    ],
+    expected: [message("dates", "01/03/2026", "2026-02-15"), message("dates", "15/02/2026", "2026-02"), message("dates", "2026-02", "2026")],
     warnings: noDateFormat(1),
   },
   // Items are shown as written (padding and NEL kept); the BOM item is invalid
@@ -148,30 +137,19 @@ const CASES: readonly TestCase[] = [
   // Errors follow the template key order (not the target order), pairs in list order.
   {
     name: "fail-multi-field-errors-follow-template-order",
-    expected: [
-      message("first", "2026-03-01", "2026-01-01"),
-      message("second", "2026-02-01", "2026-01-15"),
-      message("second", "2026-01-15", "2026-01-01"),
-    ],
+    expected: [message("first", "2026-03-01", "2026-01-01"), message("second", "2026-02-01", "2026-01-15"), message("second", "2026-01-15", "2026-01-01")],
     warnings: noDateFormat(3),
   },
 ];
 
-const read = (path: string): string =>
-  readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
+const read = (path: string): string => readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
 
 /** MTL407 diagnostics and template warnings for the pair of a fixture folder. */
 async function lint(testCase: TestCase) {
   const fixture = `${DIR}/${testCase.name}`;
   const status = await checkTemplate(registry, read(`${fixture}/template.md`));
   if (status.status !== "ok") throw new Error(`${fixture}: template is broken`);
-  const found = await checkTarget(
-    registry,
-    status.model,
-    read(`${fixture}/target.md`),
-    `${fixture}/target.md`,
-    createEnv(),
-  );
+  const found = await checkTarget(registry, status.model, read(`${fixture}/target.md`), `${fixture}/target.md`, createEnv());
   return {
     found: found.filter((diagnostic) => diagnostic.code === CODE),
     warnings: status.warnings,

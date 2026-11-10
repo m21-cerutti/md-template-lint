@@ -32,18 +32,7 @@ describe("json reporter", () => {
 
   it("report-sample: top level keys are stable and in the order of spec 8.5", async () => {
     const { document } = await json("report-sample");
-    expect(Object.keys(document)).toEqual([
-      "schemaVersion",
-      "tool",
-      "version",
-      "mode",
-      "config",
-      "results",
-      "runErrors",
-      "runWarnings",
-      "unmatched",
-      "summary",
-    ]);
+    expect(Object.keys(document)).toEqual(["schemaVersion", "tool", "version", "mode", "config", "results", "runErrors", "runWarnings", "unmatched", "summary"]);
   });
 
   it("report-sample: nested keys are stable and in the order of spec 8.5", async () => {
@@ -53,40 +42,13 @@ describe("json reporter", () => {
     expect(Object.keys(adr)).toEqual(["root", "pair", "template", "files"]);
     expect(Object.keys(adr["template"] as object)).toEqual(["path", "status"]);
     expect(Object.keys(broken["template"] as object)).toEqual(["path", "status", "error"]);
-    expect(Object.keys((broken["template"] as { error: object }).error)).toEqual([
-      "code",
-      "severity",
-      "message",
-    ]);
+    expect(Object.keys((broken["template"] as { error: object }).error)).toEqual(["code", "severity", "message"]);
     const files = adr["files"] as { errors: object[]; warnings: object[] }[];
     expect(Object.keys(files[1] as object)).toEqual(["path", "status", "errors", "warnings"]);
-    expect(Object.keys(files[1]?.errors[1] as object)).toEqual([
-      "code",
-      "severity",
-      "message",
-      "heading",
-    ]);
+    expect(Object.keys(files[1]?.errors[1] as object)).toEqual(["code", "severity", "message", "heading"]);
     const runWarnings = document["runWarnings"] as object[];
-    expect(Object.keys(runWarnings[0] as object)).toEqual([
-      "code",
-      "severity",
-      "message",
-      "pair",
-      "root",
-    ]);
-    expect(Object.keys(document["summary"] as object)).toEqual([
-      "files",
-      "passed",
-      "failed",
-      "warnings",
-      "filesWithWarnings",
-      "suppressed",
-      "templatesChecked",
-      "templatesBroken",
-      "runErrors",
-      "runWarnings",
-      "exitCode",
-    ]);
+    expect(Object.keys(runWarnings[0] as object)).toEqual(["code", "severity", "message", "pair", "root"]);
+    expect(Object.keys(document["summary"] as object)).toEqual(["files", "passed", "failed", "warnings", "filesWithWarnings", "suppressed", "templatesChecked", "templatesBroken", "runErrors", "runWarnings", "exitCode"]);
   });
 
   it("verify: summary keys in the order of spec 8.5, errors right after broken (A72k)", () => {
@@ -97,20 +59,10 @@ describe("json reporter", () => {
       runErrors: [],
       summary: { templates: 0, broken: 0, errors: 0, warnings: 0, runErrors: 0, exitCode: 0 },
     };
-    const document = JSON.parse(
-      reportVerify(result, { format: "json", version: VERSION }).stdout,
-    ) as {
+    const document = JSON.parse(reportVerify(result, { format: "json", version: VERSION }).stdout) as {
       summary: object;
     };
-    expect(Object.keys(document.summary)).toEqual([
-      "templates",
-      "broken",
-      "errors",
-      "warnings",
-      "suppressed",
-      "runErrors",
-      "exitCode",
-    ]);
+    expect(Object.keys(document.summary)).toEqual(["templates", "broken", "errors", "warnings", "suppressed", "runErrors", "exitCode"]);
   });
 
   it("verify: template keys in the order of spec 8.5, uniqueHeadingNames after filenameCase", () => {
@@ -122,19 +74,9 @@ describe("json reporter", () => {
       runErrors: [],
       summary: { templates: 1, broken: 0, errors: 0, warnings: 0, runErrors: 0, exitCode: 0 },
     };
-    const document = JSON.parse(
-      reportVerify(result, { format: "json", version: VERSION }).stdout,
-    ) as { templates: Record<string, unknown>[] };
+    const document = JSON.parse(reportVerify(result, { format: "json", version: VERSION }).stdout) as { templates: Record<string, unknown>[] };
     const template = document.templates[0] as Record<string, unknown>;
-    expect(Object.keys(template)).toEqual([
-      "path",
-      "status",
-      "filenameCase",
-      "uniqueHeadingNames",
-      "fields",
-      "headings",
-      "diagnostics",
-    ]);
+    expect(Object.keys(template)).toEqual(["path", "status", "filenameCase", "uniqueHeadingNames", "fields", "headings", "diagnostics"]);
     expect(template["uniqueHeadingNames"]).toBe(true);
   });
 
@@ -146,15 +88,7 @@ describe("json reporter", () => {
   it("report-config-error: config errors carry file, line, column and key in this order", async () => {
     const { document } = await json("report-config-error");
     const errors = document["runErrors"] as object[];
-    expect(Object.keys(errors[0] as object)).toEqual([
-      "code",
-      "severity",
-      "message",
-      "file",
-      "line",
-      "column",
-      "key",
-    ]);
+    expect(Object.keys(errors[0] as object)).toEqual(["code", "severity", "message", "file", "line", "column", "key"]);
   });
 
   it("report-sample: summary.exitCode equals the exit code of the run", async () => {
@@ -190,10 +124,7 @@ describe("json reporter", () => {
   it("report-control-characters: echoed values are sanitized and the JSON stays valid", async () => {
     const { output, document } = await json("report-control-characters");
     const results = document["results"] as { files: { errors: { message: string }[] }[] }[];
-    expect(results[0]?.files[0]?.errors.map((error) => error.message)).toEqual([
-      "Field 'kind': expected constant value 'abc', got 'evil\\x1b[2Jred\\u202eend'",
-      "Field 'note': expected constant value 'abc', got 'first second third'",
-    ]);
+    expect(results[0]?.files[0]?.errors.map((error) => error.message)).toEqual(["Field 'kind': expected constant value 'abc', got 'evil\\x1b[2Jred\\u202eend'", "Field 'note': expected constant value 'abc', got 'first second third'"]);
     expect(output.stdout.includes(String.fromCharCode(27))).toBe(false);
     expect(output.stdout.includes("\u202e")).toBe(false);
   });

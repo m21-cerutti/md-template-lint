@@ -11,19 +11,19 @@ right top-level key (spec 2.1)? Evidence: `tests/unit/yaml-spike.test.ts` (bindi
 
 ## Cases checked
 
-| Case                                   | Example                         | Result |
-| -------------------------------------- | ------------------------------- | ------ |
-| Double-quoted key and value            | `"quoted key": x # c`           | bound  |
-| Apostrophe in a single-quoted key      | `'it''s': "a # not" # c`        | bound, `#` in quotes kept in value |
-| Apostrophe in a plain value            | `owner: it's fine # c`          | bound  |
-| Escaped quote in a double-quoted value | `esc: "q \" # in" # c`          | bound  |
-| Colon inside a quoted key              | `"a:b": x # c`                  | bound (legacy heuristic breaks here) |
-| `#` glued to a value                   | `url: a#frag # c`, `"#ff0000"`  | stays in the value |
-| Empty value                            | `empty: # c`                    | bound, value `""` |
-| Flow list                              | `flow: ["a", "b"] # c`          | bound  |
-| Block list or map key                  | `tags: # c` then `  - a`        | bound to `tags`; item and sub-key comments not bound |
-| Whole-line comment                     | `# [filename:case:...]`         | never bound |
-| Comment without space                  | `last: y #c`                    | bound  |
+| Case                                   | Example                        | Result                                               |
+| -------------------------------------- | ------------------------------ | ---------------------------------------------------- |
+| Double-quoted key and value            | `"quoted key": x # c`          | bound                                                |
+| Apostrophe in a single-quoted key      | `'it''s': "a # not" # c`       | bound, `#` in quotes kept in value                   |
+| Apostrophe in a plain value            | `owner: it's fine # c`         | bound                                                |
+| Escaped quote in a double-quoted value | `esc: "q \" # in" # c`         | bound                                                |
+| Colon inside a quoted key              | `"a:b": x # c`                 | bound (legacy heuristic breaks here)                 |
+| `#` glued to a value                   | `url: a#frag # c`, `"#ff0000"` | stays in the value                                   |
+| Empty value                            | `empty: # c`                   | bound, value `""`                                    |
+| Flow list                              | `flow: ["a", "b"] # c`         | bound                                                |
+| Block list or map key                  | `tags: # c` then `  - a`       | bound to `tags`; item and sub-key comments not bound |
+| Whole-line comment                     | `# [filename:case:...]`        | never bound                                          |
+| Comment without space                  | `last: y #c`                   | bound                                                |
 
 ## Limitation found
 

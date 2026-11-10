@@ -21,9 +21,7 @@ export interface CompiledGlob {
   readonly base: string;
 }
 
-export type GlobResult =
-  | { readonly ok: true; readonly glob: CompiledGlob }
-  | { readonly ok: false; readonly detail: string };
+export type GlobResult = { readonly ok: true; readonly glob: CompiledGlob } | { readonly ok: false; readonly detail: string };
 
 class GlobSyntaxError extends Error {}
 
@@ -42,11 +40,7 @@ function translate(text: string): string {
     if (negated) start += 1;
     const close = text.indexOf("]", start + 1);
     if (close < 0) throw new GlobSyntaxError("unbalanced '['");
-    const body = [...text.slice(start, close)]
-      .map((char) =>
-        char === "\\" || char === "[" || char === "]" || char === "^" ? `\\${char}` : char,
-      )
-      .join("");
+    const body = [...text.slice(start, close)].map((char) => (char === "\\" || char === "[" || char === "]" || char === "^" ? `\\${char}` : char)).join("");
     i = close + 1;
     return negated ? `[^/${body}]` : `[${body}]`;
   }

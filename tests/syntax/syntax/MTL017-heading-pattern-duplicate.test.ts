@@ -23,26 +23,13 @@ import { verifyPaths } from "../../../src/runner/verify.js";
 import { HOME } from "../../helpers/run.js";
 import { expectNameSplit } from "../../helpers/fixtures.js";
 import { parseJson, runCliIn } from "../../helpers/cli.js";
-import {
-  templatesDir,
-  verifyFixture,
-  type VerifyCase,
-  type VerifyDiagnostic,
-} from "../../helpers/verify.js";
+import { templatesDir, verifyFixture, type VerifyCase, type VerifyDiagnostic } from "../../helpers/verify.js";
 
 const CODE = "MTL017";
 const DIR = "tests/fixtures/templates/MTL017";
 
 /** The first message form: the later heading is a pattern heading. */
-const samePattern = (
-  heading: string,
-  pattern: string,
-  prev: string,
-  prevLine: number,
-  line: number,
-  column: number,
-  sourceLine: string,
-): VerifyDiagnostic => ({
+const samePattern = (heading: string, pattern: string, prev: string, prevLine: number, line: number, column: number, sourceLine: string): VerifyDiagnostic => ({
   code: CODE,
   severity: "error",
   message: `Heading '${heading}': same pattern [pattern:"${pattern}"] as the previous heading '${prev}' (line ${prevLine})`,
@@ -52,14 +39,7 @@ const samePattern = (
 });
 
 /** The second message form: the later heading is an exact-text heading. */
-const sameText = (
-  heading: string,
-  prev: string,
-  prevLine: number,
-  line: number,
-  column: number,
-  sourceLine: string,
-): VerifyDiagnostic => ({
+const sameText = (heading: string, prev: string, prevLine: number, line: number, column: number, sourceLine: string): VerifyDiagnostic => ({
   code: CODE,
   severity: "error",
   message: `Heading '${heading}': matches the same headings as the previous heading '${prev}' (line ${prevLine})`,
@@ -69,43 +49,18 @@ const sameText = (
 });
 
 /** A failing case: template FAIL, exit 1, its errors (then warnings) in source order. */
-const fail = (
-  { name }: { readonly name: string },
-  ...diagnostics: VerifyDiagnostic[]
-): VerifyCase => ({ name, exitCode: 1, status: "fail", diagnostics });
+const fail = ({ name }: { readonly name: string }, ...diagnostics: VerifyDiagnostic[]): VerifyCase => ({ name, exitCode: 1, status: "fail", diagnostics });
 /** A passing case: no MTL017, so ok and exit 0; tag warnings may remain (MTL014). */
-const pass = (
-  { name }: { readonly name: string },
-  ...diagnostics: VerifyDiagnostic[]
-): VerifyCase => ({ name, exitCode: 0, status: "ok", diagnostics });
+const pass = ({ name }: { readonly name: string }, ...diagnostics: VerifyDiagnostic[]): VerifyCase => ({ name, exitCode: 0, status: "ok", diagnostics });
 
 /** Case -> fixture `<name>.md` -> expected `--verify` result. */
 const CASES: readonly VerifyCase[] = [
   // Worked example 3 of spec 2.10: `{prev}` is the empty label of line 5.
-  fail(
-    { name: "fail-worked-example-3-same-semver-pattern" },
-    samePattern(
-      "Hotfix",
-      "{semver}",
-      "",
-      5,
-      7,
-      11,
-      '## Hotfix [pattern:"{semver}"] [presence:optional]',
-    ),
-  ),
+  fail({ name: "fail-worked-example-3-same-semver-pattern" }, samePattern("Hotfix", "{semver}", "", 5, 7, 11, '## Hotfix [pattern:"{semver}"] [presence:optional]')),
   // Three in a row give two findings: the second and the third, each against the one before.
   fail(
     { name: "fail-three-in-a-row-give-two-findings" },
-    samePattern(
-      "Second",
-      "Step {digits}",
-      "First",
-      5,
-      7,
-      11,
-      '## Second [pattern:"Step {digits}"]',
-    ),
+    samePattern("Second", "Step {digits}", "First", 5, 7, 11, '## Second [pattern:"Step {digits}"]'),
     samePattern("Third", "Step {digits}", "Second", 7, 9, 10, '## Third [pattern:"Step {digits}"]'),
   ),
   // Names and formats case-insensitively, no format equal to the default name `full` (A72m),
@@ -114,92 +69,45 @@ const CASES: readonly VerifyCase[] = [
   fail(
     { name: "fail-placeholder-case-and-default-format-are-equal" },
     samePattern("B", "{SemVer:format:full}", "A", 5, 7, 6, '## B [pattern:"{SemVer:format:full}"]'),
-    samePattern(
-      "D",
-      "Item {Digits:format:PADDING:3}",
-      "C",
-      9,
-      11,
-      7,
-      '### D [pattern:"Item {Digits:format:PADDING:3}"]',
-    ),
+    samePattern("D", "Item {Digits:format:PADDING:3}", "C", 9, 11, 7, '### D [pattern:"Item {Digits:format:PADDING:3}"]'),
   ),
   // `{text}` and `{text:format:human}` are the same (A72m).
-  fail(
-    { name: "fail-text-next-to-text-format-human" },
-    samePattern(
-      "Other",
-      "{text:format:human}",
-      "Topic",
-      5,
-      7,
-      10,
-      '## Other [pattern:"{text:format:human}"]',
-    ),
-  ),
+  fail({ name: "fail-text-next-to-text-format-human" }, samePattern("Other", "{text:format:human}", "Topic", 5, 7, 10, '## Other [pattern:"{text:format:human}"]')),
   // Two exact-text headings with the same text (A72l): second form, column of the `N`.
-  fail(
-    { name: "fail-exact-text-notes-twice-in-a-row" },
-    sameText("Notes", "Notes", 5, 7, 4, "## Notes [presence:optional]"),
-  ),
+  fail({ name: "fail-exact-text-notes-twice-in-a-row" }, sameText("Notes", "Notes", 5, 7, 4, "## Notes [presence:optional]")),
   // An exact-text heading and the literal pattern of its text, in both orders.
-  fail(
-    { name: "fail-exact-text-then-literal-pattern" },
-    samePattern("More", "Notes", "Notes", 5, 7, 9, '## More [pattern:"Notes"]'),
-  ),
-  fail(
-    { name: "fail-literal-pattern-then-exact-text" },
-    sameText("Notes", "More", 5, 7, 4, "## Notes"),
-  ),
+  fail({ name: "fail-exact-text-then-literal-pattern" }, samePattern("More", "Notes", "Notes", 5, 7, 9, '## More [pattern:"Notes"]')),
+  fail({ name: "fail-literal-pattern-then-exact-text" }, sameText("Notes", "More", 5, 7, 4, "## Notes")),
   // One template with an error and a warning. JSON `diagnostics` list the error first, then the
   // warning (spec 8.5 says nothing on this order; the verify helper pins errors, then warnings).
   // The text report differs: its sections follow code order (spec 8.3), so `Invalid patterns:`
   // (MTL014, line 5) comes BEFORE `Duplicate patterns:` (MTL017, line 9); see the test "an error
   // and a warning in one template" below. The invalid pattern of `Bad` is no member of the
   // sequence, the `Notes` pair is.
-  fail(
-    { name: "fail-error-and-warning-in-one-template" },
-    sameText("Notes", "Notes", 7, 9, 4, "## Notes"),
-    {
-      code: "MTL014",
-      severity: "warning",
-      message: "Heading 'Bad': invalid pattern [pattern:\"{nope}\"] (unknown placeholder {nope})",
-      line: 5,
-      column: 18,
-      sourceLine: '## Bad [pattern:"{nope}"]',
-    },
-  ),
+  fail({ name: "fail-error-and-warning-in-one-template" }, sameText("Notes", "Notes", 7, 9, 4, "## Notes"), {
+    code: "MTL014",
+    severity: "warning",
+    message: "Heading 'Bad': invalid pattern [pattern:\"{nope}\"] (unknown placeholder {nope})",
+    line: 5,
+    column: 18,
+    sourceLine: '## Bad [pattern:"{nope}"]',
+  }),
   // The column of an exact-text heading is the first character of its text: two blanks after
   // the `#` marks push it to column 6 (spec 2.10 "Duplicate pattern", Position).
-  fail(
-    { name: "fail-exact-text-column-after-wide-gap" },
-    sameText("Notes", "Notes", 5, 7, 6, "##   Notes"),
-  ),
+  fail({ name: "fail-exact-text-column-after-wide-gap" }, sameText("Notes", "Notes", 5, 7, 6, "##   Notes")),
   // The sequence is the headings of ONE level and scope: the H3 between two H2 headings is
   // not in it, so the two `{semver}` headings are adjacent (spec 2.7).
-  fail(
-    { name: "fail-same-pattern-h2-separated-by-h3" },
-    samePattern("B", "{semver}", "A", 5, 9, 6, '## B [pattern:"{semver}"]'),
-  ),
+  fail({ name: "fail-same-pattern-h2-separated-by-h3" }, samePattern("B", "{semver}", "A", 5, 9, 6, '## B [pattern:"{semver}"]')),
   // Headings without template parent are file scope at any level: two leading H3 headings
   // form one sequence (spec 2.6 "Sequence").
-  fail(
-    { name: "fail-two-leading-h3-with-same-pattern" },
-    samePattern("B", "{semver}", "A", 5, 7, 7, '### B [pattern:"{semver}"]'),
-  ),
+  fail({ name: "fail-two-leading-h3-with-same-pattern" }, samePattern("B", "{semver}", "A", 5, 7, 7, '### B [pattern:"{semver}"]')),
   // Two H1 headings with the same text are one file-scope sequence of level 1.
   fail({ name: "fail-two-h1-with-same-text" }, sameText("Doc", "Doc", 5, 7, 3, "# Doc")),
   // Literals are compared after escapes (spec 2.10 "Duplicate pattern"): the text `Say "hi"`
   // is the pattern `Say \"hi\"`; `{x}` in an exact-text heading is the literal `{x}`, which the
   // brace escape `{{x}}` spells in a pattern.
-  fail(
-    { name: "fail-escaped-quote-equals-plain-quote-in-exact-text" },
-    samePattern("Other", 'Say \\"hi\\"', 'Say "hi"', 5, 7, 10, '## Other [pattern:"Say \\"hi\\""]'),
-  ),
-  fail(
-    { name: "fail-doubled-brace-equals-single-brace-in-exact-text" },
-    samePattern("Other", "Use {{x}}", "Use {x}", 5, 7, 10, '## Other [pattern:"Use {{x}}"]'),
-  ),
+  fail({ name: "fail-escaped-quote-equals-plain-quote-in-exact-text" }, samePattern("Other", 'Say \\"hi\\"', 'Say "hi"', 5, 7, 10, '## Other [pattern:"Say \\"hi\\""]')),
+  fail({ name: "fail-doubled-brace-equals-single-brace-in-exact-text" }, samePattern("Other", "Use {{x}}", "Use {x}", 5, 7, 10, '## Other [pattern:"Use {{x}}"]')),
   // `a\\b` is the text `a\b`, `a\"b` the text `a"b`: different literals.
   pass({ name: "pass-escaped-backslash-differs-from-escaped-quote" }),
   // `{semver}` / `v{semver}`, `padding:3` / `padding:4`, `{digits}` / `{number}` all differ.
@@ -229,20 +137,17 @@ const registry = createRegistry();
 /** Stdout and exit code of `--verify --format <format> [--quiet] <name>.md` on a fixture. */
 async function verifyRun(format: string, name: string, quiet = false) {
   const cwd = foldPath(templatesDir(CODE));
-  const run = await runCli(
-    ["--verify", "--format", format, ...(quiet ? ["--quiet"] : []), `${name}.md`],
-    {
-      cwd,
-      home: HOME,
-      boundary: cwd,
-      isTty: false,
-      noColor: false,
-      version: "9.9.9",
-      createIo: () => {
-        throw new Error("--verify must not build the io");
-      },
+  const run = await runCli(["--verify", "--format", format, ...(quiet ? ["--quiet"] : []), `${name}.md`], {
+    cwd,
+    home: HOME,
+    boundary: cwd,
+    isTty: false,
+    noColor: false,
+    version: "9.9.9",
+    createIo: () => {
+      throw new Error("--verify must not build the io");
     },
-  );
+  });
   expect(run.stderr).toBe("");
   return run;
 }
@@ -251,11 +156,7 @@ async function verifyRun(format: string, name: string, quiet = false) {
 const item = (diagnostic: VerifyDiagnostic): string[] => {
   const line = diagnostic.line ?? 0;
   const column = diagnostic.column ?? 0;
-  return [
-    `  - ${diagnostic.message} (line ${line}, column ${column})`,
-    `      ${line} | ${diagnostic.sourceLine ?? ""}`,
-    `      ${" ".repeat(String(line).length)} | ${" ".repeat(column - 1)}^`,
-  ];
+  return [`  - ${diagnostic.message} (line ${line}, column ${column})`, `      ${line} | ${diagnostic.sourceLine ?? ""}`, `      ${" ".repeat(String(line).length)} | ${" ".repeat(column - 1)}^`];
 };
 
 describe("MTL017 heading-pattern-duplicate (--verify)", () => {
@@ -274,9 +175,7 @@ describe("MTL017 heading-pattern-duplicate (--verify)", () => {
       const has = testCase.diagnostics.some((diagnostic) => diagnostic.code === CODE);
       expect(has, testCase.name).toBe(testCase.name.startsWith("fail-"));
     }
-    expect(readdirSync(templatesDir(CODE)).sort()).toEqual(
-      CASES.map((testCase) => `${testCase.name}.md`).sort(),
-    );
+    expect(readdirSync(templatesDir(CODE)).sort()).toEqual(CASES.map((testCase) => `${testCase.name}.md`).sort());
   });
 
   for (const { name, ...expected } of CASES) {
@@ -307,14 +206,10 @@ describe("MTL017 heading-pattern-duplicate (--verify)", () => {
   });
 
   it("template-only headings are no members: the headings around one are adjacent", async () => {
-    const text =
-      '---\ntitle: x\n---\n\n## A [pattern:"{semver}"]\n\n## Draft [presence:template-only]\n\n' +
-      '## B [pattern:"{semver}"]\n';
+    const text = '---\ntitle: x\n---\n\n## A [pattern:"{semver}"]\n\n## Draft [presence:template-only]\n\n' + '## B [pattern:"{semver}"]\n';
     const status = await checkTemplate(registry, text);
     if (status.status !== "ok") throw new Error("template is broken");
-    expect(status.errors.map(({ message }) => message)).toEqual([
-      "Heading 'B': same pattern [pattern:\"{semver}\"] as the previous heading 'A' (line 5)",
-    ]);
+    expect(status.errors.map(({ message }) => message)).toEqual(["Heading 'B': same pattern [pattern:\"{semver}\"] as the previous heading 'A' (line 5)"]);
   });
 
   it("a tab between the marks and the text is one character of the column", async () => {
@@ -322,9 +217,7 @@ describe("MTL017 heading-pattern-duplicate (--verify)", () => {
     const text = "---\ntitle: x\n---\n\n## Notes\n\n##\tNotes\n";
     const status = await checkTemplate(registry, text);
     if (status.status !== "ok") throw new Error("template is broken");
-    expect(status.errors.map(({ code, position }) => ({ code, position }))).toEqual([
-      { code: CODE, position: { line: 7, column: 4 } },
-    ]);
+    expect(status.errors.map(({ code, position }) => ({ code, position }))).toEqual([{ code: CODE, position: { line: 7, column: 4 } }]);
   });
 
   it("a target directive cannot disable it (DIR6: MTL022)", async () => {
@@ -332,9 +225,7 @@ describe("MTL017 heading-pattern-duplicate (--verify)", () => {
     if (status.status !== "ok") throw new Error("template is broken");
     const target = "---\ntitle: x\n---\n\n## Notes\n\n<!-- md-template-lint disable MTL017 -->\n";
     const result = await lintTarget(registry, status.model, target, "target.md", createEnv());
-    expect(result.diagnostics.map(({ code, message }) => ({ code, message }))).toEqual([
-      { code: "MTL022", message: "Directive on line 7: rule code MTL017 cannot be disabled" },
-    ]);
+    expect(result.diagnostics.map(({ code, message }) => ({ code, message }))).toEqual([{ code: "MTL022", message: "Directive on line 7: rule code MTL017 cannot be disabled" }]);
   });
 });
 
@@ -396,9 +287,7 @@ describe("MTL017 in the --verify text report (spec 8.3 `Duplicate patterns:`)", 
   });
 
   it("an error and a warning in one template: the warning section is first", async () => {
-    const out = (await verifyRun("plain", "fail-error-and-warning-in-one-template")).stdout.split(
-      "\n",
-    );
+    const out = (await verifyRun("plain", "fail-error-and-warning-in-one-template")).stdout.split("\n");
     const invalid = out.indexOf("Invalid patterns:");
     expect(invalid).toBeGreaterThan(0);
     expect(invalid).toBeLessThan(out.indexOf("Duplicate patterns:"));
@@ -415,10 +304,7 @@ describe("MTL017 in the --verify text report (spec 8.3 `Duplicate patterns:`)", 
     expect(quiet.stdout).toBe(full.stdout);
     const json = parseJson(quiet.stdout);
     expect(json.templates?.[0]?.status).toBe("fail");
-    expect(json.templates?.[0]?.diagnostics.map((diagnostic) => diagnostic.code).sort()).toEqual([
-      "MTL014",
-      CODE,
-    ]);
+    expect(json.templates?.[0]?.diagnostics.map((diagnostic) => diagnostic.code).sort()).toEqual(["MTL014", CODE]);
     expect(json.summary).toMatchObject({ templates: 1, broken: 0, errors: 1, warnings: 1 });
   });
 
@@ -462,14 +348,6 @@ describe("MTL017 worked example 3 of spec 2.10 (tests/fixtures/cli/schema-fail-d
       runErrors: 0,
       exitCode: 1,
     });
-    expect(Object.keys(json.summary)).toEqual([
-      "templates",
-      "broken",
-      "errors",
-      "warnings",
-      "suppressed",
-      "runErrors",
-      "exitCode",
-    ]);
+    expect(Object.keys(json.summary)).toEqual(["templates", "broken", "errors", "warnings", "suppressed", "runErrors", "exitCode"]);
   });
 });

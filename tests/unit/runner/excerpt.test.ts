@@ -89,9 +89,7 @@ describe("excerpt: expected outputs of the fixtures", () => {
         const { stdout } = report(result, { format, version: VERSION });
         expect(stdout, `${name} ${format}`).not.toMatch(/^ +\d+ \|/m);
       }
-      expect(report(result, { format: "json", version: VERSION }).stdout).not.toContain(
-        "sourceLine",
-      );
+      expect(report(result, { format: "json", version: VERSION }).stdout).not.toContain("sourceLine");
     }
   });
 
@@ -193,11 +191,7 @@ describe("withExcerpts: which line a diagnostic quotes (spec 8.1)", () => {
   });
 
   it("fail: a line outside the file gives no excerpt", () => {
-    const outside = [
-      { ...base, position: { line: 4, column: 1 } },
-      { ...base, position: { line: 0, column: 1 } },
-      setAnchorLine({ ...base }, 99),
-    ];
+    const outside = [{ ...base, position: { line: 4, column: 1 } }, { ...base, position: { line: 0, column: 1 } }, setAnchorLine({ ...base }, 99)];
     for (const out of withExcerpts(outside, text)) expect(out).not.toHaveProperty("excerpt");
   });
 
@@ -348,13 +342,7 @@ describe("excerpt: bytes a text fixture cannot keep", () => {
   it("pass: CRLF line ends and a BOM give the same excerpt as LF, with no \\r", async () => {
     const target = "\uFEFF---\r\ntitle: Fine\r\nreviewer: alice\r\n---\r\n\r\n# Notes\r\n";
     const { plain, json } = await lint(project(TITLE_TEMPLATE, target));
-    expect(plain).toContain(
-      block(
-        "  PASS docs/a.md",
-        "      warn  MTL202 Unknown key 'reviewer' not present in template",
-        "        3 | reviewer: alice",
-      ),
-    );
+    expect(plain).toContain(block("  PASS docs/a.md", "      warn  MTL202 Unknown key 'reviewer' not present in template", "        3 | reviewer: alice"));
     expect(plain).not.toContain("\r");
     expect(json).not.toContain("sourceLine");
   });
@@ -362,12 +350,7 @@ describe("excerpt: bytes a text fixture cannot keep", () => {
   it("fail: a tab is one space, two tabs two spaces (not collapsed)", async () => {
     const target = '---\ntitle: Fine\nextra: "a\t\tb"\n---\n';
     const { plain } = await lint(project(TITLE_TEMPLATE, target));
-    expect(plain).toContain(
-      block(
-        "      warn  MTL202 Unknown key 'extra' not present in template",
-        '        3 | extra: "a  b"',
-      ),
-    );
+    expect(plain).toContain(block("      warn  MTL202 Unknown key 'extra' not present in template", '        3 | extra: "a  b"'));
     expect(plain).not.toContain("\t");
   });
 
@@ -377,9 +360,7 @@ describe("excerpt: bytes a text fixture cannot keep", () => {
     const { plain, json } = await lint(project(TITLE_TEMPLATE, target));
     const shown = "<!-- md-template-lint disabel MTL601 \\x1b[2J\\u202e -->";
     expect(plain).toContain(`        5 | ${shown}\n          | ^\n`);
-    const warning = (
-      JSON.parse(json) as { results: { files: { warnings: Record<string, unknown>[] }[] }[] }
-    ).results[0]?.files[0]?.warnings[0];
+    const warning = (JSON.parse(json) as { results: { files: { warnings: Record<string, unknown>[] }[] }[] }).results[0]?.files[0]?.warnings[0];
     expect(warning).toMatchObject({ code: "MTL020", line: 5, column: 1, sourceLine: shown });
     for (const output of [plain, json]) {
       expect(output.includes(ESC)).toBe(false);
@@ -391,12 +372,7 @@ describe("excerpt: bytes a text fixture cannot keep", () => {
     const value = `extra: ${"b".repeat(150)}`;
     const target = `---\ntitle: Fine\n${value}\n---\n`;
     const { plain, json } = await lint(project(TITLE_TEMPLATE, target));
-    expect(plain).toContain(
-      block(
-        "      warn  MTL202 Unknown key 'extra' not present in template",
-        `        3 | ${value.slice(0, 100)}...`,
-      ),
-    );
+    expect(plain).toContain(block("      warn  MTL202 Unknown key 'extra' not present in template", `        3 | ${value.slice(0, 100)}...`));
     expect(plain).not.toMatch(/^ +\| /m);
     expect(json).not.toContain("sourceLine");
   });
@@ -408,12 +384,8 @@ describe("excerpt: bytes a text fixture cannot keep", () => {
     const target = `---\ntitle: Fine\n---\n\n${heading}\n`;
     const { plain, json } = await lint(project(TITLE_TEMPLATE, target));
     // Index of the comment is 121, window [81, 161): 40 characters, then the caret.
-    expect(plain).toContain(
-      block(`        5 | ...${heading.slice(81)}`, `          | ${" ".repeat(3 + 40)}^`),
-    );
-    const warning = (
-      JSON.parse(json) as { results: { files: { warnings: Record<string, unknown>[] }[] }[] }
-    ).results[0]?.files[0]?.warnings[0];
+    expect(plain).toContain(block(`        5 | ...${heading.slice(81)}`, `          | ${" ".repeat(3 + 40)}^`));
+    const warning = (JSON.parse(json) as { results: { files: { warnings: Record<string, unknown>[] }[] }[] }).results[0]?.files[0]?.warnings[0];
     expect(warning).toMatchObject({
       line: 5,
       column: 122,
@@ -512,13 +484,7 @@ describe("excerpt: --verify quotes the template line", () => {
       summary: { templates: 1, broken: 0, errors: 0, warnings: 1, runErrors: 0, exitCode: 0 },
     };
     const text = reportVerify(result, { format: "plain", version: VERSION }).stdout;
-    expect(text).toContain(
-      block(
-        "Malformed tags:",
-        "  - Field 'n': malformed tag [count:min:abc] (line 99, column 1)",
-        "",
-      ),
-    );
+    expect(text).toContain(block("Malformed tags:", "  - Field 'n': malformed tag [count:min:abc] (line 99, column 1)", ""));
     const json = reportVerify(result, { format: "json", version: VERSION }).stdout;
     expect(json).toContain('"line": 99');
     expect(json).not.toContain("sourceLine");
@@ -544,9 +510,7 @@ describe("excerpt: --quiet does not shrink JSON", () => {
   it("pass: quiet JSON keeps sourceLine of the directive warning (fail-anchor-and-position)", async () => {
     const result = await runFixture(`${GROUP}fail-anchor-and-position`);
     const quiet = report(result, { format: "json", version: VERSION, quiet: true }).stdout;
-    expect(JSON.parse(quiet)).toEqual(
-      JSON.parse(readFixture("runner", `${GROUP}fail-anchor-and-position`, "expected.json")),
-    );
+    expect(JSON.parse(quiet)).toEqual(JSON.parse(readFixture("runner", `${GROUP}fail-anchor-and-position`, "expected.json")));
     expect(quiet).toContain('"sourceLine": "<!-- md-template-lint disable-line MTL999 -->"');
   });
 });
@@ -575,12 +539,7 @@ describe("excerpt: bounded cost and memory on very long lines", () => {
     // about 2000 x 1 MB, ten seconds or more.
     expect(elapsed).toBeLessThan(5_000);
     const shown = `${line.slice(0, 100)}...`;
-    const rows = (code: string): string =>
-      block(
-        `      warn  MTL021 Directive on line 5: unknown rule code '${code}'`,
-        `        5 | ${shown}`,
-        "          | ^",
-      );
+    const rows = (code: string): string => block(`      warn  MTL021 Directive on line 5: unknown rule code '${code}'`, `        5 | ${shown}`, "          | ^");
     expect(plain).toContain(rows(codes[0] ?? ""));
     expect(plain).toContain(rows(codes[TOKENS - 1] ?? ""));
     expect(plain.split("MTL021").length - 1).toBe(TOKENS);
@@ -605,9 +564,7 @@ describe("excerpt: bounded cost and memory on very long lines", () => {
       expect(Array.from(excerpt.head ?? "").length).toBeLessThanOrEqual(100);
       expect(excerpt).toMatchObject({ line: 5, column: 1, before: 0, caret: 0, headCut: true });
       // No other field: nothing on the excerpt can hold the whole line.
-      expect(Object.keys(excerpt).sort()).toEqual(
-        ["after", "before", "caret", "column", "head", "headCut", "line", "text"].sort(),
-      );
+      expect(Object.keys(excerpt).sort()).toEqual(["after", "before", "caret", "column", "head", "headCut", "line", "text"].sort());
       expect(excerpt.after).toBe(line.length - 100);
     }
   }, 60_000);
@@ -615,9 +572,7 @@ describe("excerpt: bounded cost and memory on very long lines", () => {
   it("pass: a column deep in a long line slides the window, with the same bounds", async () => {
     // 300000 emoji (600000 UTF-16 units) then the directive: column 300001.
     const wide = `${"\u{1f600}".repeat(300_000)}<!-- md-template-lint disabel MTL601 -->`;
-    const { plain, result } = await lint(
-      project(TITLE_TEMPLATE, `---\ntitle: Fine\n---\n\n# ${wide}\n`),
-    );
+    const { plain, result } = await lint(project(TITLE_TEMPLATE, `---\ntitle: Fine\n---\n\n# ${wide}\n`));
     const [first] = result.blocks;
     if (first?.kind !== "pair") throw new Error("expected a pair block");
     const excerpt = first.files[0]?.warnings[0]?.excerpt;

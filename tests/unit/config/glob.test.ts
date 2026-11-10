@@ -18,11 +18,7 @@ describe("compileGlob: matching (spec 6.4)", () => {
     ["docs/*.md", ["docs/a.md"], ["docs/sub/a.md", "a.md"]],
     ["a/**/*.md", ["a/x.md", "a/b/x.md", "a/b/c/x.md"], ["a/x.txt", "b/a/x.md"]],
     ["**/*.md", ["x.md", "a/x.md", "a/b/x.md"], ["x.txt"]],
-    [
-      "**/README.md",
-      ["README.md", "a/README.md", "a/b/README.md"],
-      ["README.md.bak", "aREADME.md"],
-    ],
+    ["**/README.md", ["README.md", "a/README.md", "a/b/README.md"], ["README.md.bak", "aREADME.md"]],
     ["docs/**", ["docs/a.md", "docs/a/b.md"], ["docs", "other/a.md"]],
     ["**", ["a.md", "a/b.md"], []],
     ["a?c.md", ["abc.md"], ["ac.md", "a/c.md", "abbc.md"]],

@@ -54,11 +54,3 @@ None.
 ## Global Capabilities
 
 Global agents, skills, commands and MCPs are configured per user, outside this repository, and are not duplicated here. If you keep a global inventory, see that one.
-
-## Verification
-
-Validate the capability definitions after any change:
-
-```bash
-python path/to/opencode-lint/scripts/validate_opencode.py . --json
-```

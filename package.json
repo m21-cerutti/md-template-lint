@@ -6,7 +6,7 @@
   "engines": {
     "node": ">=22.18"
   },
-  "packageManager": "pnpm@11.16.0",
+  "packageManager": "pnpm@12.18.0",
   "bin": {
     "md-template-lint": "dist/cli.js"
   },
@@ -31,11 +31,11 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/m21-cerutti/markdown-template-linter.git"
+    "url": "git+https://github.com/m21-cerutti/md-template-lint.git"
   },
-  "homepage": "https://github.com/m21-cerutti/markdown-template-linter#readme",
+  "homepage": "https://github.com/m21-cerutti/md-template-lint#readme",
   "bugs": {
-    "url": "https://github.com/m21-cerutti/markdown-template-linter/issues"
+    "url": "https://github.com/m21-cerutti/md-template-lint/issues"
   },
   "scripts": {
     "gen:parser": "tsx scripts/gen-parser.ts",

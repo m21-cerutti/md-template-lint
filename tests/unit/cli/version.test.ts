@@ -29,9 +29,7 @@ function packageJson(name: string, text: string): URL {
 
 describe("cli version", () => {
   it("reads the version of the package", () => {
-    const expected = (
-      JSON.parse(readFileSync(join(REPO_ROOT, "package.json"), "utf8")) as { version: string }
-    ).version;
+    const expected = (JSON.parse(readFileSync(join(REPO_ROOT, "package.json"), "utf8")) as { version: string }).version;
     expect(readVersion()).toBe(expected);
   });
 

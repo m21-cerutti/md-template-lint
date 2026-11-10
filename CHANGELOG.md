@@ -1,5 +1,5 @@
 ---
-last_updated: 2026-11-04
+last_updated: 2026-11-05
 ---
 
 # Changelog
@@ -10,7 +10,7 @@ All notable changes to this project are listed here. The format follows
 
 ## [Unreleased]
 
-## [0.2.0] - 2026-11-04
+## [0.2.0] - 2026-11-05
 
 First release of the TypeScript port. It replaces the legacy Python linter and the
 PowerShell wrappers (see [docs/migration.md](docs/migration.md)).
@@ -101,5 +101,5 @@ PowerShell wrappers (see [docs/migration.md](docs/migration.md)).
 - Rule `MTL602` (heading-level-missing). The code is reserved and never reused.
 - The parity harness, the corpus and the legacy wrappers.
 
-[Unreleased]: https://github.com/m21-cerutti/markdown-template-linter/compare/v0.2.0...HEAD
-[0.2.0]: https://github.com/m21-cerutti/markdown-template-linter/releases/tag/v0.2.0
+[Unreleased]: https://github.com/m21-cerutti/md-template-lint/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/m21-cerutti/md-template-lint/releases/tag/v0.2.0

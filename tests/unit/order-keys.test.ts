@@ -5,17 +5,7 @@
  * of the spec, plus limit cases derived from its definitions.
  */
 import { describe, expect, it } from "vitest";
-import {
-  compareOrderKeys,
-  compareSemver,
-  firstDate,
-  firstNumber,
-  firstSemver,
-  orderKey,
-  orderTagText,
-  orderToken,
-  type OrderTag,
-} from "../../src/engine/pattern.js";
+import { compareOrderKeys, compareSemver, firstDate, firstNumber, firstSemver, orderKey, orderTagText, orderToken, type OrderTag } from "../../src/engine/pattern.js";
 
 describe("firstNumber (spec 2.10 FIRST NUMBER)", () => {
   const cases: readonly (readonly [string, number | null])[] = [
@@ -109,20 +99,7 @@ describe("firstSemver (spec 2.10 FIRST SEMVER)", () => {
 
 describe("compareSemver (SemVer 2.0.0 section 11)", () => {
   it("orders the precedence example of semver.org", () => {
-    const chain = [
-      "1.0.0-alpha",
-      "1.0.0-alpha.1",
-      "1.0.0-alpha.beta",
-      "1.0.0-beta",
-      "1.0.0-beta.2",
-      "1.0.0-beta.11",
-      "1.0.0-rc.1",
-      "1.0.0",
-      "2.0.0",
-      "2.1.0",
-      "2.1.1",
-      "10.0.0",
-    ];
+    const chain = ["1.0.0-alpha", "1.0.0-alpha.1", "1.0.0-alpha.beta", "1.0.0-beta", "1.0.0-beta.2", "1.0.0-beta.11", "1.0.0-rc.1", "1.0.0", "2.0.0", "2.1.0", "2.1.1", "10.0.0"];
     for (let index = 1; index < chain.length; index += 1) {
       const lower = chain[index - 1] ?? "";
       const higher = chain[index] ?? "";
@@ -142,9 +119,7 @@ describe("compareSemver (SemVer 2.0.0 section 11)", () => {
 
   it("compares numbers of any size exactly (beyond 2^53)", () => {
     expect(compareSemver("1.0.9007199254740993", "1.0.9007199254740992")).toBeGreaterThan(0);
-    expect(
-      compareSemver("100000000000000000000001.0.0", "100000000000000000000000.0.0"),
-    ).toBeGreaterThan(0);
+    expect(compareSemver("100000000000000000000001.0.0", "100000000000000000000000.0.0")).toBeGreaterThan(0);
     expect(compareSemver("1.0.0-9007199254740993", "1.0.0-9007199254740992")).toBeGreaterThan(0);
   });
 

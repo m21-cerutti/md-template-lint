@@ -3,16 +3,7 @@
  * target, its fields (top-level frontmatter keys) and sections (every
  * heading level, H1 to H6, each with its parent).
  */
-import type {
-  BodyTag,
-  Directive,
-  FrontmatterComment,
-  FrontmatterFilenameTag,
-  MarkdownDocument,
-  PatternPiece,
-  SourcePosition,
-  TagFinding,
-} from "../tags/ast.js";
+import type { BodyTag, Directive, FrontmatterComment, FrontmatterFilenameTag, MarkdownDocument, PatternPiece, SourcePosition, TagFinding } from "../tags/ast.js";
 import { matchPattern } from "./pattern.js";
 
 /** A frontmatter value loaded with the `failsafe` schema (spec 1.2): strings, lists, mappings. */
@@ -55,9 +46,7 @@ export interface Field {
  * means required. Shared by the presence and the enum severity rules.
  */
 export function presenceMode(field: Field): "required" | "optional" | "conditional" {
-  const modes = (field.comment?.tags ?? []).flatMap((tag) =>
-    tag.kind === "presence" ? [tag.mode] : [],
-  );
+  const modes = (field.comment?.tags ?? []).flatMap((tag) => (tag.kind === "presence" ? [tag.mode] : []));
   if (modes.includes("conditional")) return "conditional";
   if (modes.includes("optional")) return "optional";
   return "required";
@@ -257,8 +246,7 @@ export interface HeadingMatch {
 }
 
 /** File scope (spec 2.6): an H1 or H2, or a heading without template parent. */
-export const isFileScope = (section: Section): boolean =>
-  section.level <= 2 || section.parent === null;
+export const isFileScope = (section: Section): boolean => section.level <= 2 || section.parent === null;
 
 /**
  * The positional run of one sequence over the siblings of one scope (spec
@@ -269,28 +257,15 @@ export const isFileScope = (section: Section): boolean =>
  * are the template indices of the sequence's level and scope, template-only
  * headings included, in template order. `parentMatch` null means file scope.
  */
-function positionalRun(
-  template: DocumentModel,
-  target: DocumentModel,
-  members: readonly number[],
-  parent: number | null,
-  parentMatch: Section | null,
-): HeadingRun {
+function positionalRun(template: DocumentModel, target: DocumentModel, members: readonly number[], parent: number | null, parentMatch: Section | null): HeadingRun {
   const heads = members.flatMap((index) => {
     const section = template.sections[index];
     return section === undefined ? [] : [{ index, section, mode: headingPresence(section) }];
   });
   const level = heads[0]?.section.level ?? 1;
-  const siblings = target.sections.filter(
-    (candidate) =>
-      candidate.level === level &&
-      (parentMatch === null ||
-        (candidate.line > parentMatch.line && candidate.line <= parentMatch.endLine)),
-  );
+  const siblings = target.sections.filter((candidate) => candidate.level === level && (parentMatch === null || (candidate.line > parentMatch.line && candidate.line <= parentMatch.endLine)));
   // Step 1: every sibling with the text of a template-only heading is set aside.
-  const asideTexts = new Set(
-    heads.flatMap((head) => (head.mode === "template-only" ? [head.section.text] : [])),
-  );
+  const asideTexts = new Set(heads.flatMap((head) => (head.mode === "template-only" ? [head.section.text] : [])));
   const setAside = siblings.filter((sibling) => asideTexts.has(sibling.text));
   const free = siblings.filter((sibling) => !asideTexts.has(sibling.text));
   // Steps 2 and 3: a cursor over the free siblings; it only moves forward.
@@ -326,10 +301,7 @@ function positionalRun(
     if (repeat) repeats.set(head.index, head.section);
     // Step 3b hint: an exact-text position that took nothing names the first sibling from the
     // cursor onward with its text (taken later or left in the tail); it takes nothing.
-    const foundLater =
-      pieces === null && instances.length === 0
-        ? (free.slice(cursor).find((sibling) => sibling.text === head.section.text) ?? null)
-        : null;
+    const foundLater = pieces === null && instances.length === 0 ? (free.slice(cursor).find((sibling) => sibling.text === head.section.text) ?? null) : null;
     taken.push({
       index: head.index,
       match: instances[0] ?? null,
@@ -346,10 +318,7 @@ function positionalRun(
   const listed = new Set<Section>();
   const positions: HeadingPosition[] = taken.map((position) => {
     const section = repeats.get(position.index);
-    const repeatMisses =
-      section === undefined
-        ? []
-        : tail.filter((sibling) => !listed.has(sibling) && headingMatches(section, sibling.text));
+    const repeatMisses = section === undefined ? [] : tail.filter((sibling) => !listed.has(sibling) && headingMatches(section, sibling.text));
     for (const sibling of repeatMisses) listed.add(sibling);
     return { ...position, repeatMisses };
   });
@@ -375,45 +344,29 @@ export function matchHeadings(template: DocumentModel, target: DocumentModel): H
     const scope = isFileScope(section) ? "file" : "section";
     const parentIndex = scope === "file" ? null : section.parent;
     // Section scope: once per entry of the template parent (per parent match or instance).
-    const parents: readonly (HeadingMatch | undefined)[] =
-      parentIndex === null ? [undefined] : (entries.get(parentIndex) ?? []);
+    const parents: readonly (HeadingMatch | undefined)[] = parentIndex === null ? [undefined] : (entries.get(parentIndex) ?? []);
     const own: HeadingMatch[] = [];
     for (const parentItem of parents) {
       const parentMatch = parentItem?.match ?? null;
       // Spec 2.6 "Checked": a heading with an invalid pattern (MTL014) is never checked, and
       // neither are its section-scope descendants (their parent is not checked).
-      const checked =
-        !hasInvalidPattern(section) &&
-        (parentItem === undefined ||
-          (parentItem.checked &&
-            parentMatch !== null &&
-            headingPresence(parentItem.section) !== "template-only"));
+      const checked = !hasInvalidPattern(section) && (parentItem === undefined || (parentItem.checked && parentMatch !== null && headingPresence(parentItem.section) !== "template-only"));
       let run: HeadingRun | null = null;
       if (checked) {
         const key = `${section.level}:${parentIndex ?? "file"}:${parentMatch?.line ?? 0}`;
         run = runs.get(key) ?? null;
         if (run === null) {
           // An invalid-pattern heading is no position: the siblings it would take go on.
-          const members = sections.flatMap((other, at) =>
-            other.level === section.level &&
-            !hasInvalidPattern(other) &&
-            (scope === "file" ? isFileScope(other) : other.parent === parentIndex)
-              ? [at]
-              : [],
-          );
+          const members = sections.flatMap((other, at) => (other.level === section.level && !hasInvalidPattern(other) && (scope === "file" ? isFileScope(other) : other.parent === parentIndex) ? [at] : []));
           run = positionalRun(template, target, members, parentIndex, parentMatch);
           runs.set(key, run);
         }
       }
       const position = run?.positions.find((entry) => entry.index === index) ?? null;
       const mismatch = position?.mismatch ?? null;
-      const setAside =
-        run !== null && headingPresence(section) === "template-only"
-          ? (run.setAside.find((sibling) => sibling.text === section.text) ?? null)
-          : null;
+      const setAside = run !== null && headingPresence(section) === "template-only" ? (run.setAside.find((sibling) => sibling.text === section.text) ?? null) : null;
       // One entry per instance (spec 2.10 "Repeat rules"); one entry when it took no match.
-      const taken: readonly (Section | null)[] =
-        position === null || position.instances.length === 0 ? [null] : position.instances;
+      const taken: readonly (Section | null)[] = position === null || position.instances.length === 0 ? [null] : position.instances;
       taken.forEach((match, instance) => {
         own.push({
           section,
@@ -464,8 +417,7 @@ export interface DocumentModel {
 }
 
 /** Parse failures MTL001 to MTL004 (spec 1.2). Codes and messages live in src/rules/syntax.ts. */
-export type ParseFailureReason =
-  "frontmatter-missing" | "yaml-invalid" | "frontmatter-not-mapping" | "file-unreadable";
+export type ParseFailureReason = "frontmatter-missing" | "yaml-invalid" | "frontmatter-not-mapping" | "file-unreadable";
 
 export interface ParseFailure {
   readonly reason: ParseFailureReason;
@@ -473,9 +425,7 @@ export interface ParseFailure {
   readonly detail: string;
 }
 
-export type LoadResult =
-  | { readonly ok: true; readonly model: DocumentModel }
-  | { readonly ok: false; readonly failure: ParseFailure };
+export type LoadResult = { readonly ok: true; readonly model: DocumentModel } | { readonly ok: false; readonly failure: ParseFailure };
 
 export type Severity = "error" | "warning";
 

@@ -25,12 +25,7 @@ afterEach(() => {
   rmSync(root, { recursive: true, force: true });
 });
 
-const run = (...args: string[]) =>
-  spawnSync(
-    process.execPath,
-    [TSX_CLI, join(ROOT, "scripts", "new-rule.ts"), ...args, "--root", root],
-    { encoding: "utf8" },
-  );
+const run = (...args: string[]) => spawnSync(process.execPath, [TSX_CLI, join(ROOT, "scripts", "new-rule.ts"), ...args, "--root", root], { encoding: "utf8" });
 
 /** A name that is never a docs/spec.md 4.3 row, so the scaffold picks the next free code. */
 const FAKE_RULE = "rogue-format-rule";
@@ -60,12 +55,7 @@ describe("new:rule scaffold", () => {
     expect(rule).toContain(`    check: notImplemented("${code}"),`);
     const test = join(root, "tests", "target", "format", `${code}-${FAKE_RULE}.test.ts`);
     expect(existsSync(test)).toBe(true);
-    for (const file of [
-      "pass-placeholder/template.md",
-      "pass-placeholder/target.md",
-      "fail-placeholder/template.md",
-      "fail-placeholder/target.md",
-    ]) {
+    for (const file of ["pass-placeholder/template.md", "pass-placeholder/target.md", "fail-placeholder/template.md", "fail-placeholder/target.md"]) {
       expect(existsSync(join(root, "tests", "fixtures", "pairs", code, file))).toBe(true);
     }
     expect(await prettierClean(ruleFile)).toBe(true);
@@ -109,9 +99,7 @@ describe("new:rule scaffold", () => {
     const result = run("format", FAKE_RULE, "--syntax");
     expect(result.status).toBe(0);
     const code = scaffoldedCode(result.stdout);
-    expect(readFileSync(join(root, "src", "rules", "format.ts"), "utf8")).toContain(
-      `    code: "${code}",\n    name: "${FAKE_RULE}",\n    severity: "error",\n    category: "format",\n    phase: "template",`,
-    );
+    expect(readFileSync(join(root, "src", "rules", "format.ts"), "utf8")).toContain(`    code: "${code}",\n    name: "${FAKE_RULE}",\n    severity: "error",\n    category: "format",\n    phase: "template",`);
     const rule = { code, category: "format", phase: "template" } as const;
     expect(fixtureProblems([rule], diskTree(root))).toEqual([]);
   });

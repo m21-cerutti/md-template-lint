@@ -1,12 +1,12 @@
 ---
 # [filename:case:kebab-case]
-description: One line on what the agent does and when to pick it  # [presence:required]
-mode: primary | subagent | all  # [presence:required]
-model: provider/model-id  # [presence:optional] type=string
-permissions:  # [presence:optional]
-  - { action: edit, resource: '*', effect: ask }
-  - { action: shell, resource: '*', effect: ask }
-  - { action: shell, resource: 'git push*', effect: deny }
+description: One line on what the agent does and when to pick it # [presence:required]
+mode: primary | subagent | all # [presence:required]
+model: provider/model-id # [presence:optional] type=string
+permissions: # [presence:optional]
+  - { action: edit, resource: "*", effect: ask }
+  - { action: shell, resource: "*", effect: ask }
+  - { action: shell, resource: "git push*", effect: deny }
 ---
 
 # Agent title [pattern:"{text}"]

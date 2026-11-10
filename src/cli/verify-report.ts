@@ -23,12 +23,7 @@ import type { Diagnostic } from "../engine/model.js";
 import { excerptRows, sourceLineOf } from "../reporters/excerpt.js";
 import { cleanText } from "../reporters/sanitize.js";
 import type { ReportFormat, ReportOutput } from "../reporters/index.js";
-import type {
-  ReportedDiagnostic,
-  TemplateSchema,
-  VerifyResult,
-  VerifyTemplate,
-} from "../runner/types.js";
+import type { ReportedDiagnostic, TemplateSchema, VerifyResult, VerifyTemplate } from "../runner/types.js";
 
 export interface VerifyReportOptions {
   readonly format: ReportFormat;
@@ -50,24 +45,16 @@ const ANSI = {
 type Tone = keyof typeof ANSI | "none";
 const RULE = "========================";
 
-const paint = (tone: Tone, text: string, color: boolean): string =>
-  color && tone !== "none" ? `${ESC}[${ANSI[tone]}m${text}${ESC}[0m` : text;
+const paint = (tone: Tone, text: string, color: boolean): string => (color && tone !== "none" ? `${ESC}[${ANSI[tone]}m${text}${ESC}[0m` : text);
 
-const lines = (items: readonly string[]): string =>
-  items.length === 0 ? "" : `${items.join("\n")}\n`;
+const lines = (items: readonly string[]): string => (items.length === 0 ? "" : `${items.join("\n")}\n`);
 
 function runErrorLine(diagnostic: RunDiagnostic): string {
-  const where =
-    diagnostic.file !== undefined && diagnostic.line !== undefined
-      ? ` (${diagnostic.file}:${diagnostic.line}:${diagnostic.column ?? 1})`
-      : "";
+  const where = diagnostic.file !== undefined && diagnostic.line !== undefined ? ` (${diagnostic.file}:${diagnostic.line}:${diagnostic.column ?? 1})` : "";
   return cleanText(`error ${diagnostic.code}: ${diagnostic.message}${where}`);
 }
 
-const located = (diagnostic: Diagnostic): string =>
-  diagnostic.position === null
-    ? ""
-    : ` (line ${diagnostic.position.line}, column ${diagnostic.position.column})`;
+const located = (diagnostic: Diagnostic): string => (diagnostic.position === null ? "" : ` (line ${diagnostic.position.line}, column ${diagnostic.position.column})`);
 
 function diagnosticJson(diagnostic: ReportedDiagnostic): Record<string, unknown> {
   const out: Record<string, unknown> = {
@@ -159,8 +146,7 @@ function tableLines(schema: TemplateSchema): string[] {
   const types = schema.fields.map((field) => cleanText(field.type));
   const nameWidth = Math.max("Field".length, ...names.map((name) => name.length));
   const typeWidth = Math.max("Type".length, ...types.map((type) => type.length));
-  const row = (name: string, type: string, rules: string): string =>
-    `${name.padEnd(nameWidth)}  ${type.padEnd(typeWidth)}  ${rules}`;
+  const row = (name: string, type: string, rules: string): string => `${name.padEnd(nameWidth)}  ${type.padEnd(typeWidth)}  ${rules}`;
   const header = row("Field", "Type", "Rules");
   const out = [header, "-".repeat(header.length)];
   schema.fields.forEach((field, index) => {
@@ -183,11 +169,7 @@ interface Item {
 }
 
 /** One item per diagnostic of `code`: its text (with line and column) and its excerpt rows. */
-function itemsOf(
-  diagnostics: readonly ReportedDiagnostic[],
-  code: string,
-  withPosition: boolean,
-): Item[] {
+function itemsOf(diagnostics: readonly ReportedDiagnostic[], code: string, withPosition: boolean): Item[] {
   // Spec 8.3, C09: each item is followed by the excerpt of its template line.
   return diagnostics
     .filter((diagnostic) => diagnostic.code === code)
@@ -224,10 +206,7 @@ function errorLines(errors: readonly ReportedDiagnostic[]): Entry[] {
 }
 
 /** Schema block of one ok template; each paragraph is followed by one blank line. */
-function schemaLines(
-  schema: TemplateSchema,
-  warnings: readonly ReportedDiagnostic[],
-): { readonly text: readonly string[]; readonly warn: readonly Entry[] } {
+function schemaLines(schema: TemplateSchema, warnings: readonly ReportedDiagnostic[]): { readonly text: readonly string[]; readonly warn: readonly Entry[] } {
   const text: string[] = [];
   if (schema.filenameCase !== null) {
     text.push(`Filename: [filename:case:${cleanText(schema.filenameCase)}]`);
@@ -259,10 +238,7 @@ function schemaLines(
     warn.push(["none", ""]);
   };
   const of = (code: string, withPosition: boolean): Item[] => itemsOf(warnings, code, withPosition);
-  section("Unknown tags found (typo or unimplemented feature):", [
-    ...of("MTL010", false),
-    ...of("MTL011", false),
-  ]);
+  section("Unknown tags found (typo or unimplemented feature):", [...of("MTL010", false), ...of("MTL011", false)]);
   section("Malformed tags:", of("MTL012", true));
   section("Misplaced tags:", of("MTL013", true));
   section("Invalid patterns:", of("MTL014", true));
@@ -328,8 +304,6 @@ export function reportVerify(result: VerifyResult, options: VerifyReportOptions)
     line("cyan", RULE);
   }
 
-  const stderr = result.runErrors.map((diagnostic) =>
-    paint("red", runErrorLine(diagnostic), color),
-  );
+  const stderr = result.runErrors.map((diagnostic) => paint("red", runErrorLine(diagnostic), color));
   return { stdout: lines(out), stderr: lines(stderr) };
 }

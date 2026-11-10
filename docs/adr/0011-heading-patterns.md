@@ -115,7 +115,7 @@ for an order tag without repeat tag.
     the template file before its targets, exit 1, the targets still linted.
   - `MTL018` heading-optional-min-conflict (A72l): template ERROR, category `syntax`, not
     suppressible, same behaviour as `MTL017` in both modes (`--verify` section `Optional
-    headings with a minimum:`): a repeat heading with `[presence:optional]` and an explicit
+headings with a minimum:`): a repeat heading with `[presence:optional]` and an explicit
     `min` tag. The tags still apply as written in a lint run (the `min` decides).
   - `MTL015` gains five reasons (pattern tags on template-only or exist headings, repeat or
     order without pattern, order without repeat, no orderable placeholder). Superseded: see
@@ -149,31 +149,31 @@ for an order tag without repeat tag.
 
 ## Alternatives considered
 
-| Option                                                       | Pros                                       | Cons                                                         | Verdict    |
-| ------------------------------------------------------------ | ------------------------------------------ | ------------------------------------------------------------ | ---------- |
-| Pattern in a quoted tag, separate repeat and order tags      | Heading text stays prose; each tag stands alone | Stage 1 accepts `]` and `\"` in quotes and a dashed family | **Chosen** |
-| Placeholders written in the heading text (`## [{semver}] - {date}`) | Reads like the target                | Brackets and braces in text clash with tag peeling; every heading text becomes a pattern candidate | Rejected (decision 1) |
-| `[format:semver]` slots marking parts of the heading text    | Reuses the format family                   | Needs a text marker syntax; unclear what the slot covers     | Rejected   |
-| A general `[pattern:regex:...]` tag                          | Covers any shape                           | Regex in templates, no calendar or SemVer check, hard to read | Rejected  |
-| Free-form format options (`{date:format:%Y/%m}`)             | Any date shape                             | A second mini-language; shapes the linter cannot order       | Rejected (fixed table, A72k) |
-| A pattern heading is optional by default                     | No error for a file without releases       | Contradicts "a heading in the template is expected" (ADR 0009) | Rejected (decision 2) |
-| One combined `[repeat:min:N:max:M]` tag                      | One tag                                    | Orphan bounds, harder grammar, no plain "repeat" form        | Rejected (decision 3) |
-| A heading named by text never matches a pattern (CLAIM, A72j) | `## Unreleased` never taken for a release by `{text}` | Order-independent ownership rules; contradicts positional matching | Rejected (A72k, ADR 0012) |
-| Order always on for repeat headings                          | No extra tag                               | Not every repeated heading has an order; breaks free lists   | Rejected (decision 4) |
-| One `MTL609` per adjacent pair out of order (A72j)           | Mirrors `MTL407`                           | Several findings for one set; the owner asked for one        | Rejected (A72k) |
-| A pattern cannot contain `"` (A72j)                          | No escape syntax                           | Headings with quotes cannot be described                     | Rejected (A72k) |
-| Use `MTL613` for one of the new codes                        | Contiguous with `MTL610` to `MTL612`       | Reserved for unique heading names (owner decision)           | Rejected   |
-| `MTL017` in `--verify` only (A72k)                           | Lint output unchanged                      | A project that never runs `--verify` never learns its template is wrong | Rejected (A72l decision 2) |
-| `MTL017` makes the template broken in lint runs              | One existing failure state                 | Skips every target although the template can be read         | Rejected (A72l decision 2) |
-| `[presence:optional]` next to a `min`: the `min` decides without a word (A72k) | No new code       | Hides a template whose two minimums contradict each other    | Rejected (A72l decision 3) |
-| The same case as a `MTL015` tag conflict warning             | No new code                                | A warning, yet the conflict changes what targets report      | Rejected (A72l decision 3) |
-| `MTL017` for pattern headings only (A72k)                    | Smaller rule                               | `## Notes` and `## [pattern:"Notes"]` match the same, so the same mistake goes unseen | Rejected (A72l decision 5) |
-| Order key from placeholder values (A72j, A72k)               | SemVer precedence for versions             | Hard to predict from the text; needs orderable placeholders | Replaced (A72m decision 5) |
-| A heading without order key as a second `MTL609` form        | No new code                                | Two causes under one code and one suppression; breaks "one `MTL609` per set" | Rejected (A72m, `MTL617`) |
-| A `{regexp}` placeholder                                     | Any part shape                             | Unbounded vocabulary, ReDoS risk, unreadable templates        | Rejected (A72m decision 6) |
-| An order tag without repeat tag as a `MTL015` warning (A72j to A72m) | No new code                  | `--verify` only; the template allows one heading while saying "ordered repeats" | Rejected (A72n decision 3, `MTL030`) |
-| Keep the name `{int}`                                        | No rename                                  | Suggests a sign it never accepted; formats such as `hex` and `uid` do not fit the name | Rejected (A72n decision 4, `{digits}`) |
-| No version order (dates only, A72m)                          | Smaller order vocabulary                   | Changelogs without dates cannot order releases                | Rejected (A72n decision 2) |
+| Option                                                                         | Pros                                                  | Cons                                                                                               | Verdict                                |
+| ------------------------------------------------------------------------------ | ----------------------------------------------------- | -------------------------------------------------------------------------------------------------- | -------------------------------------- |
+| Pattern in a quoted tag, separate repeat and order tags                        | Heading text stays prose; each tag stands alone       | Stage 1 accepts `]` and `\"` in quotes and a dashed family                                         | **Chosen**                             |
+| Placeholders written in the heading text (`## [{semver}] - {date}`)            | Reads like the target                                 | Brackets and braces in text clash with tag peeling; every heading text becomes a pattern candidate | Rejected (decision 1)                  |
+| `[format:semver]` slots marking parts of the heading text                      | Reuses the format family                              | Needs a text marker syntax; unclear what the slot covers                                           | Rejected                               |
+| A general `[pattern:regex:...]` tag                                            | Covers any shape                                      | Regex in templates, no calendar or SemVer check, hard to read                                      | Rejected                               |
+| Free-form format options (`{date:format:%Y/%m}`)                               | Any date shape                                        | A second mini-language; shapes the linter cannot order                                             | Rejected (fixed table, A72k)           |
+| A pattern heading is optional by default                                       | No error for a file without releases                  | Contradicts "a heading in the template is expected" (ADR 0009)                                     | Rejected (decision 2)                  |
+| One combined `[repeat:min:N:max:M]` tag                                        | One tag                                               | Orphan bounds, harder grammar, no plain "repeat" form                                              | Rejected (decision 3)                  |
+| A heading named by text never matches a pattern (CLAIM, A72j)                  | `## Unreleased` never taken for a release by `{text}` | Order-independent ownership rules; contradicts positional matching                                 | Rejected (A72k, ADR 0012)              |
+| Order always on for repeat headings                                            | No extra tag                                          | Not every repeated heading has an order; breaks free lists                                         | Rejected (decision 4)                  |
+| One `MTL609` per adjacent pair out of order (A72j)                             | Mirrors `MTL407`                                      | Several findings for one set; the owner asked for one                                              | Rejected (A72k)                        |
+| A pattern cannot contain `"` (A72j)                                            | No escape syntax                                      | Headings with quotes cannot be described                                                           | Rejected (A72k)                        |
+| Use `MTL613` for one of the new codes                                          | Contiguous with `MTL610` to `MTL612`                  | Reserved for unique heading names (owner decision)                                                 | Rejected                               |
+| `MTL017` in `--verify` only (A72k)                                             | Lint output unchanged                                 | A project that never runs `--verify` never learns its template is wrong                            | Rejected (A72l decision 2)             |
+| `MTL017` makes the template broken in lint runs                                | One existing failure state                            | Skips every target although the template can be read                                               | Rejected (A72l decision 2)             |
+| `[presence:optional]` next to a `min`: the `min` decides without a word (A72k) | No new code                                           | Hides a template whose two minimums contradict each other                                          | Rejected (A72l decision 3)             |
+| The same case as a `MTL015` tag conflict warning                               | No new code                                           | A warning, yet the conflict changes what targets report                                            | Rejected (A72l decision 3)             |
+| `MTL017` for pattern headings only (A72k)                                      | Smaller rule                                          | `## Notes` and `## [pattern:"Notes"]` match the same, so the same mistake goes unseen              | Rejected (A72l decision 5)             |
+| Order key from placeholder values (A72j, A72k)                                 | SemVer precedence for versions                        | Hard to predict from the text; needs orderable placeholders                                        | Replaced (A72m decision 5)             |
+| A heading without order key as a second `MTL609` form                          | No new code                                           | Two causes under one code and one suppression; breaks "one `MTL609` per set"                       | Rejected (A72m, `MTL617`)              |
+| A `{regexp}` placeholder                                                       | Any part shape                                        | Unbounded vocabulary, ReDoS risk, unreadable templates                                             | Rejected (A72m decision 6)             |
+| An order tag without repeat tag as a `MTL015` warning (A72j to A72m)           | No new code                                           | `--verify` only; the template allows one heading while saying "ordered repeats"                    | Rejected (A72n decision 3, `MTL030`)   |
+| Keep the name `{int}`                                                          | No rename                                             | Suggests a sign it never accepted; formats such as `hex` and `uid` do not fit the name             | Rejected (A72n decision 4, `{digits}`) |
+| No version order (dates only, A72m)                                            | Smaller order vocabulary                              | Changelogs without dates cannot order releases                                                     | Rejected (A72n decision 2)             |
 
 ## Research
 
@@ -205,14 +205,14 @@ stays accepted; where this section and the text above differ, this section wins.
   and `[order:first:date:ascending|descending]` order by the first number (decimal or
   scientific, so 10 is above 9) or the first ISO date found in the text. The
   placeholder-value order key above is replaced, so `MTL015` loses the reason `the pattern
-  has no orderable placeholder`. An instance without that number or date is the new error
+has no orderable placeholder`. An instance without that number or date is the new error
   `MTL617` heading-order-key-missing (heading, suppressible, one per repeat set; its message
   recommends a pattern with `{number}` or `{date}`), not a second form of `MTL609`. A
   version order form came with A72n (decision 2 below), so a changelog orders by
   `[order:first:semver:descending]` or `[order:first:date:descending]`.
 - **Content label (decision 3).** For a pattern heading the content messages name the
   matched target text and the pattern: `Section 'Epic B - Release' (pattern "Epic {char} -
-  {text}"): [content:table] no markdown table row found`.
+{text}"): [content:table] no markdown table row found`.
 - **Template error `MTL019` (decision 2).** heading-child-order-conflict (syntax, not
   suppressible, same lint and `--verify` behaviour as `MTL017` and `MTL018`) for a deeper
   direct child before a shallower one under one parent; details in ADR 0012's revision.

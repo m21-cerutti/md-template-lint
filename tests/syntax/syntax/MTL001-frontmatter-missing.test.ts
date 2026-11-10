@@ -8,9 +8,7 @@ const DIR = "tests/fixtures/templates/MTL001";
 const BROKEN = {
   exitCode: 1,
   status: "broken",
-  diagnostics: [
-    { code: CODE, severity: "error", message: "File must have YAML frontmatter (---...---)" },
-  ],
+  diagnostics: [{ code: CODE, severity: "error", message: "File must have YAML frontmatter (---...---)" }],
 } as const;
 
 /** Case -> fixture `<name>.md` -> expected `--verify` result. */

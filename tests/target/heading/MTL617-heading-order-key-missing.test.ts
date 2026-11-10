@@ -46,9 +46,7 @@ const keyMissing = (
   parent: string | null = null,
   pylist: string = `[${texts.map((text) => `'${text}'`).join(", ")}]`,
 ): Expected => ({
-  message:
-    `Heading: ${parent === null ? "" : `Section '${parent}': `}${texts.length} heading(s) have ` +
-    `no ${kind} to order by ${tag}, use a [pattern:...] with ${placeholder}: ${pylist}`,
+  message: `Heading: ${parent === null ? "" : `Section '${parent}': `}${texts.length} heading(s) have ` + `no ${kind} to order by ${tag}, use a [pattern:...] with ${placeholder}: ${pylist}`,
   line,
   heading: texts[0] ?? "",
 });
@@ -67,15 +65,7 @@ const CASES: readonly TestCase[] = [
   // K, semver variant (spec 2.10, A72n): no heading holds a SEMVER: 4 headings, anchor line 5.
   {
     name: "fail-owner-example-k-semver-variant",
-    expected: [
-      keyMissing(
-        "semver",
-        "{semver}",
-        SEMVER_ASC,
-        ["Step 1 - Install", "Step 10 - Deploy", "Step 9 - Test", "Step four - Review"],
-        5,
-      ),
-    ],
+    expected: [keyMissing("semver", "{semver}", SEMVER_ASC, ["Step 1 - Install", "Step 10 - Deploy", "Step 9 - Test", "Step four - Review"], 5)],
   },
   // K, `[order:ascending]` variant: every instance has its whole text as key: no finding.
   { name: "pass-owner-example-k-string-order-variant", expected: [] },
@@ -90,9 +80,7 @@ const CASES: readonly TestCase[] = [
   // `Sprint 2026-10` holds no ISO DATE (spec 2.10): the date form finds no key on line 9.
   {
     name: "fail-date-form-without-date",
-    expected: [
-      keyMissing("date", "{date}", "[order:first:date:descending]", ["Sprint 2026-10"], 9),
-    ],
+    expected: [keyMissing("date", "{date}", "[order:first:date:descending]", ["Sprint 2026-10"], 9)],
   },
   // `Release 1.2` (a `{number}` value) has two parts, no SEMVER (spec 2.10): no key, line 7.
   {
@@ -115,10 +103,7 @@ const CASES: readonly TestCase[] = [
   // v1.0.0: `Step one` (line 9); v1.1.0: all keyed; v1.2.0: `Step two`, `Step three` (line 23).
   {
     name: "fail-section-scope-one-finding-per-parent-instance",
-    expected: [
-      keyMissing("number", "{number}", NUMBER_ASC, ["Step one"], 9, "v1.0.0"),
-      keyMissing("number", "{number}", NUMBER_ASC, ["Step two", "Step three"], 23, "v1.2.0"),
-    ],
+    expected: [keyMissing("number", "{number}", NUMBER_ASC, ["Step one"], 9, "v1.0.0"), keyMissing("number", "{number}", NUMBER_ASC, ["Step two", "Step three"], 23, "v1.2.0")],
   },
   // Invalid pattern (MTL014): no repeat heading, no repeat set.
   { name: "pass-invalid-pattern-gives-none", expected: [] },
@@ -131,15 +116,7 @@ const CASES: readonly TestCase[] = [
   // second tag, `first:number`, would find keys in both).
   {
     name: "fail-two-order-tags-the-first-wins",
-    expected: [
-      keyMissing(
-        "date",
-        "{date}",
-        "[order:first:date:ascending]",
-        ["Step 1 - Install", "Step 2 - Test"],
-        7,
-      ),
-    ],
+    expected: [keyMissing("date", "{date}", "[order:first:date:ascending]", ["Step 1 - Install", "Step 2 - Test"], 7)],
   },
   // The first tag is the whole-text form: never MTL617, though the second is `first:number`.
   { name: "pass-two-order-tags-whole-text-first-wins", expected: [] },
@@ -175,22 +152,11 @@ const CASES: readonly TestCase[] = [
   // double-quoted; `Étape` stays as is; the backslash of `Step a\b` is doubled.
   {
     name: "fail-quote-backslash-and-non-ascii-texts-escaped",
-    expected: [
-      keyMissing(
-        "number",
-        "{number}",
-        NUMBER_ASC,
-        ["Step it's", "Step Étape", "Step a\\b"],
-        7,
-        null,
-        `["Step it's", 'Step Étape', 'Step a\\\\b']`,
-      ),
-    ],
+    expected: [keyMissing("number", "{number}", NUMBER_ASC, ["Step it's", "Step Étape", "Step a\\b"], 7, null, `["Step it's", 'Step Étape', 'Step a\\\\b']`)],
   },
 ];
 
-const read = (path: string): string =>
-  readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
+const read = (path: string): string => readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
 
 async function templateOf(name: string) {
   const status = await checkTemplate(registry, read(`${DIR}/${name}/template.md`));
@@ -201,32 +167,18 @@ async function templateOf(name: string) {
 /** Every diagnostic (after suppression) for the pair of a fixture folder. */
 async function lintAll(name: string) {
   const status = await templateOf(name);
-  return checkTarget(
-    registry,
-    status.model,
-    read(`${DIR}/${name}/target.md`),
-    "target.md",
-    createEnv(),
-  );
+  return checkTarget(registry, status.model, read(`${DIR}/${name}/target.md`), "target.md", createEnv());
 }
 
 /** The errors of a fixture as [code, anchor line], in emission order. */
 async function errorsOf(name: string) {
-  return (await lintAll(name))
-    .filter((diagnostic) => diagnostic.severity === "error")
-    .map((diagnostic) => [diagnostic.code, anchorLineOf(diagnostic)]);
+  return (await lintAll(name)).filter((diagnostic) => diagnostic.severity === "error").map((diagnostic) => [diagnostic.code, anchorLineOf(diagnostic)]);
 }
 
 /** Result of `lintTarget` (findings and suppressed count) for a fixture folder. */
 async function lintResult(name: string) {
   const status = await templateOf(name);
-  return lintTarget(
-    registry,
-    status.model,
-    read(`${DIR}/${name}/target.md`),
-    "target.md",
-    createEnv(),
-  );
+  return lintTarget(registry, status.model, read(`${DIR}/${name}/target.md`), "target.md", createEnv());
 }
 
 describe("MTL617 heading-order-key-missing", () => {
@@ -287,19 +239,11 @@ describe("MTL617 heading-order-key-missing", () => {
 
   it("keyless first, pair out of order later: MTL609 (line 11) still sorts before MTL617 (line 7)", async () => {
     const found = await lintAll("fail-keyless-before-pair-out-of-order-sorts-by-code");
-    expect(
-      found
-        .filter((diagnostic) => diagnostic.severity === "error")
-        .map((diagnostic) => [diagnostic.code, anchorLineOf(diagnostic)]),
-    ).toEqual([
+    expect(found.filter((diagnostic) => diagnostic.severity === "error").map((diagnostic) => [diagnostic.code, anchorLineOf(diagnostic)])).toEqual([
       ["MTL609", 11],
       [CODE, 7],
     ]);
-    expect(found.find((diagnostic) => diagnostic.code === "MTL609")?.message).toBe(
-      "Heading: heading 'Step 1 - Install' is not in ascending order after 'Step 2 - Test', " +
-        "1 pair(s) out of order " +
-        NUMBER_ASC,
-    );
+    expect(found.find((diagnostic) => diagnostic.code === "MTL609")?.message).toBe("Heading: heading 'Step 1 - Install' is not in ascending order after 'Step 2 - Test', " + "1 pair(s) out of order " + NUMBER_ASC);
   });
 
   it("the only error of a plain case is MTL617", async () => {
@@ -340,26 +284,20 @@ describe("MTL617 heading-order-key-missing", () => {
   });
 
   it("stray heading: the tail instance is not listed", async () => {
-    const codes = (await errorsOf("fail-stray-heading-breaks-the-run")).filter(
-      ([code]) => code === CODE,
-    );
+    const codes = (await errorsOf("fail-stray-heading-breaks-the-run")).filter(([code]) => code === CODE);
     expect(codes).toEqual([[CODE, 9]]);
   });
 
   it("invalid pattern: the template has MTL014 and the target no MTL617", async () => {
     const status = await templateOf("pass-invalid-pattern-gives-none");
     expect(status.warnings.map((diagnostic) => diagnostic.code)).toContain("MTL014");
-    expect(
-      (await lintAll("pass-invalid-pattern-gives-none")).map((item) => item.code),
-    ).not.toContain(CODE);
+    expect((await lintAll("pass-invalid-pattern-gives-none")).map((item) => item.code)).not.toContain(CODE);
   });
 
   it("order tag on a template-only heading: the template has MTL015, the target no MTL617", async () => {
     const status = await templateOf("pass-template-only-heading-gives-none");
     expect(status.warnings.map((diagnostic) => diagnostic.code)).toContain("MTL015");
-    expect(
-      (await lintAll("pass-template-only-heading-gives-none")).map((item) => item.code),
-    ).not.toContain(CODE);
+    expect((await lintAll("pass-template-only-heading-gives-none")).map((item) => item.code)).not.toContain(CODE);
   });
 
   it("disable-line on the anchor: the baseline plus one directive", async () => {
@@ -369,9 +307,7 @@ describe("MTL617 heading-order-key-missing", () => {
   });
 
   it("disable-line on another keyless instance does not silence the finding on line 7", async () => {
-    const result = await lintResult(
-      "fail-disable-line-on-another-keyless-instance-does-not-silence-it",
-    );
+    const result = await lintResult("fail-disable-line-on-another-keyless-instance-does-not-silence-it");
     expect(result.diagnostics.map((item) => [item.code, anchorLineOf(item)])).toEqual([[CODE, 7]]);
     expect(result.suppressed).toBe(0);
   });
@@ -383,14 +319,8 @@ describe("MTL617 heading-order-key-missing", () => {
   });
 
   it("unchecked child: only the parent's own finding, no MTL617", async () => {
-    expect(await errorsOf("pass-child-under-absent-parent-is-not-checked")).toEqual([
-      ["MTL601", null],
-    ]);
-    expect(await errorsOf("pass-child-under-mismatched-parent-is-not-checked")).toEqual([
-      ["MTL606", 7],
-    ]);
-    expect(await errorsOf("pass-child-under-template-only-parent-is-not-checked")).toEqual([
-      ["MTL603", 7],
-    ]);
+    expect(await errorsOf("pass-child-under-absent-parent-is-not-checked")).toEqual([["MTL601", null]]);
+    expect(await errorsOf("pass-child-under-mismatched-parent-is-not-checked")).toEqual([["MTL606", 7]]);
+    expect(await errorsOf("pass-child-under-template-only-parent-is-not-checked")).toEqual([["MTL603", 7]]);
   });
 });

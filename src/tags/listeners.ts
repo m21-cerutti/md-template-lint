@@ -12,16 +12,7 @@
  *
  * No tag regex here: the grammar (grammar/*.g4) decides what is an error.
  */
-import {
-  BaseErrorListener,
-  CharStream,
-  CommonTokenStream,
-  LexerNoViableAltException,
-  Token,
-  type ATNSimulator,
-  type RecognitionException,
-  type Recognizer,
-} from "antlr4ng";
+import { BaseErrorListener, CharStream, CommonTokenStream, LexerNoViableAltException, Token, type ATNSimulator, type RecognitionException, type Recognizer } from "antlr4ng";
 import { MdTemplateLexer } from "../generated/MdTemplateLexer.js";
 import { MdTemplateParser } from "../generated/MdTemplateParser.js";
 import type { Region, SourcePosition, TagFinding } from "./ast.js";
@@ -71,18 +62,8 @@ export class LexerErrorListener extends BaseErrorListener {
     super();
   }
 
-  override syntaxError<S extends Token, T extends ATNSimulator>(
-    _recognizer: Recognizer<T>,
-    _offendingSymbol: S | null,
-    line: number,
-    column: number,
-    msg: string,
-    e: RecognitionException | null,
-  ): void {
-    const offending =
-      e instanceof LexerNoViableAltException
-        ? this.input.getTextFromRange(e.startIndex, e.startIndex)
-        : "";
+  override syntaxError<S extends Token, T extends ATNSimulator>(_recognizer: Recognizer<T>, _offendingSymbol: S | null, line: number, column: number, msg: string, e: RecognitionException | null): void {
+    const offending = e instanceof LexerNoViableAltException ? this.input.getTextFromRange(e.startIndex, e.startIndex) : "";
     this.log.events.push({
       source: "lexer",
       position: this.map(line, column),
@@ -102,19 +83,8 @@ export class ParserErrorListener extends BaseErrorListener {
     super();
   }
 
-  override syntaxError<S extends Token, T extends ATNSimulator>(
-    _recognizer: Recognizer<T>,
-    offendingSymbol: S | null,
-    line: number,
-    column: number,
-    msg: string,
-  ): void {
-    const offending =
-      offendingSymbol === null
-        ? ""
-        : offendingSymbol.type === Token.EOF
-          ? "<EOF>"
-          : (offendingSymbol.text ?? "");
+  override syntaxError<S extends Token, T extends ATNSimulator>(_recognizer: Recognizer<T>, offendingSymbol: S | null, line: number, column: number, msg: string): void {
+    const offending = offendingSymbol === null ? "" : offendingSymbol.type === Token.EOF ? "<EOF>" : (offendingSymbol.text ?? "");
     this.log.events.push({
       source: "parser",
       position: this.map(line, column),
@@ -135,12 +105,7 @@ export interface Recognizers {
  * Lexer and parser over `text`, starting in lexer mode `mode` (pushed when
  * `push`). The default console listeners are replaced by the collecting ones.
  */
-export function createRecognizers(
-  text: string,
-  mode: number,
-  push: boolean,
-  map: PositionMap,
-): Recognizers {
+export function createRecognizers(text: string, mode: number, push: boolean, map: PositionMap): Recognizers {
   const log = new SyntaxEventLog();
   const input = CharStream.fromString(text);
   const lexer = new MdTemplateLexer(input);
@@ -174,8 +139,6 @@ export class DiagnosticCollector {
 
   /** Findings in source order (line, then column; stable). */
   get findings(): readonly TagFinding[] {
-    return [...this.tagFindings].sort(
-      (a, b) => a.position.line - b.position.line || a.position.column - b.position.column,
-    );
+    return [...this.tagFindings].sort((a, b) => a.position.line - b.position.line || a.position.column - b.position.column);
   }
 }

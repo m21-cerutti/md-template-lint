@@ -14,14 +14,7 @@
 // name (`~1`) or Windows device name segment; a UNC, `\\?\` or drive-relative path; a
 // directory; an existing file with hard links. Node built-ins only. The pure functions are
 // exported for tests.
-import {
-  existsSync,
-  lstatSync,
-  mkdirSync,
-  realpathSync,
-  statSync,
-  writeFileSync,
-} from "node:fs";
+import { existsSync, lstatSync, mkdirSync, realpathSync, statSync, writeFileSync } from "node:fs";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
@@ -154,8 +147,7 @@ export interface Target {
 }
 
 /** Writes are limited to tests/fixtures/ (create or overwrite) and tmp/ (create only). */
-const inFixtures = (segments: readonly string[]): boolean =>
-  segments[0] === "tests" && segments[1] === "fixtures" && segments.length >= 3;
+const inFixtures = (segments: readonly string[]): boolean => segments[0] === "tests" && segments[1] === "fixtures" && segments.length >= 3;
 const inTmp = (segments: readonly string[]): boolean => segments[0] === "tmp" && segments.length >= 2;
 
 function refuseSegments(segments: readonly string[]): void {
@@ -174,9 +166,7 @@ function refuseExtension(...names: readonly (string | undefined)[]): void {
     const clean = (name ?? "").toLowerCase().replace(/[. ]+$/, "");
     const dot = clean.lastIndexOf(".");
     if (dot <= 0 || !ALLOWED_EXTENSIONS.includes(clean.slice(dot))) {
-      throw new Error(
-        `refusing path: extension not allowed, use one of ${ALLOWED_EXTENSIONS.join(" ")}`,
-      );
+      throw new Error(`refusing path: extension not allowed, use one of ${ALLOWED_EXTENSIONS.join(" ")}`);
     }
   }
 }
@@ -227,11 +217,7 @@ export function checkTarget(root: string, input: string): Target {
 }
 
 /** Decode `escaped`, check `input` and write the file. Returns the display path and byte count. */
-export function writeEscaped(
-  root: string,
-  input: string,
-  escaped: string,
-): { path: string; bytes: number } {
+export function writeEscaped(root: string, input: string, escaped: string): { path: string; bytes: number } {
   const content = Buffer.from(decodeEscapes(escaped), "utf8");
   const target = checkTarget(root, input);
   mkdirSync(dirname(target.path), { recursive: true });

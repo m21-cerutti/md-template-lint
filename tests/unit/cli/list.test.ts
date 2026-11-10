@@ -109,8 +109,7 @@ const CASES: readonly Case[] = [
   },
 ];
 
-const lint = (fixture: string, args: readonly string[], extra: readonly string[] = []) =>
-  runCliIn(fixture, ["--format", "json", ...extra, ...args]);
+const lint = (fixture: string, args: readonly string[], extra: readonly string[] = []) => runCliIn(fixture, ["--format", "json", ...extra, ...args]);
 
 describe("cli file-list mode: layout", () => {
   it("has at least 1 pass- case, at least 1 fail- case, one directory each", () => {
@@ -126,9 +125,7 @@ describe("cli file-list mode (spec 7.2)", () => {
       expect(run.exitCode).toBe(testCase.exitCode);
       expect(lintedOf(json)).toEqual(testCase.linted);
       expect(json.unmatched).toEqual(testCase.unmatched);
-      expect(json.runErrors.map(({ code, message }) => ({ code, message }))).toEqual(
-        testCase.runErrors,
-      );
+      expect(json.runErrors.map(({ code, message }) => ({ code, message }))).toEqual(testCase.runErrors);
       expect(json.runWarnings).toEqual([]);
     });
   }
@@ -139,14 +136,7 @@ describe("cli file-list mode: path forms", () => {
 
   it("takes the file as relative, ./relative, backslash, absolute and absolute backslash", async () => {
     const absolute = fixtureFile(PASS, "docs/a.md");
-    const forms = [
-      "docs/a.md",
-      "./docs/a.md",
-      "docs\\a.md",
-      absolute,
-      absolute.replaceAll("/", "\\"),
-      `${fixtureFile(PASS, "docs")}/../docs/a.md`,
-    ];
+    const forms = ["docs/a.md", "./docs/a.md", "docs\\a.md", absolute, absolute.replaceAll("/", "\\"), `${fixtureFile(PASS, "docs")}/../docs/a.md`];
     for (const form of forms) {
       const run = await lint(PASS, [form]);
       expect(run.exitCode, form).toBe(0);

@@ -39,9 +39,7 @@ interface TestCase {
  * position [content:subheadings:no-extra]`.
  */
 const undeclared = (parent: string, text: string, level: number, line: number): Expected => ({
-  message:
-    `Heading: Section '${parent}': heading '${text}' at level H${level} ` +
-    "is not declared at this position [content:subheadings:no-extra]",
+  message: `Heading: Section '${parent}': heading '${text}' at level H${level} ` + "is not declared at this position [content:subheadings:no-extra]",
   line,
   heading: text,
 });
@@ -178,8 +176,7 @@ const CASES: readonly TestCase[] = [
   },
 ];
 
-const read = (path: string): string =>
-  readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
+const read = (path: string): string => readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
 
 async function templateOf(name: string) {
   const status = await checkTemplate(registry, read(`${DIR}/${name}/template.md`));
@@ -190,25 +187,13 @@ async function templateOf(name: string) {
 /** Every diagnostic (after suppression) for the pair of a fixture folder. */
 async function lintAll(name: string) {
   const status = await templateOf(name);
-  return checkTarget(
-    registry,
-    status.model,
-    read(`${DIR}/${name}/target.md`),
-    "target.md",
-    createEnv(),
-  );
+  return checkTarget(registry, status.model, read(`${DIR}/${name}/target.md`), "target.md", createEnv());
 }
 
 /** Result of `lintTarget` (findings and suppressed count) for a fixture folder. */
 async function lintResult(name: string) {
   const status = await templateOf(name);
-  return lintTarget(
-    registry,
-    status.model,
-    read(`${DIR}/${name}/target.md`),
-    "target.md",
-    createEnv(),
-  );
+  return lintTarget(registry, status.model, read(`${DIR}/${name}/target.md`), "target.md", createEnv());
 }
 
 describe("MTL615 heading-subheadings-only-declared", () => {
@@ -255,11 +240,7 @@ describe("MTL615 heading-subheadings-only-declared", () => {
         // The template-line sort key is cleared (the anchor is internal, spec 8.1).
         expect(diagnostic.position).toBeNull();
       }
-      expect(
-        all
-          .filter((diagnostic) => diagnostic.severity === "error")
-          .map((diagnostic) => [diagnostic.code, anchorLineOf(diagnostic)]),
-      ).toEqual(testCase.errors);
+      expect(all.filter((diagnostic) => diagnostic.severity === "error").map((diagnostic) => [diagnostic.code, anchorLineOf(diagnostic)])).toEqual(testCase.errors);
     });
   }
 
@@ -271,13 +252,7 @@ describe("MTL615 heading-subheadings-only-declared", () => {
 
   it("--verify lists the rule token after content:subheadings:disallow (spec 8.3)", async () => {
     const status = await templateOf("fail-both-tags-duplicate-group-gets-mtl612-and-mtl615");
-    const unreleased = describeTemplate(status.model).headings.find(
-      (heading) => heading.text === "Unreleased",
-    );
-    expect(unreleased?.rules).toEqual([
-      "presence:required",
-      "content:subheadings:disallow",
-      "content:subheadings:no-extra",
-    ]);
+    const unreleased = describeTemplate(status.model).headings.find((heading) => heading.text === "Unreleased");
+    expect(unreleased?.rules).toEqual(["presence:required", "content:subheadings:disallow", "content:subheadings:no-extra"]);
   });
 });

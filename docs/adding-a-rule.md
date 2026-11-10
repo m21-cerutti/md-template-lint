@@ -19,17 +19,17 @@ Every command below exists in `package.json` (`new:rule`, `gen:parser`, `check:p
 Rules live in `src/rules/<category>.ts`, one file per category. The nine categories and
 their code ranges (spec 4.2, `src/engine/ranges.json`):
 
-| Category   | Range             | Scope                                |
-| ---------- | ----------------- | ------------------------------------ |
+| Category   | Range             | Scope                                                  |
+| ---------- | ----------------- | ------------------------------------------------------ |
 | `syntax`   | `MTL001`-`MTL099` | parsing, template tag and target directive diagnostics |
-| `filename` | `MTL100`-`MTL199` | rules on the target file name        |
-| `presence` | `MTL200`-`MTL299` | field presence, unknown keys         |
-| `format`   | `MTL300`-`MTL399` | value shape rules from tags          |
-| `bounds`   | `MTL400`-`MTL499` | count, range, order                  |
-| `type`     | `MTL500`-`MTL599` | type validation, enum                |
-| `heading`  | `MTL600`-`MTL699` | heading presence and order           |
-| `content`  | `MTL700`-`MTL799` | section body rules                   |
-| `io`       | `MTL800`-`MTL899` | `[io:exists]` warnings               |
+| `filename` | `MTL100`-`MTL199` | rules on the target file name                          |
+| `presence` | `MTL200`-`MTL299` | field presence, unknown keys                           |
+| `format`   | `MTL300`-`MTL399` | value shape rules from tags                            |
+| `bounds`   | `MTL400`-`MTL499` | count, range, order                                    |
+| `type`     | `MTL500`-`MTL599` | type validation, enum                                  |
+| `heading`  | `MTL600`-`MTL699` | heading presence and order                             |
+| `content`  | `MTL700`-`MTL799` | section body rules                                     |
+| `io`       | `MTL800`-`MTL899` | `[io:exists]` warnings                                 |
 
 `MTL900`-`MTL999` are run diagnostics of the engine, not rules.
 
@@ -135,10 +135,10 @@ Rules of the road:
 
 Layout (the same names are used by every existing rule):
 
-| Kind                  | Test file                                         | Fixtures                                                               |
-| --------------------- | ------------------------------------------------- | ---------------------------------------------------------------------- |
-| Phase `field`, `target` | `tests/target/<category>/<MTLxxx>-<name>.test.ts` | `tests/fixtures/pairs/<MTLxxx>/<case>/template.md` and `.../target.md` |
-| Phase `parse`, `template` | `tests/syntax/<category>/<MTLxxx>-<name>.test.ts` | `tests/fixtures/templates/<MTLxxx>/<case>.md`                        |
+| Kind                      | Test file                                         | Fixtures                                                               |
+| ------------------------- | ------------------------------------------------- | ---------------------------------------------------------------------- |
+| Phase `field`, `target`   | `tests/target/<category>/<MTLxxx>-<name>.test.ts` | `tests/fixtures/pairs/<MTLxxx>/<case>/template.md` and `.../target.md` |
+| Phase `parse`, `template` | `tests/syntax/<category>/<MTLxxx>-<name>.test.ts` | `tests/fixtures/templates/<MTLxxx>/<case>.md`                          |
 
 Case names (descriptive kebab-case, `pass-` or `fail-` prefix, never numbered) follow the
 fixture naming rules of [CONTRIBUTING.md](../CONTRIBUTING.md#tests). A rule needs at least one

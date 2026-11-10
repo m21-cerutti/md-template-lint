@@ -30,23 +30,13 @@ interface TestCase {
   readonly expected: readonly Expected[];
 }
 
-const aboveMax = (
-  count: number,
-  pattern: string,
-  max: number,
-  line: number,
-  heading: string,
-  parent: string | null = null,
-): Expected => ({
-  message:
-    `Heading: ${parent === null ? "" : `Section '${parent}': `}${count} heading(s) match ` +
-    `[pattern:"${pattern}"], maximum is ${max}`,
+const aboveMax = (count: number, pattern: string, max: number, line: number, heading: string, parent: string | null = null): Expected => ({
+  message: `Heading: ${parent === null ? "" : `Section '${parent}': `}${count} heading(s) match ` + `[pattern:"${pattern}"], maximum is ${max}`,
   line,
   heading,
 });
 
-const RELEASE_V = (count: number, max: number, line: number): Expected =>
-  aboveMax(count, "v{semver}", max, line, "Release");
+const RELEASE_V = (count: number, max: number, line: number): Expected => aboveMax(count, "v{semver}", max, line, "Release");
 
 /** Case -> fixture dir (same name) -> expected MTL608 findings. At least 1 pass- and 1 fail-. */
 const CASES: readonly TestCase[] = [
@@ -75,10 +65,7 @@ const CASES: readonly TestCase[] = [
   // `v1.0.0` has 2 steps (9, 11), `v1.1.0` one, `v1.2.0` three (19, 21, 23); `max:1`.
   {
     name: "fail-section-scope-one-finding-per-parent-instance",
-    expected: [
-      aboveMax(2, "Step {digits}", 1, 11, "Step", "v1.0.0"),
-      aboveMax(3, "Step {digits}", 1, 21, "Step", "v1.2.0"),
-    ],
+    expected: [aboveMax(2, "Step {digits}", 1, 11, "Step", "v1.0.0"), aboveMax(3, "Step {digits}", 1, 21, "Step", "v1.2.0")],
   },
   // `disable-line MTL608` on the anchor (instance 3, line 11; DIR5, DIR7): silenced.
   { name: "pass-disable-line-on-the-anchor-silences-it", expected: [] },
@@ -115,28 +102,19 @@ const CASES: readonly TestCase[] = [
   },
 ];
 
-const read = (path: string): string =>
-  readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
+const read = (path: string): string => readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
 
 /** Every diagnostic (after suppression) for the pair of a fixture folder. */
 async function lintAll(name: string) {
   const fixture = `${DIR}/${name}`;
   const status = await checkTemplate(registry, read(`${fixture}/template.md`));
   if (status.status !== "ok") throw new Error("template is broken");
-  return checkTarget(
-    registry,
-    status.model,
-    read(`${fixture}/target.md`),
-    "target.md",
-    createEnv(),
-  );
+  return checkTarget(registry, status.model, read(`${fixture}/target.md`), "target.md", createEnv());
 }
 
 /** The errors of a fixture as [code, anchor line]. */
 async function errorsOf(name: string) {
-  return (await lintAll(name))
-    .filter((diagnostic) => diagnostic.severity === "error")
-    .map((diagnostic) => [diagnostic.code, anchorLineOf(diagnostic)]);
+  return (await lintAll(name)).filter((diagnostic) => diagnostic.severity === "error").map((diagnostic) => [diagnostic.code, anchorLineOf(diagnostic)]);
 }
 
 /** Result of `lintTarget` (findings and suppressed count) for a fixture folder. */
@@ -202,27 +180,17 @@ describe("MTL608 heading-repeat-max", () => {
   });
 
   it("min above max: two instances give MTL607 on the first instance and no MTL608", async () => {
-    expect(await errorsOf("pass-min-above-max-two-instances-gives-mtl607-only")).toEqual([
-      ["MTL607", 7],
-    ]);
+    expect(await errorsOf("pass-min-above-max-two-instances-gives-mtl607-only")).toEqual([["MTL607", 7]]);
   });
 
   it("passing cases have no error at all", async () => {
-    for (const name of [
-      "pass-count-equal-to-maximum",
-      "pass-no-max-tag-has-no-maximum",
-      "pass-min-only-tag-is-no-maximum",
-      "pass-two-max-tags-the-first-is-met",
-      "pass-repeat-tag-without-pattern-is-ignored",
-    ]) {
+    for (const name of ["pass-count-equal-to-maximum", "pass-no-max-tag-has-no-maximum", "pass-min-only-tag-is-no-maximum", "pass-two-max-tags-the-first-is-met", "pass-repeat-tag-without-pattern-is-ignored"]) {
       expect(await errorsOf(name)).toEqual([]);
     }
   });
 
   it("no repeat heading after an invalid pattern: no MTL608", async () => {
-    expect(
-      (await lintAll("pass-invalid-pattern-is-no-repeat-heading")).map((item) => item.code),
-    ).not.toContain(CODE);
+    expect((await lintAll("pass-invalid-pattern-is-no-repeat-heading")).map((item) => item.code)).not.toContain(CODE);
   });
 
   it("section scope: findings follow the parent instances (line 11, then line 21)", async () => {
@@ -240,10 +208,7 @@ describe("MTL608 heading-repeat-max", () => {
 
   it("disable-line on instance 4 does not silence the finding on instance 3", async () => {
     const result = await lintResult("fail-disable-line-on-another-instance-does-not-silence-it");
-    expect(result.diagnostics.map((item) => [item.code, anchorLineOf(item)])).toContainEqual([
-      CODE,
-      11,
-    ]);
+    expect(result.diagnostics.map((item) => [item.code, anchorLineOf(item)])).toContainEqual([CODE, 11]);
     expect(result.suppressed).toBe(0);
   });
 
@@ -254,15 +219,9 @@ describe("MTL608 heading-repeat-max", () => {
   });
 
   it("unchecked child: only the parent's own finding, no MTL608", async () => {
-    expect(await errorsOf("pass-child-under-absent-parent-is-not-checked")).toEqual([
-      ["MTL601", null],
-    ]);
-    expect(await errorsOf("pass-child-under-mismatched-parent-is-not-checked")).toEqual([
-      ["MTL606", 7],
-    ]);
-    expect(await errorsOf("pass-child-under-template-only-parent-is-not-checked")).toEqual([
-      ["MTL603", 7],
-    ]);
+    expect(await errorsOf("pass-child-under-absent-parent-is-not-checked")).toEqual([["MTL601", null]]);
+    expect(await errorsOf("pass-child-under-mismatched-parent-is-not-checked")).toEqual([["MTL606", 7]]);
+    expect(await errorsOf("pass-child-under-template-only-parent-is-not-checked")).toEqual([["MTL603", 7]]);
   });
 
   it("worked example 1, variant maximum: MTL608 is printed first, no MTL607", async () => {

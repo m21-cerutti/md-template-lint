@@ -39,16 +39,8 @@ interface TestCase {
  * Spec 4.3: `{in}{count} extra heading(s) at level H{n} after the template headings:
  * {pylist}`.
  */
-const extra = (
-  level: number,
-  texts: readonly string[],
-  line: number,
-  parent: string | null = null,
-): Expected => ({
-  message:
-    `Heading: ${parent === null ? "" : `Section '${parent}': `}${texts.length} extra ` +
-    `heading(s) at level H${level} after the template headings: ` +
-    `[${texts.map((text) => `'${text}'`).join(", ")}]`,
+const extra = (level: number, texts: readonly string[], line: number, parent: string | null = null): Expected => ({
+  message: `Heading: ${parent === null ? "" : `Section '${parent}': `}${texts.length} extra ` + `heading(s) at level H${level} after the template headings: ` + `[${texts.map((text) => `'${text}'`).join(", ")}]`,
   line,
   heading: texts[0] ?? "",
 });
@@ -251,9 +243,7 @@ const CASES: readonly TestCase[] = [
     name: "fail-unicode-and-backslash-heading-texts-are-listed-as-written",
     expected: [
       {
-        message:
-          "Heading: 3 extra heading(s) at level H2 after the template headings: " +
-          "['Étape été', '日本語', 'a\\\\b']",
+        message: "Heading: 3 extra heading(s) at level H2 after the template headings: " + "['Étape été', '日本語', 'a\\\\b']",
         line: 7,
         heading: "Étape été",
       },
@@ -267,9 +257,7 @@ const CASES: readonly TestCase[] = [
     name: "fail-quotes-in-listed-texts-follow-python-repr",
     expected: [
       {
-        message:
-          "Heading: 2 extra heading(s) at level H1 after the template headings: " +
-          `["It's done", 'Say "hi"']`,
+        message: "Heading: 2 extra heading(s) at level H1 after the template headings: " + `["It's done", 'Say "hi"']`,
         line: 7,
         heading: "It's done",
       },
@@ -295,8 +283,7 @@ const CASES: readonly TestCase[] = [
   },
 ];
 
-const read = (path: string): string =>
-  readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
+const read = (path: string): string => readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
 
 async function templateOf(name: string) {
   const status = await checkTemplate(registry, read(`${DIR}/${name}/template.md`));
@@ -307,13 +294,7 @@ async function templateOf(name: string) {
 /** Result of `lintTarget` (findings and suppressed count) for a fixture folder. */
 async function lintResult(name: string) {
   const status = await templateOf(name);
-  return lintTarget(
-    registry,
-    status.model,
-    read(`${DIR}/${name}/target.md`),
-    "target.md",
-    createEnv(),
-  );
+  return lintTarget(registry, status.model, read(`${DIR}/${name}/target.md`), "target.md", createEnv());
 }
 
 describe("MTL616 heading-extra", () => {
@@ -361,30 +342,14 @@ describe("MTL616 heading-extra", () => {
         expect(diagnostic.position).toBeNull();
       }
       // Which code reports a heading is decided before suppression; errors stay unchanged.
-      expect(
-        result.diagnostics
-          .filter((diagnostic) => diagnostic.severity === "error")
-          .map((diagnostic) => [diagnostic.code, anchorLineOf(diagnostic)]),
-      ).toEqual(testCase.errors);
+      expect(result.diagnostics.filter((diagnostic) => diagnostic.severity === "error").map((diagnostic) => [diagnostic.code, anchorLineOf(diagnostic)])).toEqual(testCase.errors);
       expect(result.suppressed).toBe(testCase.suppressed);
     });
   }
 
   it("warnings print after errors (spec 4.1)", async () => {
     const status = await templateOf("fail-worked-example-six-changelog");
-    const all = await checkTarget(
-      registry,
-      status.model,
-      read(`${DIR}/fail-worked-example-six-changelog/target.md`),
-      "target.md",
-      createEnv(),
-    );
-    expect(all.map((diagnostic) => diagnostic.code)).toEqual([
-      "MTL612",
-      "MTL614",
-      "MTL615",
-      CODE,
-      CODE,
-    ]);
+    const all = await checkTarget(registry, status.model, read(`${DIR}/fail-worked-example-six-changelog/target.md`), "target.md", createEnv());
+    expect(all.map((diagnostic) => diagnostic.code)).toEqual(["MTL612", "MTL614", "MTL615", CODE, CODE]);
   });
 });

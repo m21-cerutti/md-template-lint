@@ -28,32 +28,14 @@ const GRAMMARS = ["grammar/MdTemplateLexer.g4", "grammar/MdTemplateParser.g4"];
 export function generateParser(outputDir: string): void {
   rmSync(outputDir, { recursive: true, force: true });
   mkdirSync(outputDir, { recursive: true });
-  const toolPkg = JSON.parse(
-    readFileSync(join(root, "node_modules", "antlr-ng", "package.json"), "utf8"),
-  ) as ToolPackage;
+  const toolPkg = JSON.parse(readFileSync(join(root, "node_modules", "antlr-ng", "package.json"), "utf8")) as ToolPackage;
   const binPath = toolPkg.bin["antlr-ng"];
   if (binPath === undefined) {
     throw new Error("gen-parser: antlr-ng package.json has no bin 'antlr-ng'");
   }
   const runner = join(root, "node_modules", "antlr-ng", binPath);
   for (const grammar of GRAMMARS) {
-    execFileSync(
-      process.execPath,
-      [
-        runner,
-        "-Dlanguage=TypeScript",
-        "--generate-visitor",
-        "true",
-        "--generate-listener",
-        "true",
-        "--lib",
-        outputDir,
-        "-o",
-        outputDir,
-        grammar,
-      ],
-      { cwd: root, stdio: "inherit" },
-    );
+    execFileSync(process.execPath, [runner, "-Dlanguage=TypeScript", "--generate-visitor", "true", "--generate-listener", "true", "--lib", outputDir, "-o", outputDir, grammar], { cwd: root, stdio: "inherit" });
   }
   fixListenerImport(outputDir);
 }
@@ -66,10 +48,8 @@ export function generateParser(outputDir: string): void {
  */
 function fixListenerImport(outputDir: string): void {
   const file = join(outputDir, "MdTemplateParserListener.ts");
-  const before =
-    'import { ErrorNode, ParseTreeListener, ParserRuleContext, TerminalNode } from "antlr4ng";';
-  const after =
-    'import { ErrorNode, type ParseTreeListener, ParserRuleContext, TerminalNode } from "antlr4ng";';
+  const before = 'import { ErrorNode, ParseTreeListener, ParserRuleContext, TerminalNode } from "antlr4ng";';
+  const after = 'import { ErrorNode, type ParseTreeListener, ParserRuleContext, TerminalNode } from "antlr4ng";';
   const source = readFileSync(file, "utf8");
   if (!source.includes(before)) {
     throw new Error(`gen-parser: expected import not found in ${file}; review fixListenerImport`);

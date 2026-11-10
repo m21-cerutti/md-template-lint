@@ -10,7 +10,6 @@ last_updated: 2026-11-04
 - Never `git push` and never add a git remote. Pushing is a human step.
 - Never commit secrets; verify against `.gitignore` before every commit.
 - Run the quality gates below before every commit.
-- Tracking plan lives in `tmp/PLAN.md` (git-ignored). No root `PLAN.md`, no `TODO.md`, no `IDEA.md`.
 - Mark a plan item done only after its verification passes.
 
 ## Behavioral Principles
@@ -76,14 +75,14 @@ pnpm run build && pnpm run smoke:pack
 - Changes documented (README, `docs/`, ADR for decisions)
 - Commit message follows Conventional Commits
 - No secrets committed (.env, keys, tokens)
-- Escalate multi-file refactors and security-sensitive logic to Sonnet/Opus
+- Update CHANGELOG.md on braking changes or new features.
 
 ## Error Handling and Recovery
 
 - **Test failure:** find the root cause, fix, re-run before moving on.
 - **Type or lint error:** fix at the source; do not silence the checker.
 - **Missing information:** ask the user before guessing.
-- **Same error twice:** escalate to a higher-tier model instead of retrying.
+- **Same error twice:** escalate to a higher-tier model instead of retrying, and add it to frictions encontered.
 
 ## Agent Workflow
 

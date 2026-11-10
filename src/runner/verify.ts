@@ -38,11 +38,7 @@ interface TemplateRef {
   readonly pair?: string;
 }
 
-async function verifyRefs(
-  config: string | null,
-  refs: readonly TemplateRef[],
-  options: VerifyOptions,
-): Promise<VerifyResult> {
+async function verifyRefs(config: string | null, refs: readonly TemplateRef[], options: VerifyOptions): Promise<VerifyResult> {
   const registry = options.registry ?? createRegistry();
   const templates: VerifyTemplate[] = [];
   const runErrors: RunDiagnostic[] = [];
@@ -110,10 +106,7 @@ async function verifyRefs(
 }
 
 /** Verify every distinct template of a loaded config. A failed config yields exit code 2. */
-export async function verifyConfig(
-  loaded: ConfigResult,
-  options: VerifyOptions = {},
-): Promise<VerifyResult> {
+export async function verifyConfig(loaded: ConfigResult, options: VerifyOptions = {}): Promise<VerifyResult> {
   if (!loaded.ok) {
     return {
       mode: "verify",
@@ -149,10 +142,7 @@ export interface VerifyPathsInput {
 }
 
 /** Verify the given files as templates. No config is read. */
-export function verifyPaths(
-  input: VerifyPathsInput,
-  options: VerifyOptions = {},
-): Promise<VerifyResult> {
+export function verifyPaths(input: VerifyPathsInput, options: VerifyOptions = {}): Promise<VerifyResult> {
   const cwd = foldPath(input.cwd);
   const home = input.home ?? homedir();
   const refs = input.paths.map((given) => {

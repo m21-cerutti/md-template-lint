@@ -24,15 +24,7 @@ interface Node {
   readonly reason: string | null;
 }
 
-const node = (
-  line: number,
-  column: number,
-  verb: Directive["verb"],
-  word: string,
-  items: readonly string[],
-  reason: string | null = null,
-  region: Node["region"] = "body",
-): Node => ({ line, column, region, verb, word, items, reason });
+const node = (line: number, column: number, verb: Directive["verb"], word: string, items: readonly string[], reason: string | null = null, region: Node["region"] = "body"): Node => ({ line, column, region, verb, word, items, reason });
 
 const summary = (directive: Directive): Node => ({
   line: directive.line,
@@ -53,15 +45,7 @@ const CASES: readonly { readonly name: string; readonly nodes: readonly Node[] }
     name: "pass-every-verb-and-carrier",
     nodes: [
       node(2, 14, "disable-line", "disable-line", ["MTL202"], null, "frontmatter"),
-      node(
-        3,
-        1,
-        "disable-next-line",
-        "disable-next-line",
-        ["MTL202", "MTL301"],
-        null,
-        "frontmatter",
-      ),
+      node(3, 1, "disable-next-line", "disable-next-line", ["MTL202", "MTL301"], null, "frontmatter"),
       node(8, 1, "disable", "disable", ["MTL701"]),
       node(9, 13, "disable-line", "disable-line", ["MTL701"]),
       node(10, 1, "disable-next-line", "disable-next-line", ["MTL201", "MTL202"]),
@@ -78,12 +62,7 @@ const CASES: readonly { readonly name: string; readonly nodes: readonly Node[] }
     // of one or two backticks. Read: after a code span, after an unmatched backtick, and the
     // directives that follow a prose comment on the same line, left to right.
     name: "pass-ignored-in-fences-and-code-spans",
-    nodes: [
-      node(16, 65, "disable-line", "disable-line", ["MTL701"]),
-      node(17, 14, "disable-line", "disable-line", ["MTL702"]),
-      node(18, 15, "disable-line", "disable-line", ["MTL703"]),
-      node(18, 61, "disable-line", "disable-line", ["MTL704"]),
-    ],
+    nodes: [node(16, 65, "disable-line", "disable-line", ["MTL701"]), node(17, 14, "disable-line", "disable-line", ["MTL702"]), node(18, 15, "disable-line", "disable-line", ["MTL703"]), node(18, 61, "disable-line", "disable-line", ["MTL704"])],
   },
   {
     // Unknown verb, keyword alone, `begin` / `end` without `disable`, verbs without a code,
@@ -104,12 +83,7 @@ const CASES: readonly { readonly name: string; readonly nodes: readonly Node[] }
       node(11, 1, "disable", "disable", ["MTL2O1", "201", "MTL050", "MTL910"]),
       node(12, 1, null, "", [], "only a reason"),
       node(13, 1, "disable-line", "disable-line", ["MTL201", "--x"], ""),
-      node(14, 1, "disable-line", "disable-line", [
-        "MTL201",
-        "md-template-lint",
-        "disable",
-        "MTL202",
-      ]),
+      node(14, 1, "disable-line", "disable-line", ["MTL201", "md-template-lint", "disable", "MTL202"]),
       node(15, 1, null, "begin", ["disable", "MTL202"]),
       node(16, 1, "disable", "disable", ["MTL201"], "MTL202"),
       node(17, 1, null, "disable-lines", ["MTL201"]),
@@ -120,8 +94,7 @@ const CASES: readonly { readonly name: string; readonly nodes: readonly Node[] }
   },
 ];
 
-const read = (name: string): string =>
-  readFileSync(`${fixturePath("directives", name)}/document.md`, "utf8");
+const read = (name: string): string => readFileSync(`${fixturePath("directives", name)}/document.md`, "utf8");
 
 describe("parser: disable directives (spec 4.4)", () => {
   it("has at least 1 pass- case and at least 1 fail- case, one fixture dir each", () => {
@@ -150,9 +123,7 @@ describe("parser: disable directives (spec 4.4)", () => {
   }
 
   it("locates the comment, its raw text and every item in the file", () => {
-    const [directive] = parseDocument(
-      "---\nk: v\n---\nText <!-- md-template-lint disable MTL201,  mtl202 -- why -->\n",
-    ).directives;
+    const [directive] = parseDocument("---\nk: v\n---\nText <!-- md-template-lint disable MTL201,  mtl202 -- why -->\n").directives;
     expect(directive).toEqual({
       region: "body",
       line: 4,
@@ -169,25 +140,18 @@ describe("parser: disable directives (spec 4.4)", () => {
   });
 
   it("skips leading commas for the MTL020 word: `,MTL201` gives 'MTL201'", () => {
-    const [directive] = parseDocument(
-      "---\nk: v\n---\n<!-- md-template-lint ,MTL201 -->\n",
-    ).directives;
+    const [directive] = parseDocument("---\nk: v\n---\n<!-- md-template-lint ,MTL201 -->\n").directives;
     expect(directive).toMatchObject({ verb: null, word: "MTL201", items: [] });
   });
 
   it("starts the reason at `--,` and drops that one comma", () => {
-    const [glued, twoCommas] = parseDocument(
-      "---\nk: v\n---\n<!-- md-template-lint disable MTL201 --, kept -->\n" +
-        "<!-- md-template-lint disable MTL201 --,, two -->\n",
-    ).directives;
+    const [glued, twoCommas] = parseDocument("---\nk: v\n---\n<!-- md-template-lint disable MTL201 --, kept -->\n" + "<!-- md-template-lint disable MTL201 --,, two -->\n").directives;
     expect(glued).toMatchObject({ verb: "disable", items: [{ text: "MTL201" }], reason: "kept" });
     expect(twoCommas).toMatchObject({ reason: ", two" });
   });
 
   it("locates a frontmatter comment at its `#`", () => {
-    const [trailing, whole] = parseDocument(
-      "---\nk: v   # md-template-lint disable-line MTL202\n# md-template-lint disable MTL301\n---\n",
-    ).directives;
+    const [trailing, whole] = parseDocument("---\nk: v   # md-template-lint disable-line MTL202\n# md-template-lint disable MTL301\n---\n").directives;
     expect(trailing).toMatchObject({
       region: "frontmatter",
       position: { line: 2, column: 8 },
@@ -202,15 +166,7 @@ describe("parser: disable directives (spec 4.4)", () => {
   });
 
   it("drops frontmatter comments inside a multi-line flow value", () => {
-    const text = [
-      "---",
-      "tags: [a,",
-      "# md-template-lint disable-line MTL202",
-      "  b]",
-      "# md-template-lint disable-line MTL301",
-      "---",
-      "",
-    ].join("\n");
+    const text = ["---", "tags: [a,", "# md-template-lint disable-line MTL202", "  b]", "# md-template-lint disable-line MTL301", "---", ""].join("\n");
     expect(parseDocument(text).directives.map((d) => d.line)).toEqual([3, 5]);
     const loaded = loadDocument(text);
     expect(loaded.ok && loaded.model.directives.map((d) => d.line)).toEqual([5]);

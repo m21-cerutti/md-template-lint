@@ -40,8 +40,7 @@ const CASES: readonly Case[] = [
     runErrors: [
       {
         code: "MTL911",
-        message:
-          "template path is not a regular file (for example a directory): templates/dir.template.md (pair 'dir')",
+        message: "template path is not a regular file (for example a directory): templates/dir.template.md (pair 'dir')",
         pair: "dir",
       },
     ],
@@ -111,9 +110,7 @@ describe("runner inputs: run errors skip only what depends on them", () => {
   for (const testCase of CASES) {
     it(`${testCase.name}: exit ${testCase.exitCode}`, async () => {
       const result = await runFixture(`${GROUP}${testCase.name}`);
-      expect(result.runErrors).toEqual(
-        testCase.runErrors.map((error) => ({ ...error, severity: "error" })),
-      );
+      expect(result.runErrors).toEqual(testCase.runErrors.map((error) => ({ ...error, severity: "error" })));
       expect(result.runWarnings).toEqual([]);
       expect(lintedFiles(result)).toEqual(testCase.linted);
       expect(result.summary.exitCode).toBe(testCase.exitCode);

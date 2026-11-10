@@ -26,13 +26,7 @@
 import { stat } from "node:fs/promises";
 import type { RuleIo, UrlProbe } from "../engine/rule.js";
 import { isAddressAllowed, isIpLiteral, parseIPv4 } from "./address.js";
-import {
-  BlockedAddressError,
-  createNodeTransport,
-  defaultResolve,
-  type ProbeFetch,
-  type ResolveFn,
-} from "./transport.js";
+import { BlockedAddressError, createNodeTransport, defaultResolve, type ProbeFetch, type ResolveFn } from "./transport.js";
 
 export { classifyAddress, isAddressAllowed } from "./address.js";
 export type { AddressClass } from "./address.js";
@@ -76,8 +70,7 @@ function printable(text: string): string {
 const AUTHORITY = /^[A-Za-z][A-Za-z0-9+.-]*:[/\\]*([^/\\?#]*)/;
 
 /** The URL parser drops tab, LF and CR anywhere in the input. */
-const withoutLineBreaks = (text: string): string =>
-  [...text].filter((char) => char !== "\t" && char !== "\n" && char !== "\r").join("");
+const withoutLineBreaks = (text: string): string => [...text].filter((char) => char !== "\t" && char !== "\n" && char !== "\r").join("");
 
 /** Host as written in the URL text (userinfo and port removed), or null. */
 function writtenHost(text: string): string | null {
@@ -90,11 +83,7 @@ function writtenHost(text: string): string | null {
 
 /** Error code of an error, its cause or its first aggregated error. */
 function errorCode(error: unknown): string {
-  const seen = [
-    error,
-    (error as { cause?: unknown })?.cause,
-    (error as { errors?: unknown[] })?.errors?.[0],
-  ];
+  const seen = [error, (error as { cause?: unknown })?.cause, (error as { errors?: unknown[] })?.errors?.[0]];
   for (const item of seen) {
     const code = (item as { code?: unknown } | null | undefined)?.code;
     if (typeof code === "string") return code;
@@ -140,8 +129,7 @@ export function createRealIo(options: RealIoOptions = {}): RuleIo {
       // The URL parser already folded `2130706433`, `0x7f.1` or `127.1` to dotted quads.
       // Such a spelling is refused whatever the address. When the written host cannot be
       // read back from the text, the spelling is unknown and the URL is refused too.
-      const numericSpelling =
-        parseIPv4(host) !== null && (written === null || written.toLowerCase() !== host);
+      const numericSpelling = parseIPv4(host) !== null && (written === null || written.toLowerCase() !== host);
       return numericSpelling || !isAddressAllowed(host, allowPrivate) ? "blocked address" : null;
     }
     let addresses: readonly string[];
@@ -151,9 +139,7 @@ export function createRealIo(options: RealIoOptions = {}): RuleIo {
       return reasonOf(error, overall) === "timeout" ? "timeout" : "DNS failure";
     }
     if (addresses.length === 0) return "DNS failure";
-    return addresses.every((address) => isAddressAllowed(address, allowPrivate))
-      ? null
-      : "blocked address";
+    return addresses.every((address) => isAddressAllowed(address, allowPrivate)) ? null : "blocked address";
   }
 
   async function probe(text: string, timeoutMs: number): Promise<UrlProbe> {
@@ -171,10 +157,7 @@ export function createRealIo(options: RealIoOptions = {}): RuleIo {
     const problem = await hostProblem(url, writtenHost(text), overall);
     if (problem !== null) return fail(problem);
 
-    const perRequest =
-      Number.isFinite(timeoutMs) && timeoutMs > 0
-        ? Math.min(timeoutMs, PER_REQUEST_CAP_MS)
-        : PER_REQUEST_CAP_MS;
+    const perRequest = Number.isFinite(timeoutMs) && timeoutMs > 0 ? Math.min(timeoutMs, PER_REQUEST_CAP_MS) : PER_REQUEST_CAP_MS;
     let reason = "request failed";
     for (const method of ["HEAD", "GET"] as const) {
       const signal = AbortSignal.any([AbortSignal.timeout(perRequest), overall]);
@@ -193,10 +176,7 @@ export function createRealIo(options: RealIoOptions = {}): RuleIo {
         }
         const status = response.status;
         if (status >= 200 && status < 400) return { reachable: true };
-        reason =
-          Number.isInteger(status) && status >= 100 && status <= 599
-            ? `HTTP ${status}`
-            : "request failed";
+        reason = Number.isInteger(status) && status >= 100 && status <= 599 ? `HTTP ${status}` : "request failed";
       } catch (error) {
         reason = reasonOf(error, signal);
         if (reason === "blocked address") break;

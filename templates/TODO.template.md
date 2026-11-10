@@ -17,7 +17,7 @@ One short paragraph: the goal of this epic and what "done" means.
 - Save as `TODO.md` at the repository root. Keep the empty frontmatter block
   (`---` then `---`) so the linter accepts the file.
 - One H2 per epic, in letter order (A, B, C ...): `## Epic X — Title (prio
-  HIGH|MEDIUM|LOW)`, then one description paragraph, then one table with the
+HIGH|MEDIUM|LOW)`, then one description paragraph, then one table with the
   columns above. Repeat the epic block for every epic.
 - Prio: `HIGH`, `MEDIUM` or `LOW`. Status: `todo`, `in-progress` or `done`.
 - Subagent and Tier are optional agent-workflow columns. Subagent names the

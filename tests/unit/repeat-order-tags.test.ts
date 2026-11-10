@@ -33,10 +33,7 @@ const TAGS: readonly (readonly [string, object])[] = [
     },
   ],
   // A `]` and an escaped quote inside the quotes (escapes resolved in the pieces only).
-  [
-    '[pattern:"a]b \\"q\\""]',
-    { kind: "pattern", text: 'a]b \\"q\\"', pieces: [{ kind: "literal", text: 'a]b "q"' }] },
-  ],
+  ['[pattern:"a]b \\"q\\""]', { kind: "pattern", text: 'a]b \\"q\\"', pieces: [{ kind: "literal", text: 'a]b "q"' }] }],
   ["[repeat-rules:same-level]", { kind: "repeat", bound: "none", n: null }],
   ["[repeat-rules:same-level:min:2]", { kind: "repeat", bound: "min", n: 2 }],
   ["[repeat-rules:same-level:max:3]", { kind: "repeat", bound: "max", n: 3 }],
@@ -44,25 +41,16 @@ const TAGS: readonly (readonly [string, object])[] = [
   ["[order:ascending]", { kind: "order", direction: "ascending", by: "text" }],
   ["[order:descending]", { kind: "order", direction: "descending", by: "text" }],
   ["[order:first:number:ascending]", { kind: "order", direction: "ascending", by: "first-number" }],
-  [
-    "[order:first:number:descending]",
-    { kind: "order", direction: "descending", by: "first-number" },
-  ],
+  ["[order:first:number:descending]", { kind: "order", direction: "descending", by: "first-number" }],
   ["[order:first:date:ascending]", { kind: "order", direction: "ascending", by: "first-date" }],
   ["[order:first:date:descending]", { kind: "order", direction: "descending", by: "first-date" }],
   ["[order:first:semver:ascending]", { kind: "order", direction: "ascending", by: "first-semver" }],
-  [
-    "[order:first:semver:descending]",
-    { kind: "order", direction: "descending", by: "first-semver" },
-  ],
+  ["[order:first:semver:descending]", { kind: "order", direction: "descending", by: "first-semver" }],
   ["[content:subheadings:no-extra]", { kind: "content", check: "subheadings-no-extra" }],
 ];
 
 /** Mixed-case spelling of a tag: keywords only (pattern literal text stays as is). */
-const mixedCase = (tag: string): string =>
-  tag.startsWith('[pattern:"')
-    ? `[PATTERN:${tag.slice("[pattern:".length)}`
-    : tag.replace(/[a-z]+/g, (word) => word.charAt(0).toUpperCase() + word.slice(1));
+const mixedCase = (tag: string): string => (tag.startsWith('[pattern:"') ? `[PATTERN:${tag.slice("[pattern:".length)}` : tag.replace(/[a-z]+/g, (word) => word.charAt(0).toUpperCase() + word.slice(1)));
 
 const LEVELS = [1, 2, 3, 4, 5, 6] as const;
 
@@ -102,8 +90,7 @@ describe("2.10 heading tags parse on every level, case-insensitive", () => {
   });
 
   it("peels the changelog heading of worked example 1 (three tags, `]` inside the quotes)", () => {
-    const line =
-      '## Release [pattern:"[{semver}] - {date}"] [repeat-rules:same-level] [order:descending]';
+    const line = '## Release [pattern:"[{semver}] - {date}"] [repeat-rules:same-level] [order:descending]';
     expect(doc(line).findings).toEqual([]);
     expect(heading(line)).toMatchObject({
       text: "Release",
@@ -222,8 +209,6 @@ describe("other dashed brackets keep their unknown result (regression)", () => {
 
   it.each(["[repeat-rule:same-level]", "[a-b:c]", "[foo-bar]"])("frontmatter: %s", (tag) => {
     const result = parseDocument(["---", `n: x # ${tag}`, "---", "# T"].join("\n"));
-    expect(result.findings).toMatchObject([
-      { region: "frontmatter", reason: "unknown", tag, position: { line: 2, column: 8 } },
-    ]);
+    expect(result.findings).toMatchObject([{ region: "frontmatter", reason: "unknown", tag, position: { line: 2, column: 8 } }]);
   });
 });

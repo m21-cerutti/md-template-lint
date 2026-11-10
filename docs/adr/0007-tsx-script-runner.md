@@ -72,10 +72,10 @@ the npm tarball.
 
 ## Alternatives considered
 
-| Option                                         | Pros                                                 | Cons                                                      | Verdict    |
-| ---------------------------------------------- | ---------------------------------------------------- | --------------------------------------------------------- | ---------- |
-| `tsx` as devDependency                         | Full TypeScript at runtime, no flag, no Node floor   | New devDependency and esbuild build-policy entry          | **Chosen** |
-| Keep Node type stripping                       | No dependency                                        | Erasable syntax only, `.ts` extensions, Node >=22.18      | Rejected   |
-| `ts-node`                                      | Mature                                               | Slow, ESM friction                                        | Rejected   |
-| Compile scripts to `dist/` first               | Plain Node at run time                               | Extra build step before every script, stale output        | Rejected   |
-| Lower `engines.node` to `>=22.13` in this ADR  | Matches the real development floor                   | Public support change, CI matrix and docs follow          | Deferred   |
+| Option                                        | Pros                                               | Cons                                                 | Verdict    |
+| --------------------------------------------- | -------------------------------------------------- | ---------------------------------------------------- | ---------- |
+| `tsx` as devDependency                        | Full TypeScript at runtime, no flag, no Node floor | New devDependency and esbuild build-policy entry     | **Chosen** |
+| Keep Node type stripping                      | No dependency                                      | Erasable syntax only, `.ts` extensions, Node >=22.18 | Rejected   |
+| `ts-node`                                     | Mature                                             | Slow, ESM friction                                   | Rejected   |
+| Compile scripts to `dist/` first              | Plain Node at run time                             | Extra build step before every script, stale output   | Rejected   |
+| Lower `engines.node` to `>=22.13` in this ADR | Matches the real development floor                 | Public support change, CI matrix and docs follow     | Deferred   |

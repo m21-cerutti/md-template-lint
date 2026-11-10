@@ -10,65 +10,16 @@ export { createRegistry, runPhase } from "./engine/registry.js";
 export type { RuleRegistry } from "./engine/registry.js";
 export { checkTarget, checkTemplate, lintTarget } from "./engine/pipeline.js";
 export type { TargetResult, TemplateStatus } from "./engine/pipeline.js";
-export {
-  anchorLineOf,
-  CATEGORIES,
-  createEnv,
-  createMemoryIo,
-  FIELD_STEPS,
-  TARGET_STEPS,
-  URL_PROBE_TIMEOUT_MS,
-} from "./engine/rule.js";
-export type {
-  AnyRule,
-  Category,
-  FieldContext,
-  FieldRule,
-  FieldStep,
-  ParseContext,
-  Phase,
-  PhaseContexts,
-  Rule,
-  RuleEnv,
-  RuleIo,
-  RuleResult,
-  TargetContext,
-  TargetRule,
-  TargetStep,
-  TemplateContext,
-  UrlProbe,
-} from "./engine/rule.js";
-export type {
-  Diagnostic,
-  DocumentModel,
-  Field,
-  LoadResult,
-  ParseFailure,
-  RuleCode,
-  Section,
-  Severity,
-  YamlValue,
-} from "./engine/model.js";
+export { anchorLineOf, CATEGORIES, createEnv, createMemoryIo, FIELD_STEPS, TARGET_STEPS, URL_PROBE_TIMEOUT_MS } from "./engine/rule.js";
+export type { AnyRule, Category, FieldContext, FieldRule, FieldStep, ParseContext, Phase, PhaseContexts, Rule, RuleEnv, RuleIo, RuleResult, TargetContext, TargetRule, TargetStep, TemplateContext, UrlProbe } from "./engine/rule.js";
+export type { Diagnostic, DocumentModel, Field, LoadResult, ParseFailure, RuleCode, Section, Severity, YamlValue } from "./engine/model.js";
 export { CONFIG_FILE_NAME, loadConfig } from "./config/load.js";
 export type { LoadConfigOptions } from "./config/load.js";
 export { compileGlob, matchesGlob } from "./config/glob.js";
 export type { CompiledGlob, GlobResult } from "./config/glob.js";
-export {
-  displayPath,
-  foldPath,
-  isAbsolutePath,
-  relativeInside,
-  resolvePath,
-  toSlashes,
-} from "./config/paths.js";
+export { displayPath, foldPath, isAbsolutePath, relativeInside, resolvePath, toSlashes } from "./config/paths.js";
 export { ON_EMPTY_VALUES } from "./config/types.js";
-export type {
-  ConfigResult,
-  LintConfig,
-  OnEmpty,
-  PairConfig,
-  RunDiagnostic,
-} from "./config/types.js";
+export type { ConfigResult, LintConfig, OnEmpty, PairConfig, RunDiagnostic } from "./config/types.js";
 export { runLint } from "./runner/run.js";
 export type { RunOptions } from "./runner/run.js";
 export { listedMatches, resolveFileList } from "./runner/list.js";

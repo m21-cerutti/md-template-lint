@@ -52,8 +52,7 @@ interface VerifyJson {
 }
 
 /** Absolute directory of the template fixtures of `code`. */
-export const templatesDir = (code: string): string =>
-  join(REPO_ROOT, "tests", "fixtures", "templates", code);
+export const templatesDir = (code: string): string => join(REPO_ROOT, "tests", "fixtures", "templates", code);
 
 /** `--verify` of the fixture `tests/fixtures/templates/<code>/<name>.md`. */
 export async function verifyFixture(code: string, name: string): Promise<VerifyOutcome> {
@@ -88,16 +87,12 @@ export async function verifyFixture(code: string, name: string): Promise<VerifyO
 export function expectTemplateCases(code: string, cases: readonly VerifyCase[]): void {
   expectNameSplit(cases);
   const clean = cases.filter((testCase) => testCase.diagnostics.length === 0);
-  expect(clean.map((testCase) => testCase.name)).toEqual(
-    cases.filter((testCase) => testCase.name.startsWith("pass-")).map((testCase) => testCase.name),
-  );
+  expect(clean.map((testCase) => testCase.name)).toEqual(cases.filter((testCase) => testCase.name.startsWith("pass-")).map((testCase) => testCase.name));
   for (const testCase of cases.filter((item) => item.name.startsWith("fail-"))) {
     expect(
       testCase.diagnostics.some((diagnostic) => diagnostic.code === code),
       `${testCase.name} expects ${code}`,
     ).toBe(true);
   }
-  expect(readdirSync(templatesDir(code)).sort()).toEqual(
-    cases.map((testCase) => `${testCase.name}.md`).sort(),
-  );
+  expect(readdirSync(templatesDir(code)).sort()).toEqual(cases.map((testCase) => `${testCase.name}.md`).sort());
 }

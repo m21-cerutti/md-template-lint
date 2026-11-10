@@ -22,41 +22,15 @@ async function lint(template: string, target: string) {
 }
 
 describe("shape tags on an indented sub-key or a list item bind to nothing (spec 2.1)", () => {
-  const template = [
-    "---",
-    "meta:",
-    '  version: "1.0.0" # [format:semver]',
-    '  released: "2026-01-01" # [format:date]',
-    "supported:",
-    '  - "1.0.0" # [format:elements:semver]',
-    "---",
-    "",
-  ].join("\n");
+  const template = ["---", "meta:", '  version: "1.0.0" # [format:semver]', '  released: "2026-01-01" # [format:date]', "supported:", '  - "1.0.0" # [format:elements:semver]', "---", ""].join("\n");
 
   it("gives no effect: bad values under the commented sub-key and item pass", async () => {
-    const target = [
-      "---",
-      "meta:",
-      "  version: v1",
-      "  released: soon",
-      "supported:",
-      "  - v1",
-      "---",
-      "",
-    ].join("\n");
+    const target = ["---", "meta:", "  version: v1", "  released: soon", "supported:", "  - v1", "---", ""].join("\n");
     expect(await lint(template, target)).toEqual({ warnings: [], codes: [] });
   });
 
   it("gives no malformed-tag warning for a bad shape on a sub-key or a list item", async () => {
-    const bad = [
-      "---",
-      "meta:",
-      "  version: x # [format:dates]",
-      "supported:",
-      "  - x # [format:elements:semvers]",
-      "---",
-      "",
-    ].join("\n");
+    const bad = ["---", "meta:", "  version: x # [format:dates]", "supported:", "  - x # [format:elements:semvers]", "---", ""].join("\n");
     expect(await lint(bad, "---\nmeta:\n  version: x\nsupported:\n  - x\n---\n")).toEqual({
       warnings: [],
       codes: [],
@@ -65,25 +39,15 @@ describe("shape tags on an indented sub-key or a list item bind to nothing (spec
 });
 
 describe("a shape tag on a top-level key follows the target value shape (spec 2.9)", () => {
-  const template = [
-    "---",
-    'version: "1.0.0" # [format:semver]',
-    'due: "string" # [format:date]',
-    'supported: ["1.0.0"] # [format:elements:semver]',
-    'milestones: ["2026-01-01"] # [format:elements:date]',
-    "---",
-    "",
-  ].join("\n");
+  const template = ["---", 'version: "1.0.0" # [format:semver]', 'due: "string" # [format:date]', 'supported: ["1.0.0"] # [format:elements:semver]', 'milestones: ["2026-01-01"] # [format:elements:date]', "---", ""].join("\n");
 
   it("skips the scalar tags on a list value: only the type rule reports (MTL501)", async () => {
-    const target =
-      "---\nversion: [v1]\ndue: [soon]\nsupported: [1.0.0]\nmilestones: [2026-01-01]\n---\n";
+    const target = "---\nversion: [v1]\ndue: [soon]\nsupported: [1.0.0]\nmilestones: [2026-01-01]\n---\n";
     expect((await lint(template, target)).codes).toEqual(["MTL501", "MTL501"]);
   });
 
   it("skips the scalar tags on a mapping value: only the type rule reports (MTL501)", async () => {
-    const target =
-      "---\nversion:\n  a: v1\ndue:\n  a: soon\nsupported: [1.0.0]\nmilestones: [2026-01-01]\n---\n";
+    const target = "---\nversion:\n  a: v1\ndue:\n  a: soon\nsupported: [1.0.0]\nmilestones: [2026-01-01]\n---\n";
     expect((await lint(template, target)).codes).toEqual(["MTL501", "MTL501"]);
   });
 

@@ -72,11 +72,11 @@ imports need the `.ts` extension.
 
 ## Alternatives considered
 
-| Option                                        | Pros                                           | Cons                                                   | Verdict      |
-| --------------------------------------------- | ---------------------------------------------- | ------------------------------------------------------ | ------------ |
-| **Node type stripping**                       | No dependency, no build, same file typed and run | Erasable syntax only, `.ts` import extensions, Node >=22.18 | **Chosen**   |
-| `tsx`                                         | Full TypeScript, no syntax limits              | New dependency, second loader to maintain              | Rejected     |
-| `ts-node`                                     | Mature                                         | Slow, ESM friction, extra dependency                   | Rejected     |
-| Compile scripts to `dist/` first              | Plain Node at run time                         | Extra build step before every script, stale output     | Rejected     |
-| Keep `.mjs` with JSDoc types and `// @ts-check` | No engines change                              | Not TypeScript, weaker types, breaks the stated goal   | Rejected     |
-| ESLint `unstable_native_nodejs_ts_config` flag | No `jiti`                                      | Unstable flag, must be passed by every editor and CI call | Rejected     |
+| Option                                          | Pros                                             | Cons                                                        | Verdict    |
+| ----------------------------------------------- | ------------------------------------------------ | ----------------------------------------------------------- | ---------- |
+| **Node type stripping**                         | No dependency, no build, same file typed and run | Erasable syntax only, `.ts` import extensions, Node >=22.18 | **Chosen** |
+| `tsx`                                           | Full TypeScript, no syntax limits                | New dependency, second loader to maintain                   | Rejected   |
+| `ts-node`                                       | Mature                                           | Slow, ESM friction, extra dependency                        | Rejected   |
+| Compile scripts to `dist/` first                | Plain Node at run time                           | Extra build step before every script, stale output          | Rejected   |
+| Keep `.mjs` with JSDoc types and `// @ts-check` | No engines change                                | Not TypeScript, weaker types, breaks the stated goal        | Rejected   |
+| ESLint `unstable_native_nodejs_ts_config` flag  | No `jiti`                                        | Unstable flag, must be passed by every editor and CI call   | Rejected   |

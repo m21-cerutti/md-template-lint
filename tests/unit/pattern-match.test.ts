@@ -5,12 +5,7 @@
  * owner and worked examples.
  */
 import { describe, expect, it } from "vitest";
-import {
-  failingPiece,
-  isNumericText,
-  isPlaceholderValue,
-  matchPattern,
-} from "../../src/engine/pattern.js";
+import { failingPiece, isNumericText, isPlaceholderValue, matchPattern } from "../../src/engine/pattern.js";
 import type { PatternPiece } from "../../src/tags/ast.js";
 import { parseHeadingSuffix } from "../../src/tags/parser.js";
 
@@ -35,46 +30,27 @@ const values = (pattern: string, text: string) => matchPattern(pieces(pattern), 
 function failing(pattern: string, text: string): string | null {
   const piece = failingPiece(pieces(pattern), text);
   if (piece === null) return null;
-  return piece.kind === "placeholder"
-    ? piece.raw
-    : piece.kind === "literal"
-      ? `'${piece.text}'`
-      : "?";
+  return piece.kind === "placeholder" ? piece.raw : piece.kind === "literal" ? `'${piece.text}'` : "?";
 }
 
 describe("NUMERIC TEXT (spec 2.10)", () => {
   it.each(["1", "007", "1.5", "-2", "1e5", "1.5E-3"])("%s is purely numeric", (text) => {
     expect(isNumericText(text)).toBe(true);
   });
-  it.each(["1.2.0", "v1", "1.", ".5", "+1", "1e", "2026-10", " 1", ""])(
-    "%j is not purely numeric",
-    (text) => {
-      expect(isNumericText(text)).toBe(false);
-    },
-  );
+  it.each(["1.2.0", "v1", "1.", ".5", "+1", "1e", "2026-10", " 1", ""])("%j is not purely numeric", (text) => {
+    expect(isNumericText(text)).toBe(false);
+  });
 });
 
 describe("default formats (spec 2.10 'Each format')", () => {
   const cases: readonly (readonly [string, readonly string[], readonly string[]])[] = [
-    [
-      "{text}",
-      ["Release notes", "1.2.0", "v1", "Épique", "my_heading"],
-      ["", "2026", "1.5", "-3", "1e5"],
-    ],
+    ["{text}", ["Release notes", "1.2.0", "v1", "Épique", "my_heading"], ["", "2026", "1.5", "-3", "1e5"]],
     // `human` written explicitly is the default (spec 2.10).
     ["{text:format:human}", ["Release notes", "1.2.0"], ["", "2026"]],
-    [
-      "{number}",
-      ["0", "10", "007", "01.5", "1.5", "0.25", "-1.5"],
-      ["+1", "1.", ".5", "1e5", "1,5", "1 000"],
-    ],
+    ["{number}", ["0", "10", "007", "01.5", "1.5", "0.25", "-1.5"], ["+1", "1.", ".5", "1e5", "1,5", "1 000"]],
     ["{number:format:decimal}", ["007", "-1.5"], ["1e5"]],
     ["{digits}", ["0", "7", "42", "2026"], ["-1", "+1", "07", "1.0", "1e3", ""]],
-    [
-      "{semver}",
-      ["1.2.0", "1.1.1-hotfix", "1.0.0+build.1", "2.0.0-rc.1"],
-      ["1.2", "v1.2.0", "01.2.0", " 1.2.0"],
-    ],
+    ["{semver}", ["1.2.0", "1.1.1-hotfix", "1.0.0+build.1", "2.0.0-rc.1"], ["1.2", "v1.2.0", "01.2.0", " 1.2.0"]],
     ["{SemVer:format:full}", ["1.2.0"], ["1.2"]],
     ["{date}", ["2026-10-01", "2024-02-29"], ["2026-02-30", "2026-10", "2026", " 2026-10-01"]],
     ["{date:format:full}", ["2026-03-01"], ["2026-13-01"]],
@@ -82,8 +58,7 @@ describe("default formats (spec 2.10 'Each format')", () => {
   ];
   for (const [raw, accepted, rejected] of cases) {
     it(`${raw} accepts ${accepted.join(", ")}`, () => {
-      for (const value of accepted)
-        expect(isPlaceholderValue(holder(raw), value), value).toBe(true);
+      for (const value of accepted) expect(isPlaceholderValue(holder(raw), value), value).toBe(true);
     });
     it(`${raw} rejects ${rejected.map((value) => JSON.stringify(value)).join(", ")}`, () => {
       for (const value of rejected) {
@@ -100,41 +75,13 @@ describe("default formats (spec 2.10 'Each format')", () => {
 
 describe("non-default formats (spec 2.10 'Each format', phase Pf)", () => {
   const cases: readonly (readonly [string, readonly string[], readonly string[]])[] = [
-    [
-      "{text:format:snakecase}",
-      ["my_heading", "step_2", "2_step", "épique_été", "данные_2"],
-      ["2026", "2026_10", "My_heading", "my-heading", "my__heading", "_x", "my heading", ""],
-    ],
-    [
-      "{text:format:camelcase}",
-      ["myHeading", "heading", "step2", "étéChaud"],
-      ["MyHeading", "my_heading", "2step", "2026", "my heading", ""],
-    ],
-    [
-      "{text:format:screamcase}",
-      ["MY_HEADING", "STEP_2", "ÉTÉ_2"],
-      ["2026", "My_Heading", "MY-HEADING", "MY__HEADING", "my_heading", ""],
-    ],
-    [
-      "{text:format:kebabcase}",
-      ["my-heading", "step-2", "été-chaud"],
-      ["2026", "my_heading", "My-heading", "my--heading", "-x", ""],
-    ],
-    [
-      "{text:format:lowercase}",
-      ["release notes", "étape 2", "v1.2 notes"],
-      ["Release notes", "2026", "-", ""],
-    ],
-    [
-      "{text:format:uppercase}",
-      ["RELEASE NOTES", "ÉTAPE 2", "V1.2 NOTES"],
-      ["Release", "2026", ""],
-    ],
-    [
-      "{number:format:scientific}",
-      ["1e5", "01e5", "1.5E-3", "-2e+10", "1.5", "7"],
-      ["1e", "e5", "1.5e-", "1e5.0", "+1e5"],
-    ],
+    ["{text:format:snakecase}", ["my_heading", "step_2", "2_step", "épique_été", "данные_2"], ["2026", "2026_10", "My_heading", "my-heading", "my__heading", "_x", "my heading", ""]],
+    ["{text:format:camelcase}", ["myHeading", "heading", "step2", "étéChaud"], ["MyHeading", "my_heading", "2step", "2026", "my heading", ""]],
+    ["{text:format:screamcase}", ["MY_HEADING", "STEP_2", "ÉTÉ_2"], ["2026", "My_Heading", "MY-HEADING", "MY__HEADING", "my_heading", ""]],
+    ["{text:format:kebabcase}", ["my-heading", "step-2", "été-chaud"], ["2026", "my_heading", "My-heading", "my--heading", "-x", ""]],
+    ["{text:format:lowercase}", ["release notes", "étape 2", "v1.2 notes"], ["Release notes", "2026", "-", ""]],
+    ["{text:format:uppercase}", ["RELEASE NOTES", "ÉTAPE 2", "V1.2 NOTES"], ["Release", "2026", ""]],
+    ["{number:format:scientific}", ["1e5", "01e5", "1.5E-3", "-2e+10", "1.5", "7"], ["1e", "e5", "1.5e-", "1e5.0", "+1e5"]],
     ["{number:format:precision:2}", ["1.50", "01.00", "-0.25"], ["1.5", "1.500", "1", "1.50e0"]],
     ["{digits:format:signed}", ["42", "+42", "-7", "0"], ["+07", "--1", "+", "1.0"]],
     ["{digits:format:hex}", ["ff", "0A3F", "007", "7"], ["0x1f", "g1", "-1", ""]],
@@ -149,8 +96,7 @@ describe("non-default formats (spec 2.10 'Each format', phase Pf)", () => {
   ];
   for (const [raw, accepted, rejected] of cases) {
     it(`${raw} accepts ${accepted.join(", ")}`, () => {
-      for (const value of accepted)
-        expect(isPlaceholderValue(holder(raw), value), value).toBe(true);
+      for (const value of accepted) expect(isPlaceholderValue(holder(raw), value), value).toBe(true);
     });
     it(`${raw} rejects ${rejected.map((value) => JSON.stringify(value)).join(", ")}`, () => {
       for (const value of rejected) {

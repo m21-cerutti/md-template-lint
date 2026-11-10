@@ -16,15 +16,15 @@ Companion pages: [architecture.md](../architecture.md) ([lexer modes](../archite
 
 ## The pieces
 
-| Piece                         | File                                         | Role                                                          |
-| ----------------------------- | -------------------------------------------- | ------------------------------------------------------------- |
-| Lexer grammar                 | `grammar/MdTemplateLexer.g4`                 | Tokens and the 16 lexer modes (regions of a document).        |
-| Parser grammar                | `grammar/MdTemplateParser.g4`                | Rules: `document`, `fm*`, `body*`, `tag*`, `directive*`.      |
-| Generated parser              | `src/generated/`                             | antlr-ng output. Never hand-edited.                           |
-| Error listeners, collector    | `src/tags/listeners.ts`                      | Collect lexer and parser errors; `DiagnosticCollector`.       |
-| Orchestration                 | `src/tags/parser.ts`                         | `analyzeDocument`, the two stages, the typed AST.             |
-| Visitors, hint listener       | `src/tags/visitors/`                         | Tree to data: one visitor per tag family, helpers.            |
-| Typed AST                     | `src/tags/ast.ts`                            | `MarkdownDocument`, tags, `TagFinding`, `Directive`.          |
+| Piece                      | File                          | Role                                                     |
+| -------------------------- | ----------------------------- | -------------------------------------------------------- |
+| Lexer grammar              | `grammar/MdTemplateLexer.g4`  | Tokens and the 16 lexer modes (regions of a document).   |
+| Parser grammar             | `grammar/MdTemplateParser.g4` | Rules: `document`, `fm*`, `body*`, `tag*`, `directive*`. |
+| Generated parser           | `src/generated/`              | antlr-ng output. Never hand-edited.                      |
+| Error listeners, collector | `src/tags/listeners.ts`       | Collect lexer and parser errors; `DiagnosticCollector`.  |
+| Orchestration              | `src/tags/parser.ts`          | `analyzeDocument`, the two stages, the typed AST.        |
+| Visitors, hint listener    | `src/tags/visitors/`          | Tree to data: one visitor per tag family, helpers.       |
+| Typed AST                  | `src/tags/ast.ts`             | `MarkdownDocument`, tags, `TagFinding`, `Directive`.     |
 
 The two `.g4` files and `src/tags/ast.ts` are the contract of the tag syntax with the spec
 ([spec.md section 2](../spec.md#2-template-tags)). Everything above `src/tags/` works on the AST.
@@ -35,12 +35,12 @@ A document is parsed in two stages. The reason is error handling: a stage-1 pars
 user input (a failure is a grammar bug), and a stage-2 failure is a normal user mistake, reported as a
 finding.
 
-| Stage | Lexer starts in              | Over                                    | Parser entry rule            | Output                                  |
-| ----- | ---------------------------- | --------------------------------------- | ---------------------------- | --------------------------------------- |
-| 1     | `DEFAULT_MODE`               | the whole text                          | `document`                   | parse tree: regions, key lines, comments, headings, fences, brackets |
-| 2     | `TAG_STRICT`                 | one bracket `[word:...`                 | `tagFamilyEntry`, then `fmTagEntry` or `bodyTagEntry` | a tag, or a `malformed` or `wrong-region` finding |
-| 2     | `DIRECTIVE_SCAN`             | the whole text again                    | `directiveScanEntry`         | one `directiveScanLine` per line (body only, outside fences) |
-| 2     | `DIRECTIVE`                  | the content of one comment              | `directiveEntry`             | a `Directive`, or null for prose        |
+| Stage | Lexer starts in  | Over                       | Parser entry rule                                     | Output                                                               |
+| ----- | ---------------- | -------------------------- | ----------------------------------------------------- | -------------------------------------------------------------------- |
+| 1     | `DEFAULT_MODE`   | the whole text             | `document`                                            | parse tree: regions, key lines, comments, headings, fences, brackets |
+| 2     | `TAG_STRICT`     | one bracket `[word:...`    | `tagFamilyEntry`, then `fmTagEntry` or `bodyTagEntry` | a tag, or a `malformed` or `wrong-region` finding                    |
+| 2     | `DIRECTIVE_SCAN` | the whole text again       | `directiveScanEntry`                                  | one `directiveScanLine` per line (body only, outside fences)         |
+| 2     | `DIRECTIVE`      | the content of one comment | `directiveEntry`                                      | a `Directive`, or null for prose                                     |
 
 Helpers for one piece of text: `parseInlineComment` (starts in `TAG_TEXT`, entry `fmInlineCommentEntry`),
 `parseHeadingSuffix` (`TAG_TEXT`, `bodyHeadingTextEntry`) and `parseFilenameComment` (`FM`,
@@ -123,14 +123,14 @@ keywords `count` and `min` are real tokens there.
 
 ANTLR gives two ways to read a parse tree. This project uses both, for different jobs.
 
-| Name                  | Kind                  | Where                                  | Job                                                        |
-| --------------------- | --------------------- | -------------------------------------- | ---------------------------------------------------------- |
-| `LexerErrorListener`  | error listener        | `src/tags/listeners.ts`                | Collect the lexer's token recognition failures.            |
-| `ParserErrorListener` | error listener        | `src/tags/listeners.ts`                | Collect the parser's syntax errors.                        |
-| `FamilyVisitor`       | visitor base          | `src/tags/visitors/base.ts`            | Answer for one parser rule, null for every other.          |
-| `<Family>Visitor`     | visitor               | `src/tags/visitors/<family>.ts`        | Tree of one tag to tag data.                               |
-| `BracketShapeVisitor`, `HeadingVisitor`, `DirectiveVisitor` | visitors | `visitors/brackets.ts`, `heading.ts`, `directive.ts` | Structure helpers (they are not tag families, so they are not in `visitors/index.ts`). |
-| `TypeHintListener`    | parse tree listener   | `src/tags/visitors/hints.ts`           | Walked over a comment with `ParseTreeWalker`; collects the type hints of spec 2.4. |
+| Name                                                        | Kind                | Where                                                | Job                                                                                    |
+| ----------------------------------------------------------- | ------------------- | ---------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `LexerErrorListener`                                        | error listener      | `src/tags/listeners.ts`                              | Collect the lexer's token recognition failures.                                        |
+| `ParserErrorListener`                                       | error listener      | `src/tags/listeners.ts`                              | Collect the parser's syntax errors.                                                    |
+| `FamilyVisitor`                                             | visitor base        | `src/tags/visitors/base.ts`                          | Answer for one parser rule, null for every other.                                      |
+| `<Family>Visitor`                                           | visitor             | `src/tags/visitors/<family>.ts`                      | Tree of one tag to tag data.                                                           |
+| `BracketShapeVisitor`, `HeadingVisitor`, `DirectiveVisitor` | visitors            | `visitors/brackets.ts`, `heading.ts`, `directive.ts` | Structure helpers (they are not tag families, so they are not in `visitors/index.ts`). |
+| `TypeHintListener`                                          | parse tree listener | `src/tags/visitors/hints.ts`                         | Walked over a comment with `ParseTreeWalker`; collects the type hints of spec 2.4.     |
 
 - A visitor RETURNS a value from a subtree. `FamilyVisitor<T>` keeps the first non-null result, and each
   family visitor overrides only its own method (`visitFmCountTag`, ...), so the orchestrator asks every
@@ -186,14 +186,7 @@ Run the whole parser on a small target. Create `tmp/analyze.ts`:
 ```ts
 import { analyzeDocument } from "../src/tags/parser.js";
 
-const text = [
-  "---",
-  "title: x # [nope:y]",
-  "# md-template-lint disable-line MTL201",
-  "---",
-  "## Notes <!-- md-template-lint disable-line MTL701 -->",
-  "",
-].join("\n");
+const text = ["---", "title: x # [nope:y]", "# md-template-lint disable-line MTL201", "---", "## Notes <!-- md-template-lint disable-line MTL701 -->", ""].join("\n");
 const analysis = analyzeDocument(text);
 console.log("grammar errors:", analysis.grammarErrors.length);
 console.log(
@@ -202,9 +195,7 @@ console.log(
 );
 console.log(
   "directives:",
-  analysis.document?.directives.map(
-    (d) => `${d.line} ${d.verb} ${d.items.map((item) => item.text).join(",")}`,
-  ),
+  analysis.document?.directives.map((d) => `${d.line} ${d.verb} ${d.items.map((item) => item.text).join(",")}`),
 );
 ```
 

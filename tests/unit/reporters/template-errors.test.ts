@@ -11,14 +11,7 @@
 import { describe, expect, it } from "vitest";
 import { report } from "../../../src/reporters/index.js";
 import { excerptFor } from "../../../src/runner/excerpt.js";
-import type {
-  FileResult,
-  PairBlock,
-  ReportedDiagnostic,
-  RunResult,
-  RunSummary,
-  TemplateReport,
-} from "../../../src/runner/types.js";
+import type { FileResult, PairBlock, ReportedDiagnostic, RunResult, RunSummary, TemplateReport } from "../../../src/runner/types.js";
 
 const VERSION = "1.0.0";
 const ESC = String.fromCharCode(27);
@@ -56,10 +49,7 @@ const block = (template: TemplateReport, files: readonly FileResult[]): PairBloc
   files,
 });
 
-function result(
-  blocks: readonly PairBlock[],
-  extra: Partial<Pick<RunResult, "brokenTemplates" | "failedTemplates">> = {},
-): RunResult {
+function result(blocks: readonly PairBlock[], extra: Partial<Pick<RunResult, "brokenTemplates" | "failedTemplates">> = {}): RunResult {
   const files = blocks.flatMap((item) => item.files);
   const failed = files.filter((file) => file.status === "fail").length;
   const summary: RunSummary = {
@@ -88,13 +78,7 @@ function result(
   };
 }
 
-const ENTRY =
-  "      error MTL017 Heading 'X': duplicate on line 7\n" +
-  "        7 | ## Notes [presence:optional]\n" +
-  "          |    ^\n" +
-  "      error MTL017 Heading 'X': duplicate on line 9\n" +
-  "        9 | ## Notes\n" +
-  "          |    ^\n";
+const ENTRY = "      error MTL017 Heading 'X': duplicate on line 7\n" + "        7 | ## Notes [presence:optional]\n" + "          |    ^\n" + "      error MTL017 Heading 'X': duplicate on line 9\n" + "        9 | ## Notes\n" + "          |    ^\n";
 
 describe("text reporters: template entry (spec 8.2)", () => {
   it("plain: FAIL entry with its errors and excerpts before the files, Failed templates:, no All files passed!", () => {
@@ -103,12 +87,8 @@ describe("text reporters: template entry (spec 8.2)", () => {
       version: VERSION,
     });
     expect(stderr).toBe("");
-    expect(stdout).toContain(
-      `Target:   docs/*.md (1 file(s))\n\n  FAIL templates/t.md (template)\n${ENTRY}  PASS docs/a.md\n`,
-    );
-    expect(stdout).toContain(
-      "Templates:    1 checked, 0 broken\n\nFailed templates:\n  - templates/t.md\n\n===",
-    );
+    expect(stdout).toContain(`Target:   docs/*.md (1 file(s))\n\n  FAIL templates/t.md (template)\n${ENTRY}  PASS docs/a.md\n`);
+    expect(stdout).toContain("Templates:    1 checked, 0 broken\n\nFailed templates:\n  - templates/t.md\n\n===");
     expect(stdout).not.toContain("All files passed!");
     expect(stdout).not.toContain("No files linted.");
   });
@@ -120,11 +100,7 @@ describe("text reporters: template entry (spec 8.2)", () => {
       version: VERSION,
     });
     expect(pretty.stdout).toContain(`  ✗ templates/t.md (template)\n${ENTRY}  ✓ docs/a.md\n`);
-    expect(
-      pretty.stdout
-        .replace("  ✗ templates/t.md (template)", "  FAIL templates/t.md (template)")
-        .replace("  ✓ docs/a.md", "  PASS docs/a.md"),
-    ).toBe(plain.stdout);
+    expect(pretty.stdout.replace("  ✗ templates/t.md (template)", "  FAIL templates/t.md (template)").replace("  ✓ docs/a.md", "  PASS docs/a.md")).toBe(plain.stdout);
     const colored = report(result([block(FAILED, [passing])]), {
       format: "pretty",
       version: VERSION,
@@ -165,18 +141,11 @@ describe("text reporters: template entry (spec 8.2)", () => {
       }),
       { format: "plain", version: VERSION },
     );
-    expect(stdout).toContain(
-      "Broken templates:\n  - templates/x.md - YAML parse error\n\n" +
-        "Failed templates:\n  - templates/t.md\n\n" +
-        "Failed files:\n  - docs/b.md\n\n",
-    );
+    expect(stdout).toContain("Broken templates:\n  - templates/x.md - YAML parse error\n\n" + "Failed templates:\n  - templates/t.md\n\n" + "Failed files:\n  - docs/b.md\n\n");
   });
 
   it("an ok template prints no entry and no Failed templates: list", () => {
-    const { stdout } = report(
-      result([block({ path: "templates/t.md", status: "ok" }, [passing])], { failedTemplates: [] }),
-      { format: "plain", version: VERSION },
-    );
+    const { stdout } = report(result([block({ path: "templates/t.md", status: "ok" }, [passing])], { failedTemplates: [] }), { format: "plain", version: VERSION });
     expect(stdout).not.toContain("(template)");
     expect(stdout).not.toContain("Failed templates:");
     expect(stdout).toContain("All files passed!");

@@ -40,10 +40,10 @@ A combined ANTLR grammar cannot declare lexer modes, so a grammar that separates
 
 ## Alternatives considered
 
-| Option | Pros | Cons | Verdict |
-| --- | --- | --- | --- |
-| Split lexer and parser grammars with lexer modes | real region modes, matches the Markdown structure, one source of syntax | two files, one fence action and predicate | Chosen |
-| Combined grammar, region by position | one file | no lexer modes, fence predicates in the parser, tied to the TS target | Rejected |
-| Two separate grammars (frontmatter, body) | simple per region | tag syntax duplicated across files | Rejected |
-| One monolithic visitor | one place to read | grows with every tag, central switch | Rejected |
-| Bind comments with the `yaml` library only | one tokenizer | consecutive comment lines are merged, comments lose their line | Rejected |
+| Option                                           | Pros                                                                    | Cons                                                                  | Verdict  |
+| ------------------------------------------------ | ----------------------------------------------------------------------- | --------------------------------------------------------------------- | -------- |
+| Split lexer and parser grammars with lexer modes | real region modes, matches the Markdown structure, one source of syntax | two files, one fence action and predicate                             | Chosen   |
+| Combined grammar, region by position             | one file                                                                | no lexer modes, fence predicates in the parser, tied to the TS target | Rejected |
+| Two separate grammars (frontmatter, body)        | simple per region                                                       | tag syntax duplicated across files                                    | Rejected |
+| One monolithic visitor                           | one place to read                                                       | grows with every tag, central switch                                  | Rejected |
+| Bind comments with the `yaml` library only       | one tokenizer                                                           | consecutive comment lines are merged, comments lose their line        | Rejected |

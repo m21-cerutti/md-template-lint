@@ -45,18 +45,12 @@ const CASES = [
   {
     name: "fail-same-text-at-other-level-does-not-match",
     fixture: "tests/fixtures/pairs/MTL601/fail-same-text-at-other-level-does-not-match",
-    expected: [
-      "Heading: Missing required heading: 'Context'",
-      "Heading: Missing required heading: 'Steps'",
-    ],
+    expected: ["Heading: Missing required heading: 'Context'", "Heading: Missing required heading: 'Steps'"],
   },
   {
     name: "fail-multiple-missing-template-order",
     fixture: "tests/fixtures/pairs/MTL601/fail-multiple-missing-template-order",
-    expected: [
-      "Heading: Missing required heading: 'Summary'",
-      "Heading: Missing required heading: 'Actions'",
-    ],
+    expected: ["Heading: Missing required heading: 'Summary'", "Heading: Missing required heading: 'Actions'"],
   },
   {
     // Spec 2.6/4.3: `### Decision` has the template parent `## Context`, so it is section
@@ -68,8 +62,7 @@ const CASES = [
   {
     // Spec 2.6: a heading with no template parent is file scope at any level.
     name: "pass-leading-h3-without-template-parent-matches-anywhere-in-file",
-    fixture:
-      "tests/fixtures/pairs/MTL601/pass-leading-h3-without-template-parent-matches-anywhere-in-file",
+    fixture: "tests/fixtures/pairs/MTL601/pass-leading-h3-without-template-parent-matches-anywhere-in-file",
     expected: [],
   },
   {
@@ -84,10 +77,7 @@ const CASES = [
     // hide `## Context`), in template order.
     name: "fail-h2-under-missing-h1-is-still-reported",
     fixture: "tests/fixtures/pairs/MTL601/fail-h2-under-missing-h1-is-still-reported",
-    expected: [
-      "Heading: Missing required heading: 'Guide'",
-      "Heading: Missing required heading: 'Context'",
-    ],
+    expected: ["Heading: Missing required heading: 'Guide'", "Heading: Missing required heading: 'Context'"],
   },
   {
     // Owner example I (spec 2.10 worked example 4, A72l): `Alpha` takes nothing at line 5;
@@ -135,8 +125,7 @@ const CASES = [
     // Spec 2.10 step 3b: section scope gives MTL610, which keeps its message (no hint) for a
     // swapped pair (asserted below).
     name: "pass-section-scope-swapped-pair-keeps-mtl610-without-hint",
-    fixture:
-      "tests/fixtures/pairs/MTL601/pass-section-scope-swapped-pair-keeps-mtl610-without-hint",
+    fixture: "tests/fixtures/pairs/MTL601/pass-section-scope-swapped-pair-keeps-mtl610-without-hint",
     expected: [],
   },
   {
@@ -154,20 +143,13 @@ const CASES = [
   },
 ] as const;
 
-const read = (path: string): string =>
-  readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
+const read = (path: string): string => readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
 
 /** Every diagnostic for the pair of a fixture folder. */
 async function lintAll(fixture: string) {
   const status = await checkTemplate(registry, read(`${fixture}/template.md`));
   if (status.status !== "ok") throw new Error(`${fixture}: template is broken`);
-  return checkTarget(
-    registry,
-    status.model,
-    read(`${fixture}/target.md`),
-    `${fixture}/target.md`,
-    createEnv(),
-  );
+  return checkTarget(registry, status.model, read(`${fixture}/target.md`), `${fixture}/target.md`, createEnv());
 }
 
 /** Diagnostics of this code for the pair of a fixture folder. */
@@ -201,21 +183,12 @@ describe("MTL601 heading-missing", () => {
 
   it("a missing section-scope heading is MTL610 alone; a leading H3 child gives MTL601 alone", async () => {
     // Spec 2.6 and 4.3: section scope -> MTL610; file scope -> MTL601, children unchecked.
-    const codes = async (name: string) =>
-      (await lintAll(`${DIR}/${name}`)).map((diagnostic) => diagnostic.code);
+    const codes = async (name: string) => (await lintAll(`${DIR}/${name}`)).map((diagnostic) => diagnostic.code);
     expect(await codes("pass-missing-section-scope-h3-is-not-mtl601")).toEqual(["MTL610"]);
-    expect(await codes("fail-leading-h3-without-template-parent-is-file-scope")).toEqual([
-      "MTL601",
-    ]);
-    expect(await codes("pass-leading-h3-without-template-parent-matches-anywhere-in-file")).toEqual(
-      [],
-    );
+    expect(await codes("fail-leading-h3-without-template-parent-is-file-scope")).toEqual(["MTL601"]);
+    expect(await codes("pass-leading-h3-without-template-parent-matches-anywhere-in-file")).toEqual([]);
     // `## Other` is left in the tail of the level-2 run: the warning MTL616 (spec 2.6 "Extra").
-    expect(await codes("fail-h2-under-missing-h1-is-still-reported")).toEqual([
-      "MTL601",
-      "MTL601",
-      "MTL616",
-    ]);
+    expect(await codes("fail-h2-under-missing-h1-is-still-reported")).toEqual(["MTL601", "MTL601", "MTL616"]);
   });
 
   it("the found-later hint changes no match: a tail sibling stays MTL616, a taken one does not", async () => {
@@ -231,8 +204,7 @@ describe("MTL601 heading-missing", () => {
   });
 
   it("a pattern heading keeps MTL605, a section-scope heading MTL610: no hint", async () => {
-    const messages = async (name: string) =>
-      (await lintAll(`${DIR}/${name}`)).map((diagnostic) => [diagnostic.code, diagnostic.message]);
+    const messages = async (name: string) => (await lintAll(`${DIR}/${name}`)).map((diagnostic) => [diagnostic.code, diagnostic.message]);
     // `Alpha` (line 7) stays in the tail: the warning MTL616 names it.
     expect(await messages("pass-pattern-heading-with-same-text-later-keeps-mtl605")).toEqual([
       ["MTL605", 'Heading: missing required heading matching [pattern:"Alpha"] (H2)'],
@@ -240,11 +212,7 @@ describe("MTL601 heading-missing", () => {
     ]);
     expect(await messages("pass-section-scope-swapped-pair-keeps-mtl610-without-hint")).toEqual([
       ["MTL610", "Heading: Section 'P': missing required heading 'Alpha' (H3)"],
-      [
-        "MTL616",
-        "Heading: Section 'P': 1 extra heading(s) at level H3 after the template headings: " +
-          "['Alpha']",
-      ],
+      ["MTL616", "Heading: Section 'P': 1 extra heading(s) at level H3 after the template headings: " + "['Alpha']"],
     ]);
   });
 

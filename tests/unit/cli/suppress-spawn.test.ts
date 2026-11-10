@@ -51,25 +51,19 @@ describe("dist/cli.js with disable directives", () => {
     expect(missing).toBe(true);
   });
 
-  it.skipIf(!stale)(
-    "skipped: dist/cli.js is older than a file in src/, run `pnpm run build` to refresh it",
-    () => {
-      expect(stale).toBe(true);
-    },
-  );
+  it.skipIf(!stale)("skipped: dist/cli.js is older than a file in src/, run `pnpm run build` to refresh it", () => {
+    expect(stale).toBe(true);
+  });
 
-  it.skipIf(!usable)(
-    "without a comment the real findings fail the run: exit 1, no Suppressed line",
-    () => {
-      const run = spawn([], BARE);
-      expect(run.status).toBe(1);
-      expect(run.stdout).toContain("error MTL302 Field 'slug': value 'Not_Kebab'");
-      expect(run.stdout).toContain("error MTL701 Section 'Overview'");
-      expect(run.stdout).toContain("warn  MTL202 Unknown key 'extra'");
-      expect(run.stdout).not.toContain("Suppressed:");
-      expect(run.stderr).toBe("");
-    },
-  );
+  it.skipIf(!usable)("without a comment the real findings fail the run: exit 1, no Suppressed line", () => {
+    const run = spawn([], BARE);
+    expect(run.status).toBe(1);
+    expect(run.stdout).toContain("error MTL302 Field 'slug': value 'Not_Kebab'");
+    expect(run.stdout).toContain("error MTL701 Section 'Overview'");
+    expect(run.stdout).toContain("warn  MTL202 Unknown key 'extra'");
+    expect(run.stdout).not.toContain("Suppressed:");
+    expect(run.stderr).toBe("");
+  });
 
   it.skipIf(!usable)("with a directive per finding: exit 0 and `Suppressed:   3`", () => {
     const run = spawn([], PASS);
@@ -82,32 +76,26 @@ describe("dist/cli.js with disable directives", () => {
     expect(run.stderr).toBe("");
   });
 
-  it.skipIf(!usable)(
-    "a comment naming the wrong code: exit 1, MTL302 reported, 2 suppressed",
-    () => {
-      const run = spawn([], WRONG);
-      expect(run.status).toBe(1);
-      expect(run.stdout).toContain("error MTL302 Field 'slug': value 'Not_Kebab'");
-      expect(run.stdout).toContain("Suppressed:   2\n");
-      expect(run.stdout).not.toContain("MTL202");
-      expect(run.stdout).not.toContain("MTL701");
-      expect(run.stderr).toBe("");
-    },
-  );
+  it.skipIf(!usable)("a comment naming the wrong code: exit 1, MTL302 reported, 2 suppressed", () => {
+    const run = spawn([], WRONG);
+    expect(run.status).toBe(1);
+    expect(run.stdout).toContain("error MTL302 Field 'slug': value 'Not_Kebab'");
+    expect(run.stdout).toContain("Suppressed:   2\n");
+    expect(run.stdout).not.toContain("MTL202");
+    expect(run.stdout).not.toContain("MTL701");
+    expect(run.stderr).toBe("");
+  });
 
   it.skipIf(!usable)("--quiet prints no Suppressed line and no summary on a passing run", () => {
     expect(spawn(["--quiet"], PASS)).toEqual({ stdout: "", stderr: "", status: 0 });
   });
 
-  it.skipIf(!usable)(
-    "--quiet on the wrong-code run prints the finding, still no Suppressed line",
-    () => {
-      const run = spawn(["--quiet"], WRONG);
-      expect(run.status).toBe(1);
-      expect(run.stdout).toContain("MTL302");
-      expect(run.stdout).not.toContain("Suppressed:");
-    },
-  );
+  it.skipIf(!usable)("--quiet on the wrong-code run prints the finding, still no Suppressed line", () => {
+    const run = spawn(["--quiet"], WRONG);
+    expect(run.status).toBe(1);
+    expect(run.stdout).toContain("MTL302");
+    expect(run.stdout).not.toContain("Suppressed:");
+  });
 
   it.skipIf(!usable)("--format json carries summary.suppressed, 0 without a comment", () => {
     const summaryOf = (fixture: string) =>
@@ -121,19 +109,16 @@ describe("dist/cli.js with disable directives", () => {
     expect(summaryOf(BARE)).toMatchObject({ suppressed: 0, exitCode: 1, failed: 1 });
   });
 
-  it.skipIf(!usable)(
-    "--format json lists the unsuppressed MTL302 only in the wrong-code run",
-    () => {
-      const codes = (fixture: string): string[] => {
-        const json = JSON.parse(spawn(["--format", "json"], fixture).stdout) as {
-          results: { files: { errors: { code: string }[]; warnings: { code: string }[] }[] }[];
-        };
-        const [file] = json.results[0]?.files ?? [];
-        return [...(file?.errors ?? []), ...(file?.warnings ?? [])].map((entry) => entry.code);
+  it.skipIf(!usable)("--format json lists the unsuppressed MTL302 only in the wrong-code run", () => {
+    const codes = (fixture: string): string[] => {
+      const json = JSON.parse(spawn(["--format", "json"], fixture).stdout) as {
+        results: { files: { errors: { code: string }[]; warnings: { code: string }[] }[] }[];
       };
-      expect(codes(PASS)).toEqual([]);
-      expect(codes(WRONG)).toEqual(["MTL302"]);
-      expect(codes(BARE).sort()).toEqual(["MTL202", "MTL302", "MTL701"]);
-    },
-  );
+      const [file] = json.results[0]?.files ?? [];
+      return [...(file?.errors ?? []), ...(file?.warnings ?? [])].map((entry) => entry.code);
+    };
+    expect(codes(PASS)).toEqual([]);
+    expect(codes(WRONG)).toEqual(["MTL302"]);
+    expect(codes(BARE).sort()).toEqual(["MTL202", "MTL302", "MTL701"]);
+  });
 });

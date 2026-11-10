@@ -80,9 +80,7 @@ describe("cli --format", () => {
 
   it("run errors go to stderr in text and inside the document in json", async () => {
     const text = await runCliIn(RUN_ERROR, []);
-    expect(text.stderr).toBe(
-      "error MTL910: template not found: templates/missing.template.md (pair 'ghost')\n",
-    );
+    expect(text.stderr).toBe("error MTL910: template not found: templates/missing.template.md (pair 'ghost')\n");
     const json = await runCliIn(RUN_ERROR, ["--format", "json"]);
     expect(json.stderr).toBe("");
     expect(parseJson(json.stdout).runErrors.map((error) => error.code)).toEqual(["MTL910"]);
@@ -103,10 +101,7 @@ describe("cli color (spec 8.2)", () => {
     const colored = await runCliIn(CLEAN, [], { isTty: true });
     const none = await runCliIn(CLEAN, [], { isTty: true, noColor: true });
     expect(none.stdout).not.toContain(ESC);
-    const stripped = ["32", "31", "33", "36", "35", "90", "0"].reduce(
-      (text, code) => text.replaceAll(`${ESC}${code}m`, ""),
-      colored.stdout,
-    );
+    const stripped = ["32", "31", "33", "36", "35", "90", "0"].reduce((text, code) => text.replaceAll(`${ESC}${code}m`, ""), colored.stdout);
     expect(none.stdout).toBe(stripped);
   });
 

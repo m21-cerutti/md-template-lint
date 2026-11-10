@@ -11,18 +11,7 @@ const PREFIXES = KNOWN_PREFIXES.cli ?? [];
 
 describe("cli fixtures: group prefixes", () => {
   it("declares the groups of this folder", () => {
-    expect(PREFIXES).toEqual([
-      "exit-",
-      "list-",
-      "large-",
-      "verify-",
-      "schema-",
-      "format-",
-      "wiring-",
-      "usage-",
-      "suppress-",
-      "template-",
-    ]);
+    expect(PREFIXES).toEqual(["exit-", "list-", "large-", "verify-", "schema-", "format-", "wiring-", "usage-", "suppress-", "template-"]);
   });
 
   it("every directory of the area starts with a known prefix", () => {
@@ -33,9 +22,7 @@ describe("cli fixtures: group prefixes", () => {
   });
 
   it("strayNames finds a misspelled or unknown prefix", () => {
-    expect(
-      strayNames(["exit-pass-a", "exits-pass-b", "lists-fail-c", "other", "usage-x"], PREFIXES),
-    ).toEqual(["exits-pass-b", "lists-fail-c", "other"]);
+    expect(strayNames(["exit-pass-a", "exits-pass-b", "lists-fail-c", "other", "usage-x"], PREFIXES)).toEqual(["exits-pass-b", "lists-fail-c", "other"]);
   });
 
   it("strayNames is empty when every name has a known prefix", () => {

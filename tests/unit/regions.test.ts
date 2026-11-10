@@ -10,8 +10,7 @@ const headingTexts = (text: string) =>
   parseDocument(text)
     .body.filter((b): b is BodyHeading => b.kind === "heading")
     .map((h) => h.text);
-const reasons = (text: string) =>
-  parseDocument(text).findings.map((f) => `${f.region}:${f.reason}`);
+const reasons = (text: string) => parseDocument(text).findings.map((f) => `${f.region}:${f.reason}`);
 
 describe("frontmatter delimiters", () => {
   it.each([
@@ -41,22 +40,15 @@ describe("frontmatter delimiters", () => {
   });
 
   it("accepts CRLF and lone CR line ends", () => {
-    const result = parseDocument(
-      "---\r\na: b # [presence:optional]\r\n---\r# T [content:list]\r\n",
-    );
-    expect(result.frontmatter?.lines).toMatchObject([
-      { kind: "key", key: "a", comment: { tags: [{ mode: "optional" }] } },
-    ]);
+    const result = parseDocument("---\r\na: b # [presence:optional]\r\n---\r# T [content:list]\r\n");
+    expect(result.frontmatter?.lines).toMatchObject([{ kind: "key", key: "a", comment: { tags: [{ mode: "optional" }] } }]);
     expect(headingTexts("---\r\n---\r\n# T [content:list]")).toEqual(["T"]);
   });
 });
 
 describe("region separation", () => {
   it("reports a frontmatter-only tag on a heading and a body-only tag in a comment", () => {
-    expect(reasons("---\na: b # [content:table]\n---\n# T [count:min:1]\n")).toEqual([
-      "frontmatter:wrong-region",
-      "body:wrong-region",
-    ]);
+    expect(reasons("---\na: b # [content:table]\n---\n# T [count:min:1]\n")).toEqual(["frontmatter:wrong-region", "body:wrong-region"]);
   });
 
   it("does not read tags in body text lines, lists or tables", () => {
@@ -64,12 +56,7 @@ describe("region separation", () => {
   });
 
   it("reads several tags on one comment and one heading", () => {
-    const result = doc(
-      "---",
-      "a: b # [presence:optional] [count:max:2] [format:kebab-case]",
-      "---",
-      "## H [presence:required] [content:non-empty] [content:max-lines:3]",
-    );
+    const result = doc("---", "a: b # [presence:optional] [count:max:2] [format:kebab-case]", "---", "## H [presence:required] [content:non-empty] [content:max-lines:3]");
     const key = result.frontmatter?.lines[0];
     expect(key?.kind === "key" ? key.comment?.tags.length : 0).toBe(3);
     expect(result.body[0]).toMatchObject({ kind: "heading", text: "H" });

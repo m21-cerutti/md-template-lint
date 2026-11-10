@@ -15,15 +15,9 @@ const FILES = {
   "invalid-utf8.yml": Buffer.from([0x70, 0x61, 0x69, 0x72, 0x73, 0x3a, 0x20, 0xff, 0xfe, 0x0a]),
   "empty.yml": Buffer.alloc(0),
   // BOM, CRLF; the unknown key `colour` is on line 3, column 1.
-  "bom-crlf.yml": Buffer.from(
-    ["\uFEFFpairs:", "  - template: a.md", "colour: blue", ""].join("\r\n"),
-    "utf8",
-  ),
+  "bom-crlf.yml": Buffer.from(["\uFEFFpairs:", "  - template: a.md", "colour: blue", ""].join("\r\n"), "utf8"),
   // BOM, CRLF; the unknown key `inlcude` is on line 3, column 5.
-  "bom-crlf-nested.yml": Buffer.from(
-    ["\uFEFFpairs:", "  - template: a.md", "    inlcude: x", ""].join("\r\n"),
-    "utf8",
-  ),
+  "bom-crlf-nested.yml": Buffer.from(["\uFEFFpairs:", "  - template: a.md", "    inlcude: x", ""].join("\r\n"), "utf8"),
 } as const;
 
 beforeAll(() => {
@@ -35,8 +29,7 @@ afterAll(() => {
   rmSync(dir, { recursive: true, force: true });
 });
 
-const load = (name: string) =>
-  loadConfig({ cwd: dir, configPath: name, home: "/home/test", boundary: dir });
+const load = (name: string) => loadConfig({ cwd: dir, configPath: name, home: "/home/test", boundary: dir });
 
 describe("config bytes", () => {
   it("fails: invalid UTF-8 is MTL902 with a path free detail", async () => {

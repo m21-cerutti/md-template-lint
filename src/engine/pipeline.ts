@@ -44,20 +44,7 @@ import { analyzeDirectives, isCovered, RUN_CODES } from "./directives.js";
 import { loadDocument } from "./load.js";
 import { isEmptyValue, type Diagnostic, type DocumentModel } from "./model.js";
 import { rulesOf, runPhase, runRules, type RuleRegistry } from "./registry.js";
-import {
-  anchorLineOf,
-  FIELD_STEPS,
-  itemIndexOf,
-  recordedSectionIndex,
-  sectionIndexOf,
-  sequenceOf,
-  setAnchorLine,
-  TARGET_STEPS,
-  type FieldRule,
-  type RuleEnv,
-  type TargetContext,
-  type TargetRule,
-} from "./rule.js";
+import { anchorLineOf, FIELD_STEPS, itemIndexOf, recordedSectionIndex, sectionIndexOf, sequenceOf, setAnchorLine, TARGET_STEPS, type FieldRule, type RuleEnv, type TargetContext, type TargetRule } from "./rule.js";
 
 export type TemplateStatus =
   | {
@@ -105,11 +92,7 @@ export async function checkTemplate(registry: RuleRegistry, text: string): Promi
   };
 }
 
-function byStep<R extends FieldRule | TargetRule>(
-  rules: readonly R[],
-  steps: readonly string[],
-  step: string,
-): R[] {
+function byStep<R extends FieldRule | TargetRule>(rules: readonly R[], steps: readonly string[], step: string): R[] {
   return steps.includes(step) ? rules.filter((rule) => rule.step === step) : [];
 }
 
@@ -129,10 +112,7 @@ function byStep<R extends FieldRule | TargetRule>(
  * reported target heading). The target anchor line is kept apart (`anchorLineOf`),
  * not replaced by `heading`: two sections may share one text, a line is unique.
  */
-function byTemplateHeading(
-  diagnostics: readonly Diagnostic[],
-  template: DocumentModel,
-): Diagnostic[] {
+function byTemplateHeading(diagnostics: readonly Diagnostic[], template: DocumentModel): Diagnostic[] {
   const anchored = diagnostics.filter((diagnostic) => diagnostic.position !== null);
   const loose = diagnostics.filter((diagnostic) => diagnostic.position === null);
   const line = (diagnostic: Diagnostic) => diagnostic.position?.line ?? 0;
@@ -190,10 +170,7 @@ function bySequence(diagnostics: readonly Diagnostic[]): Diagnostic[] {
 
 /** Errors first, then warnings, each in emission order (spec 4.1, 8.4). */
 function errorsFirst(diagnostics: readonly Diagnostic[]): Diagnostic[] {
-  return [
-    ...diagnostics.filter((diagnostic) => diagnostic.severity === "error"),
-    ...diagnostics.filter((diagnostic) => diagnostic.severity === "warning"),
-  ];
+  return [...diagnostics.filter((diagnostic) => diagnostic.severity === "error"), ...diagnostics.filter((diagnostic) => diagnostic.severity === "warning")];
 }
 
 /** Result of one target: what is reported, and how many diagnostics directives removed. */
@@ -213,13 +190,7 @@ export interface TargetResult {
  * then apply the disable directives of the TARGET (spec 4.1 step 8, 4.4 DIR7):
  * a pure output filter by code and anchor line; every rule still ran in full.
  */
-export async function lintTarget(
-  registry: RuleRegistry,
-  template: DocumentModel,
-  text: string,
-  targetPath: string,
-  env: RuleEnv,
-): Promise<TargetResult> {
+export async function lintTarget(registry: RuleRegistry, template: DocumentModel, text: string, targetPath: string, env: RuleEnv): Promise<TargetResult> {
   const loaded = loadDocument(text);
   if (!loaded.ok) {
     const context = { phase: "parse", role: "target", failure: loaded.failure } as const;
@@ -229,32 +200,17 @@ export async function lintTarget(
   const knownCodes = new Set<string>([...registry.byCode.keys(), ...RUN_CODES]);
   const out = await runTargetRules(registry, template, target, targetPath, env, knownCodes);
   const { plan } = analyzeDirectives(target.directives, knownCodes);
-  const kept = out.filter(
-    (diagnostic) => !isCovered(plan, diagnostic.code, anchorLineOf(diagnostic)),
-  );
+  const kept = out.filter((diagnostic) => !isCovered(plan, diagnostic.code, anchorLineOf(diagnostic)));
   return { diagnostics: errorsFirst(kept), suppressed: out.length - kept.length };
 }
 
 /** `lintTarget` without the suppressed count: the reported diagnostics only. */
-export async function checkTarget(
-  registry: RuleRegistry,
-  template: DocumentModel,
-  text: string,
-  targetPath: string,
-  env: RuleEnv,
-): Promise<Diagnostic[]> {
+export async function checkTarget(registry: RuleRegistry, template: DocumentModel, text: string, targetPath: string, env: RuleEnv): Promise<Diagnostic[]> {
   return (await lintTarget(registry, template, text, targetPath, env)).diagnostics;
 }
 
 /** Steps 2 to 7 of spec 4.1 on a loaded target, in emission order, with their anchors. */
-async function runTargetRules(
-  registry: RuleRegistry,
-  template: DocumentModel,
-  target: DocumentModel,
-  targetPath: string,
-  env: RuleEnv,
-  knownCodes: ReadonlySet<string>,
-): Promise<Diagnostic[]> {
+async function runTargetRules(registry: RuleRegistry, template: DocumentModel, target: DocumentModel, targetPath: string, env: RuleEnv, knownCodes: ReadonlySet<string>): Promise<Diagnostic[]> {
   const targetRules = rulesOf(registry, "target");
   const fieldRules = rulesOf(registry, "field");
   const context: TargetContext = {

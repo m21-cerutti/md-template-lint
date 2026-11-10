@@ -1,15 +1,8 @@
-// opencode.jsonc - self-contained project permissions for md-template-lint.
-// Generic safe defaults are copied here so the file works without a user-level
-// config. No path outside the repo, no model or provider, no plugins.
-//
-// Recommended public plugins (install them in your own user config, not here):
-//   - @tarquinen/opencode-dcp        (dynamic context pruning)
-//   - opencode-claude-auth           (Claude subscription auth)
 {
   "$schema": "https://opencode.ai/config.json",
   "permissions": [
-    // --- Files outside the repo: ask by default
-    { "action": "external_directory", "resource": "*", "effect": "ask" },
+    // --- Files outside the repo: deny by default
+    { "action": "external_directory", "resource": "*", "effect": "deny" },
 
     // --- edit: ask, markdown allowed, secrets denied (allows after denies)
     { "action": "edit", "resource": "*", "effect": "ask" },
@@ -61,7 +54,7 @@
     { "action": "grep", "resource": "*", "effect": "allow" },
     { "action": "subagent", "resource": "*", "effect": "allow" },
     { "action": "skill", "resource": "*", "effect": "allow" },
-    { "action": "webfetch", "resource": "*", "effect": "allow" },
+    { "action": "webfetch", "resource": "*", "effect": "deny" },
     { "action": "websearch", "resource": "*", "effect": "deny" },
 
     // --- shell: ask by default, read-only basics allowed
@@ -95,7 +88,7 @@
     { "action": "shell", "resource": "Get-Command*", "effect": "allow" },
     { "action": "shell", "resource": "Compare-Object*", "effect": "allow" },
 
-    // Safe git: local work yes, push / remote / worktree no
+    // Safe git: local work yes, push / remote
     { "action": "shell", "resource": "git add *", "effect": "allow" },
     { "action": "shell", "resource": "git commit *", "effect": "allow" },
     { "action": "shell", "resource": "git status *", "effect": "allow" },
@@ -113,7 +106,6 @@
     { "action": "shell", "resource": "git push*", "effect": "deny" },
     { "action": "shell", "resource": "git remote add*", "effect": "deny" },
     { "action": "shell", "resource": "git remote set-url*", "effect": "deny" },
-    { "action": "shell", "resource": "git worktree *", "effect": "deny" },
 
     // Stack: Node / TypeScript with pnpm
     { "action": "shell", "resource": "node --version", "effect": "allow" },
@@ -197,6 +189,6 @@
     { "action": "shell", "resource": "*sensitive-guard*", "effect": "deny" },
     { "action": "shell", "resource": "*SENSITIVE_GUARD*", "effect": "deny" },
     { "action": "read", "resource": "*sensitive-guard*", "effect": "deny" },
-    { "action": "edit", "resource": "*sensitive-guard*", "effect": "deny" }
-  ]
+    { "action": "edit", "resource": "*sensitive-guard*", "effect": "deny" },
+  ],
 }

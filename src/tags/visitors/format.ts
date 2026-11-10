@@ -4,11 +4,7 @@
  * `[format:semver]`, `[format:date]`, `[format:elements:semver]`,
  * `[format:elements:date]`. Rule fmFormatTag.
  */
-import type {
-  FmCaseStyleContext,
-  FmFormatTagContext,
-  FmShapeContext,
-} from "../../generated/MdTemplateParser.js";
+import type { FmCaseStyleContext, FmFormatTagContext, FmShapeContext } from "../../generated/MdTemplateParser.js";
 import type { CaseStyle, ValueShape } from "../ast.js";
 import { FamilyVisitor, type FrontmatterTagData } from "./base.js";
 
@@ -25,9 +21,7 @@ export class FormatVisitor extends FamilyVisitor<FrontmatterTagData> {
     const shapeCtx = ctx.fmShape();
     if (shapeCtx !== null) {
       const shape = valueShape(shapeCtx);
-      return ctx.ELEMENTS() !== null
-        ? { kind: "format-elements-shape", shape }
-        : { kind: "format-shape", shape };
+      return ctx.ELEMENTS() !== null ? { kind: "format-elements-shape", shape } : { kind: "format-shape", shape };
     }
     const scheme = ctx.SCHEME_TEXT();
     if (scheme !== null) {
@@ -43,8 +37,6 @@ export class FormatVisitor extends FamilyVisitor<FrontmatterTagData> {
       return { kind: "format-constant", value: free === null ? "" : free.getText().trim() };
     }
     const style = caseStyle(ctx.fmCaseStyle() as FmCaseStyleContext);
-    return ctx.ELEMENTS() !== null
-      ? { kind: "format-elements", style }
-      : { kind: "format-case", style };
+    return ctx.ELEMENTS() !== null ? { kind: "format-elements", style } : { kind: "format-case", style };
   };
 }

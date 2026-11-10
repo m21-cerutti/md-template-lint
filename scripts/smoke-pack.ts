@@ -44,11 +44,7 @@ const BIN_NAME = "md-template-lint";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
-function run(
-  invocation: Invocation,
-  args: readonly string[],
-  cwd: string,
-): RunResult & { readonly error: Error | undefined } {
+function run(invocation: Invocation, args: readonly string[], cwd: string): RunResult & { readonly error: Error | undefined } {
   const plan = spawnPlan(invocation, args);
   const result = spawnSync(plan.command, plan.args, { cwd, encoding: "utf8", shell: plan.shell });
   return {
@@ -69,9 +65,7 @@ function pnpm(args: readonly string[], cwd: string): void {
   if (result.status !== 0) {
     process.stdout.write(result.stdout);
     process.stderr.write(result.stderr);
-    throw new Error(
-      `pnpm ${args.join(" ")} failed (exit ${String(result.status)})${result.error ? `: ${result.error.message}` : ""}`,
-    );
+    throw new Error(`pnpm ${args.join(" ")} failed (exit ${String(result.status)})${result.error ? `: ${result.error.message}` : ""}`);
   }
 }
 
@@ -85,9 +79,7 @@ function listTarball(tarball: string): string[] {
     encoding: "utf8",
   });
   if (result.status !== 0) {
-    throw new Error(
-      `tar -tzf ${basename(tarball)} failed (exit ${String(result.status)}): ${result.error?.message ?? result.stderr}`,
-    );
+    throw new Error(`tar -tzf ${basename(tarball)} failed (exit ${String(result.status)}): ${result.error?.message ?? result.stderr}`);
   }
   return tarballEntries(result.stdout);
 }
@@ -115,20 +107,11 @@ function main(): number {
 
     const consumer = join(work, "consumer");
     mkdirSync(consumer);
-    writeFileSync(
-      join(consumer, "package.json"),
-      `${JSON.stringify({ name: "smoke-consumer", version: "0.0.0", private: true }, null, 2)}\n`,
-    );
-    pnpm(
-      ["add", tarball, "--ignore-workspace", ...(options.offline ? ["--offline"] : [])],
-      consumer,
-    );
+    writeFileSync(join(consumer, "package.json"), `${JSON.stringify({ name: "smoke-consumer", version: "0.0.0", private: true }, null, 2)}\n`);
+    pnpm(["add", tarball, "--ignore-workspace", ...(options.offline ? ["--offline"] : [])], consumer);
 
     const dependency = singleDependency(readJson(join(consumer, "package.json")));
-    const fields = readPackageFields(
-      readJson(join(consumer, "node_modules", ...dependency.split("/"), "package.json")),
-      BIN_NAME,
-    );
+    const fields = readPackageFields(readJson(join(consumer, "node_modules", ...dependency.split("/"), "package.json")), BIN_NAME);
     const binFile = installedBinPath(consumer, fields);
     const shim = binShimPath(consumer, BIN_NAME, process.platform);
     if (!existsSync(binFile) || !existsSync(shim)) {
@@ -138,10 +121,8 @@ function main(): number {
     const project = join(work, "project");
     cpSync(join(repoRoot, ...SMOKE_PROJECT), project, { recursive: true });
 
-    const viaShim = (args: readonly string[], cwd: string): RunResult =>
-      run(commandInvocation(shim, process.platform), args, cwd);
-    const viaNode = (args: readonly string[], cwd: string): RunResult =>
-      run({ command: process.execPath, prefixArgs: [binFile], shell: false }, args, cwd);
+    const viaShim = (args: readonly string[], cwd: string): RunResult => run(commandInvocation(shim, process.platform), args, cwd);
+    const viaNode = (args: readonly string[], cwd: string): RunResult => run({ command: process.execPath, prefixArgs: [binFile], shell: false }, args, cwd);
 
     const problems = [
       ...checkRun(viaShim(["--version"], consumer), versionExpectation(fields.version)),
@@ -153,9 +134,7 @@ function main(): number {
       for (const problem of problems) process.stderr.write(`FAIL ${problem}\n`);
       return 1;
     }
-    process.stdout.write(
-      `ok   ${fields.name}@${fields.version}: --version (shim and node), fixture project lint, unknown option\n`,
-    );
+    process.stdout.write(`ok   ${fields.name}@${fields.version}: --version (shim and node), fixture project lint, unknown option\n`);
     return 0;
   } finally {
     try {

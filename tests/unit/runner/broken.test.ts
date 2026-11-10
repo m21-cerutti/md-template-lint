@@ -76,8 +76,7 @@ describe("runner broken templates (spec 8.2)", () => {
       },
     });
     expect(good).toMatchObject({ kind: "pair", pair: "good", fileCount: 2 });
-    const failing =
-      good?.kind === "pair" ? good.files.find((file) => file.status === "fail") : null;
+    const failing = good?.kind === "pair" ? good.files.find((file) => file.status === "fail") : null;
     expect(failing?.path).toBe("docs/b.md");
     expect(failing?.errors.map((error) => error.code)).toEqual(["MTL201"]);
   });
@@ -85,12 +84,8 @@ describe("runner broken templates (spec 8.2)", () => {
   it("fail-skips-only-its-pair: the text summary lists Broken templates: and the failed file", async () => {
     const result = await runFixture(`${GROUP}fail-skips-only-its-pair`);
     const { stdout } = report(result, { format: "plain", version: "1.0.0" });
-    expect(stdout).toContain(
-      `  TEMPLATE ERROR: templates/broken.template.md - ${NO_FRONTMATTER}\n`,
-    );
-    expect(stdout).toContain(
-      `Broken templates:\n  - templates/broken.template.md - ${NO_FRONTMATTER}\n\nFailed files:\n  - docs/b.md\n`,
-    );
+    expect(stdout).toContain(`  TEMPLATE ERROR: templates/broken.template.md - ${NO_FRONTMATTER}\n`);
+    expect(stdout).toContain(`Broken templates:\n  - templates/broken.template.md - ${NO_FRONTMATTER}\n\nFailed files:\n  - docs/b.md\n`);
     expect(stdout).not.toContain("skipping remaining");
     expect(stdout).not.toContain("All files passed!");
     expect(stdout).not.toContain("No files linted.");

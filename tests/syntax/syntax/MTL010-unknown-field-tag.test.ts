@@ -9,8 +9,7 @@ import { expectTemplateCases, verifyFixture, type VerifyCase } from "../../helpe
 const CODE = "MTL010";
 const DIR = "tests/fixtures/templates/MTL010";
 
-const warning = (message: string, line: number, column: number, sourceLine: string) =>
-  ({ code: CODE, severity: "warning", message, line, column, sourceLine }) as const;
+const warning = (message: string, line: number, column: number, sourceLine: string) => ({ code: CODE, severity: "warning", message, line, column, sourceLine }) as const;
 
 /** Case -> fixture `<name>.md` -> expected `--verify` result. */
 const CASES: readonly VerifyCase[] = [
@@ -28,24 +27,14 @@ const CASES: readonly VerifyCase[] = [
     name: "fail-misspelled-tag-family",
     exitCode: 0,
     status: "ok",
-    diagnostics: [
-      warning(
-        "Field 'title': unknown tag [presense:required]",
-        2,
-        19,
-        'title: "string" # [presense:required]',
-      ),
-    ],
+    diagnostics: [warning("Field 'title': unknown tag [presense:required]", 2, 19, 'title: "string" # [presense:required]')],
   },
   // One warning per unknown tag, in source order.
   {
     name: "fail-unknown-tags-in-source-order",
     exitCode: 0,
     status: "ok",
-    diagnostics: [
-      warning("Field 'first': unknown tag [alpha]", 2, 12, "first: x # [alpha]"),
-      warning("Field 'second': unknown tag [beta:z]", 3, 13, "second: y # [beta:z]"),
-    ],
+    diagnostics: [warning("Field 'first': unknown tag [alpha]", 2, 12, "first: x # [alpha]"), warning("Field 'second': unknown tag [beta:z]", 3, 13, "second: y # [beta:z]")],
   },
   // Spec 2.11: a typo of `[unique-headings-names]` (singular `heading`) after a key is an
   // unknown tag.
@@ -53,14 +42,7 @@ const CASES: readonly VerifyCase[] = [
     name: "fail-unique-headings-names-typo",
     exitCode: 0,
     status: "ok",
-    diagnostics: [
-      warning(
-        "Field 'title': unknown tag [unique-heading-names]",
-        2,
-        14,
-        'title: "x" # [unique-heading-names]',
-      ),
-    ],
+    diagnostics: [warning("Field 'title': unknown tag [unique-heading-names]", 2, 14, 'title: "x" # [unique-heading-names]')],
   },
   // Spec 2.1: an unknown tag on a standalone frontmatter comment line, alone or after free
   // text, in source order across lines; a known tag there stays inert.
@@ -68,16 +50,7 @@ const CASES: readonly VerifyCase[] = [
     name: "fail-unknown-tag-on-standalone-comment-line",
     exitCode: 0,
     status: "ok",
-    diagnostics: [
-      warning("Comment line 2: unknown tag [todo]", 2, 3, "# [todo]"),
-      warning("Comment line 4: unknown tag [x]", 4, 8, "# note [x]"),
-      warning(
-        "Comment line 6: unknown tag [unique-heading-names]",
-        6,
-        3,
-        "# [unique-heading-names]",
-      ),
-    ],
+    diagnostics: [warning("Comment line 2: unknown tag [todo]", 2, 3, "# [todo]"), warning("Comment line 4: unknown tag [x]", 4, 8, "# note [x]"), warning("Comment line 6: unknown tag [unique-heading-names]", 6, 3, "# [unique-heading-names]")],
   },
 ];
 

@@ -14,8 +14,7 @@ const DIR = "tests/fixtures/pairs/MTL306";
 const OTHER_FORMAT_CODES = ["MTL301", "MTL302", "MTL303", "MTL304", "MTL305"];
 
 /** Spec 4.3 message of MTL306. */
-const message = (key: string, value: string): string =>
-  `Field '${key}': value '${value}' is not a semantic version [format:semver]`;
+const message = (key: string, value: string): string => `Field '${key}': value '${value}' is not a semantic version [format:semver]`;
 
 interface Finding {
   readonly message: string;
@@ -118,8 +117,7 @@ const CASES: readonly TestCase[] = [
   { name: "pass-prerelease-identifiers-with-leading-digits", expected: [] },
 ];
 
-const read = (path: string): string =>
-  readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
+const read = (path: string): string => readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
 
 async function templateOf(fixture: string) {
   const status = await checkTemplate(registry, read(`${fixture}/template.md`));
@@ -130,13 +128,7 @@ async function templateOf(fixture: string) {
 /** Diagnostics of this code, of the other format codes, and the suppressed count. */
 async function lint(testCase: TestCase) {
   const fixture = `${DIR}/${testCase.name}`;
-  const result = await lintTarget(
-    registry,
-    await templateOf(fixture),
-    read(`${fixture}/target.md`),
-    `${fixture}/target.md`,
-    createEnv(),
-  );
+  const result = await lintTarget(registry, await templateOf(fixture), read(`${fixture}/target.md`), `${fixture}/target.md`, createEnv());
   return {
     own: result.diagnostics.filter((diagnostic) => diagnostic.code === CODE),
     others: result.diagnostics.filter((diagnostic) => OTHER_FORMAT_CODES.includes(diagnostic.code)),
@@ -185,21 +177,10 @@ describe("MTL306 semver-mismatch", () => {
   }
 
   it("runs in step shape, after the type step: the type finding prints first (spec 4.1)", async () => {
-    const status = await checkTemplate(
-      registry,
-      "---\nreleased: 2026-01-01 # [format:semver]\nversion: '1.0.0' # [format:semver]\n---\n",
-    );
+    const status = await checkTemplate(registry, "---\nreleased: 2026-01-01 # [format:semver]\nversion: '1.0.0' # [format:semver]\n---\n");
     if (status.status !== "ok") throw new Error("template is broken");
-    const result = await lintTarget(
-      registry,
-      status.model,
-      "---\nreleased: v1\nversion: v2\n---\n",
-      "target.md",
-      createEnv(),
-    );
-    expect(
-      result.diagnostics.map((diagnostic) => [diagnostic.code, anchorLineOf(diagnostic)]),
-    ).toEqual([
+    const result = await lintTarget(registry, status.model, "---\nreleased: v1\nversion: v2\n---\n", "target.md", createEnv());
+    expect(result.diagnostics.map((diagnostic) => [diagnostic.code, anchorLineOf(diagnostic)])).toEqual([
       ["MTL504", 2],
       ["MTL306", 2],
       ["MTL306", 3],
@@ -213,17 +194,8 @@ describe("MTL306 semver-mismatch", () => {
     // `[format:date]` written first wins the scalar shape kind: no semver token.
     expect(rules.get("date_first")).toEqual(["presence:required", "format:date"]);
     expect(rules.get("elements_only")).not.toContain("format:semver");
-    const ordered = await checkTemplate(
-      registry,
-      '---\nv: "1" # [count:min:1] [format:semver] [format:elements:snake_case] [format:constant:1]\n---\n',
-    );
+    const ordered = await checkTemplate(registry, '---\nv: "1" # [count:min:1] [format:semver] [format:elements:snake_case] [format:constant:1]\n---\n');
     if (ordered.status !== "ok") throw new Error("template is broken");
-    expect(describeTemplate(ordered.model).fields[0]?.rules).toEqual([
-      "presence:required",
-      "format:constant:1",
-      "format:elements:snake_case",
-      "format:semver",
-      "count:min:1",
-    ]);
+    expect(describeTemplate(ordered.model).fields[0]?.rules).toEqual(["presence:required", "format:constant:1", "format:elements:snake_case", "format:semver", "count:min:1"]);
   });
 });

@@ -45,9 +45,7 @@ describe("cli catch-all: execute", () => {
 
   it("shows control characters of a hostile code as visible escapes", async () => {
     const error = Object.assign(new Error("x"), { code: "E\u001b[2J" });
-    expect((await execute([], ENV, throwing(error))).stderr).toBe(
-      "error: unexpected failure (E\\x1b[2J)\n",
-    );
+    expect((await execute([], ENV, throwing(error))).stderr).toBe("error: unexpected failure (E\\x1b[2J)\n");
   });
 
   it("covers a failure while reading the process (the environment thunk)", async () => {

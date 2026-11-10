@@ -11,8 +11,7 @@ const CODE = "MTL402";
 const DIR = "tests/fixtures/pairs/MTL402";
 
 /** Spec 4.3 message of MTL402. */
-const message = (key: string, n: number, max: number): string =>
-  `Field '${key}': list has ${n} item(s), maximum is ${max}`;
+const message = (key: string, n: number, max: number): string => `Field '${key}': list has ${n} item(s), maximum is ${max}`;
 
 interface TestCase {
   readonly name: string;
@@ -90,21 +89,14 @@ const CASES: readonly TestCase[] = [
   },
 ];
 
-const read = (path: string): string =>
-  readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
+const read = (path: string): string => readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
 
 /** MTL402 diagnostics and template warnings for the pair of a fixture folder. */
 async function lint(testCase: TestCase) {
   const fixture = `${DIR}/${testCase.name}`;
   const status = await checkTemplate(registry, read(`${fixture}/template.md`));
   if (status.status !== "ok") throw new Error(`${fixture}: template is broken`);
-  const found = await checkTarget(
-    registry,
-    status.model,
-    read(`${fixture}/target.md`),
-    `${fixture}/target.md`,
-    createEnv(),
-  );
+  const found = await checkTarget(registry, status.model, read(`${fixture}/target.md`), `${fixture}/target.md`, createEnv());
   return {
     found: found.filter((diagnostic) => diagnostic.code === CODE),
     warnings: status.warnings,

@@ -36,16 +36,8 @@ interface TestCase {
  * Spec 4.3: `{in}{count} heading(s) match [pattern:"{pattern}"] after the end of its run
  * [repeat-rules:same-level]: {pylist}`.
  */
-const repeatMiss = (
-  pattern: string,
-  texts: readonly string[],
-  line: number,
-  parent: string | null = null,
-): Expected => ({
-  message:
-    `Heading: ${parent === null ? "" : `Section '${parent}': `}${texts.length} heading(s) ` +
-    `match [pattern:"${pattern}"] after the end of its run [repeat-rules:same-level]: ` +
-    `[${texts.map((text) => `'${text}'`).join(", ")}]`,
+const repeatMiss = (pattern: string, texts: readonly string[], line: number, parent: string | null = null): Expected => ({
+  message: `Heading: ${parent === null ? "" : `Section '${parent}': `}${texts.length} heading(s) ` + `match [pattern:"${pattern}"] after the end of its run [repeat-rules:same-level]: ` + `[${texts.map((text) => `'${text}'`).join(", ")}]`,
   line,
   heading: texts[0] ?? "",
 });
@@ -100,8 +92,7 @@ const CASES: readonly TestCase[] = [
   },
 ];
 
-const read = (path: string): string =>
-  readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
+const read = (path: string): string => readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
 
 async function templateOf(name: string) {
   const status = await checkTemplate(registry, read(`${DIR}/${name}/template.md`));
@@ -112,32 +103,18 @@ async function templateOf(name: string) {
 /** Every diagnostic (after suppression) for the pair of a fixture folder. */
 async function lintAll(name: string) {
   const status = await templateOf(name);
-  return checkTarget(
-    registry,
-    status.model,
-    read(`${DIR}/${name}/target.md`),
-    "target.md",
-    createEnv(),
-  );
+  return checkTarget(registry, status.model, read(`${DIR}/${name}/target.md`), "target.md", createEnv());
 }
 
 /** The errors of a fixture as [code, anchor line], in emission order. */
 async function errorsOf(name: string) {
-  return (await lintAll(name))
-    .filter((diagnostic) => diagnostic.severity === "error")
-    .map((diagnostic) => [diagnostic.code, anchorLineOf(diagnostic)]);
+  return (await lintAll(name)).filter((diagnostic) => diagnostic.severity === "error").map((diagnostic) => [diagnostic.code, anchorLineOf(diagnostic)]);
 }
 
 /** Result of `lintTarget` (findings and suppressed count) for a fixture folder. */
 async function lintResult(name: string) {
   const status = await templateOf(name);
-  return lintTarget(
-    registry,
-    status.model,
-    read(`${DIR}/${name}/target.md`),
-    "target.md",
-    createEnv(),
-  );
+  return lintTarget(registry, status.model, read(`${DIR}/${name}/target.md`), "target.md", createEnv());
 }
 
 describe("MTL614 heading-repeat-miss", () => {
@@ -196,26 +173,18 @@ describe("MTL614 heading-repeat-miss", () => {
 
   it("the only errors of the other fail- cases are MTL614", async () => {
     expect(await errorsOf("fail-owner-example-g-second-target")).toEqual([[CODE, 9]]);
-    expect(await errorsOf("fail-tail-heading-matching-two-repeat-patterns-is-listed-once")).toEqual(
-      [
-        [CODE, 11],
-        [CODE, 13],
-      ],
-    );
+    expect(await errorsOf("fail-tail-heading-matching-two-repeat-patterns-is-listed-once")).toEqual([
+      [CODE, 11],
+      [CODE, 13],
+    ]);
     // Optional repeat heading: no MTL605 and no MTL606 at zero instances.
     expect(await errorsOf("fail-zero-instances-with-matching-tail-heading")).toEqual([[CODE, 9]]);
-    expect(await errorsOf("fail-section-scope-one-finding-per-parent-instance")).toEqual([
-      [CODE, 11],
-    ]);
+    expect(await errorsOf("fail-section-scope-one-finding-per-parent-instance")).toEqual([[CODE, 11]]);
   });
 
   it("{count} is 2 or more: one error lists every matching tail heading", async () => {
-    expect(await errorsOf("fail-two-tail-headings-are-one-finding-in-file-order")).toEqual([
-      [CODE, 9],
-    ]);
-    expect(await errorsOf("fail-extra-heading-between-listed-headings-stays-extra")).toEqual([
-      [CODE, 9],
-    ]);
+    expect(await errorsOf("fail-two-tail-headings-are-one-finding-in-file-order")).toEqual([[CODE, 9]]);
+    expect(await errorsOf("fail-extra-heading-between-listed-headings-stays-extra")).toEqual([[CODE, 9]]);
   });
 
   it("the heading that broke the run (Stray, line 7) is the MTL616 warning", async () => {
@@ -239,12 +208,8 @@ describe("MTL614 heading-repeat-miss", () => {
 
   it("a tail heading that is not listed stays an extra: the warning MTL616 names it", async () => {
     // Stray (line 7) and Other (line 11) match no pattern; the listed 9 and 13 are left out.
-    const warnings = (await lintAll("fail-extra-heading-between-listed-headings-stays-extra"))
-      .filter((diagnostic) => diagnostic.code === "MTL616")
-      .map((diagnostic) => diagnostic.message);
-    expect(warnings).toEqual([
-      "Heading: 2 extra heading(s) at level H2 after the template headings: ['Stray', 'Other']",
-    ]);
+    const warnings = (await lintAll("fail-extra-heading-between-listed-headings-stays-extra")).filter((diagnostic) => diagnostic.code === "MTL616").map((diagnostic) => diagnostic.message);
+    expect(warnings).toEqual(["Heading: 2 extra heading(s) at level H2 after the template headings: ['Stray', 'Other']"]);
   });
 
   it("a non-matching tail heading gives no error at all", async () => {

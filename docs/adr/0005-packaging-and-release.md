@@ -134,15 +134,15 @@ Phase A30 prepares the first release. Facts that shape the decision:
 
 ## Alternatives considered
 
-| Option                                                  | Pros                                          | Cons                                                             | Verdict      |
-| ------------------------------------------------------- | --------------------------------------------- | ---------------------------------------------------------------- | ------------ |
-| **`files` whitelist + Trusted Publishing + smoke test** | Small package, no token, tested artifact      | One-time setup on npmjs.com, workflows only verifiable on GitHub | **Chosen**   |
-| `.npmignore` blacklist                                  | Familiar                                      | A new top-level file ships by default (leaks sources and config) | Rejected     |
-| Long-lived `NPM_TOKEN` secret                           | Works without npm 11.5.1 or OIDC              | A secret to store, rotate and leak; no automatic provenance link | Rejected     |
-| Publish from a developer machine                        | No workflow                                   | No provenance, depends on a local build state                    | Rejected     |
-| Gates and publish in one job                            | Fewer lines                                   | The gates would run with `id-token: write`                       | Rejected     |
-| Ship source maps                                        | Readable stack traces                         | Sources are not shipped, so the maps point at nothing            | Rejected     |
-| `pnpm/action-setup` and a pnpm cache in the release     | Same setup as CI, faster                      | A mutable third-party tag and a poisonable cache in the build of the shipped artifact | Rejected (CI keeps them) |
-| `npm@^11.5.1` or `npm@latest` in the publish job        | Always current                                | The publisher changes without review                             | Rejected     |
-| Publish job without an `environment`                    | Fewer settings                                | Any `v*` tag publishes with no human approval                    | Rejected     |
-| SHA-pinned actions now                                  | Strongest supply-chain pinning                | Needs an update process first                                    | Deferred     |
+| Option                                                  | Pros                                     | Cons                                                                                  | Verdict                  |
+| ------------------------------------------------------- | ---------------------------------------- | ------------------------------------------------------------------------------------- | ------------------------ |
+| **`files` whitelist + Trusted Publishing + smoke test** | Small package, no token, tested artifact | One-time setup on npmjs.com, workflows only verifiable on GitHub                      | **Chosen**               |
+| `.npmignore` blacklist                                  | Familiar                                 | A new top-level file ships by default (leaks sources and config)                      | Rejected                 |
+| Long-lived `NPM_TOKEN` secret                           | Works without npm 11.5.1 or OIDC         | A secret to store, rotate and leak; no automatic provenance link                      | Rejected                 |
+| Publish from a developer machine                        | No workflow                              | No provenance, depends on a local build state                                         | Rejected                 |
+| Gates and publish in one job                            | Fewer lines                              | The gates would run with `id-token: write`                                            | Rejected                 |
+| Ship source maps                                        | Readable stack traces                    | Sources are not shipped, so the maps point at nothing                                 | Rejected                 |
+| `pnpm/action-setup` and a pnpm cache in the release     | Same setup as CI, faster                 | A mutable third-party tag and a poisonable cache in the build of the shipped artifact | Rejected (CI keeps them) |
+| `npm@^11.5.1` or `npm@latest` in the publish job        | Always current                           | The publisher changes without review                                                  | Rejected                 |
+| Publish job without an `environment`                    | Fewer settings                           | Any `v*` tag publishes with no human approval                                         | Rejected                 |
+| SHA-pinned actions now                                  | Strongest supply-chain pinning           | Needs an update process first                                                         | Deferred                 |

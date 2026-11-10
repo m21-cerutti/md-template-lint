@@ -33,29 +33,17 @@ interface TestCase {
   readonly expected: readonly Expected[];
 }
 
-const outOfOrder = (
-  text: string,
-  prev: string,
-  direction: "ascending" | "descending",
-  count: number,
-  tag: string,
-  line: number,
-  parent: string | null = null,
-): Expected => ({
-  message:
-    `Heading: ${parent === null ? "" : `Section '${parent}': `}heading '${text}' is not in ` +
-    `${direction} order after '${prev}', ${count} pair(s) out of order ${tag}`,
+const outOfOrder = (text: string, prev: string, direction: "ascending" | "descending", count: number, tag: string, line: number, parent: string | null = null): Expected => ({
+  message: `Heading: ${parent === null ? "" : `Section '${parent}': `}heading '${text}' is not in ` + `${direction} order after '${prev}', ${count} pair(s) out of order ${tag}`,
   line,
   heading: text,
 });
 
 const NUMBER_ASC = "[order:first:number:ascending]";
 /** Worked example 1 of 2.10: line 21 after line 15, one pair (15-21) out of order. */
-const WORKED_1 = (tag: string): Expected =>
-  outOfOrder("[1.1.0] - 2026-02-01", "[1.0.0] - 2026-01-10", "descending", 1, tag, 21);
+const WORKED_1 = (tag: string): Expected => outOfOrder("[1.1.0] - 2026-02-01", "[1.0.0] - 2026-01-10", "descending", 1, tag, 21);
 /** `Step 2` (line 11) after `Step 3` (line 9), ascending first number. */
-const STEP_3_2 = (count: number): Expected =>
-  outOfOrder("Step 2", "Step 3", "ascending", count, NUMBER_ASC, 11);
+const STEP_3_2 = (count: number): Expected => outOfOrder("Step 2", "Step 3", "ascending", count, NUMBER_ASC, 11);
 
 /** Case -> fixture dir (same name) -> expected MTL609 findings. At least 1 pass- and 1 fail-. */
 const CASES: readonly TestCase[] = [
@@ -89,9 +77,7 @@ const CASES: readonly TestCase[] = [
   // `{tag}` prints its canonical lowercase form (spec 4.3).
   {
     name: "fail-mixed-case-order-tag-printed-lowercase",
-    expected: [
-      outOfOrder("Step 2", "Step 1", "descending", 1, "[order:first:number:descending]", 9),
-    ],
+    expected: [outOfOrder("Step 2", "Step 1", "descending", 1, "[order:first:number:descending]", 9)],
   },
   // Keys 1, 3, 2, 4, 0: pairs 3-2 and 4-0 fall: ONE finding, on the first (line 11), 2 pairs.
   { name: "fail-two-pairs-out-of-order-give-one-finding", expected: [STEP_3_2(2)] },
@@ -110,9 +96,7 @@ const CASES: readonly TestCase[] = [
   // J swapped: `Epic A - Setup` (line 9) after `Epic B - Release` is out of ascending order.
   {
     name: "fail-owner-example-j-epic-b-before-epic-a",
-    expected: [
-      outOfOrder("Epic A - Setup", "Epic B - Release", "ascending", 1, "[order:ascending]", 9),
-    ],
+    expected: [outOfOrder("Epic A - Setup", "Epic B - Release", "ascending", 1, "[order:ascending]", 9)],
   },
   // `Temp -3`: the `-` after a space belongs to the number: -3 is below 1.
   {
@@ -132,30 +116,12 @@ const CASES: readonly TestCase[] = [
   // key is 2026-03-02, above the next key 2026-03-01: out of ascending order.
   {
     name: "fail-invalid-date-is-skipped-by-the-scan",
-    expected: [
-      outOfOrder(
-        "Sprint 2026-03-01",
-        "Sprint 2026-02-30 / 2026-03-02",
-        "ascending",
-        1,
-        "[order:first:date:ascending]",
-        9,
-      ),
-    ],
+    expected: [outOfOrder("Sprint 2026-03-01", "Sprint 2026-02-30 / 2026-03-02", "ascending", 1, "[order:first:date:ascending]", 9)],
   },
   // `[1.10.0]` then `[1.9.0]`: as strings `[1.1` is below `[1.9`, so the pair rises.
   {
     name: "fail-version-ten-before-nine-whole-text-descending",
-    expected: [
-      outOfOrder(
-        "[1.9.0] - 2026-03-15",
-        "[1.10.0] - 2026-04-01",
-        "descending",
-        1,
-        "[order:descending]",
-        9,
-      ),
-    ],
+    expected: [outOfOrder("[1.9.0] - 2026-03-15", "[1.10.0] - 2026-04-01", "descending", 1, "[order:descending]", 9)],
   },
   // The same headings by version (1.10.0 above 1.9.0) and by date: in descending order.
   { name: "pass-version-ten-before-nine-semver-descending", expected: [] },
@@ -163,9 +129,7 @@ const CASES: readonly TestCase[] = [
   // A pre-release is below its release: `v2.0.0-rc.1` after `v2.0.0` falls.
   {
     name: "fail-pre-release-below-its-release",
-    expected: [
-      outOfOrder("v2.0.0-rc.1", "v2.0.0", "ascending", 1, "[order:first:semver:ascending]", 9),
-    ],
+    expected: [outOfOrder("v2.0.0-rc.1", "v2.0.0", "ascending", 1, "[order:first:semver:ascending]", 9)],
   },
   // alpha < alpha.1 < rc.2 < rc.10 (numeric identifiers by value) < the release.
   { name: "pass-pre-releases-before-their-release", expected: [] },
@@ -174,25 +138,13 @@ const CASES: readonly TestCase[] = [
   // `v10.0.0` is read as 10.0.0, above 2.0.0: out of descending order.
   {
     name: "fail-v-prefix-read-as-semver",
-    expected: [
-      outOfOrder(
-        "Release v10.0.0",
-        "Release v2.0.0",
-        "descending",
-        1,
-        "[order:first:semver:descending]",
-        9,
-      ),
-    ],
+    expected: [outOfOrder("Release v10.0.0", "Release v2.0.0", "descending", 1, "[order:first:semver:descending]", 9)],
   },
   // Section scope: one repeat set per parent instance; `{in}` is `Section '{parent}': `.
   // v1.0.0: 2, 1 (one pair, line 11); v1.1.0: 1, 2 (none); v1.2.0: 3, 2, 1 (two, line 23).
   {
     name: "fail-section-scope-one-finding-per-parent-instance",
-    expected: [
-      outOfOrder("Step 1", "Step 2", "ascending", 1, NUMBER_ASC, 11, "v1.0.0"),
-      outOfOrder("Step 2", "Step 3", "ascending", 2, NUMBER_ASC, 23, "v1.2.0"),
-    ],
+    expected: [outOfOrder("Step 1", "Step 2", "ascending", 1, NUMBER_ASC, 11, "v1.0.0"), outOfOrder("Step 2", "Step 3", "ascending", 2, NUMBER_ASC, 23, "v1.2.0")],
   },
   // `disable-line MTL609` on the anchor (line 11; DIR5, DIR7): silenced.
   { name: "pass-disable-line-on-the-anchor-silences-it", expected: [] },
@@ -234,8 +186,7 @@ const CASES: readonly TestCase[] = [
   { name: "pass-instance-without-key-gives-no-order-finding", expected: [] },
 ];
 
-const read = (path: string): string =>
-  readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
+const read = (path: string): string => readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
 
 async function templateOf(name: string) {
   const status = await checkTemplate(registry, read(`${DIR}/${name}/template.md`));
@@ -246,32 +197,18 @@ async function templateOf(name: string) {
 /** Every diagnostic (after suppression) for the pair of a fixture folder. */
 async function lintAll(name: string) {
   const status = await templateOf(name);
-  return checkTarget(
-    registry,
-    status.model,
-    read(`${DIR}/${name}/target.md`),
-    "target.md",
-    createEnv(),
-  );
+  return checkTarget(registry, status.model, read(`${DIR}/${name}/target.md`), "target.md", createEnv());
 }
 
 /** The errors of a fixture as [code, anchor line]. */
 async function errorsOf(name: string) {
-  return (await lintAll(name))
-    .filter((diagnostic) => diagnostic.severity === "error")
-    .map((diagnostic) => [diagnostic.code, anchorLineOf(diagnostic)]);
+  return (await lintAll(name)).filter((diagnostic) => diagnostic.severity === "error").map((diagnostic) => [diagnostic.code, anchorLineOf(diagnostic)]);
 }
 
 /** Result of `lintTarget` (findings and suppressed count) for a fixture folder. */
 async function lintResult(name: string) {
   const status = await templateOf(name);
-  return lintTarget(
-    registry,
-    status.model,
-    read(`${DIR}/${name}/target.md`),
-    "target.md",
-    createEnv(),
-  );
+  return lintTarget(registry, status.model, read(`${DIR}/${name}/target.md`), "target.md", createEnv());
 }
 
 describe("MTL609 heading-pattern-order", () => {
@@ -342,24 +279,15 @@ describe("MTL609 heading-pattern-order", () => {
   });
 
   it("worked example 1: MTL609 (template line 9) before MTL703 (template line 11)", async () => {
-    const codes = (await errorsOf("fail-worked-example-1-whole-text-descending")).map(
-      ([code]) => code,
-    );
+    const codes = (await errorsOf("fail-worked-example-1-whole-text-descending")).map(([code]) => code);
     expect(codes.filter((code) => code === CODE || code === "MTL703")).toEqual([CODE, "MTL703"]);
   });
 
   it("worked example 1, variant maximum: MTL608 is printed before MTL609 (codes in order)", async () => {
-    const fixture =
-      "tests/fixtures/pairs/MTL608/fail-worked-example-1-maximum-two-with-three-instances";
+    const fixture = "tests/fixtures/pairs/MTL608/fail-worked-example-1-maximum-two-with-three-instances";
     const status = await checkTemplate(registry, read(`${fixture}/template.md`));
     if (status.status !== "ok") throw new Error("template is broken");
-    const found = await checkTarget(
-      registry,
-      status.model,
-      read(`${fixture}/target.md`),
-      "target.md",
-      createEnv(),
-    );
+    const found = await checkTarget(registry, status.model, read(`${fixture}/target.md`), "target.md", createEnv());
     const codes = found.map((diagnostic) => diagnostic.code);
     expect(codes.slice(0, 2)).toEqual(["MTL608", CODE]);
   });
@@ -390,17 +318,13 @@ describe("MTL609 heading-pattern-order", () => {
   });
 
   it("the keyless instance between two keyed ones in order is MTL617 only (line 9)", async () => {
-    expect(await errorsOf("pass-instance-without-key-gives-no-order-finding")).toEqual([
-      ["MTL617", 9],
-    ]);
+    expect(await errorsOf("pass-instance-without-key-gives-no-order-finding")).toEqual([["MTL617", 9]]);
   });
 
   it("invalid pattern: the template has MTL014 and the target no MTL609", async () => {
     const status = await templateOf("pass-invalid-pattern-gives-no-order-finding");
     expect(status.warnings.map((diagnostic) => diagnostic.code)).toContain("MTL014");
-    expect(
-      (await lintAll("pass-invalid-pattern-gives-no-order-finding")).map((item) => item.code),
-    ).not.toContain(CODE);
+    expect((await lintAll("pass-invalid-pattern-gives-no-order-finding")).map((item) => item.code)).not.toContain(CODE);
   });
 
   it("repeat tag without pattern: the template has MTL015 and the target no MTL609", async () => {
@@ -423,10 +347,7 @@ describe("MTL609 heading-pattern-order", () => {
 
   it("disable-line on another line does not silence the finding on line 11", async () => {
     const result = await lintResult("fail-disable-line-on-another-line-does-not-silence-it");
-    expect(result.diagnostics.map((item) => [item.code, anchorLineOf(item)])).toContainEqual([
-      CODE,
-      11,
-    ]);
+    expect(result.diagnostics.map((item) => [item.code, anchorLineOf(item)])).toContainEqual([CODE, 11]);
     expect(result.suppressed).toBe(0);
   });
 
@@ -437,15 +358,9 @@ describe("MTL609 heading-pattern-order", () => {
   });
 
   it("unchecked child: only the parent's own finding, no MTL609", async () => {
-    expect(await errorsOf("pass-child-under-absent-parent-is-not-checked")).toEqual([
-      ["MTL601", null],
-    ]);
-    expect(await errorsOf("pass-child-under-mismatched-parent-is-not-checked")).toEqual([
-      ["MTL606", 7],
-    ]);
-    expect(await errorsOf("pass-child-under-template-only-parent-is-not-checked")).toEqual([
-      ["MTL603", 7],
-    ]);
+    expect(await errorsOf("pass-child-under-absent-parent-is-not-checked")).toEqual([["MTL601", null]]);
+    expect(await errorsOf("pass-child-under-mismatched-parent-is-not-checked")).toEqual([["MTL606", 7]]);
+    expect(await errorsOf("pass-child-under-template-only-parent-is-not-checked")).toEqual([["MTL603", 7]]);
   });
 });
 
@@ -457,23 +372,10 @@ async function headingTokens(tags: string): Promise<readonly string[]> {
 }
 
 describe("MTL609 --verify order tokens (spec 8.3)", () => {
-  const forms = [
-    "order:ascending",
-    "order:descending",
-    "order:first:number:ascending",
-    "order:first:number:descending",
-    "order:first:date:ascending",
-    "order:first:date:descending",
-    "order:first:semver:ascending",
-    "order:first:semver:descending",
-  ];
+  const forms = ["order:ascending", "order:descending", "order:first:number:ascending", "order:first:number:descending", "order:first:date:ascending", "order:first:date:descending", "order:first:semver:ascending", "order:first:semver:descending"];
   for (const form of forms) {
     it(`[${form}] prints as ${form}, after the pattern and repeat tokens`, async () => {
-      expect(
-        await headingTokens(
-          `[${form}] [content:list] [repeat-rules:same-level:max:3] [pattern:"Step {digits}"] [repeat-rules:same-level]`,
-        ),
-      ).toEqual([
+      expect(await headingTokens(`[${form}] [content:list] [repeat-rules:same-level:max:3] [pattern:"Step {digits}"] [repeat-rules:same-level]`)).toEqual([
         "presence:required",
         'pattern:"Step {digits}"',
         "repeat-rules:same-level",
@@ -485,9 +387,6 @@ describe("MTL609 --verify order tokens (spec 8.3)", () => {
   }
 
   it("prints the first order tag only", async () => {
-    expect(await headingTokens("[order:first:date:descending] [order:ascending]")).toEqual([
-      "presence:required",
-      "order:first:date:descending",
-    ]);
+    expect(await headingTokens("[order:first:date:descending] [order:ascending]")).toEqual(["presence:required", "order:first:date:descending"]);
   });
 });

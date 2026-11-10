@@ -11,10 +11,8 @@ const CODE = "MTL514";
 const DIR = "tests/fixtures/pairs/MTL514";
 
 /** Spec 4.3 messages of MTL514: `Field '<key>' (type=list-of-path): <detail>`. */
-const shape = (key: string, got: string): string =>
-  `Field '${key}' (type=list-of-path): expected a YAML list of paths, got ${got}`;
-const entries = (key: string, items: string): string =>
-  `Field '${key}' (type=list-of-path): list contains non-path entries: ${items}`;
+const shape = (key: string, got: string): string => `Field '${key}' (type=list-of-path): expected a YAML list of paths, got ${got}`;
+const entries = (key: string, items: string): string => `Field '${key}' (type=list-of-path): list contains non-path entries: ${items}`;
 
 interface TestCase {
   readonly name: string;
@@ -55,30 +53,17 @@ const CASES: readonly TestCase[] = [
   // extension followed by a slash; the 5 character extension is valid.
   {
     name: "fail-unanchored-and-extension-boundaries",
-    expected: [
-      entries(
-        "paths",
-        "['n/a', 'QA/Test', 'and/or', 'dir/sub/', 'docs/file.abcdef', 'docs/file.', 'docs/readme.md/']",
-      ),
-    ],
+    expected: [entries("paths", "['n/a', 'QA/Test', 'and/or', 'dir/sub/', 'docs/file.abcdef', 'docs/file.', 'docs/readme.md/']")],
   },
   // Each forbidden character, a second colon, a space, a lone slash, a UNC prefix.
   {
     name: "fail-forbidden-characters-colon-whitespace-and-bare-separators",
-    expected: [
-      entries(
-        "paths",
-        `['./a<b/c.md', './a>b/c.md', './a"b/c.md', './a|b/c.md', './a?b/c.md', './a*b/c.md', ` +
-          "'./a:b/c.md', 'C:/a:b/c.md', './a b/c.md', '/', '//server/share/a.md']",
-      ),
-    ],
+    expected: [entries("paths", `['./a<b/c.md', './a>b/c.md', './a"b/c.md', './a|b/c.md', './a?b/c.md', './a*b/c.md', ` + "'./a:b/c.md', 'C:/a:b/c.md', './a b/c.md', '/', '//server/share/a.md']")],
   },
   // Items are not trimmed (legacy `is_path_like(value)`).
   {
     name: "fail-padded-items-are-not-trimmed",
-    expected: [
-      entries("paths", "[' ./docs/readme.md', './docs/readme.md ', '  ./docs/readme.md  ']"),
-    ],
+    expected: [entries("paths", "[' ./docs/readme.md', './docs/readme.md ', '  ./docs/readme.md  ']")],
   },
   // A URL is never a path.
   {
@@ -112,21 +97,14 @@ const CASES: readonly TestCase[] = [
   },
 ];
 
-const read = (path: string): string =>
-  readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
+const read = (path: string): string => readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
 
 /** MTL514 diagnostics for the pair of a fixture folder. */
 async function lint(testCase: TestCase) {
   const fixture = `${DIR}/${testCase.name}`;
   const status = await checkTemplate(registry, read(`${fixture}/template.md`));
   if (status.status !== "ok") throw new Error(`${fixture}: template is broken`);
-  const found = await checkTarget(
-    registry,
-    status.model,
-    read(`${fixture}/target.md`),
-    `${fixture}/target.md`,
-    createEnv(),
-  );
+  const found = await checkTarget(registry, status.model, read(`${fixture}/target.md`), `${fixture}/target.md`, createEnv());
   return found.filter((diagnostic) => diagnostic.code === CODE);
 }
 

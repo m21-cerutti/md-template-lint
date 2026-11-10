@@ -59,6 +59,7 @@ tmp/
 
 # --- opencode local state ---
 .opencode/session-archive.json
+.opencode/opencode.jsonc
 .opencode/node_modules/
 .playwright-mcp/
 

@@ -24,10 +24,7 @@ const CASES: readonly VerifyCase[] = [
   // A flow sequence `[a, b` that is never closed.
   {
     name: "fail-unclosed-flow-sequence",
-    ...broken(
-      "Flow sequence in block collection must be sufficiently indented and end with a ] " +
-        "at line 2, column 1: tags: [a, b ^ ",
-    ),
+    ...broken("Flow sequence in block collection must be sufficiently indented and end with a ] " + "at line 2, column 1: tags: [a, b ^ "),
   },
   // A double-quoted string that is never closed.
   {

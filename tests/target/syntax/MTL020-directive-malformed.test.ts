@@ -1,18 +1,11 @@
 /** MTL020 directive-malformed (src/rules/syntax.ts, docs/spec.md 4.3, 4.4 DIR2). */
 import { describe, expect, it } from "vitest";
-import {
-  at,
-  expectCases,
-  expectDirectiveRule,
-  findingsOf,
-  type Found,
-} from "../../helpers/directives.js";
+import { at, expectCases, expectDirectiveRule, findingsOf, type Found } from "../../helpers/directives.js";
 
 const CODE = "MTL020";
 const DIR = "tests/fixtures/pairs/MTL020";
 
-const EXPECTED =
-  "(expected disable, disable-line, disable-next-line, disable-file, begin disable or end disable)";
+const EXPECTED = "(expected disable, disable-line, disable-next-line, disable-file, begin disable or end disable)";
 const unknown = (word: string): string => `unknown directive '${word}' ${EXPECTED}`;
 const noCode = (verb: string): string => `'${verb}' needs at least one rule code`;
 
@@ -43,14 +36,7 @@ const CASES: readonly TestCase[] = [
   // A verb with no item: canonical lowercase verb; empty items (`,,`) are no items.
   {
     name: "fail-verb-without-code",
-    expected: [
-      at(3, 1, noCode("disable-file")),
-      at(8, 1, noCode("begin disable")),
-      at(9, 1, noCode("disable-line")),
-      at(10, 1, noCode("end disable")),
-      at(11, 1, noCode("disable")),
-      at(12, 1, noCode("disable-next-line")),
-    ],
+    expected: [at(3, 1, noCode("disable-file")), at(8, 1, noCode("begin disable")), at(9, 1, noCode("disable-line")), at(10, 1, noCode("end disable")), at(11, 1, noCode("disable")), at(12, 1, noCode("disable-next-line"))],
   },
 ];
 

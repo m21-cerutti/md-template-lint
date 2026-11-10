@@ -8,6 +8,41 @@ last_updated: 2026-11-04
 How the code is organised and why. The contract is [spec.md](spec.md); the grammar decisions are in
 [ADR 0002](adr/0002-grammar-structure.md). When this file and the spec disagree, the spec wins.
 
+<!-- omit in toc -->
+
+## Summary
+
+- [Overview](#overview)
+- [Legend](#legend)
+- [Discrepancies](#discrepancies)
+- [Modules](#modules)
+- [Layers and dependency rules](#layers-and-dependency-rules)
+- [Where the codes live](#where-the-codes-live)
+- [Extension points](#extension-points)
+- [Run flow: config, runner, pipeline, reporters](#run-flow-config-runner-pipeline-reporters)
+  - [Sequence of one lint run](#sequence-of-one-lint-run)
+- [CLI](#cli)
+  - [File-list mode (lint-staged)](#file-list-mode-lint-staged)
+  - [`--verify`](#--verify)
+- [Reporter sanitizing and UNC paths](#reporter-sanitizing-and-unc-paths)
+  - [Source excerpt (spec 8.2 EX1 to EX9, 8.3, 8.5)](#source-excerpt-spec-82-ex1-to-ex9-83-85)
+- [Production RuleIo (`src/io/`)](#production-ruleio-srcio)
+- [Data flow](#data-flow)
+- [Lexer modes](#lexer-modes)
+- [Listeners and error flow](#listeners-and-error-flow)
+- [Main types](#main-types)
+- [Rule contract](#rule-contract)
+  - [Heading and section model (spec 2.6, change C10)](#heading-and-section-model-spec-26-change-c10)
+  - [Emission order (spec 4.1, 8.4)](#emission-order-spec-41-84)
+  - [Anchor lines (spec 4.4 DIR5)](#anchor-lines-spec-44-dir5)
+- [How to add a tag (5 places)](#how-to-add-a-tag-5-places)
+- [How to add a rule](#how-to-add-a-rule)
+- [Tests: rule cases](#tests-rule-cases)
+- [Tests of config, runner, reporters and io](#tests-of-config-runner-reporters-and-io)
+- [Consistency check](#consistency-check)
+- [Legacy comparison harness (removed)](#legacy-comparison-harness-removed)
+- [Coverage gate](#coverage-gate)
+
 ## Overview
 
 `md-template-lint` checks Markdown files (frontmatter and headings of every level, H1 to H6) against Markdown
@@ -48,9 +83,9 @@ flowchart are explained in the [Legend](#legend).
 Meaning of the arrows in the layers flowchart of [Layers and dependency rules](#layers-and-dependency-rules).
 The sequence, `--verify`, state and class diagrams use the standard Mermaid meaning of their own arrows.
 
-| Symbol       | Meaning                                                                                                                                                                                            |
-| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Solid arrow  | Value import in the main direction of the flow.                                                                                                                                                    |
+| Symbol       | Meaning                                                                                                                                                                                                                                                                                                                        |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Solid arrow  | Value import in the main direction of the flow.                                                                                                                                                                                                                                                                                |
 | Dotted arrow | Import of a contract by a layer that sits on the other side of the flow. `rules` import values from `engine` (`defineRule` and the `report` helper of `engine/rule.ts`); `reporters` import the value `EXCERPT_WIDTH` from `runner`; `config` and `realio` import types only. Also the generator step (`pnpm run gen:parser`). |
 
 ## Discrepancies
@@ -59,46 +94,46 @@ Places where the diagrams and the code differ.
 
 The layers flowchart draws the main edges only. These imports exist in `src/` and are not drawn:
 
-| Area                  | Diagram says | Code does                                                                              | Action                              |
-| --------------------- | ------------ | -------------------------------------------------------------------------------------- | ----------------------------------- |
-| `runner` to `rules`   | no edge      | `src/runner/schema.ts` imports the value `enumOptions`                                 | Accepted: schema check shares enums |
-| `runner` to `tags`    | no edge      | `src/runner/excerpt.ts` imports the value `normalizeLineEnds`                          | Accepted                            |
-| `runner` to `engine`  | no edge      | `src/runner/excerpt.ts` imports the value `anchorLineOf`                               | Accepted                            |
-| `cli` to `engine`     | no edge      | `src/cli/run.ts` imports the value `createMemoryIo`                                    | Accepted                            |
-| `rules` to `tags`     | no edge      | `src/rules/*.ts` (for example `syntax.ts`, `bounds.ts`, `heading.ts`) import types     | Accepted (type only)                |
-| `reporters` to others | no edge      | `src/reporters/text.ts` imports types from `config` and `engine`                       | Accepted (type only)                |
+| Area                  | Diagram says | Code does                                                                          | Action                              |
+| --------------------- | ------------ | ---------------------------------------------------------------------------------- | ----------------------------------- |
+| `runner` to `rules`   | no edge      | `src/runner/schema.ts` imports the value `enumOptions`                             | Accepted: schema check shares enums |
+| `runner` to `tags`    | no edge      | `src/runner/excerpt.ts` imports the value `normalizeLineEnds`                      | Accepted                            |
+| `runner` to `engine`  | no edge      | `src/runner/excerpt.ts` imports the value `anchorLineOf`                           | Accepted                            |
+| `cli` to `engine`     | no edge      | `src/cli/run.ts` imports the value `createMemoryIo`                                | Accepted                            |
+| `rules` to `tags`     | no edge      | `src/rules/*.ts` (for example `syntax.ts`, `bounds.ts`, `heading.ts`) import types | Accepted (type only)                |
+| `reporters` to others | no edge      | `src/reporters/text.ts` imports types from `config` and `engine`                   | Accepted (type only)                |
 
 ## Modules
 
-| Path                               | Role                                                                                |
-| ---------------------------------- | ----------------------------------------------------------------------------------- |
-| `grammar/MdTemplateLexer.g4`       | Lexer with region modes. Single source of tag syntax with the parser grammar.       |
-| `grammar/MdTemplateParser.g4`      | Parser: `document`, `fm*` (frontmatter) and `body*` (body) rule families.           |
-| `src/generated/`                   | antlr-ng output. Never hand-edited (`pnpm run gen:parser`, `pnpm run check:parser`). |
-| `src/tags/listeners.ts`            | Collecting lexer and parser error listeners, `DiagnosticCollector`.                 |
-| `src/tags/parser.ts`               | Stage 1 and stage 2 parses, visitors, typed AST (`analyzeDocument`), line endings.  |
-| `src/tags/visitors/`               | One visitor per tag family, `TypeHintListener`, bracket and heading helpers.        |
-| `src/tags/ast.ts`, `types.ts`      | Typed AST, tag kind lists, findings; the 17 type names.                             |
-| `src/engine/load.ts`               | `loadDocument` / `loadFile`: grammar parse, YAML values, comment binding, sections. |
-| `src/engine/infer.ts`, `values.ts` | Type inference (spec 3.2) and the loose value predicates (spec 3.3).                |
-| `src/engine/rule.ts`               | Rule contract: categories, phases, steps, contexts, `RuleEnv`, `defineRule`, stubs. |
-| `src/engine/ranges.json`           | Category code ranges (spec 4.2). Read by `rule.ts` and `scripts/new-rule.ts`.       |
-| `src/engine/registry.ts`           | Loads the nine `src/rules/<category>.ts` files, validates codes, categories, steps. |
-| `src/engine/directives.ts`         | Target disable directives (spec 4.4): validation, range bookkeeping, coverage rule. |
-| `src/engine/pipeline.ts`           | `checkTemplate`, `lintTarget` / `checkTarget`: load, rules in spec 4.1 order, suppression. |
-| `src/rules/<category>.ts`          | One file per category (spec 9). Each exports `rules: readonly AnyRule[]`.           |
-| `src/config/load.ts`               | `loadConfig`: discovery, `yaml` parse, located validation (`MTL901` to `MTL908`).    |
-| `src/config/paths.ts`, `glob.ts`   | One path resolver (spec 6.2, D04); globs to regex plus a walk base (spec 6.4).       |
-| `src/config/types.ts`              | `LintConfig`, `PairConfig`, `ConfigResult`, `RunDiagnostic` (`MTL9xx`).              |
-| `src/runner/run.ts`                | `runLint`: roots, pairs, template cache, pipeline calls, run diagnostics, exit code. |
-| `src/runner/walk.ts`, `types.ts`   | Target discovery (include minus exclude, sorted); the plain-data `RunResult`.        |
-| `src/reporters/`                   | `report`: `pretty`, `plain`, `json`; `cleanText` sanitizing of echoed values; `excerpt.ts` source-line rows and JSON `sourceLine`. |
-| `src/io/`                          | `createRealIo`: production `RuleIo` (`exists`, hardened `probeUrl`).                 |
-| `src/runner/list.ts`, `verify.ts`  | File-list matching (lint-staged mode); `verifyConfig` / `verifyPaths` (`--verify`).  |
-| `src/runner/files.ts`, `template.ts` | Strict UTF-8 read and path checks; template load shared by lint and `--verify`.    |
-| `src/runner/schema.ts`             | `describeTemplate`: filename convention, fields (type, rules), headings (`--verify`). |
-| `src/cli.ts`, `src/cli/`           | Process entry (`bin`), `execute` catch-all, argument parser, `runCli`, `--verify` reporter, version. |
-| `scripts/`                         | TypeScript scripts run by `tsx` ([ADR 0007](adr/0007-tsx-script-runner.md)): `gen-parser.ts`, `check-parser.ts`, `new-rule.ts`, `smoke-pack.ts`, `smoke/`, `syntax-doc/generate.ts` (generates and checks `docs/syntax-reference.md`), `syntax-doc/notes.ts` (its hand-written notes). Package scripts `gen:parser`, `check:parser`, `new:rule`, `smoke:pack`, `gen:syntax-doc`, `check:syntax-doc`. |
+| Path                                 | Role                                                                                                                                                                                                                                                                                                                                                                                                 |
+| ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `grammar/MdTemplateLexer.g4`         | Lexer with region modes. Single source of tag syntax with the parser grammar.                                                                                                                                                                                                                                                                                                                        |
+| `grammar/MdTemplateParser.g4`        | Parser: `document`, `fm*` (frontmatter) and `body*` (body) rule families.                                                                                                                                                                                                                                                                                                                            |
+| `src/generated/`                     | antlr-ng output. Never hand-edited (`pnpm run gen:parser`, `pnpm run check:parser`).                                                                                                                                                                                                                                                                                                                 |
+| `src/tags/listeners.ts`              | Collecting lexer and parser error listeners, `DiagnosticCollector`.                                                                                                                                                                                                                                                                                                                                  |
+| `src/tags/parser.ts`                 | Stage 1 and stage 2 parses, visitors, typed AST (`analyzeDocument`), line endings.                                                                                                                                                                                                                                                                                                                   |
+| `src/tags/visitors/`                 | One visitor per tag family, `TypeHintListener`, bracket and heading helpers.                                                                                                                                                                                                                                                                                                                         |
+| `src/tags/ast.ts`, `types.ts`        | Typed AST, tag kind lists, findings; the 17 type names.                                                                                                                                                                                                                                                                                                                                              |
+| `src/engine/load.ts`                 | `loadDocument` / `loadFile`: grammar parse, YAML values, comment binding, sections.                                                                                                                                                                                                                                                                                                                  |
+| `src/engine/infer.ts`, `values.ts`   | Type inference (spec 3.2) and the loose value predicates (spec 3.3).                                                                                                                                                                                                                                                                                                                                 |
+| `src/engine/rule.ts`                 | Rule contract: categories, phases, steps, contexts, `RuleEnv`, `defineRule`, stubs.                                                                                                                                                                                                                                                                                                                  |
+| `src/engine/ranges.json`             | Category code ranges (spec 4.2). Read by `rule.ts` and `scripts/new-rule.ts`.                                                                                                                                                                                                                                                                                                                        |
+| `src/engine/registry.ts`             | Loads the nine `src/rules/<category>.ts` files, validates codes, categories, steps.                                                                                                                                                                                                                                                                                                                  |
+| `src/engine/directives.ts`           | Target disable directives (spec 4.4): validation, range bookkeeping, coverage rule.                                                                                                                                                                                                                                                                                                                  |
+| `src/engine/pipeline.ts`             | `checkTemplate`, `lintTarget` / `checkTarget`: load, rules in spec 4.1 order, suppression.                                                                                                                                                                                                                                                                                                           |
+| `src/rules/<category>.ts`            | One file per category (spec 9). Each exports `rules: readonly AnyRule[]`.                                                                                                                                                                                                                                                                                                                            |
+| `src/config/load.ts`                 | `loadConfig`: discovery, `yaml` parse, located validation (`MTL901` to `MTL908`).                                                                                                                                                                                                                                                                                                                    |
+| `src/config/paths.ts`, `glob.ts`     | One path resolver (spec 6.2, D04); globs to regex plus a walk base (spec 6.4).                                                                                                                                                                                                                                                                                                                       |
+| `src/config/types.ts`                | `LintConfig`, `PairConfig`, `ConfigResult`, `RunDiagnostic` (`MTL9xx`).                                                                                                                                                                                                                                                                                                                              |
+| `src/runner/run.ts`                  | `runLint`: roots, pairs, template cache, pipeline calls, run diagnostics, exit code.                                                                                                                                                                                                                                                                                                                 |
+| `src/runner/walk.ts`, `types.ts`     | Target discovery (include minus exclude, sorted); the plain-data `RunResult`.                                                                                                                                                                                                                                                                                                                        |
+| `src/reporters/`                     | `report`: `pretty`, `plain`, `json`; `cleanText` sanitizing of echoed values; `excerpt.ts` source-line rows and JSON `sourceLine`.                                                                                                                                                                                                                                                                   |
+| `src/io/`                            | `createRealIo`: production `RuleIo` (`exists`, hardened `probeUrl`).                                                                                                                                                                                                                                                                                                                                 |
+| `src/runner/list.ts`, `verify.ts`    | File-list matching (lint-staged mode); `verifyConfig` / `verifyPaths` (`--verify`).                                                                                                                                                                                                                                                                                                                  |
+| `src/runner/files.ts`, `template.ts` | Strict UTF-8 read and path checks; template load shared by lint and `--verify`.                                                                                                                                                                                                                                                                                                                      |
+| `src/runner/schema.ts`               | `describeTemplate`: filename convention, fields (type, rules), headings (`--verify`).                                                                                                                                                                                                                                                                                                                |
+| `src/cli.ts`, `src/cli/`             | Process entry (`bin`), `execute` catch-all, argument parser, `runCli`, `--verify` reporter, version.                                                                                                                                                                                                                                                                                                 |
+| `scripts/`                           | TypeScript scripts run by `tsx` ([ADR 0007](adr/0007-tsx-script-runner.md)): `gen-parser.ts`, `check-parser.ts`, `new-rule.ts`, `smoke-pack.ts`, `smoke/`, `syntax-doc/generate.ts` (generates and checks `docs/syntax-reference.md`), `syntax-doc/notes.ts` (its hand-written notes). Package scripts `gen:parser`, `check:parser`, `new:rule`, `smoke:pack`, `gen:syntax-doc`, `check:syntax-doc`. |
 
 The CLI is described in [CLI](#cli) below. It calls `loadConfig`, `createRealIo`, `runLint` (or
 `verifyConfig` / `verifyPaths`) and `report`, all exported from `src/index.ts`.
@@ -109,17 +144,17 @@ The code is a stack of layers. A layer imports only from a layer with a lower nu
 table (the table runs from the base up). The rules below come from reading the imports of
 `src/`; no check enforces them, review does.
 
-| Layer | Paths                                                  | Imports from                                                                                 |
-| ----- | ------------------------------------------------------ | -------------------------------------------------------------------------------------------- |
-| 0     | `grammar/`, `src/generated/`                           | `antlr4ng` only (the generated files). The `.g4` files are inputs of `pnpm run gen:parser`.  |
-| 1     | `src/tags/`                                            | `src/generated/`, `antlr4ng`. The only layer above 0 that imports `antlr4ng`.                |
-| 2     | `src/engine/` contract and loaders: `model.ts`, `rule.ts`, `values.ts`, `infer.ts`, `load.ts`, `directives.ts` | `src/tags/` (AST types, `analyzeDocument`, `normalizeLineEnds`, `KNOWN_TYPE_NAMES`), `yaml`, `node:fs/promises` (`loadFile`). |
-| 3     | `src/rules/<category>.ts`                              | The contract of layer 2 and the AST types of `src/tags/ast.ts`.                              |
-| 4     | `src/engine/registry.ts`, `src/engine/pipeline.ts`     | `src/rules/*` (only `registry.ts` imports the rules; `src/runner/schema.ts` also imports `enumOptions` from `src/rules/type.ts`) and layer 2. `pipeline.ts` imports `registry.ts`. |
-| 5     | `src/config/`, `src/io/`                               | `src/config/` imports the `RuleCode` and `Severity` types of `src/engine/model.ts` and `yaml`; `src/io/` imports the `RuleIo` types of `src/engine/rule.ts`. |
-| 6     | `src/runner/`                                          | `src/config/`, `src/engine/`, `src/tags/parser.ts` (`normalizeLineEnds`); `schema.ts` also imports `enumOptions` from `src/rules/type.ts`. |
-| 7     | `src/reporters/`                                       | `RunResult` and friends from `src/runner/types.ts`, `EXCERPT_WIDTH` from `src/runner/excerpt.ts`, types of `src/config/` and `src/engine/model.ts`. |
-| 8     | `src/cli.ts`, `src/cli/`                               | `src/config/`, `src/io/`, `src/runner/`, `src/reporters/`, `createMemoryIo` from `src/engine/rule.ts`. |
+| Layer | Paths                                                                                                          | Imports from                                                                                                                                                                       |
+| ----- | -------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0     | `grammar/`, `src/generated/`                                                                                   | `antlr4ng` only (the generated files). The `.g4` files are inputs of `pnpm run gen:parser`.                                                                                        |
+| 1     | `src/tags/`                                                                                                    | `src/generated/`, `antlr4ng`. The only layer above 0 that imports `antlr4ng`.                                                                                                      |
+| 2     | `src/engine/` contract and loaders: `model.ts`, `rule.ts`, `values.ts`, `infer.ts`, `load.ts`, `directives.ts` | `src/tags/` (AST types, `analyzeDocument`, `normalizeLineEnds`, `KNOWN_TYPE_NAMES`), `yaml`, `node:fs/promises` (`loadFile`).                                                      |
+| 3     | `src/rules/<category>.ts`                                                                                      | The contract of layer 2 and the AST types of `src/tags/ast.ts`.                                                                                                                    |
+| 4     | `src/engine/registry.ts`, `src/engine/pipeline.ts`                                                             | `src/rules/*` (only `registry.ts` imports the rules; `src/runner/schema.ts` also imports `enumOptions` from `src/rules/type.ts`) and layer 2. `pipeline.ts` imports `registry.ts`. |
+| 5     | `src/config/`, `src/io/`                                                                                       | `src/config/` imports the `RuleCode` and `Severity` types of `src/engine/model.ts` and `yaml`; `src/io/` imports the `RuleIo` types of `src/engine/rule.ts`.                       |
+| 6     | `src/runner/`                                                                                                  | `src/config/`, `src/engine/`, `src/tags/parser.ts` (`normalizeLineEnds`); `schema.ts` also imports `enumOptions` from `src/rules/type.ts`.                                         |
+| 7     | `src/reporters/`                                                                                               | `RunResult` and friends from `src/runner/types.ts`, `EXCERPT_WIDTH` from `src/runner/excerpt.ts`, types of `src/config/` and `src/engine/model.ts`.                                |
+| 8     | `src/cli.ts`, `src/cli/`                                                                                       | `src/config/`, `src/io/`, `src/runner/`, `src/reporters/`, `createMemoryIo` from `src/engine/rule.ts`.                                                                             |
 
 - `src/index.ts` re-exports the package API from every layer. Nothing inside `src/` imports it.
 - Only `src/tags/` and `src/generated/` know ANTLR. Everything above works on the typed AST
@@ -186,21 +221,21 @@ Each rule category is one file in `src/rules/`, with a fixed code range (spec 4.
 [spec.md 4.3](spec.md#43-code-table)). `src/engine/registry.ts` loads the nine files in the order
 below (`RULE_FILES`) and rejects a code outside the range of the file.
 
-| Codes                 | Category (file)         | Phase and step of its rules                          | Tests                                  |
-| --------------------- | ----------------------- | ---------------------------------------------------- | -------------------------------------- |
-| `MTL001`-`MTL004`     | `syntax` (`syntax.ts`)  | `parse`: a file that does not parse                  | `tests/syntax/syntax/`                 |
-| `MTL010`-`MTL016`     | `syntax` (`syntax.ts`) | `template`, warnings: `MTL010`-`MTL013` from `TagFinding`; `MTL014`: an invalid `[pattern:"..."]`, read from the template headings; `MTL015`: a heading tag with no effect, read from the template headings; `MTL016`: a `date` or `list-of-date` field without `[format:date]` or `[format:elements:date]`, read from the template fields | `tests/syntax/syntax/` |
-| `MTL017`-`MTL019`, `MTL030` | `syntax` (`syntax.ts`) | `template`, ERRORS read from the template headings (spec 2.7): `MTL017` duplicate pattern or exact text, `MTL018` `min` tag on an optional heading, `MTL019` child heading out of level order, `MTL030` order tag without repeat tag. The template stays usable (not broken) but fails: exit 1 in `--verify` and in a lint run, the targets are still linted | `tests/syntax/syntax/` |
-| `MTL020`-`MTL025`     | `syntax` (`syntax.ts`)  | `target`, step `directives`: disable directive warnings | `tests/target/syntax/`              |
-| `MTL100`-`MTL199`     | `filename` (`filename.ts`) | `target` step `filename`; `field` step `value-filename` | `tests/target/filename/`           |
-| `MTL200`-`MTL299`     | `presence` (`presence.ts`) | `field` step `presence`; `target` step `unknown-keys` | `tests/target/presence/`           |
-| `MTL300`-`MTL399`     | `format` (`format.ts`)  | `field` steps `constant`, `case`, `elements`, `scheme`, `shape` (`MTL306`-`MTL309`, last step, after `type`) | `tests/target/format/` |
-| `MTL400`-`MTL499`     | `bounds` (`bounds.ts`)  | `field` steps `count`, `range`, `order`              | `tests/target/bounds/`                 |
-| `MTL500`-`MTL599`     | `type` (`type.ts`)      | `field` step `type`                                  | `tests/target/type/`                   |
-| `MTL600`-`MTL699`     | `heading` (`heading.ts`) | `target` step `headings`: `MTL601`, `MTL604` (file scope), `MTL603` (both scopes; `MTL602` is retired and has no rule), `MTL605`-`MTL609`, `MTL614`, `MTL617` (pattern headings, repeat sets, order), `MTL610`-`MTL612` (section scope and the sub-heading opt-out), `MTL615` (`no-extra`), `MTL616` (extra headings, the only warning), `MTL613` (`[unique-headings-names]`, no template anchor, emitted last) | `tests/target/heading/` |
-| `MTL700`-`MTL799`     | `content` (`content.ts`) | `target` step `content`                             | `tests/target/content/`                |
-| `MTL800`-`MTL899`     | `io` (`io.ts`)          | `field` step `io`                                    | `tests/target/io/`                     |
-| `MTL900`-`MTL999`     | none: run diagnostics   | Built by `src/config/load.ts`, `src/runner/` and `src/cli/` as `RunDiagnostic` | `tests/unit/config/`, `tests/unit/runner/`, `tests/unit/cli/` |
+| Codes                       | Category (file)            | Phase and step of its rules                                                                                                                                                                                                                                                                                                                                                                                     | Tests                                                         |
+| --------------------------- | -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| `MTL001`-`MTL004`           | `syntax` (`syntax.ts`)     | `parse`: a file that does not parse                                                                                                                                                                                                                                                                                                                                                                             | `tests/syntax/syntax/`                                        |
+| `MTL010`-`MTL016`           | `syntax` (`syntax.ts`)     | `template`, warnings: `MTL010`-`MTL013` from `TagFinding`; `MTL014`: an invalid `[pattern:"..."]`, read from the template headings; `MTL015`: a heading tag with no effect, read from the template headings; `MTL016`: a `date` or `list-of-date` field without `[format:date]` or `[format:elements:date]`, read from the template fields                                                                      | `tests/syntax/syntax/`                                        |
+| `MTL017`-`MTL019`, `MTL030` | `syntax` (`syntax.ts`)     | `template`, ERRORS read from the template headings (spec 2.7): `MTL017` duplicate pattern or exact text, `MTL018` `min` tag on an optional heading, `MTL019` child heading out of level order, `MTL030` order tag without repeat tag. The template stays usable (not broken) but fails: exit 1 in `--verify` and in a lint run, the targets are still linted                                                    | `tests/syntax/syntax/`                                        |
+| `MTL020`-`MTL025`           | `syntax` (`syntax.ts`)     | `target`, step `directives`: disable directive warnings                                                                                                                                                                                                                                                                                                                                                         | `tests/target/syntax/`                                        |
+| `MTL100`-`MTL199`           | `filename` (`filename.ts`) | `target` step `filename`; `field` step `value-filename`                                                                                                                                                                                                                                                                                                                                                         | `tests/target/filename/`                                      |
+| `MTL200`-`MTL299`           | `presence` (`presence.ts`) | `field` step `presence`; `target` step `unknown-keys`                                                                                                                                                                                                                                                                                                                                                           | `tests/target/presence/`                                      |
+| `MTL300`-`MTL399`           | `format` (`format.ts`)     | `field` steps `constant`, `case`, `elements`, `scheme`, `shape` (`MTL306`-`MTL309`, last step, after `type`)                                                                                                                                                                                                                                                                                                    | `tests/target/format/`                                        |
+| `MTL400`-`MTL499`           | `bounds` (`bounds.ts`)     | `field` steps `count`, `range`, `order`                                                                                                                                                                                                                                                                                                                                                                         | `tests/target/bounds/`                                        |
+| `MTL500`-`MTL599`           | `type` (`type.ts`)         | `field` step `type`                                                                                                                                                                                                                                                                                                                                                                                             | `tests/target/type/`                                          |
+| `MTL600`-`MTL699`           | `heading` (`heading.ts`)   | `target` step `headings`: `MTL601`, `MTL604` (file scope), `MTL603` (both scopes; `MTL602` is retired and has no rule), `MTL605`-`MTL609`, `MTL614`, `MTL617` (pattern headings, repeat sets, order), `MTL610`-`MTL612` (section scope and the sub-heading opt-out), `MTL615` (`no-extra`), `MTL616` (extra headings, the only warning), `MTL613` (`[unique-headings-names]`, no template anchor, emitted last) | `tests/target/heading/`                                       |
+| `MTL700`-`MTL799`           | `content` (`content.ts`)   | `target` step `content`                                                                                                                                                                                                                                                                                                                                                                                         | `tests/target/content/`                                       |
+| `MTL800`-`MTL899`           | `io` (`io.ts`)             | `field` step `io`                                                                                                                                                                                                                                                                                                                                                                                               | `tests/target/io/`                                            |
+| `MTL900`-`MTL999`           | none: run diagnostics      | Built by `src/config/load.ts`, `src/runner/` and `src/cli/` as `RunDiagnostic`                                                                                                                                                                                                                                                                                                                                  | `tests/unit/config/`, `tests/unit/runner/`, `tests/unit/cli/` |
 
 Free ranges (no rule in `src/rules/` uses them yet): in `syntax`, `MTL005`-`MTL009` (parse sub-range),
 `MTL026`-`MTL029` (kept for directives) and `MTL031`-`MTL099` (`MTL030` is the last template tag code
@@ -214,16 +249,16 @@ A code is never renumbered or reused. The
 
 ## Extension points
 
-| You want to                         | Touch                                                                                          | Guide                                           |
-| ----------------------------------- | ---------------------------------------------------------------------------------------------- | ----------------------------------------------- |
-| Add a rule on existing tags         | spec 4.3 row, `src/rules/<category>.ts`, `tests/consistency/pending-rules.json` while a stub, test file, fixtures | [Adding a rule](guides/adding-a-rule.md)       |
-| Add a template tag                  | `grammar/MdTemplateLexer.g4`, `grammar/MdTemplateParser.g4`, `src/tags/ast.ts`, `src/tags/visitors/`, a rule, then `pnpm run gen:parser` | [Adding a tag](guides/adding-a-tag.md)         |
-| Add a disable directive verb        | `DIRECTIVE` mode and `directiveVerb` in the grammars, `DirectiveVerb` in `src/tags/ast.ts`, `VERBS` in `src/tags/visitors/directive.ts`, `analyzeDirectives` in `src/engine/directives.ts`, spec 4.4 | [Grammar and listeners](guides/grammar-and-listeners.md) |
-| Add a type name                     | `KNOWN_TYPE_NAMES` in `src/tags/types.ts`, spec 3.1, `src/engine/infer.ts`, `src/rules/type.ts` | [spec.md 3](spec.md#3-types)                   |
-| Add an output format                | `src/reporters/` and the `ReportFormat` and `FORMAT_NAMES` lists (`src/reporters/index.ts`, `src/cli/args.ts`) | [spec.md 8](spec.md#8-output)                  |
-| Add a config key                    | `src/config/load.ts` (validation), `src/config/types.ts`, spec 6.3, README config reference     | [spec.md 6](spec.md#6-configuration-md-template-lintyml) |
-| Add a step to the emission order    | `FIELD_STEPS` or `TARGET_STEPS` in `src/engine/rule.ts`, `runTargetRules` in `src/engine/pipeline.ts`, spec 4.1 | [Emission order](#emission-order-spec-41-84)   |
-| Add a script                        | `scripts/<name>.ts` (run by `tsx`, [ADR 0007](adr/0007-tsx-script-runner.md)) and a `package.json` script | [Testing](guides/testing.md#scripts)           |
+| You want to                      | Touch                                                                                                                                                                                                | Guide                                                    |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| Add a rule on existing tags      | spec 4.3 row, `src/rules/<category>.ts`, `tests/consistency/pending-rules.json` while a stub, test file, fixtures                                                                                    | [Adding a rule](guides/adding-a-rule.md)                 |
+| Add a template tag               | `grammar/MdTemplateLexer.g4`, `grammar/MdTemplateParser.g4`, `src/tags/ast.ts`, `src/tags/visitors/`, a rule, then `pnpm run gen:parser`                                                             | [Adding a tag](guides/adding-a-tag.md)                   |
+| Add a disable directive verb     | `DIRECTIVE` mode and `directiveVerb` in the grammars, `DirectiveVerb` in `src/tags/ast.ts`, `VERBS` in `src/tags/visitors/directive.ts`, `analyzeDirectives` in `src/engine/directives.ts`, spec 4.4 | [Grammar and listeners](guides/grammar-and-listeners.md) |
+| Add a type name                  | `KNOWN_TYPE_NAMES` in `src/tags/types.ts`, spec 3.1, `src/engine/infer.ts`, `src/rules/type.ts`                                                                                                      | [spec.md 3](spec.md#3-types)                             |
+| Add an output format             | `src/reporters/` and the `ReportFormat` and `FORMAT_NAMES` lists (`src/reporters/index.ts`, `src/cli/args.ts`)                                                                                       | [spec.md 8](spec.md#8-output)                            |
+| Add a config key                 | `src/config/load.ts` (validation), `src/config/types.ts`, spec 6.3, README config reference                                                                                                          | [spec.md 6](spec.md#6-configuration-md-template-lintyml) |
+| Add a step to the emission order | `FIELD_STEPS` or `TARGET_STEPS` in `src/engine/rule.ts`, `runTargetRules` in `src/engine/pipeline.ts`, spec 4.1                                                                                      | [Emission order](#emission-order-spec-41-84)             |
+| Add a script                     | `scripts/<name>.ts` (run by `tsx`, [ADR 0007](adr/0007-tsx-script-runner.md)) and a `package.json` script                                                                                            | [Testing](guides/testing.md#scripts)                     |
 
 ## Run flow: config, runner, pipeline, reporters
 
@@ -459,7 +494,7 @@ Rule tokens spell the tag without brackets: `presence:required|optional|template
 `format:elements:semver`, `format:elements:date`, `value:filename`,
 `count:min:N`, `count:max:N`, `range:min:<n>`, `range:max:<n>`, `order:ascending`,
 `format:scheme:<a,b>` (sorted, unique), `io:exists`, `enum:<a|b>` (field type `enum`, options from the
-value split on ` | `, the one `enumOptions` of `src/rules/type.ts`, shown for fields whose type is `enum`
+value split on `|`, the one `enumOptions` of `src/rules/type.ts`, shown for fields whose type is `enum`
 only). Field order is the spec 8.3 order: presence, constant, case, elements case, shape
 (`format:semver`, `format:date`), elements shape (`format:elements:semver`, `format:elements:date`),
 value-filename, count min and max, range min and max, order, scheme, io, enum. When a tag kind that
@@ -559,18 +594,18 @@ formats it, and nothing else reads source text:
 `createRealIo({ allowPrivateNetworks?, fetch?, resolve?, maxUrls?, hardCapMs? })` returns the
 `RuleIo` the runner is given (`runLint` takes `io` as a required option, like `checkTarget`).
 
-| Requirement (A12.11, OWASP A10) | Where                                                                          |
-| ------------------------------- | ------------------------------------------------------------------------------ |
-| Scheme allow-list `http`, `https`, before any I/O | `probe` in `src/io/index.ts`; others: `unsupported scheme`      |
-| `redirect: "manual"`, 3xx is reachable, never followed | request init; the default transport never follows        |
-| Blocked by default: 0.0.0.0/8, loopback, link-local (169.254/16, fe80::/10), multicast and reserved, cloud metadata, IPv4-mapped, -compatible and -translated IPv6, Teredo, NAT64 local use, every IPv6 outside 2000::/3 and fc00::/7, `localhost`, numeric IP spellings | `src/io/address.ts`, `hostProblem` |
-| Private ranges (RFC 1918, 100.64.0.0/10, fc00::/7) only with `allowPrivateNetworks: true` in the config | `isAddressAllowed`; loopback, link-local and metadata stay blocked |
-| RESOLVED address checked, at connect time too (DNS rebinding) | pre-check in `hostProblem`; `createGuardedLookup` in the default transport (`src/io/transport.ts`) |
-| Userinfo stripped, no cookies or auth header, fixed User-Agent, no proxy | `probe`; `node:http(s)` with `agent: false` ignores proxy variables |
-| `AbortSignal.timeout(5000)` per request, 10 s hard cap per URL, body cancelled at once, never read | `probe` |
-| Run budget: a URL is probed once, at most `maxUrls` (100) different URLs | `probeUrl` cache                     |
-| Never throws; reason from a fixed vocabulary | `reasonOf`: `HTTP <status>`, `timeout`, `DNS failure`, `connection refused`, `blocked address`, `unsupported scheme`, `invalid URL`, `url budget exceeded`, `request failed` |
-| `exists` swallows every OS error and a NUL byte | `exists`; the rule passes the folded path it judged                    |
+| Requirement (A12.11, OWASP A10)                                                                                                                                                                                                                                          | Where                                                                                                                                                                        |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Scheme allow-list `http`, `https`, before any I/O                                                                                                                                                                                                                        | `probe` in `src/io/index.ts`; others: `unsupported scheme`                                                                                                                   |
+| `redirect: "manual"`, 3xx is reachable, never followed                                                                                                                                                                                                                   | request init; the default transport never follows                                                                                                                            |
+| Blocked by default: 0.0.0.0/8, loopback, link-local (169.254/16, fe80::/10), multicast and reserved, cloud metadata, IPv4-mapped, -compatible and -translated IPv6, Teredo, NAT64 local use, every IPv6 outside 2000::/3 and fc00::/7, `localhost`, numeric IP spellings | `src/io/address.ts`, `hostProblem`                                                                                                                                           |
+| Private ranges (RFC 1918, 100.64.0.0/10, fc00::/7) only with `allowPrivateNetworks: true` in the config                                                                                                                                                                  | `isAddressAllowed`; loopback, link-local and metadata stay blocked                                                                                                           |
+| RESOLVED address checked, at connect time too (DNS rebinding)                                                                                                                                                                                                            | pre-check in `hostProblem`; `createGuardedLookup` in the default transport (`src/io/transport.ts`)                                                                           |
+| Userinfo stripped, no cookies or auth header, fixed User-Agent, no proxy                                                                                                                                                                                                 | `probe`; `node:http(s)` with `agent: false` ignores proxy variables                                                                                                          |
+| `AbortSignal.timeout(5000)` per request, 10 s hard cap per URL, body cancelled at once, never read                                                                                                                                                                       | `probe`                                                                                                                                                                      |
+| Run budget: a URL is probed once, at most `maxUrls` (100) different URLs                                                                                                                                                                                                 | `probeUrl` cache                                                                                                                                                             |
+| Never throws; reason from a fixed vocabulary                                                                                                                                                                                                                             | `reasonOf`: `HTTP <status>`, `timeout`, `DNS failure`, `connection refused`, `blocked address`, `unsupported scheme`, `invalid URL`, `url budget exceeded`, `request failed` |
+| `exists` swallows every OS error and a NUL byte                                                                                                                                                                                                                          | `exists`; the rule passes the folded path it judged                                                                                                                          |
 
 Numeric IP spellings (`2130706433`, `0x7f000001`, `0177.0.0.1`, `127.1`, fullwidth digits,
 ideographic dots) are folded to dotted quads by the WHATWG URL parser. `hostProblem` reads the
@@ -692,17 +727,17 @@ stateDiagram-v2
   }
 ```
 
-| Mode                          | Holds                                                                                             |
-| ----------------------------- | ------------------------------------------------------------------------------------------------- |
-| `DEFAULT_MODE`                | Start of the document: `---` opens the frontmatter, any other first line is a body line.          |
-| `FM`, `FM_VALUE`, `FM_PLAIN`, `FM_FLOW`, `FM_TEXT` | Frontmatter: key lines, the value start, the rest of a value, flow collections, other lines. |
-| `BODY`, `BODY_TEXT`           | Body line starts (heading, table row, list item, one-line HTML comment, blank) and plain lines.   |
-| `FENCE_BACKTICK`, `FENCE_TILDE` | Inside a code fence: no heading, no tag. The closing fence must be at least as long as the opening one (the only embedded code). |
-| `TAG_TEXT`                    | Text of an inline comment or a heading (stage 1): brackets, type hints, words, no tag keyword.    |
-| `TAG_STRICT`                  | One bracket of a known family re-lexed strictly (stage 2): tag keywords live here only.           |
-| `TAG_FREE`, `TAG_SCHEME`      | Free text argument (`constant:`, `conditional:`) and scheme list argument (`scheme:`).             |
-| `DIRECTIVE_SCAN`              | One target re-lexed: comment markers, backtick runs, text (spec 4.4). `scanComments` pairs them.  |
-| `DIRECTIVE`                   | The content of one comment: the keyword, the verbs, codes, the `--` reason.                       |
+| Mode                                               | Holds                                                                                                                            |
+| -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `DEFAULT_MODE`                                     | Start of the document: `---` opens the frontmatter, any other first line is a body line.                                         |
+| `FM`, `FM_VALUE`, `FM_PLAIN`, `FM_FLOW`, `FM_TEXT` | Frontmatter: key lines, the value start, the rest of a value, flow collections, other lines.                                     |
+| `BODY`, `BODY_TEXT`                                | Body line starts (heading, table row, list item, one-line HTML comment, blank) and plain lines.                                  |
+| `FENCE_BACKTICK`, `FENCE_TILDE`                    | Inside a code fence: no heading, no tag. The closing fence must be at least as long as the opening one (the only embedded code). |
+| `TAG_TEXT`                                         | Text of an inline comment or a heading (stage 1): brackets, type hints, words, no tag keyword.                                   |
+| `TAG_STRICT`                                       | One bracket of a known family re-lexed strictly (stage 2): tag keywords live here only.                                          |
+| `TAG_FREE`, `TAG_SCHEME`                           | Free text argument (`constant:`, `conditional:`) and scheme list argument (`scheme:`).                                           |
+| `DIRECTIVE_SCAN`                                   | One target re-lexed: comment markers, backtick runs, text (spec 4.4). `scanComments` pairs them.                                 |
+| `DIRECTIVE`                                        | The content of one comment: the keyword, the verbs, codes, the `--` reason.                                                      |
 
 The diagram groups the modes by the parse stage that starts a lexer in them (the four boxes). A `DS_*` rule of `DEFAULT_MODE` mirrors
 a `B_*` rule of `BODY`; `pnpm run check:rules` checks that mirror
@@ -711,14 +746,14 @@ a `B_*` rule of `BODY`; `pnpm run check:rules` checks that mirror
 
 ## Listeners and error flow
 
-| Listener or visitor   | Runs on                                       | Reports to                         |
-| --------------------- | --------------------------------------------- | ---------------------------------- |
-| `LexerErrorListener`  | every lexer (stage 1, stage 2, entry helpers) | the `SyntaxEventLog` of that parse |
-| `ParserErrorListener` | every parser (same)                           | the `SyntaxEventLog` of that parse |
-| family visitors       | stage-2 parse tree of one bracket             | tag data, located by `parser.ts`   |
-| `TypeHintListener`    | stage-1 tree of an inline comment             | hints, located by the session map  |
+| Listener or visitor   | Runs on                                       | Reports to                             |
+| --------------------- | --------------------------------------------- | -------------------------------------- |
+| `LexerErrorListener`  | every lexer (stage 1, stage 2, entry helpers) | the `SyntaxEventLog` of that parse     |
+| `ParserErrorListener` | every parser (same)                           | the `SyntaxEventLog` of that parse     |
+| family visitors       | stage-2 parse tree of one bracket             | tag data, located by `parser.ts`       |
+| `TypeHintListener`    | stage-1 tree of an inline comment             | hints, located by the session map      |
 | `DirectiveVisitor`    | `directiveEntry` tree of one comment content  | directive data, located by `parser.ts` |
-| `DiagnosticCollector` | one whole document parse                      | `DocumentAnalysis`                 |
+| `DiagnosticCollector` | one whole document parse                      | `DocumentAnalysis`                     |
 
 - Both error listeners map the ANTLR line and column through a `PositionMap`. For a stage-2
   bracket the map adds the bracket offset, so every location is a file position.
@@ -747,16 +782,16 @@ a `B_*` rule of `BODY`; `pnpm run check:rules` checks that mirror
 The types a contributor meets first, where they are declared, and how they hold each other. All
 are plain data except `DiagnosticCollector` and `SyntaxEventLog`, which are classes.
 
-| Type                                              | Declared in                | Role                                                                   |
-| ------------------------------------------------- | -------------------------- | ---------------------------------------------------------------------- |
-| `MarkdownDocument`, `Directive`, `TagFinding`     | `src/tags/ast.ts`          | Typed AST of one file: frontmatter, body blocks, directives, tag problems. |
-| `DiagnosticCollector`, `SyntaxEventLog`           | `src/tags/listeners.ts`    | Sink of one document parse (grammar errors and findings), and the event list of one lexer and parser pair. |
-| `DocumentModel`, `Field`, `Section`, `Diagnostic` | `src/engine/model.ts`      | A loaded template or target; one frontmatter key; one heading section of any level (H1 to H6, with its parent); one finding. |
-| `AnyRule`, `FieldContext`, `TargetContext`, `RuleEnv`, `RuleIo` | `src/engine/rule.ts` | The rule contract: what a check receives and what it may call. |
-| `RuleRegistry`                                    | `src/engine/registry.ts`   | Every rule, by code and by category.                                   |
-| `SuppressionPlan`, `DirectiveAnalysis`            | `src/engine/directives.ts` | What the valid directives of one target cover; the problems behind `MTL020` to `MTL025`. |
-| `LintConfig`, `PairConfig`                        | `src/config/types.ts`      | A validated `md-template-lint.yml`; one pair of template and globs.    |
-| `RunResult`, `PairBlock`, `FileResult`, `ReportedDiagnostic`, `SourceExcerpt` | `src/runner/types.ts` | What the reporters print. |
+| Type                                                                          | Declared in                | Role                                                                                                                         |
+| ----------------------------------------------------------------------------- | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `MarkdownDocument`, `Directive`, `TagFinding`                                 | `src/tags/ast.ts`          | Typed AST of one file: frontmatter, body blocks, directives, tag problems.                                                   |
+| `DiagnosticCollector`, `SyntaxEventLog`                                       | `src/tags/listeners.ts`    | Sink of one document parse (grammar errors and findings), and the event list of one lexer and parser pair.                   |
+| `DocumentModel`, `Field`, `Section`, `Diagnostic`                             | `src/engine/model.ts`      | A loaded template or target; one frontmatter key; one heading section of any level (H1 to H6, with its parent); one finding. |
+| `AnyRule`, `FieldContext`, `TargetContext`, `RuleEnv`, `RuleIo`               | `src/engine/rule.ts`       | The rule contract: what a check receives and what it may call.                                                               |
+| `RuleRegistry`                                                                | `src/engine/registry.ts`   | Every rule, by code and by category.                                                                                         |
+| `SuppressionPlan`, `DirectiveAnalysis`                                        | `src/engine/directives.ts` | What the valid directives of one target cover; the problems behind `MTL020` to `MTL025`.                                     |
+| `LintConfig`, `PairConfig`                                                    | `src/config/types.ts`      | A validated `md-template-lint.yml`; one pair of template and globs.                                                          |
+| `RunResult`, `PairBlock`, `FileResult`, `ReportedDiagnostic`, `SourceExcerpt` | `src/runner/types.ts`      | What the reporters print.                                                                                                    |
 
 ```mermaid
 classDiagram
@@ -960,7 +995,7 @@ defineRule({
 | `parse`    | `ParseContext`: role (template or target), `ParseFailure`                                  | none         |
 | `template` | `TemplateContext`: the template model with its tag findings                                | none         |
 | `field`    | `FieldContext`: key, template field, target value or null, both models, target path, `env` | `FieldStep`  |
-| `target`   | `TargetContext`: both models, target path, `env`, `knownCodes` (spec 4.3 codes)           | `TargetStep` |
+| `target`   | `TargetContext`: both models, target path, `env`, `knownCodes` (spec 4.3 codes)            | `TargetStep` |
 
 `RuleEnv` carries the config `aliases`, `approvedPaths`, the `pairRoot` and an injectable
 `io` (`exists(path)`, `probeUrl(url, timeoutMs)`, never throws, `URL_PROBE_TIMEOUT_MS` is
@@ -1099,19 +1134,19 @@ returns, to quote the anchored target line (see the source excerpt in the run fl
 reporters never read it: they get the line in `ReportedDiagnostic.excerpt` (the runner copies only
 the `Parse error: ` ones, which have no anchor, and the diagnostics it adds an excerpt to).
 
-| Diagnostics                                    | Anchor, recorded by                                              |
-| ---------------------------------------------- | ---------------------------------------------------------------- |
-| field steps (`MTL102`, `MTL201`, `MTL301` to `MTL517`, `MTL801` to `MTL805`; this includes `MTL306` to `MTL309` of step `shape`) | target key line of the field, none when the key is missing; the pipeline (`setAnchorLine`) |
-| `MTL202`                                       | target key line (last occurrence of a duplicate key); the rule (`reportOnLine`) |
-| `MTL603`                                       | the first sibling it sets aside (same level and scope, same text); the rule |
-| `MTL606`, `MTL609`                             | the reported target heading (the mismatch; the later heading of the first pair out of order); the rule |
-| `MTL607`, `MTL608`                             | the first instance of the repeat set (none without instance); the instance number `max + 1`; the rule |
-| `MTL614`, `MTL616`, `MTL617`                   | the first heading the finding lists (one diagnostic, so a line directive on that line removes it whole); the rule |
-| `MTL610`, `MTL611`                             | target parent heading (the match of the template parent); the rule |
-| `MTL612`, `MTL613`, `MTL615`                   | the reported target heading (`MTL613`: the later duplicate); the rule |
-| `MTL701` to `MTL705`                           | first target heading of the checked section; the rule            |
-| `MTL020` to `MTL025`                           | the directive line (never suppressible; data for reporters)      |
-| `MTL101`, `MTL601` (also with its "found later" hint, which is message text), `MTL604`, `MTL605`, parse failures, template diagnostics | none |
+| Diagnostics                                                                                                                            | Anchor, recorded by                                                                                               |
+| -------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| field steps (`MTL102`, `MTL201`, `MTL301` to `MTL517`, `MTL801` to `MTL805`; this includes `MTL306` to `MTL309` of step `shape`)       | target key line of the field, none when the key is missing; the pipeline (`setAnchorLine`)                        |
+| `MTL202`                                                                                                                               | target key line (last occurrence of a duplicate key); the rule (`reportOnLine`)                                   |
+| `MTL603`                                                                                                                               | the first sibling it sets aside (same level and scope, same text); the rule                                       |
+| `MTL606`, `MTL609`                                                                                                                     | the reported target heading (the mismatch; the later heading of the first pair out of order); the rule            |
+| `MTL607`, `MTL608`                                                                                                                     | the first instance of the repeat set (none without instance); the instance number `max + 1`; the rule             |
+| `MTL614`, `MTL616`, `MTL617`                                                                                                           | the first heading the finding lists (one diagnostic, so a line directive on that line removes it whole); the rule |
+| `MTL610`, `MTL611`                                                                                                                     | target parent heading (the match of the template parent); the rule                                                |
+| `MTL612`, `MTL613`, `MTL615`                                                                                                           | the reported target heading (`MTL613`: the later duplicate); the rule                                             |
+| `MTL701` to `MTL705`                                                                                                                   | first target heading of the checked section; the rule                                                             |
+| `MTL020` to `MTL025`                                                                                                                   | the directive line (never suppressible; data for reporters)                                                       |
+| `MTL101`, `MTL601` (also with its "found later" hint, which is message text), `MTL604`, `MTL605`, parse failures, template diagnostics | none                                                                                                              |
 
 `MTL602` is retired (the removed `[presence:exist]` tag, now `MTL012`): spec 4.2 keeps the code reserved
 and it has no anchor row.
@@ -1158,10 +1193,10 @@ limit cases. Each case has its own fixture with a descriptive kebab-case
 name (`pass-<name>` / `fail-<name>`, never numbered), and the test file holds a table that maps
 the case name to the fixture and the expected result. No case text is written inline.
 
-| Family | Test file | Fixtures | Code path |
-| ------ | --------- | -------- | --------- |
+| Family                                                                                        | Test file                                         | Fixtures                                                               | Code path                                                                                                                                                                                                                                                                                                          |
+| --------------------------------------------------------------------------------------------- | ------------------------------------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Template syntax (phase `parse` or `template`: `MTL001`-`MTL004`, `MTL010`-`MTL019`, `MTL030`) | `tests/syntax/<category>/<MTLxxx>-<name>.test.ts` | `tests/fixtures/templates/<MTLxxx>/<case>.md`, one template, no target | `md-template-lint --verify --format json <case>.md` through `runCli` (`tests/helpers/verify.ts`); asserts code, severity, message, line and column, template status (`ok`, `broken` or `fail`) and exit code (0; 1 when broken or when the template has a template error `MTL017`, `MTL018`, `MTL019` or `MTL030`) |
-| Target (phase `field` or `target`: `MTL020`-`MTL025`, `MTL101`-`MTL805`) | `tests/target/<category>/<MTLxxx>-<name>.test.ts` | `tests/fixtures/pairs/<MTLxxx>/<case>/template.md` + `target.md` | `checkTemplate` then `checkTarget` (or `lintTarget`) of `src/engine/pipeline.ts`; asserts the messages, severity and position of the code |
+| Target (phase `field` or `target`: `MTL020`-`MTL025`, `MTL101`-`MTL805`)                      | `tests/target/<category>/<MTLxxx>-<name>.test.ts` | `tests/fixtures/pairs/<MTLxxx>/<case>/template.md` + `target.md`       | `checkTemplate` then `checkTarget` (or `lintTarget`) of `src/engine/pipeline.ts`; asserts the messages, severity and position of the code                                                                                                                                                                          |
 
 The run diagnostics `MTL9xx` are not rules (no registry entry, no rule file). They depend on a
 config, a file system layout or the command line, so their cases live with the config, runner
@@ -1179,21 +1214,21 @@ test of their code.
 
 ## Tests of config, runner, reporters and io
 
-| Path                                  | Content                                                                        |
-| ------------------------------------- | ------------------------------------------------------------------------------ |
-| `tests/unit/config/`                  | `validate` (one error kind per fixture), `discovery`, `naming`, `bytes` (invalid UTF-8, BOM + CRLF, zero byte), `paths`, `glob`. |
-| `tests/unit/runner/`                  | `inputs` (MTL909 to MTL911, exit precedence), `empty` (`onEmpty`), `broken`, `parse` (`Parse error:`), `expand`, `io-wiring`, `unreadable`, `walk`, `suppress` (spec 4.4 worked examples, `Suppressed:`, `summary.suppressed`), `excerpt` (source line under a diagnostic, `tests/fixtures/runner/excerpt-*`, generated CRLF, tab, control-character and long-line projects, `--verify` template lines). |
-| `tests/unit/suppression.test.ts`, `anchors.test.ts` | Coverage of each directive verb and the parser edge cases (`tests/fixtures/suppression/<case>/`, `template.md` + `target.md`); anchor lines (DIR5). |
-| `tests/unit/reporters/`               | `pretty`, `plain`, `json` against expected-output files, `cleanText`, `excerpt` (rows, window, JSON `sourceLine`). |
-| `tests/unit/io/`                      | `address`, `probe` (refusal table), `probe-behaviour`, `connect-guard`, `exists`. |
-| `tests/unit/cli/`                     | `usage`, `exit`, `list`, `list-large` (500+ arguments, temp folder) and `list-root-case` (root directory written in another case), `verify`, `schema` (expected table and JSON), `format`, `wiring` (injected `createIo`), `main` (catch-all), `version`, `layout`, `spawn` (`dist/cli.js`, skipped when missing or older than `src/`). |
-| `tests/fixtures/cli/<case>/`          | One project per case: `exit-`, `list-`, `verify-`, `schema-` (a `template.md` with `expected.plain.txt` and `expected.json`), `format-`, `wiring-` (split), `usage-no-config` and `large-source-project` (one shared project each). |
-| `tests/fixtures/config/<case>/`       | One config per case: `validate-` (split), `discover-`, `naming-`.               |
-| `tests/fixtures/runner/<case>/`       | One project per case: `inputs-`, `empty-`, `broken-`, `parse-`, `suppress-` (split), `excerpt-` (split), `expand-`, `io-`, `unreadable-`, `report-`. |
-| `tests/fixtures/tags/<case>/`         | One `document.md` per case (`pass-` / `fail-`), read by `tests/unit/parser-comment-line.test.ts`. |
-| `tests/helpers/`                      | Fixture paths, the pass/fail split check, runner and io fakes, directive cases. |
-| `tests/unit/smoke/`                   | Packaging (ADR 0005): the pure helpers of `scripts/smoke-pack.ts` and `scripts/smoke/check-release.ts` (`scripts/smoke/helpers.ts`: process invocation and quoting, tarball content, tag and repository checks, CLI expectations), `check-release.ts` as a process, and the workflows `.github/workflows/ci.yml` and `release.yml` plus the `package.json` publish fields. |
-| `tests/fixtures/release/<group>/`     | One file per case (`pass-` / `fail-`): `manifest/`, `repository/` and `consumer/` (JSON: package.json fields, `repository` block, the smoke-test project after `pnpm add`) and `tarball/` (`.txt`: a `tar -tzf` listing). |
+| Path                                                | Content                                                                                                                                                                                                                                                                                                                                                                                                  |
+| --------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tests/unit/config/`                                | `validate` (one error kind per fixture), `discovery`, `naming`, `bytes` (invalid UTF-8, BOM + CRLF, zero byte), `paths`, `glob`.                                                                                                                                                                                                                                                                         |
+| `tests/unit/runner/`                                | `inputs` (MTL909 to MTL911, exit precedence), `empty` (`onEmpty`), `broken`, `parse` (`Parse error:`), `expand`, `io-wiring`, `unreadable`, `walk`, `suppress` (spec 4.4 worked examples, `Suppressed:`, `summary.suppressed`), `excerpt` (source line under a diagnostic, `tests/fixtures/runner/excerpt-*`, generated CRLF, tab, control-character and long-line projects, `--verify` template lines). |
+| `tests/unit/suppression.test.ts`, `anchors.test.ts` | Coverage of each directive verb and the parser edge cases (`tests/fixtures/suppression/<case>/`, `template.md` + `target.md`); anchor lines (DIR5).                                                                                                                                                                                                                                                      |
+| `tests/unit/reporters/`                             | `pretty`, `plain`, `json` against expected-output files, `cleanText`, `excerpt` (rows, window, JSON `sourceLine`).                                                                                                                                                                                                                                                                                       |
+| `tests/unit/io/`                                    | `address`, `probe` (refusal table), `probe-behaviour`, `connect-guard`, `exists`.                                                                                                                                                                                                                                                                                                                        |
+| `tests/unit/cli/`                                   | `usage`, `exit`, `list`, `list-large` (500+ arguments, temp folder) and `list-root-case` (root directory written in another case), `verify`, `schema` (expected table and JSON), `format`, `wiring` (injected `createIo`), `main` (catch-all), `version`, `layout`, `spawn` (`dist/cli.js`, skipped when missing or older than `src/`).                                                                  |
+| `tests/fixtures/cli/<case>/`                        | One project per case: `exit-`, `list-`, `verify-`, `schema-` (a `template.md` with `expected.plain.txt` and `expected.json`), `format-`, `wiring-` (split), `usage-no-config` and `large-source-project` (one shared project each).                                                                                                                                                                      |
+| `tests/fixtures/config/<case>/`                     | One config per case: `validate-` (split), `discover-`, `naming-`.                                                                                                                                                                                                                                                                                                                                        |
+| `tests/fixtures/runner/<case>/`                     | One project per case: `inputs-`, `empty-`, `broken-`, `parse-`, `suppress-` (split), `excerpt-` (split), `expand-`, `io-`, `unreadable-`, `report-`.                                                                                                                                                                                                                                                     |
+| `tests/fixtures/tags/<case>/`                       | One `document.md` per case (`pass-` / `fail-`), read by `tests/unit/parser-comment-line.test.ts`.                                                                                                                                                                                                                                                                                                        |
+| `tests/helpers/`                                    | Fixture paths, the pass/fail split check, runner and io fakes, directive cases.                                                                                                                                                                                                                                                                                                                          |
+| `tests/unit/smoke/`                                 | Packaging (ADR 0005): the pure helpers of `scripts/smoke-pack.ts` and `scripts/smoke/check-release.ts` (`scripts/smoke/helpers.ts`: process invocation and quoting, tarball content, tag and repository checks, CLI expectations), `check-release.ts` as a process, and the workflows `.github/workflows/ci.yml` and `release.yml` plus the `package.json` publish fields.                               |
+| `tests/fixtures/release/<group>/`                   | One file per case (`pass-` / `fail-`): `manifest/`, `repository/` and `consumer/` (JSON: package.json fields, `repository` block, the smoke-test project after `pnpm add`) and `tarball/` (`.txt`: a `tar -tzf` listing).                                                                                                                                                                                |
 
 A group of fixtures shares a prefix (`inputs-`, `empty-`, `broken-`, `parse-`, `suppress-`, `validate-`), so each
 test file checks that its directories are exactly its cases (no orphan). Inside a group the case names

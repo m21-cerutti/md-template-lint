@@ -12,13 +12,10 @@ const SCHEME_CODE = "MTL305";
 const DIR = "tests/fixtures/pairs/MTL515";
 
 /** Spec 4.3 messages of MTL515: `Field '<key>' (type=list-of-url): <detail>`. */
-const shape = (key: string, got: string): string =>
-  `Field '${key}' (type=list-of-url): expected a YAML list of URLs, got ${got}`;
-const entries = (key: string, items: string): string =>
-  `Field '${key}' (type=list-of-url): list contains non-URL entries: ${items}`;
+const shape = (key: string, got: string): string => `Field '${key}' (type=list-of-url): expected a YAML list of URLs, got ${got}`;
+const entries = (key: string, items: string): string => `Field '${key}' (type=list-of-url): list contains non-URL entries: ${items}`;
 /** Spec 4.3 message of MTL305 (the scheme allow-list owns the valid-but-disallowed items). */
-const scheme = (key: string, items: string, allowed: string): string =>
-  `Field '${key}': list contains URLs with a disallowed scheme ${items} [format:scheme:${allowed}]`;
+const scheme = (key: string, items: string, allowed: string): string => `Field '${key}': list contains URLs with a disallowed scheme ${items} [format:scheme:${allowed}]`;
 
 interface TestCase {
   readonly name: string;
@@ -66,13 +63,7 @@ const CASES: readonly TestCase[] = [
   // slash, a scheme starting with a digit, a bracket without its pair.
   {
     name: "fail-missing-scheme-host-and-malformed-separators",
-    expected: [
-      entries(
-        "urls",
-        "['www.example.com', 'https://', 'https:///path', 'https://?q=1', 'https://#frag', " +
-          "'https:/example.com', '1http://host', 'http://[::1/x', 'http://::1]/x']",
-      ),
-    ],
+    expected: [entries("urls", "['www.example.com', 'https://', 'https:///path', 'https://?q=1', 'https://#frag', " + "'https:/example.com', '1http://host', 'http://[::1/x', 'http://::1]/x']")],
     scheme: [],
   },
   // Space and tab inside, then each forbidden authority character; the
@@ -129,21 +120,14 @@ const CASES: readonly TestCase[] = [
   },
 ];
 
-const read = (path: string): string =>
-  readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
+const read = (path: string): string => readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
 
 /** MTL515 and MTL305 diagnostics for the pair of a fixture folder. */
 async function lint(testCase: TestCase) {
   const fixture = `${DIR}/${testCase.name}`;
   const status = await checkTemplate(registry, read(`${fixture}/template.md`));
   if (status.status !== "ok") throw new Error(`${fixture}: template is broken`);
-  const found = await checkTarget(
-    registry,
-    status.model,
-    read(`${fixture}/target.md`),
-    `${fixture}/target.md`,
-    createEnv(),
-  );
+  const found = await checkTarget(registry, status.model, read(`${fixture}/target.md`), `${fixture}/target.md`, createEnv());
   return {
     found: found.filter((diagnostic) => diagnostic.code === CODE),
     scheme: found.filter((diagnostic) => diagnostic.code === SCHEME_CODE),

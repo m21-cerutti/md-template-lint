@@ -41,12 +41,12 @@ always read from this repository.)
 A rule lives in `src/rules/<category>.ts`, one file per category, and has a phase (and for two
 phases a step) that decide when the pipeline runs it.
 
-| Your rule checks                                   | Category (see spec 4.2) | `--phase`  | `--step`                                      |
-| -------------------------------------------------- | ----------------------- | ---------- | --------------------------------------------- |
-| A file that does not parse                         | `syntax`                | `parse`    | none                                          |
-| A tag problem of a template (a warning, or a template error such as `MTL017`: severity `error`, exit 1) | `syntax` | `template` | none |
-| One template field against the target value        | by what it checks       | `field`    | one of `FIELD_STEPS` in `src/engine/rule.ts`  |
-| The whole target (file name, headings, content...) | by what it checks       | `target`   | one of `TARGET_STEPS` in `src/engine/rule.ts` |
+| Your rule checks                                                                                        | Category (see spec 4.2) | `--phase`  | `--step`                                      |
+| ------------------------------------------------------------------------------------------------------- | ----------------------- | ---------- | --------------------------------------------- |
+| A file that does not parse                                                                              | `syntax`                | `parse`    | none                                          |
+| A tag problem of a template (a warning, or a template error such as `MTL017`: severity `error`, exit 1) | `syntax`                | `template` | none                                          |
+| One template field against the target value                                                             | by what it checks       | `field`    | one of `FIELD_STEPS` in `src/engine/rule.ts`  |
+| The whole target (file name, headings, content...)                                                      | by what it checks       | `target`   | one of `TARGET_STEPS` in `src/engine/rule.ts` |
 
 `FIELD_STEPS` run in this order for each template field: `presence`, `constant`, `count`, `range`,
 `order`, `scheme`, `io`, `value-filename`, `case`, `elements`, `type`, `shape` (the format shape checks of `MTL306` to `MTL309`,
@@ -87,13 +87,13 @@ pnpm run new:rule -- format no-todo-value --step case
 The arguments are `<category> <name>` and these options (`scripts/new-rule.ts`, run by `tsx`,
 [ADR 0007](../adr/0007-tsx-script-runner.md)):
 
-| Option            | Meaning                                                                                                      |
-| ----------------- | ------------------------------------------------------------------------------------------------------------ |
-| `--code MTLnnn`   | Explicit code inside the category range. Default: the spec row with that name, else the next free code.     |
+| Option            | Meaning                                                                                                               |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `--code MTLnnn`   | Explicit code inside the category range. Default: the spec row with that name, else the next free code.               |
 | `--phase <phase>` | `parse`, `template`, `field` or `target`. Default: `template` for category `syntax` or with `--syntax`, else `field`. |
-| `--step <step>`   | Required for the phases `field` and `target`, refused for the others.                                         |
-| `--syntax`        | A template-only rule in another category (phase `template`).                                                  |
-| `--root <dir>`    | Write into another tree (tests).                                                                              |
+| `--step <step>`   | Required for the phases `field` and `target`, refused for the others.                                                 |
+| `--syntax`        | A template-only rule in another category (phase `template`).                                                          |
+| `--root <dir>`    | Write into another tree (tests).                                                                                      |
 
 With the spec row of section 2 in place, the script picks the code `MTL310` from the row and prints:
 
@@ -264,21 +264,14 @@ const CASES: readonly TestCase[] = [
   },
 ];
 
-const read = (path: string): string =>
-  readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
+const read = (path: string): string => readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
 
 /** The MTL310 diagnostics for the pair of a fixture folder. */
 async function lint(testCase: TestCase) {
   const fixture = `${DIR}/${testCase.name}`;
   const status = await checkTemplate(registry, read(`${fixture}/template.md`));
   if (status.status !== "ok") throw new Error(`${fixture}: template is broken`);
-  const found = await checkTarget(
-    registry,
-    status.model,
-    read(`${fixture}/target.md`),
-    `${fixture}/target.md`,
-    createEnv(),
-  );
+  const found = await checkTarget(registry, status.model, read(`${fixture}/target.md`), `${fixture}/target.md`, createEnv());
   return found.filter((diagnostic) => diagnostic.code === CODE);
 }
 

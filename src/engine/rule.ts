@@ -13,29 +13,11 @@
  *   fields; unknown keys, headings, content after them).
  */
 import type { SourcePosition } from "../tags/ast.js";
-import type {
-  Diagnostic,
-  DocumentModel,
-  Field,
-  ParseFailure,
-  RuleCode,
-  Severity,
-  YamlValue,
-} from "./model.js";
+import type { Diagnostic, DocumentModel, Field, ParseFailure, RuleCode, Severity, YamlValue } from "./model.js";
 import ranges from "./ranges.json" with { type: "json" };
 
 /** The nine rule categories, one file each in src/rules/ (spec 9). */
-export const CATEGORIES = [
-  "syntax",
-  "filename",
-  "presence",
-  "format",
-  "bounds",
-  "type",
-  "heading",
-  "content",
-  "io",
-] as const;
+export const CATEGORIES = ["syntax", "filename", "presence", "format", "bounds", "type", "heading", "content", "io"] as const;
 
 export type Category = (typeof CATEGORIES)[number];
 
@@ -53,20 +35,7 @@ export const CATEGORY_RANGES: Readonly<Record<Category, readonly number[]>> = ra
  * `shape` (MTL306 to MTL309, spec 2.9, change C11) is appended last, after
  * `type`, so every existing code keeps its emission order.
  */
-export const FIELD_STEPS = [
-  "presence",
-  "constant",
-  "count",
-  "range",
-  "order",
-  "scheme",
-  "io",
-  "value-filename",
-  "case",
-  "elements",
-  "type",
-  "shape",
-] as const;
+export const FIELD_STEPS = ["presence", "constant", "count", "range", "order", "scheme", "io", "value-filename", "case", "elements", "type", "shape"] as const;
 
 export type FieldStep = (typeof FIELD_STEPS)[number];
 
@@ -75,21 +44,14 @@ export type FieldStep = (typeof FIELD_STEPS)[number];
  * runs before the fields, the others after them; `directives` (the target
  * directive warnings MTL020 to MTL025) is last.
  */
-export const TARGET_STEPS = [
-  "filename",
-  "unknown-keys",
-  "headings",
-  "content",
-  "directives",
-] as const;
+export const TARGET_STEPS = ["filename", "unknown-keys", "headings", "content", "directives"] as const;
 
 export type TargetStep = (typeof TARGET_STEPS)[number];
 
 /** HTTP probe timeout of `[io:exists]` (spec 2.8). */
 export const URL_PROBE_TIMEOUT_MS = 5000;
 
-export type UrlProbe =
-  { readonly reachable: true } | { readonly reachable: false; readonly reason: string };
+export type UrlProbe = { readonly reachable: true } | { readonly reachable: false; readonly reason: string };
 
 /** File system and network access of rules. Never throws (spec 2.8). */
 export interface RuleIo {
@@ -114,10 +76,7 @@ export interface RuleEnv {
  * In-memory io for tests and dry runs: only `paths` exist, only `urls`
  * entries answer, everything else is missing or unreachable. No network.
  */
-export function createMemoryIo(
-  paths: Iterable<string> = [],
-  urls: ReadonlyMap<string, UrlProbe> = new Map(),
-): RuleIo {
+export function createMemoryIo(paths: Iterable<string> = [], urls: ReadonlyMap<string, UrlProbe> = new Map()): RuleIo {
   const existing = new Set(paths);
   return {
     exists: (path) => Promise.resolve(existing.has(path)),
@@ -248,12 +207,7 @@ export function isStub(rule: AnyRule): boolean {
 }
 
 /** A diagnostic of `rule` (rule severity unless `severity` is given). */
-export function report(
-  rule: Pick<AnyRule, "code" | "severity">,
-  message: string,
-  position: SourcePosition | null = null,
-  severity: Severity = rule.severity,
-): Diagnostic {
+export function report(rule: Pick<AnyRule, "code" | "severity">, message: string, position: SourcePosition | null = null, severity: Severity = rule.severity): Diagnostic {
   return { code: rule.code, severity, message, position };
 }
 
@@ -265,11 +219,7 @@ export function report(
 const ITEM_INDEX = new WeakMap<Diagnostic, number>();
 
 /** A diagnostic about item `index` of a list value, see `byItemIndex` in the pipeline. */
-export function reportItem(
-  rule: Pick<AnyRule, "code" | "severity">,
-  message: string,
-  index: number,
-): Diagnostic {
+export function reportItem(rule: Pick<AnyRule, "code" | "severity">, message: string, index: number): Diagnostic {
   const diagnostic = report(rule, message);
   ITEM_INDEX.set(diagnostic, index);
   return diagnostic;
@@ -292,12 +242,7 @@ const SECTION_INDEX = new WeakMap<Diagnostic, number>();
  * see `bySectionIndex` in the pipeline. `anchorLine` is the target line of the
  * checked section heading (spec 4.4 DIR5), see `anchorLineOf`.
  */
-export function reportSection(
-  rule: Pick<AnyRule, "code" | "severity">,
-  message: string,
-  index: number,
-  anchorLine: number | null = null,
-): Diagnostic {
+export function reportSection(rule: Pick<AnyRule, "code" | "severity">, message: string, index: number, anchorLine: number | null = null): Diagnostic {
   const diagnostic = report(rule, message);
   SECTION_INDEX.set(diagnostic, index);
   return setAnchorLine(diagnostic, anchorLine);
@@ -325,12 +270,7 @@ export function recordedSectionIndex(diagnostic: Diagnostic): number | null {
 const SEQUENCE = new WeakMap<Diagnostic, number>();
 
 /** A diagnostic at `position` with the sort key `sequence`, see `bySequence` in the pipeline. */
-export function reportSequenced(
-  rule: Pick<AnyRule, "code" | "severity">,
-  message: string,
-  position: SourcePosition | null,
-  sequence: number,
-): Diagnostic {
+export function reportSequenced(rule: Pick<AnyRule, "code" | "severity">, message: string, position: SourcePosition | null, sequence: number): Diagnostic {
   const diagnostic = report(rule, message, position);
   SEQUENCE.set(diagnostic, sequence);
   return diagnostic;
@@ -367,10 +307,6 @@ export function anchorLineOf(diagnostic: Diagnostic): number | null {
 }
 
 /** A diagnostic anchored on target line `line` (spec 4.4 DIR5). */
-export function reportOnLine(
-  rule: Pick<AnyRule, "code" | "severity">,
-  message: string,
-  line: number,
-): Diagnostic {
+export function reportOnLine(rule: Pick<AnyRule, "code" | "severity">, message: string, line: number): Diagnostic {
   return setAnchorLine(report(rule, message), line);
 }

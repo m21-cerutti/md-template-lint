@@ -24,16 +24,7 @@ import { CATEGORIES, isStub, type AnyRule } from "../../src/engine/rule.js";
 import { MdTemplateLexer } from "../../src/generated/MdTemplateLexer.js";
 import { MdTemplateParser } from "../../src/generated/MdTemplateParser.js";
 import { KNOWN_TYPE_NAMES } from "../../src/tags/types.js";
-import {
-  firstSymbols,
-  pendingCodes,
-  sentences,
-  sentenceText,
-  specCodes,
-  specRunCodes,
-  type SpecCode,
-  type SpecRunCode,
-} from "../../tests/consistency/consistency.js";
+import { firstSymbols, pendingCodes, sentences, sentenceText, specCodes, specRunCodes, type SpecCode, type SpecRunCode } from "../../tests/consistency/consistency.js";
 import { FIX_NOTES, TAG_NOTES } from "./notes.ts";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -99,13 +90,7 @@ export function errorRows(sources: ErrorSources): ErrorRow[] {
   const specByCode = new Map(sources.spec.map((entry) => [entry.code, entry]));
   const runByCode = new Map(sources.specRun.map((entry) => [entry.code, entry]));
   const ruleByCode = new Map<string, AnyRule>(sources.registered.map((rule) => [rule.code, rule]));
-  const all = new Set<string>([
-    ...specByCode.keys(),
-    ...runByCode.keys(),
-    ...ruleByCode.keys(),
-    ...Object.keys(sources.pending),
-    ...sources.runCodes,
-  ]);
+  const all = new Set<string>([...specByCode.keys(), ...runByCode.keys(), ...ruleByCode.keys(), ...Object.keys(sources.pending), ...sources.runCodes]);
   const rows: ErrorRow[] = [];
   for (const entry of [...all].sort()) {
     const run = runByCode.get(entry);
@@ -136,16 +121,10 @@ export function errorRows(sources: ErrorSources): ErrorRow[] {
 }
 
 export function renderErrors(rows: readonly ErrorRow[]): string {
-  const lines = [
-    "| Code | Name | Severity | Category | Status | Message | Typical fix |",
-    "| ---- | ---- | -------- | -------- | ------ | ------- | ----------- |",
-  ];
+  const lines = ["| Code | Name | Severity | Category | Status | Message | Typical fix |", "| ---- | ---- | -------- | -------- | ------ | ------- | ----------- |"];
   for (const row of rows) {
     const fix = FIX_NOTES[row.code] ?? "";
-    lines.push(
-      `| ${code(row.code)} | ${cell(row.name)} | ${cell(row.severity)} | ${cell(row.category)} | ` +
-        `${row.status} | ${cell(row.message)} | ${cell(fix)} |`,
-    );
+    lines.push(`| ${code(row.code)} | ${cell(row.name)} | ${cell(row.severity)} | ${cell(row.category)} | ` + `${row.status} | ${cell(row.message)} | ${cell(fix)} |`);
   }
   return lines.join("\n");
 }
@@ -234,10 +213,7 @@ export function tagForms(): TagForm[] {
 }
 
 export function renderTags(forms: readonly TagForm[]): string {
-  const lines = [
-    "| Region | Family | Tag form | Description | Example |",
-    "| ------ | ------ | -------- | ----------- | ------- |",
-  ];
+  const lines = ["| Region | Family | Tag form | Description | Example |", "| ------ | ------ | -------- | ----------- | ------- |"];
   let previous = "";
   for (const entry of forms) {
     const key = `${entry.region}:${entry.family}`;
@@ -246,9 +222,7 @@ export function renderTags(forms: readonly TagForm[]): string {
     const note = TAG_NOTES[key];
     const description = first ? cell(note?.description ?? "") : SAME_AS_ABOVE;
     const example = first ? cell(note?.example ?? "") : SAME_AS_ABOVE;
-    lines.push(
-      `| ${entry.region} | ${code(entry.family)} | ${code(entry.form)} | ${description} | ${example} |`,
-    );
+    lines.push(`| ${entry.region} | ${code(entry.family)} | ${code(entry.form)} | ${description} | ${example} |`);
   }
   return lines.join("\n");
 }
@@ -260,12 +234,7 @@ export function renderTags(forms: readonly TagForm[]): string {
 const list = (values: Iterable<string>) => [...values].map(code).join(", ");
 
 export function renderEnums(): string {
-  return [
-    `- Output formats (\`--format\`): ${list(FORMAT_NAMES)}`,
-    `- \`onEmpty\` values: ${list(ON_EMPTY_VALUES)}`,
-    `- Field types (${KNOWN_TYPE_NAMES.size}): ${list(KNOWN_TYPE_NAMES)}`,
-    `- Rule categories: ${list(CATEGORIES)}`,
-  ].join("\n");
+  return [`- Output formats (\`--format\`): ${list(FORMAT_NAMES)}`, `- \`onEmpty\` values: ${list(ON_EMPTY_VALUES)}`, `- Field types (${KNOWN_TYPE_NAMES.size}): ${list(KNOWN_TYPE_NAMES)}`, `- Rule categories: ${list(CATEGORIES)}`].join("\n");
 }
 
 // ---------------------------------------------------------------------------
@@ -318,11 +287,7 @@ export function applyBlocks(doc: string, blocks: Readonly<Record<BlockName, stri
 /** Current content of block `name`, lines joined with `\n`, without the framing line breaks. */
 function currentBlock(doc: string, name: BlockName): string {
   const { start, end } = blockRange(doc, name);
-  return doc
-    .slice(start, end)
-    .replaceAll("\r\n", "\n")
-    .replace(/^\n/, "")
-    .replace(/\n$/, "");
+  return doc.slice(start, end).replaceAll("\r\n", "\n").replace(/^\n/, "").replace(/\n$/, "");
 }
 
 /** Line diff (`- ` removed, `+ ` added, unchanged lines dropped) by longest common subsequence. */
@@ -333,10 +298,7 @@ export function lineDiff(before: string, after: string): string[] {
   for (let i = a.length - 1; i >= 0; i -= 1) {
     for (let j = b.length - 1; j >= 0; j -= 1) {
       const row = table[i] ?? [];
-      row[j] =
-        a[i] === b[j]
-          ? (table[i + 1]?.[j + 1] ?? 0) + 1
-          : Math.max(table[i + 1]?.[j] ?? 0, row[j + 1] ?? 0);
+      row[j] = a[i] === b[j] ? (table[i + 1]?.[j + 1] ?? 0) + 1 : Math.max(table[i + 1]?.[j] ?? 0, row[j + 1] ?? 0);
     }
   }
   const out: string[] = [];
@@ -346,10 +308,7 @@ export function lineDiff(before: string, after: string): string[] {
     if (i < a.length && j < b.length && a[i] === b[j]) {
       i += 1;
       j += 1;
-    } else if (
-      j >= b.length ||
-      (i < a.length && (table[i + 1]?.[j] ?? 0) >= (table[i]?.[j + 1] ?? 0))
-    ) {
+    } else if (j >= b.length || (i < a.length && (table[i + 1]?.[j] ?? 0) >= (table[i]?.[j + 1] ?? 0))) {
       out.push(`- ${a[i]}`);
       i += 1;
     } else {
@@ -361,10 +320,7 @@ export function lineDiff(before: string, after: string): string[] {
 }
 
 /** Stale blocks of `doc` with their diff; empty when the doc is current. */
-export function staleBlocks(
-  doc: string,
-  blocks: Readonly<Record<BlockName, string>>,
-): { name: BlockName; diff: string[] }[] {
+export function staleBlocks(doc: string, blocks: Readonly<Record<BlockName, string>>): { name: BlockName; diff: string[] }[] {
   const stale: { name: BlockName; diff: string[] }[] = [];
   for (const name of BLOCK_NAMES) {
     const current = currentBlock(doc, name);
@@ -404,13 +360,7 @@ export function main(argv: readonly string[]): number {
       process.stdout.write(`check:syntax-doc OK: ${file}\n`);
       return 0;
     }
-    process.stderr.write(
-      `check:syntax-doc FAILED: ${file} is stale.\n` +
-        stale
-          .map(({ name, diff }) => `block '${name}':\n${diff.map((line) => `  ${line}\n`).join("")}`)
-          .join("") +
-        "Run `pnpm run gen:syntax-doc` and commit.\n",
-    );
+    process.stderr.write(`check:syntax-doc FAILED: ${file} is stale.\n` + stale.map(({ name, diff }) => `block '${name}':\n${diff.map((line) => `  ${line}\n`).join("")}`).join("") + "Run `pnpm run gen:syntax-doc` and commit.\n");
     return 1;
   } catch (error) {
     process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);

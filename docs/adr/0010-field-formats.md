@@ -38,7 +38,7 @@ step `shape`, and `--verify` warns when a date field states no format.
 - **Date.** An ISO date is `YYYY-MM-DD` and a real calendar date. With the tag only that
   shape is accepted; without it the default date parsing of the type `date` applies.
 - **No trimming.** The shape checks test the exact text of the value (owner decision,
-  2026-10-31): ` 1.2.0 ` gives `MTL306`. A padded date on a `date` field passes the default
+  2026-10-31): `1.2.0` gives `MTL306`. A padded date on a `date` field passes the default
   date parsing, so `[format:date]` reports it as `MTL307`. Only a quoted YAML string can carry
   padding; unquoted scalars are already stripped by the loader.
 - **One problem, one error.** A value that fails the type `date` (`MTL504`) gets no `MTL307`;
@@ -67,14 +67,14 @@ step `shape`, and `--verify` warns when a date field states no format.
 
 ## Alternatives considered
 
-| Option                                               | Pros                                   | Cons                                                  | Verdict    |
-| ---------------------------------------------------- | -------------------------------------- | ----------------------------------------------------- | ---------- |
-| Shape tags in the `format` family, step `shape` last | Reuses the family and `elements:` form; existing order kept | `MTL307` and `MTL504` share one field         | **Chosen** |
-| New types `semver` and `iso-date`                    | No new codes beyond the type range     | Changes inference and the type hints; breaks parity   | Rejected   |
-| `[format:date]` replaces the `date` type check       | One code per field                     | Changes `MTL504` messages for existing targets        | Rejected (decision: type reports it) |
-| `MTL016` as a suppressible target warning            | Visible in every lint run              | Repeats on every target for one template issue        | Rejected (decision: template side) |
-| Accept a `v` prefix in `[format:semver]`             | Matches git tag names                  | Not SemVer 2.0.0; ambiguous with prose                | Rejected   |
-| A general `[format:regex:...]` tag                   | Covers any shape                       | Regex in templates, no calendar check, hard to read   | Rejected   |
+| Option                                               | Pros                                                        | Cons                                                | Verdict                              |
+| ---------------------------------------------------- | ----------------------------------------------------------- | --------------------------------------------------- | ------------------------------------ |
+| Shape tags in the `format` family, step `shape` last | Reuses the family and `elements:` form; existing order kept | `MTL307` and `MTL504` share one field               | **Chosen**                           |
+| New types `semver` and `iso-date`                    | No new codes beyond the type range                          | Changes inference and the type hints; breaks parity | Rejected                             |
+| `[format:date]` replaces the `date` type check       | One code per field                                          | Changes `MTL504` messages for existing targets      | Rejected (decision: type reports it) |
+| `MTL016` as a suppressible target warning            | Visible in every lint run                                   | Repeats on every target for one template issue      | Rejected (decision: template side)   |
+| Accept a `v` prefix in `[format:semver]`             | Matches git tag names                                       | Not SemVer 2.0.0; ambiguous with prose              | Rejected                             |
+| A general `[format:regex:...]` tag                   | Covers any shape                                            | Regex in templates, no calendar check, hard to read | Rejected                             |
 
 ## Research
 

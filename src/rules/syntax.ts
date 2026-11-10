@@ -15,16 +15,7 @@
  */
 import { directiveDiagnostics } from "../engine/directives.js";
 import { defineRule, report, type AnyRule, type TemplateContext } from "../engine/rule.js";
-import {
-  hasInvalidPattern,
-  headingPattern,
-  headingPresence,
-  isFileScope,
-  isRepeatHeading,
-  type Diagnostic,
-  type DocumentModel,
-  type Section,
-} from "../engine/model.js";
+import { hasInvalidPattern, headingPattern, headingPresence, isFileScope, isRepeatHeading, type Diagnostic, type DocumentModel, type Section } from "../engine/model.js";
 import { formatName } from "../engine/pattern.js";
 import type { BodyTag, PatternPiece, TagFinding, TagFindingReason } from "../tags/ast.js";
 
@@ -40,14 +31,8 @@ function label(finding: TagFinding): string {
 }
 
 /** Findings of `reason` (and `region` when given) in source order. */
-function findingsOf(
-  context: TemplateContext,
-  reason: TagFindingReason,
-  region?: TagFinding["region"],
-): TagFinding[] {
-  return context.template.findings.filter(
-    (finding) => finding.reason === reason && (region === undefined || finding.region === region),
-  );
+function findingsOf(context: TemplateContext, reason: TagFindingReason, region?: TagFinding["region"]): TagFinding[] {
+  return context.template.findings.filter((finding) => finding.reason === reason && (region === undefined || finding.region === region));
 }
 
 const frontmatterMissing = defineRule({
@@ -56,10 +41,7 @@ const frontmatterMissing = defineRule({
   severity: "error",
   category: "syntax",
   phase: "parse",
-  check: (context): Diagnostic[] =>
-    context.failure.reason === "frontmatter-missing"
-      ? [report(frontmatterMissing, "File must have YAML frontmatter (---...---)")]
-      : [],
+  check: (context): Diagnostic[] => (context.failure.reason === "frontmatter-missing" ? [report(frontmatterMissing, "File must have YAML frontmatter (---...---)")] : []),
 });
 
 const yamlInvalid = defineRule({
@@ -68,10 +50,7 @@ const yamlInvalid = defineRule({
   severity: "error",
   category: "syntax",
   phase: "parse",
-  check: (context): Diagnostic[] =>
-    context.failure.reason === "yaml-invalid"
-      ? [report(yamlInvalid, `YAML parse error: ${context.failure.detail}`)]
-      : [],
+  check: (context): Diagnostic[] => (context.failure.reason === "yaml-invalid" ? [report(yamlInvalid, `YAML parse error: ${context.failure.detail}`)] : []),
 });
 
 const frontmatterNotMapping = defineRule({
@@ -80,10 +59,7 @@ const frontmatterNotMapping = defineRule({
   severity: "error",
   category: "syntax",
   phase: "parse",
-  check: (context): Diagnostic[] =>
-    context.failure.reason === "frontmatter-not-mapping"
-      ? [report(frontmatterNotMapping, "YAML frontmatter must be a mapping of 'key: value' pairs")]
-      : [],
+  check: (context): Diagnostic[] => (context.failure.reason === "frontmatter-not-mapping" ? [report(frontmatterNotMapping, "YAML frontmatter must be a mapping of 'key: value' pairs")] : []),
 });
 
 const fileUnreadable = defineRule({
@@ -92,10 +68,7 @@ const fileUnreadable = defineRule({
   severity: "error",
   category: "syntax",
   phase: "parse",
-  check: (context): Diagnostic[] =>
-    context.failure.reason === "file-unreadable"
-      ? [report(fileUnreadable, context.failure.detail)]
-      : [],
+  check: (context): Diagnostic[] => (context.failure.reason === "file-unreadable" ? [report(fileUnreadable, context.failure.detail)] : []),
 });
 
 const unknownFieldTag = defineRule({
@@ -104,10 +77,7 @@ const unknownFieldTag = defineRule({
   severity: "warning",
   category: "syntax",
   phase: "template",
-  check: (context): Diagnostic[] =>
-    findingsOf(context, "unknown", "frontmatter").map((finding) =>
-      report(unknownFieldTag, `${label(finding)}: unknown tag ${finding.tag}`, finding.position),
-    ),
+  check: (context): Diagnostic[] => findingsOf(context, "unknown", "frontmatter").map((finding) => report(unknownFieldTag, `${label(finding)}: unknown tag ${finding.tag}`, finding.position)),
 });
 
 const unknownHeadingTag = defineRule({
@@ -116,10 +86,7 @@ const unknownHeadingTag = defineRule({
   severity: "warning",
   category: "syntax",
   phase: "template",
-  check: (context): Diagnostic[] =>
-    findingsOf(context, "unknown", "body").map((finding) =>
-      report(unknownHeadingTag, `${label(finding)}: unknown tag ${finding.tag}`, finding.position),
-    ),
+  check: (context): Diagnostic[] => findingsOf(context, "unknown", "body").map((finding) => report(unknownHeadingTag, `${label(finding)}: unknown tag ${finding.tag}`, finding.position)),
 });
 
 const malformedTag = defineRule({
@@ -128,10 +95,7 @@ const malformedTag = defineRule({
   severity: "warning",
   category: "syntax",
   phase: "template",
-  check: (context): Diagnostic[] =>
-    findingsOf(context, "malformed").map((finding) =>
-      report(malformedTag, `${label(finding)}: malformed tag ${finding.tag}`, finding.position),
-    ),
+  check: (context): Diagnostic[] => findingsOf(context, "malformed").map((finding) => report(malformedTag, `${label(finding)}: malformed tag ${finding.tag}`, finding.position)),
 });
 
 const misplacedTag = defineRule({
@@ -170,13 +134,7 @@ const headingPatternInvalid = defineRule({
         if (tag.kind !== "pattern") return [];
         const problem = tag.pieces.find((piece) => piece.kind === "invalid");
         if (problem?.kind !== "invalid") return [];
-        return [
-          report(
-            headingPatternInvalid,
-            `Heading '${section.text}': invalid pattern [pattern:"${tag.text}"] (${problem.reason})`,
-            { line: tag.position.line, column: tag.position.column + problem.offset },
-          ),
-        ];
+        return [report(headingPatternInvalid, `Heading '${section.text}': invalid pattern [pattern:"${tag.text}"] (${problem.reason})`, { line: tag.position.line, column: tag.position.column + problem.offset })];
       }),
     ),
 });
@@ -212,18 +170,13 @@ const headingTagConflict = defineRule({
       const hasPattern = section.tags.some((tag) => tag.kind === "pattern");
       // The reason, or null when the tag can apply (spec 2.7; template-only is the first cause).
       const reasonFor = (tag: BodyTag, index: number, tags: readonly BodyTag[]): string | null => {
-        if (
-          (tag.kind === "content" &&
-            (tag.check === "subheadings-disallow" || tag.check === "subheadings-no-extra")) ||
-          tag.kind === "unique-names"
-        ) {
+        if ((tag.kind === "content" && (tag.check === "subheadings-disallow" || tag.check === "subheadings-no-extra")) || tag.kind === "unique-names") {
           return templateOnly ? TEMPLATE_ONLY_REASON : null;
         }
         // Pattern and repeat tags: the first tag of its kind (the three repeat kinds apart,
         // spec 2.10), never after an invalid pattern (MTL014: one cause, one warning).
         if (tag.kind !== "pattern" && tag.kind !== "repeat" && tag.kind !== "order") return null;
-        const kindOf = (other: BodyTag): string =>
-          other.kind === "repeat" ? `repeat:${other.bound}` : other.kind;
+        const kindOf = (other: BodyTag): string => (other.kind === "repeat" ? `repeat:${other.bound}` : other.kind);
         const first = tags.findIndex((other) => kindOf(other) === kindOf(tag));
         if (first !== index || hasInvalidPattern(section)) return null;
         if (templateOnly) return TEMPLATE_ONLY_REASON;
@@ -233,13 +186,7 @@ const headingTagConflict = defineRule({
       return section.tags.flatMap((tag, index, tags) => {
         const reason = reasonFor(tag, index, tags);
         if (reason === null) return [];
-        return [
-          report(
-            headingTagConflict,
-            `Heading '${section.text}': tag ${tag.raw} has no effect (${reason})`,
-            tag.position,
-          ),
-        ];
+        return [report(headingTagConflict, `Heading '${section.text}': tag ${tag.raw} has no effect (${reason})`, tag.position)];
       });
     }),
 });
@@ -259,24 +206,13 @@ const dateFormatMissing = defineRule({
   phase: "template",
   check: (context): Diagnostic[] =>
     [...context.template.fields.values()].flatMap((field) => {
-      const kind =
-        field.type === "date"
-          ? "format-shape"
-          : field.type === "list-of-date"
-            ? "format-elements-shape"
-            : null;
+      const kind = field.type === "date" ? "format-shape" : field.type === "list-of-date" ? "format-elements-shape" : null;
       if (kind === null) return [];
       // The first tag of the kind wins (spec 2.1): `[format:semver] [format:date]` is semver.
       const first = (field.comment?.tags ?? []).find((tag) => tag.kind === kind);
       if (first !== undefined && "shape" in first && first.shape === "date") return [];
       const tag = kind === "format-shape" ? "[format:date]" : "[format:elements:date]";
-      return [
-        report(
-          dateFormatMissing,
-          `Field '${field.key}' (type=${field.type}): no ${tag}, default date formats apply`,
-          { line: field.line, column: 1 },
-        ),
-      ];
+      return [report(dateFormatMissing, `Field '${field.key}' (type=${field.type}): no ${tag}, default date formats apply`, { line: field.line, column: 1 })];
     }),
 });
 
@@ -304,12 +240,7 @@ function samePattern(a: readonly PatternPiece[], b: readonly PatternPiece[]): bo
       if (other === undefined) return false;
       if (piece.kind === "literal") return other.kind === "literal" && other.text === piece.text;
       if (piece.kind === "placeholder") {
-        return (
-          other.kind === "placeholder" &&
-          other.name === piece.name &&
-          formatName(other) === formatName(piece) &&
-          other.argument === piece.argument
-        );
+        return other.kind === "placeholder" && other.name === piece.name && formatName(other) === formatName(piece) && other.argument === piece.argument;
       }
       return false;
     })
@@ -371,16 +302,8 @@ const headingPatternDuplicate = defineRule({
       const where = `the previous heading '${previous.text}' (line ${previous.line})`;
       found.push(
         tag === undefined
-          ? report(
-              headingPatternDuplicate,
-              `Heading '${section.text}': matches the same headings as ${where}`,
-              { line: section.line, column: textColumn(template, section.line) },
-            )
-          : report(
-              headingPatternDuplicate,
-              `Heading '${section.text}': same pattern [pattern:"${tag.text}"] as ${where}`,
-              tag.position,
-            ),
+          ? report(headingPatternDuplicate, `Heading '${section.text}': matches the same headings as ${where}`, { line: section.line, column: textColumn(template, section.line) })
+          : report(headingPatternDuplicate, `Heading '${section.text}': same pattern [pattern:"${tag.text}"] as ${where}`, tag.position),
       );
     }
     return found;
@@ -406,14 +329,7 @@ const headingOptionalMinConflict = defineRule({
       if (!isRepeatHeading(section) || headingPresence(section) !== "optional") return [];
       const min = section.tags.find((tag) => tag.kind === "repeat" && tag.bound === "min");
       if (min?.kind !== "repeat" || min.n === null) return [];
-      return [
-        report(
-          headingOptionalMinConflict,
-          `Heading '${section.text}': tag ${min.raw} contradicts [presence:optional] ` +
-            `(a minimum of ${min.n} requires the heading)`,
-          min.position,
-        ),
-      ];
+      return [report(headingOptionalMinConflict, `Heading '${section.text}': tag ${min.raw} contradicts [presence:optional] ` + `(a minimum of ${min.n} requires the heading)`, min.position)];
     }),
 });
 
@@ -437,32 +353,18 @@ const headingChildOrderConflict = defineRule({
     const sections = context.template.sections;
     return sections.flatMap((parent, index) => {
       if (headingPresence(parent) === "template-only") return [];
-      const children = sections.filter(
-        (child) =>
-          !isFileScope(child) &&
-          child.parent === index &&
-          headingPresence(child) !== "template-only" &&
-          !hasInvalidPattern(child),
-      );
+      const children = sections.filter((child) => !isFileScope(child) && child.parent === index && headingPresence(child) !== "template-only" && !hasInvalidPattern(child));
       for (const [at, child] of children.entries()) {
         const prev = children.slice(0, at).find((earlier) => earlier.level > child.level);
         if (prev === undefined) continue;
-        return [
-          report(
-            headingChildOrderConflict,
-            `Heading '${child.text}' (H${child.level}): comes after the deeper child ` +
-              `'${prev.text}' (H${prev.level}, line ${prev.line}) under '${parent.text}'`,
-            { line: child.line, column: 1 },
-          ),
-        ];
+        return [report(headingChildOrderConflict, `Heading '${child.text}' (H${child.level}): comes after the deeper child ` + `'${prev.text}' (H${prev.level}, line ${prev.line}) under '${parent.text}'`, { line: child.line, column: 1 })];
       }
       return [];
     });
   },
 });
 
-const VERBS_EXPECTED =
-  "expected disable, disable-line, disable-next-line, disable-file, begin disable or end disable";
+const VERBS_EXPECTED = "expected disable, disable-line, disable-next-line, disable-file, begin disable or end disable";
 
 const directiveMalformed = defineRule({
   code: "MTL020",
@@ -472,18 +374,8 @@ const directiveMalformed = defineRule({
   phase: "target",
   step: "directives",
   check: (context): Diagnostic[] => [
-    ...directiveDiagnostics(
-      context,
-      directiveMalformed,
-      "unknown-verb",
-      (problem) => `unknown directive '${problem.word}' (${VERBS_EXPECTED})`,
-    ),
-    ...directiveDiagnostics(
-      context,
-      directiveMalformed,
-      "no-code",
-      (problem) => `'${problem.verb}' needs at least one rule code`,
-    ),
+    ...directiveDiagnostics(context, directiveMalformed, "unknown-verb", (problem) => `unknown directive '${problem.word}' (${VERBS_EXPECTED})`),
+    ...directiveDiagnostics(context, directiveMalformed, "no-code", (problem) => `'${problem.verb}' needs at least one rule code`),
   ],
 });
 
@@ -494,13 +386,7 @@ const directiveUnknownCode = defineRule({
   category: "syntax",
   phase: "target",
   step: "directives",
-  check: (context): Diagnostic[] =>
-    directiveDiagnostics(
-      context,
-      directiveUnknownCode,
-      "unknown-code",
-      (problem) => `unknown rule code '${problem.token}'`,
-    ),
+  check: (context): Diagnostic[] => directiveDiagnostics(context, directiveUnknownCode, "unknown-code", (problem) => `unknown rule code '${problem.token}'`),
 });
 
 const directiveCodeNotSuppressible = defineRule({
@@ -510,13 +396,7 @@ const directiveCodeNotSuppressible = defineRule({
   category: "syntax",
   phase: "target",
   step: "directives",
-  check: (context): Diagnostic[] =>
-    directiveDiagnostics(
-      context,
-      directiveCodeNotSuppressible,
-      "not-suppressible",
-      (problem) => `rule code ${problem.code} cannot be disabled`,
-    ),
+  check: (context): Diagnostic[] => directiveDiagnostics(context, directiveCodeNotSuppressible, "not-suppressible", (problem) => `rule code ${problem.code} cannot be disabled`),
 });
 
 const directiveEndWithoutBegin = defineRule({
@@ -526,14 +406,7 @@ const directiveEndWithoutBegin = defineRule({
   category: "syntax",
   phase: "target",
   step: "directives",
-  check: (context): Diagnostic[] =>
-    directiveDiagnostics(
-      context,
-      directiveEndWithoutBegin,
-      "end-without-begin",
-      (problem) =>
-        `'end disable ${problem.code}' has no open 'disable' or 'begin disable' for ${problem.code}`,
-    ),
+  check: (context): Diagnostic[] => directiveDiagnostics(context, directiveEndWithoutBegin, "end-without-begin", (problem) => `'end disable ${problem.code}' has no open 'disable' or 'begin disable' for ${problem.code}`),
 });
 
 const directiveBeginUnclosed = defineRule({
@@ -543,14 +416,7 @@ const directiveBeginUnclosed = defineRule({
   category: "syntax",
   phase: "target",
   step: "directives",
-  check: (context): Diagnostic[] =>
-    directiveDiagnostics(
-      context,
-      directiveBeginUnclosed,
-      "begin-unclosed",
-      (problem) =>
-        `'begin disable ${problem.code}' is never closed, it runs to the end of the file`,
-    ),
+  check: (context): Diagnostic[] => directiveDiagnostics(context, directiveBeginUnclosed, "begin-unclosed", (problem) => `'begin disable ${problem.code}' is never closed, it runs to the end of the file`),
 });
 
 const directiveAlreadyDisabled = defineRule({
@@ -560,15 +426,7 @@ const directiveAlreadyDisabled = defineRule({
   category: "syntax",
   phase: "target",
   step: "directives",
-  check: (context): Diagnostic[] =>
-    directiveDiagnostics(
-      context,
-      directiveAlreadyDisabled,
-      "already-disabled",
-      (problem) =>
-        `'${problem.verb} ${problem.code}' while ${problem.code} is already ` +
-        `disabled since line ${problem.open}`,
-    ),
+  check: (context): Diagnostic[] => directiveDiagnostics(context, directiveAlreadyDisabled, "already-disabled", (problem) => `'${problem.verb} ${problem.code}' while ${problem.code} is already ` + `disabled since line ${problem.open}`),
 });
 
 /**
@@ -592,14 +450,7 @@ const headingOrderWithoutRepeat = defineRule({
       if (section.tags.some((tag) => tag.kind === "repeat")) return [];
       const order = section.tags.find((tag) => tag.kind === "order");
       if (order === undefined) return [];
-      return [
-        report(
-          headingOrderWithoutRepeat,
-          `Heading '${section.text}': tag ${order.raw} needs [repeat-rules:same-level] ` +
-            "(an order compares the repeats of one heading)",
-          order.position,
-        ),
-      ];
+      return [report(headingOrderWithoutRepeat, `Heading '${section.text}': tag ${order.raw} needs [repeat-rules:same-level] ` + "(an order compares the repeats of one heading)", order.position)];
     }),
 });
 

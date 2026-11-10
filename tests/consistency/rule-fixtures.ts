@@ -56,11 +56,9 @@ const FAMILIES = [SYNTAX, TARGET] as const;
 const PAIR_FILES = ["target.md", "template.md"];
 export const CONTROLS = "tests/fixtures/rule-controls";
 
-const familyOf = (phase: Phase): Family =>
-  phase === "parse" || phase === "template" ? SYNTAX : TARGET;
+const familyOf = (phase: Phase): Family => (phase === "parse" || phase === "template" ? SYNTAX : TARGET);
 
-const isWord = (part: string): boolean =>
-  part.length > 0 && [...part].every((c) => (c >= "a" && c <= "z") || (c >= "0" && c <= "9"));
+const isWord = (part: string): boolean => part.length > 0 && [...part].every((c) => (c >= "a" && c <= "z") || (c >= "0" && c <= "9"));
 const isNumber = (part: string): boolean => [...part].every((c) => c >= "0" && c <= "9");
 
 /** Why `name` is not a descriptive kebab-case `pass-` / `fail-` case name, or null. */
@@ -122,9 +120,7 @@ export function tableNames(text: string): string[] {
 /** The one test file of `rule` (path), or a problem. */
 function testFileOf(rule: RuleRef, tree: Tree): { file: string } | { problem: string } {
   const testDir = `${familyOf(rule.phase).tests}/${rule.category}`;
-  const tests = (tree.list(testDir) ?? []).filter(
-    (file) => file.startsWith(`${rule.code}-`) && file.endsWith(".test.ts"),
-  );
+  const tests = (tree.list(testDir) ?? []).filter((file) => file.startsWith(`${rule.code}-`) && file.endsWith(".test.ts"));
   if (tests.length !== 1) {
     return {
       problem: `${rule.code}: ${tests.length} test files ${testDir}/${rule.code}-*.test.ts`,

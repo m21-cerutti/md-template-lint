@@ -48,11 +48,7 @@ for (const name of actual.keys()) {
 }
 
 if (problems.length > 0) {
-  process.stderr.write(
-    "check:parser FAILED: src/generated/ does not match grammar/*.g4.\n" +
-      problems.map((problem) => `  - ${problem}\n`).join("") +
-      "Run `pnpm run gen:parser` (it empties src/generated/ first) and commit.\n",
-  );
+  process.stderr.write("check:parser FAILED: src/generated/ does not match grammar/*.g4.\n" + problems.map((problem) => `  - ${problem}\n`).join("") + "Run `pnpm run gen:parser` (it empties src/generated/ first) and commit.\n");
   process.exit(1);
 }
 process.stdout.write(`check:parser OK: ${actual.size} generated files match the grammars.\n`);

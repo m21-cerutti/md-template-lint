@@ -4,14 +4,7 @@
  */
 import { defineRule, report, type AnyRule, type FieldContext } from "../engine/rule.js";
 import { isList, type Diagnostic } from "../engine/model.js";
-import {
-  DATE_PARTS,
-  FLOAT_PATTERN,
-  isOngoingMarker,
-  isValidDateValue,
-  pyRepr,
-  stripPythonSpace,
-} from "../engine/values.js";
+import { DATE_PARTS, FLOAT_PATTERN, isOngoingMarker, isValidDateValue, pyRepr, stripPythonSpace } from "../engine/values.js";
 import type { FrontmatterValueTag } from "../tags/ast.js";
 
 /**
@@ -44,12 +37,7 @@ const countMin = defineRule({
     const { value } = context;
     if (min === null || value === null || !isList(value)) return [];
     if (value.length >= min) return [];
-    return [
-      report(
-        countMin,
-        `Field '${context.key}': list has ${value.length} item(s), minimum is ${min}`,
-      ),
-    ];
+    return [report(countMin, `Field '${context.key}': list has ${value.length} item(s), minimum is ${min}`)];
   },
 });
 
@@ -70,12 +58,7 @@ const countMax = defineRule({
     const { value } = context;
     if (max === null || value === null || !isList(value)) return [];
     if (value.length <= max) return [];
-    return [
-      report(
-        countMax,
-        `Field '${context.key}': list has ${value.length} item(s), maximum is ${max}`,
-      ),
-    ];
+    return [report(countMax, `Field '${context.key}': list has ${value.length} item(s), maximum is ${max}`)];
   },
 });
 
@@ -173,12 +156,7 @@ const rangeMin = defineRule({
     if (tag === null || typeof value !== "string") return [];
     const number = numericValue(value);
     if (number === null || !(number < tag.value)) return [];
-    return [
-      report(
-        rangeMin,
-        `Field '${context.key}': value ${value} is below range:min ${printBound(tag)}`,
-      ),
-    ];
+    return [report(rangeMin, `Field '${context.key}': value ${value} is below range:min ${printBound(tag)}`)];
   },
 });
 
@@ -196,12 +174,7 @@ const rangeMax = defineRule({
     if (tag === null || typeof value !== "string") return [];
     const number = numericValue(value);
     if (number === null || !(number > tag.value)) return [];
-    return [
-      report(
-        rangeMax,
-        `Field '${context.key}': value ${value} is above range:max ${printBound(tag)}`,
-      ),
-    ];
+    return [report(rangeMax, `Field '${context.key}': value ${value} is above range:max ${printBound(tag)}`)];
   },
 });
 
@@ -224,12 +197,7 @@ const rangeMinItem = defineRule({
     if (tag === null || value === null || !isList(value)) return [];
     const below = outsideItems(value, (number) => number < tag.value);
     if (below.length === 0) return [];
-    return [
-      report(
-        rangeMinItem,
-        `Field '${context.key}': item(s) ${pyRepr(below)} are below range:min ${printBound(tag)}`,
-      ),
-    ];
+    return [report(rangeMinItem, `Field '${context.key}': item(s) ${pyRepr(below)} are below range:min ${printBound(tag)}`)];
   },
 });
 
@@ -247,12 +215,7 @@ const rangeMaxItem = defineRule({
     if (tag === null || value === null || !isList(value)) return [];
     const above = outsideItems(value, (number) => number > tag.value);
     if (above.length === 0) return [];
-    return [
-      report(
-        rangeMaxItem,
-        `Field '${context.key}': item(s) ${pyRepr(above)} are above range:max ${printBound(tag)}`,
-      ),
-    ];
+    return [report(rangeMaxItem, `Field '${context.key}': item(s) ${pyRepr(above)} are above range:max ${printBound(tag)}`)];
   },
 });
 
@@ -302,9 +265,7 @@ const orderAscending = defineRule({
   phase: "field",
   step: "order",
   check: (context: FieldContext): Diagnostic[] => {
-    const tagged = (context.templateField.comment?.tags ?? []).some(
-      (tag) => tag.kind === "order-ascending",
-    );
+    const tagged = (context.templateField.comment?.tags ?? []).some((tag) => tag.kind === "order-ascending");
     const { value } = context;
     if (!tagged || context.templateField.type !== "list-of-date") return [];
     if (value === null || !isList(value)) return [];
@@ -315,12 +276,7 @@ const orderAscending = defineRule({
       const currentKey = dateSortKey(item);
       if (currentKey === null || typeof item !== "string") continue;
       if (previousKey !== null && previousItem !== null && currentKey < previousKey) {
-        found.push(
-          report(
-            orderAscending,
-            `Field '${context.key}': dates are not in ascending order ('${previousItem}' comes before '${item}') [order:ascending]`,
-          ),
-        );
+        found.push(report(orderAscending, `Field '${context.key}': dates are not in ascending order ('${previousItem}' comes before '${item}') [order:ascending]`));
       }
       previousItem = item;
       previousKey = currentKey;

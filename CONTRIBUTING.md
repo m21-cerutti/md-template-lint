@@ -1,9 +1,24 @@
 # Contributing
 
-Thanks for helping with `md-template-lint`, the TypeScript port of the Markdown
-template linter. This guide covers the setup, the quality gates, the commit style, the
+Thanks for helping with `md-template-lint`. This guide covers the setup, the quality gates, the commit style, the
 test layout and how to extend the tool. The project rules for AI agents are in
 [AGENTS.md](AGENTS.md); they apply to people too.
+
+<!-- omit in toc -->
+
+## Summary
+
+- [Setup](#setup)
+- [Quality gates](#quality-gates)
+- [Commit style](#commit-style)
+- [Push policy](#push-policy)
+- [Tests](#tests)
+- [Scripts and configs are TypeScript](#scripts-and-configs-are-typescript)
+- [Grammar and generated code](#grammar-and-generated-code)
+- [Adding a rule](#adding-a-rule)
+- [Decisions (ADR process)](#decisions-adr-process)
+- [Security and privacy](#security-and-privacy)
+- [Documentation](#documentation)
 
 ## Setup
 
@@ -28,22 +43,22 @@ change. The index of all the docs is [docs/README.md](docs/README.md).
 
 Run all of them before a commit. Each must exit 0.
 
-| Command                 | What it checks                                                                     |
-| ----------------------- | ---------------------------------------------------------------------------------- |
-| `pnpm run check:parser` | `src/generated/` matches the grammars (no stale or hand-edited parser).            |
-| `pnpm run check:rules`  | Consistency of grammar, visitors, AST kinds, rule files, code ranges and the spec. |
+| Command                     | What it checks                                                                         |
+| --------------------------- | -------------------------------------------------------------------------------------- |
+| `pnpm run check:parser`     | `src/generated/` matches the grammars (no stale or hand-edited parser).                |
+| `pnpm run check:rules`      | Consistency of grammar, visitors, AST kinds, rule files, code ranges and the spec.     |
 | `pnpm run check:syntax-doc` | `docs/syntax-reference.md` matches its generator (`pnpm run gen:syntax-doc` rewrites). |
-| `pnpm run typecheck`    | `tsc` strict, for the sources, tests and scripts.                                  |
-| `pnpm run lint`         | ESLint.                                                                            |
-| `pnpm run format:check` | Prettier (`pnpm run format` rewrites).                                             |
-| `pnpm test`             | The vitest suite.                                                                  |
-| `pnpm run build`        | Compiles to `dist/`.                                                               |
+| `pnpm run typecheck`        | `tsc` strict, for the sources, tests and scripts.                                      |
+| `pnpm run lint`             | ESLint.                                                                                |
+| `pnpm run format:check`     | Prettier (`pnpm run format` rewrites).                                                 |
+| `pnpm test`                 | The vitest suite.                                                                      |
+| `pnpm run build`            | Compiles to `dist/`.                                                                   |
 
 Optional, needs the network, run by CI and the release workflow (not a pre-commit gate):
 
-| Command                | What it checks                                                                          |
-| ---------------------- | --------------------------------------------------------------------------------------- |
-| `pnpm run smoke:pack`  | Packs, checks the tarball content, installs it in a clean temp dir, runs the installed CLI. |
+| Command               | What it checks                                                                              |
+| --------------------- | ------------------------------------------------------------------------------------------- |
+| `pnpm run smoke:pack` | Packs, checks the tarball content, installs it in a clean temp dir, runs the installed CLI. |
 
 `pnpm run coverage` runs the suite with coverage; it fails under 85% in the engine, rules
 and tags code. Thresholds are never lowered.
@@ -81,15 +96,15 @@ agent. Prepare the commits; the owner pushes.
 The map of the test families and fixtures is [tests/README.md](tests/README.md); the how-to
 is [docs/guides/testing.md](docs/guides/testing.md). Test and fixture layout:
 
-| Path                                                             | Content                                                            |
-| ---------------------------------------------------------------- | ------------------------------------------------------------------ |
-| `tests/target/<category>/<MTLxxx>-<name>.test.ts`                | One test file per target rule (template + target).                 |
-| `tests/fixtures/pairs/<MTLxxx>/<case>/`                          | `template.md` and `target.md` of one case of that rule.            |
-| `tests/syntax/<category>/<MTLxxx>-<name>.test.ts`                | One test file per template syntax code, run through `--verify`.    |
-| `tests/fixtures/templates/<MTLxxx>/<case>.md`                    | The one template of one case of that code (no target).             |
-| `tests/consistency/`                                             | `pnpm run check:rules`, with the fixture coverage and orphan check. |
-| `tests/unit/`                                                    | Config, runner, reporters, io, CLI and smoke tests.                |
-| `tests/fixtures/smoke/clean-project/`                            | Synthetic project linted by `pnpm run smoke:pack`.                 |
+| Path                                              | Content                                                             |
+| ------------------------------------------------- | ------------------------------------------------------------------- |
+| `tests/target/<category>/<MTLxxx>-<name>.test.ts` | One test file per target rule (template + target).                  |
+| `tests/fixtures/pairs/<MTLxxx>/<case>/`           | `template.md` and `target.md` of one case of that rule.             |
+| `tests/syntax/<category>/<MTLxxx>-<name>.test.ts` | One test file per template syntax code, run through `--verify`.     |
+| `tests/fixtures/templates/<MTLxxx>/<case>.md`     | The one template of one case of that code (no target).              |
+| `tests/consistency/`                              | `pnpm run check:rules`, with the fixture coverage and orphan check. |
+| `tests/unit/`                                     | Config, runner, reporters, io, CLI and smoke tests.                 |
+| `tests/fixtures/smoke/clean-project/`             | Synthetic project linted by `pnpm run smoke:pack`.                  |
 
 The rule for cases (fixture folders and files):
 

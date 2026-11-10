@@ -11,8 +11,7 @@ const CODE = "MTL406";
 const DIR = "tests/fixtures/pairs/MTL406";
 
 /** Spec 4.3 message of MTL406: Python list of the items as written, parsed bound. */
-const message = (key: string, items: string, max: string): string =>
-  `Field '${key}': item(s) ${items} are above range:max ${max}`;
+const message = (key: string, items: string, max: string): string => `Field '${key}': item(s) ${items} are above range:max ${max}`;
 
 interface TestCase {
   readonly name: string;
@@ -48,13 +47,7 @@ const CASES: readonly TestCase[] = [
   // Items are listed as written (padding, trailing and leading zeros kept).
   {
     name: "fail-items-listed-as-written",
-    expected: [
-      message(
-        "scores",
-        "[' 20 ', '50.50', '030', '7.00', '\\x8530', '\\x1f30', '\\xa030\\xa0', '\\t30\\n', '\\u300030']",
-        "5",
-      ),
-    ],
+    expected: [message("scores", "[' 20 ', '50.50', '030', '7.00', '\\x8530', '\\x1f30', '\\xa030\\xa0', '\\t30\\n', '\\u300030']", "5")],
     warnings: [],
   },
   // Float items just outside a float bound: 2.51 and 2.5001 are named, 2.5 and 2.49 are not.
@@ -108,12 +101,7 @@ const CASES: readonly TestCase[] = [
   // NO type guard: any list is checked, whatever the template field type.
   {
     name: "fail-no-type-guard-checks-any-list",
-    expected: [
-      message("int_list", "['10']", "5"),
-      message("string_list", "['30']", "5"),
-      message("date_list", "['40']", "5"),
-      message("string_typed_scalar_field", "['80']", "5"),
-    ],
+    expected: [message("int_list", "['10']", "5"), message("string_list", "['30']", "5"), message("date_list", "['40']", "5"), message("string_typed_scalar_field", "['80']", "5")],
     // Spec 2.9: `date_list` is a list-of-date field without [format:elements:date].
     warnings: ["MTL016"],
   },
@@ -134,30 +122,19 @@ const CASES: readonly TestCase[] = [
   // both bounds reports only the violated maximum.
   {
     name: "fail-multi-field-errors-follow-template-order",
-    expected: [
-      message("first", "['9']", "5"),
-      message("third", "['8']", "5"),
-      message("both_bounds", "['9']", "5"),
-    ],
+    expected: [message("first", "['9']", "5"), message("third", "['8']", "5"), message("both_bounds", "['9']", "5")],
     warnings: [],
   },
 ];
 
-const read = (path: string): string =>
-  readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
+const read = (path: string): string => readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
 
 /** MTL406 diagnostics and template warnings for the pair of a fixture folder. */
 async function lint(testCase: TestCase) {
   const fixture = `${DIR}/${testCase.name}`;
   const status = await checkTemplate(registry, read(`${fixture}/template.md`));
   if (status.status !== "ok") throw new Error(`${fixture}: template is broken`);
-  const found = await checkTarget(
-    registry,
-    status.model,
-    read(`${fixture}/target.md`),
-    `${fixture}/target.md`,
-    createEnv(),
-  );
+  const found = await checkTarget(registry, status.model, read(`${fixture}/target.md`), `${fixture}/target.md`, createEnv());
   return {
     found: found.filter((diagnostic) => diagnostic.code === CODE),
     warnings: status.warnings,

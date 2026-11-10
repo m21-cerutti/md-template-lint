@@ -10,9 +10,7 @@ const registry = createRegistry();
 const CODE = "MTL603";
 const DIR = "tests/fixtures/pairs/MTL603";
 
-const message = (text: string): string =>
-  `Heading: Heading '${text}' is marked [presence:template-only] ` +
-  "and must not appear in the linted file";
+const message = (text: string): string => `Heading: Heading '${text}' is marked [presence:template-only] ` + "and must not appear in the linted file";
 
 /** Case -> fixture -> expected result: at least 1 passing case and 1 failing case. */
 const CASES = [
@@ -48,14 +46,12 @@ const CASES = [
   },
   {
     name: "fail-template-only-tag-wins-over-optional-required-and-loses-to-conditional",
-    fixture:
-      "tests/fixtures/pairs/MTL603/fail-template-only-tag-wins-over-optional-required-and-loses-to-conditional",
+    fixture: "tests/fixtures/pairs/MTL603/fail-template-only-tag-wins-over-optional-required-and-loses-to-conditional",
     expected: [message("A"), message("B"), message("D")],
   },
   {
     name: "fail-template-only-heading-in-code-fence-or-level-three-is-ignored",
-    fixture:
-      "tests/fixtures/pairs/MTL603/fail-template-only-heading-in-code-fence-or-level-three-is-ignored",
+    fixture: "tests/fixtures/pairs/MTL603/fail-template-only-heading-in-code-fence-or-level-three-is-ignored",
     expected: [message("Authoring checklist")],
   },
   {
@@ -74,8 +70,7 @@ const CASES = [
     // with the text is set aside, ONE finding on the first (line 7). The second `### Draft
     // notes` (line 9) gets no finding, and the one under `## Other` (line 13) is out of scope.
     name: "fail-template-only-h3-first-sibling-in-parent-section-anchors",
-    fixture:
-      "tests/fixtures/pairs/MTL603/fail-template-only-h3-first-sibling-in-parent-section-anchors",
+    fixture: "tests/fixtures/pairs/MTL603/fail-template-only-h3-first-sibling-in-parent-section-anchors",
     expected: [message("Draft notes")],
   },
   {
@@ -96,8 +91,7 @@ const CASES = [
     // Spec 2.6 "checked": the section-scope descendants of a template-only heading are never
     // checked, so only `Notes` (line 5) is reported, not the matched `### Draft` (line 7).
     name: "fail-template-only-child-of-matched-template-only-parent-is-not-checked",
-    fixture:
-      "tests/fixtures/pairs/MTL603/fail-template-only-child-of-matched-template-only-parent-is-not-checked",
+    fixture: "tests/fixtures/pairs/MTL603/fail-template-only-child-of-matched-template-only-parent-is-not-checked",
     expected: [message("Notes")],
   },
   {
@@ -134,20 +128,13 @@ const ANCHORS: readonly { readonly dir: string; readonly anchor: number }[] = [
   { dir: "fail-template-only-child-of-matched-template-only-parent-is-not-checked", anchor: 5 },
 ];
 
-const read = (path: string): string =>
-  readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
+const read = (path: string): string => readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
 
 /** Diagnostics of this code for the pair of a fixture folder. */
 async function lint(fixture: string) {
   const status = await checkTemplate(registry, read(`${fixture}/template.md`));
   if (status.status !== "ok") throw new Error(`${fixture}: template is broken`);
-  const found = await checkTarget(
-    registry,
-    status.model,
-    read(`${fixture}/target.md`),
-    `${fixture}/target.md`,
-    createEnv(),
-  );
+  const found = await checkTarget(registry, status.model, read(`${fixture}/target.md`), `${fixture}/target.md`, createEnv());
   return found.filter((diagnostic) => diagnostic.code === CODE);
 }
 

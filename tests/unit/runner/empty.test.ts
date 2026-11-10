@@ -39,9 +39,7 @@ describe("runner empty target sets: onEmpty (spec 7.4)", () => {
       const expectError = testCase.severity === "error";
       const expectWarning = testCase.severity === "warning";
       expect(result.runErrors).toEqual(expectError ? [{ ...DIAGNOSTIC, severity: "error" }] : []);
-      expect(result.runWarnings).toEqual(
-        expectWarning ? [{ ...DIAGNOSTIC, severity: "warning" }] : [],
-      );
+      expect(result.runWarnings).toEqual(expectWarning ? [{ ...DIAGNOSTIC, severity: "warning" }] : []);
       // Only a warning is printed in place on stdout; an error goes to stderr (7.4).
       expect(result.blocks).toHaveLength(expectWarning ? 1 : 0);
       expect(result.summary).toMatchObject({

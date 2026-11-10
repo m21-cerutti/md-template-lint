@@ -9,8 +9,7 @@ import { expectTemplateCases, verifyFixture, type VerifyCase } from "../../helpe
 const CODE = "MTL013";
 const DIR = "tests/fixtures/templates/MTL013";
 
-const warning = (message: string, line: number, column: number, sourceLine: string) =>
-  ({ code: CODE, severity: "warning", message, line, column, sourceLine }) as const;
+const warning = (message: string, line: number, column: number, sourceLine: string) => ({ code: CODE, severity: "warning", message, line, column, sourceLine }) as const;
 
 /** Case -> fixture `<name>.md` -> expected `--verify` result. */
 const CASES: readonly VerifyCase[] = [
@@ -21,28 +20,14 @@ const CASES: readonly VerifyCase[] = [
     name: "fail-heading-tag-in-frontmatter",
     exitCode: 0,
     status: "ok",
-    diagnostics: [
-      warning(
-        "Field 'n': tag [content:table] is not valid in frontmatter",
-        2,
-        8,
-        "n: x # [content:table]",
-      ),
-    ],
+    diagnostics: [warning("Field 'n': tag [content:table] is not valid in frontmatter", 2, 8, "n: x # [content:table]")],
   },
   // A field tag on a heading.
   {
     name: "fail-field-tag-in-heading",
     exitCode: 0,
     status: "ok",
-    diagnostics: [
-      warning(
-        "Heading 'Notes [count:min:1]': tag [count:min:1] is not valid in a heading",
-        4,
-        10,
-        "## Notes [count:min:1]",
-      ),
-    ],
+    diagnostics: [warning("Heading 'Notes [count:min:1]': tag [count:min:1] is not valid in a heading", 4, 10, "## Notes [count:min:1]")],
   },
   // Field shape tags on headings (spec 2.9).
   {
@@ -50,18 +35,8 @@ const CASES: readonly VerifyCase[] = [
     exitCode: 0,
     status: "ok",
     diagnostics: [
-      warning(
-        "Heading 'Notes [format:semver]': tag [format:semver] is not valid in a heading",
-        4,
-        10,
-        "## Notes [format:semver]",
-      ),
-      warning(
-        "Heading 'Dates [format:elements:date]': tag [format:elements:date] is not valid in a heading",
-        5,
-        11,
-        "### Dates [format:elements:date]",
-      ),
+      warning("Heading 'Notes [format:semver]': tag [format:semver] is not valid in a heading", 4, 10, "## Notes [format:semver]"),
+      warning("Heading 'Dates [format:elements:date]': tag [format:elements:date] is not valid in a heading", 5, 11, "### Dates [format:elements:date]"),
     ],
   },
   // `[order:ascending]` keeps its field meaning on a key line; the spec 2.10 tags on headings.
@@ -91,14 +66,7 @@ const CASES: readonly VerifyCase[] = [
       ["k", "[ORDER:First:Semver:Descending]"],
       ["l", "[content:subheadings:no-extra]"],
       ["m", '[pattern:"a]b \\"c\\""]'],
-    ].map(([key = "", tag = ""], index) =>
-      warning(
-        `Field '${key}': tag ${tag} is not valid in frontmatter`,
-        index + 2,
-        8,
-        `${key}: x # ${tag}`,
-      ),
-    ),
+    ].map(([key = "", tag = ""], index) => warning(`Field '${key}': tag ${tag} is not valid in frontmatter`, index + 2, 8, `${key}: x # ${tag}`)),
   },
 ];
 

@@ -16,25 +16,7 @@ import { reportSequenced, setAnchorLine, type AnyRule, type TargetContext } from
  * Run diagnostics of the spec 4.3 "run errors" table. They are codes of the
  * 4.3 tables (a directive naming one gives MTL022, not MTL021), but no rule.
  */
-export const RUN_CODES: readonly RuleCode[] = [
-  "MTL901",
-  "MTL902",
-  "MTL903",
-  "MTL904",
-  "MTL905",
-  "MTL906",
-  "MTL907",
-  "MTL908",
-  "MTL909",
-  "MTL910",
-  "MTL911",
-  "MTL912",
-  "MTL913",
-  "MTL920",
-  "MTL921",
-  "MTL922",
-  "MTL923",
-];
+export const RUN_CODES: readonly RuleCode[] = ["MTL901", "MTL902", "MTL903", "MTL904", "MTL905", "MTL906", "MTL907", "MTL908", "MTL909", "MTL910", "MTL911", "MTL912", "MTL913", "MTL920", "MTL921", "MTL922", "MTL923"];
 
 /** DIR6: the file diagnostics of a parsed target, MTL101 to MTL899. */
 export function isSuppressible(code: string): boolean {
@@ -99,18 +81,13 @@ function isCodeShape(text: string): boolean {
  * then column). `knownCodes` are the codes of the spec 4.3 tables: the
  * registered rules and the run diagnostics.
  */
-export function analyzeDirectives(
-  directives: readonly Directive[],
-  knownCodes: ReadonlySet<string>,
-): DirectiveAnalysis {
+export function analyzeDirectives(directives: readonly Directive[], knownCodes: ReadonlySet<string>): DirectiveAnalysis {
   const problems: DirectiveProblem[] = [];
   const document = new Set<string>();
   const lines = new Map<string, Set<number>>();
   const ranges = new Map<string, DisabledRange[]>();
   const open = new Map<string, OpenRange>();
-  const ordered = [...directives].sort(
-    (a, b) => a.position.line - b.position.line || a.position.column - b.position.column,
-  );
+  const ordered = [...directives].sort((a, b) => a.position.line - b.position.line || a.position.column - b.position.column);
 
   const addLine = (code: string, line: number) => {
     const set = lines.get(code) ?? new Set<number>();
@@ -193,12 +170,7 @@ export function analyzeDirectives(
 
   // DIR8: still open at the end of the file; MTL024 for `begin disable` only, ordered by
   // the position of the `begin disable`, then by the code order in that directive.
-  const unclosed = [...open].sort(
-    ([, a], [, b]) =>
-      a.directive.position.line - b.directive.position.line ||
-      a.directive.position.column - b.directive.position.column ||
-      a.item - b.item,
-  );
+  const unclosed = [...open].sort(([, a], [, b]) => a.directive.position.line - b.directive.position.line || a.directive.position.column - b.directive.position.column || a.item - b.item);
   for (const [code, range] of unclosed) {
     addRange(code, { start: range.start, end: null });
     if (range.directive.verb === "begin disable") {
@@ -219,12 +191,7 @@ type ProblemOf<K extends ProblemKind> = Extract<DirectiveProblem, { kind: K }>;
  * (`reportSequenced`) and the directive line as anchor (data for reporters;
  * these codes are never suppressible, DIR6).
  */
-export function directiveDiagnostics<K extends ProblemKind>(
-  context: TargetContext,
-  rule: Pick<AnyRule, "code" | "severity">,
-  kind: K,
-  text: (problem: ProblemOf<K>) => string,
-): Diagnostic[] {
+export function directiveDiagnostics<K extends ProblemKind>(context: TargetContext, rule: Pick<AnyRule, "code" | "severity">, kind: K, text: (problem: ProblemOf<K>) => string): Diagnostic[] {
   const { problems } = analyzeDirectives(context.target.directives, context.knownCodes);
   return problems.flatMap((problem, index) => {
     if (problem.kind !== kind) return [];
@@ -245,7 +212,5 @@ export function isCovered(plan: SuppressionPlan, code: string, anchor: number | 
   if (plan.document.has(code)) return true;
   if (anchor === null) return false;
   if (plan.lines.get(code)?.has(anchor) === true) return true;
-  return (plan.ranges.get(code) ?? []).some(
-    (range) => range.start <= anchor && (range.end === null || anchor <= range.end),
-  );
+  return (plan.ranges.get(code) ?? []).some((range) => range.start <= anchor && (range.end === null || anchor <= range.end));
 }

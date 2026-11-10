@@ -40,10 +40,7 @@ const CASES: readonly Case[] = [
   {
     name: "fail-broken-template",
     exitCode: 1,
-    stdout: [
-      "TEMPLATE ERROR: templates/broken.template.md - File must have YAML frontmatter (---...---)",
-      "Templates:    1 checked, 1 broken",
-    ],
+    stdout: ["TEMPLATE ERROR: templates/broken.template.md - File must have YAML frontmatter (---...---)", "Templates:    1 checked, 1 broken"],
     stderr: [],
     // The files of a broken pair are not linted.
     absent: ["docs/a.md", "All files passed!"],

@@ -10,26 +10,10 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import {
-  ActionTransition,
-  LexerActionType,
-  LexerModeAction,
-  LexerPushModeAction,
-  LexerTypeAction,
-  RuleTransition,
-  Transition,
-  type ATN,
-  type ATNState,
-} from "antlr4ng";
+import { ActionTransition, LexerActionType, LexerModeAction, LexerPushModeAction, LexerTypeAction, RuleTransition, Transition, type ATN, type ATNState } from "antlr4ng";
 import { LIST_PROMOTABLE_HINTS } from "../../src/engine/infer.js";
 import { createRegistry } from "../../src/engine/registry.js";
-import {
-  CATEGORIES,
-  CATEGORY_RANGES,
-  isStub,
-  type AnyRule,
-  type Category,
-} from "../../src/engine/rule.js";
+import { CATEGORIES, CATEGORY_RANGES, isStub, type AnyRule, type Category } from "../../src/engine/rule.js";
 import { MdTemplateLexer } from "../../src/generated/MdTemplateLexer.js";
 import { MdTemplateParser } from "../../src/generated/MdTemplateParser.js";
 import { BODY_TAG_KINDS, FRONTMATTER_TAG_KINDS } from "../../src/tags/ast.js";
@@ -72,8 +56,7 @@ function section(text: string, heading: string, stop: string): string {
 
 const unquote = (cell: string) => cell.trim().replaceAll("`", "");
 const spec = () => read("docs", "spec.md").replaceAll("\r\n", "\n");
-const isCategory = (word: string): word is Category =>
-  (CATEGORIES as readonly string[]).includes(word);
+const isCategory = (word: string): word is Category => (CATEGORIES as readonly string[]).includes(word);
 
 /** Codes of docs/spec.md 4.3 with their category heading, except the MTL9xx run errors. */
 export function specCodes(text = spec()): SpecCode[] {
@@ -180,9 +163,7 @@ function sameSet(label: string, actual: readonly string[], expected: readonly st
 
 /** Lexer rule indices of `mode`, in declaration order. */
 export function modeRules(mode: number): number[] {
-  return (lexerAtn.modeToStartState[mode]?.transitions ?? []).map(
-    (transition) => transition.target.ruleIndex,
-  );
+  return (lexerAtn.modeToStartState[mode]?.transitions ?? []).map((transition) => transition.target.ruleIndex);
 }
 
 /** Keyword tokens of lexer mode `mode` whose literal is a plain word (`'type'`). */
@@ -212,19 +193,13 @@ export function checkTagFamily(): string[] {
   for (const rule of [...fm, ...body]) {
     for (const token of firstSymbols(parserAtn, rule).tokens) starts.add(token);
   }
-  return sameSet(
-    "tagFamily (grammar/MdTemplateParser.g4) vs first keywords of fmTagBody/bodyTagBody",
-    names(family),
-    names(starts),
-  );
+  return sameSet("tagFamily (grammar/MdTemplateParser.g4) vs first keywords of fmTagBody/bodyTagBody", names(family), names(starts));
 }
 
 /** tagWord = generic word tokens + the seven type-hint words of TAG_TEXT. */
 export function checkTagWord(): string[] {
   const tagWord = names(firstSymbols(parserAtn, MdTemplateParser.RULE_tagWord).tokens);
-  const hintWords = names(firstSymbols(parserAtn, MdTemplateParser.RULE_fmHintWord).tokens).filter(
-    (name) => name !== "ALIAS_MARK",
-  );
+  const hintWords = names(firstSymbols(parserAtn, MdTemplateParser.RULE_fmHintWord).tokens).filter((name) => name !== "ALIAS_MARK");
   const expected = ["ALNUM", "NUMBER", "WORD", "TYPE", "RULE", ...hintWords];
   const problems = sameSet("tagWord vs word tokens + fmHintWord + TYPE + RULE", tagWord, expected);
   const textKeywords = modeKeywords(MdTemplateLexer.TAG_TEXT);
@@ -246,11 +221,7 @@ export function checkTagWord(): string[] {
 
 type VisitorLike = object;
 
-function visitorProblems(
-  region: string,
-  bodyRule: number,
-  visitors: readonly VisitorLike[],
-): string[] {
+function visitorProblems(region: string, bodyRule: number, visitors: readonly VisitorLike[]): string[] {
   const problems: string[] = [];
   const alternatives = [...firstSymbols(parserAtn, bodyRule).rules].map(ruleName);
   const handles = (visitor: VisitorLike, rule: string) => {
@@ -260,30 +231,20 @@ function visitorProblems(
   for (const rule of alternatives) {
     const owners = visitors.filter((visitor) => handles(visitor, rule));
     if (owners.length !== 1) {
-      problems.push(
-        `visitors/index.ts ${region}: ${owners.length} visitors handle ${rule} (expected exactly 1)`,
-      );
+      problems.push(`visitors/index.ts ${region}: ${owners.length} visitors handle ${rule} (expected exactly 1)`);
     }
   }
   for (const visitor of visitors) {
     if (!alternatives.some((rule) => handles(visitor, rule))) {
-      problems.push(
-        `visitors/index.ts ${region}: ${visitor.constructor.name} handles no ${ruleName(bodyRule)} alternative`,
-      );
+      problems.push(`visitors/index.ts ${region}: ${visitor.constructor.name} handles no ${ruleName(bodyRule)} alternative`);
     }
   }
   return problems;
 }
 
 /** Every fmTagBody / bodyTagBody alternative has exactly one registered visitor. */
-export function checkVisitorRegistry(
-  frontmatter: readonly VisitorLike[] = FRONTMATTER_TAG_VISITORS,
-  body: readonly VisitorLike[] = BODY_TAG_VISITORS,
-): string[] {
-  return [
-    ...visitorProblems("FRONTMATTER_TAG_VISITORS", MdTemplateParser.RULE_fmTagBody, frontmatter),
-    ...visitorProblems("BODY_TAG_VISITORS", MdTemplateParser.RULE_bodyTagBody, body),
-  ];
+export function checkVisitorRegistry(frontmatter: readonly VisitorLike[] = FRONTMATTER_TAG_VISITORS, body: readonly VisitorLike[] = BODY_TAG_VISITORS): string[] {
+  return [...visitorProblems("FRONTMATTER_TAG_VISITORS", MdTemplateParser.RULE_fmTagBody, frontmatter), ...visitorProblems("BODY_TAG_VISITORS", MdTemplateParser.RULE_bodyTagBody, body)];
 }
 
 /** KNOWN_TYPE_NAMES equals the 17 types of spec 3.1; promoted list types exist. */
@@ -350,12 +311,7 @@ export function sentences(atn: ATN, ruleIndex: number): number[][] {
 
 /** First string the lexer rule `ruleIndex` matches (first transition, first character). */
 function lexerRuleText(ruleIndex: number): string | null {
-  const walk = (
-    state: ATNState,
-    follow: readonly ATNState[],
-    text: string,
-    seen: string[],
-  ): string | null => {
+  const walk = (state: ATNState, follow: readonly ATNState[], text: string, seen: string[]): string | null => {
     if (lexerAtn.ruleToStopState[state.ruleIndex] === state) {
       const next = follow.at(-1);
       return next === undefined ? text : walk(next, follow.slice(0, -1), text, seen);
@@ -372,10 +328,7 @@ function lexerRuleText(ruleIndex: number): string | null {
       } else {
         const code = transition.label?.toArray()[0];
         if (code !== undefined && transition.transitionType !== Transition.NOT_SET) {
-          found = walk(transition.target, follow, text + String.fromCodePoint(code), [
-            ...seen,
-            key,
-          ]);
+          found = walk(transition.target, follow, text + String.fromCodePoint(code), [...seen, key]);
         }
       }
       if (found !== null) return found;
@@ -386,12 +339,7 @@ function lexerRuleText(ruleIndex: number): string | null {
   return start ? walk(start, [], "", []) : null;
 }
 
-const STAGE_TWO_MODES = [
-  MdTemplateLexer.TAG_STRICT,
-  MdTemplateLexer.TAG_FREE,
-  MdTemplateLexer.TAG_SCHEME,
-  MdTemplateLexer.TAG_PATTERN,
-];
+const STAGE_TWO_MODES = [MdTemplateLexer.TAG_STRICT, MdTemplateLexer.TAG_FREE, MdTemplateLexer.TAG_SCHEME, MdTemplateLexer.TAG_PATTERN];
 
 /** Sample text of a stage-2 token: an override, else the text its lexer rule matches. */
 function tokenText(token: number): string | undefined {
@@ -430,8 +378,7 @@ function kindsByAlternative(region: "frontmatter" | "body", bodyRule: number) {
         continue;
       }
       // Production entry rule `document` (spec 2), not a test-only entry rule.
-      const source =
-        region === "frontmatter" ? `---\nk: v # [${text}]\n---\n` : `---\n---\n## H [${text}]\n`;
+      const source = region === "frontmatter" ? `---\nk: v # [${text}]\n---\n` : `---\n---\n## H [${text}]\n`;
       const document = parseDocument(source);
       const produced: string[] = [];
       for (const line of document.frontmatter?.lines ?? []) {
@@ -457,10 +404,7 @@ function kindsByAlternative(region: "frontmatter" | "body", bodyRule: number) {
  * kind comes from exactly one alternative (its family), and the kinds equal
  * FRONTMATTER_TAG_KINDS / BODY_TAG_KINDS of src/tags/ast.ts.
  */
-export function checkAstKinds(
-  frontmatterKinds: readonly string[] = FRONTMATTER_TAG_KINDS,
-  bodyKinds: readonly string[] = BODY_TAG_KINDS,
-): string[] {
+export function checkAstKinds(frontmatterKinds: readonly string[] = FRONTMATTER_TAG_KINDS, bodyKinds: readonly string[] = BODY_TAG_KINDS): string[] {
   const problems: string[] = [];
   const regions = [
     ["frontmatter", MdTemplateParser.RULE_fmTagBody, frontmatterKinds, "FRONTMATTER_TAG_KINDS"],
@@ -476,9 +420,7 @@ export function checkAstKinds(
         produced.push(kind);
       }
     }
-    problems.push(
-      ...sameSet(`${label} (src/tags/ast.ts) vs grammar + visitors`, declared, produced),
-    );
+    problems.push(...sameSet(`${label} (src/tags/ast.ts) vs grammar + visitors`, declared, produced));
   }
   return problems;
 }
@@ -505,12 +447,7 @@ export function tagFamilies(): Map<string, string> {
 /** B_ rules in mode BODY and DS_ rules in DEFAULT_MODE: heading, 2 fences, table, list, html, blank, char. */
 export const MIRROR_RULE_COUNT = 8;
 
-const COMMANDS: ReadonlySet<number> = new Set([
-  LexerActionType.TYPE,
-  LexerActionType.MODE,
-  LexerActionType.PUSH_MODE,
-  LexerActionType.POP_MODE,
-]);
+const COMMANDS: ReadonlySet<number> = new Set([LexerActionType.TYPE, LexerActionType.MODE, LexerActionType.PUSH_MODE, LexerActionType.POP_MODE]);
 
 interface RuleShape {
   /** Canonical ATN graph of the rule pattern (lexer commands removed). */
@@ -588,31 +525,22 @@ export function compareMirror(start: number, body: number): string[] {
   if (ds.mode !== (b.mode ?? MdTemplateLexer.BODY)) {
     problems.push(`DEFAULT_MODE: ${pair}: next modes differ`);
   }
-  if (ds.pushes.join() !== b.pushes.join())
-    problems.push(`DEFAULT_MODE: ${pair}: pushModes differ`);
+  if (ds.pushes.join() !== b.pushes.join()) problems.push(`DEFAULT_MODE: ${pair}: pushModes differ`);
   return problems;
 }
 
 /** The DS_ rules of DEFAULT_MODE mirror the B_ rules of mode BODY, same order (ADR 0002). */
-export function checkDefaultModeMirror(
-  startMode: number = MdTemplateLexer.DEFAULT_MODE,
-  bodyMode: number = MdTemplateLexer.BODY,
-): string[] {
-  const pick = (mode: number, prefix: string) =>
-    modeRules(mode).filter((rule) => lexerRuleName(rule).startsWith(prefix));
+export function checkDefaultModeMirror(startMode: number = MdTemplateLexer.DEFAULT_MODE, bodyMode: number = MdTemplateLexer.BODY): string[] {
+  const pick = (mode: number, prefix: string) => modeRules(mode).filter((rule) => lexerRuleName(rule).startsWith(prefix));
   const starts = pick(startMode, "DS_");
   const bodies = pick(bodyMode, "B_");
   const problems: string[] = [];
   const modeName = (mode: number) => MdTemplateLexer.modeNames[mode] ?? String(mode);
   if (starts.length !== MIRROR_RULE_COUNT) {
-    problems.push(
-      `DEFAULT_MODE: found ${starts.length} DS_ rules in ${modeName(startMode)}, expected ${MIRROR_RULE_COUNT}`,
-    );
+    problems.push(`DEFAULT_MODE: found ${starts.length} DS_ rules in ${modeName(startMode)}, expected ${MIRROR_RULE_COUNT}`);
   }
   if (bodies.length !== MIRROR_RULE_COUNT) {
-    problems.push(
-      `DEFAULT_MODE: found ${bodies.length} B_ rules in ${modeName(bodyMode)}, expected ${MIRROR_RULE_COUNT}`,
-    );
+    problems.push(`DEFAULT_MODE: found ${bodies.length} B_ rules in ${modeName(bodyMode)}, expected ${MIRROR_RULE_COUNT}`);
   }
   const suffix = (rule: number, prefix: string) => lexerRuleName(rule).slice(prefix.length);
   for (let index = 0; index < Math.max(starts.length, bodies.length); index += 1) {
@@ -620,9 +548,7 @@ export function checkDefaultModeMirror(
     const body = bodies[index];
     if (start === undefined || body === undefined) continue;
     if (suffix(start, "DS_") !== suffix(body, "B_")) {
-      problems.push(
-        `DEFAULT_MODE: rule ${index + 1} is ${lexerRuleName(start)} vs ${lexerRuleName(body)} (order)`,
-      );
+      problems.push(`DEFAULT_MODE: rule ${index + 1} is ${lexerRuleName(start)} vs ${lexerRuleName(body)} (order)`);
     } else {
       problems.push(...compareMirror(start, body));
     }
@@ -641,10 +567,7 @@ export function checkRuleFiles(files = readdirSync(join(ROOT, "src", "rules"))):
 }
 
 /** src/engine/ranges.json (CATEGORY_RANGES, new-rule.ts) equals the spec 4.2 table. */
-export function checkRanges(
-  shared: Readonly<Record<Category, readonly number[]>> = CATEGORY_RANGES,
-  specified: ReadonlyMap<Category, readonly number[]> = specRanges(),
-): string[] {
+export function checkRanges(shared: Readonly<Record<Category, readonly number[]>> = CATEGORY_RANGES, specified: ReadonlyMap<Category, readonly number[]> = specRanges()): string[] {
   const problems: string[] = [];
   for (const category of CATEGORIES) {
     const own = shared[category].join("-");
@@ -660,24 +583,15 @@ export function checkRanges(
  * Every spec code (except MTL9xx) is implemented XOR pending. A scaffold stub
  * (`notImplemented`) counts as pending. Registered rules match the spec.
  */
-export function checkCodes(
-  codes: readonly SpecCode[] = specCodes(),
-  registered: readonly AnyRule[] = createRegistry().rules,
-  pending: Readonly<Record<string, string>> = pendingCodes(),
-): string[] {
+export function checkCodes(codes: readonly SpecCode[] = specCodes(), registered: readonly AnyRule[] = createRegistry().rules, pending: Readonly<Record<string, string>> = pendingCodes()): string[] {
   const problems: string[] = [];
   const bySpec = new Map(codes.map((entry) => [entry.code, entry]));
-  const implemented = new Set<string>(
-    registered.filter((rule) => !isStub(rule)).map((rule) => rule.code),
-  );
+  const implemented = new Set<string>(registered.filter((rule) => !isStub(rule)).map((rule) => rule.code));
   for (const entry of codes) {
     const isImplemented = implemented.has(entry.code);
     const isPending = entry.code in pending;
     if (!isImplemented && !isPending) {
-      problems.push(
-        `${entry.code} ${entry.name}: in docs/spec.md 4.3 but neither implemented in ` +
-          `src/rules/${entry.category}.ts nor pending in tests/consistency/pending-rules.json`,
-      );
+      problems.push(`${entry.code} ${entry.name}: in docs/spec.md 4.3 but neither implemented in ` + `src/rules/${entry.category}.ts nor pending in tests/consistency/pending-rules.json`);
     } else if (isImplemented && isPending) {
       problems.push(`${entry.code} ${entry.name}: implemented, remove it from pending-rules.json`);
     }
@@ -695,14 +609,10 @@ export function checkCodes(
       problems.push(`${rule.code}: name '${rule.name}' differs from spec '${entry.name}'`);
     }
     if (entry.category !== rule.category) {
-      problems.push(
-        `${rule.code}: category '${rule.category}' differs from spec '${entry.category}'`,
-      );
+      problems.push(`${rule.code}: category '${rule.category}' differs from spec '${entry.category}'`);
     }
     if (!entry.severity.split(" or ").includes(rule.severity)) {
-      problems.push(
-        `${rule.code}: severity '${rule.severity}' differs from spec '${entry.severity}'`,
-      );
+      problems.push(`${rule.code}: severity '${rule.severity}' differs from spec '${entry.severity}'`);
     }
   }
   for (const code of Object.keys(pending)) {
@@ -713,15 +623,5 @@ export function checkCodes(
 
 /** Every check, in a fixed order. */
 export function allProblems(): string[] {
-  return [
-    ...checkTagFamily(),
-    ...checkTagWord(),
-    ...checkVisitorRegistry(),
-    ...checkTypeNames(),
-    ...checkAstKinds(),
-    ...checkDefaultModeMirror(),
-    ...checkRuleFiles(),
-    ...checkRanges(),
-    ...checkCodes(),
-  ];
+  return [...checkTagFamily(), ...checkTagWord(), ...checkVisitorRegistry(), ...checkTypeNames(), ...checkAstKinds(), ...checkDefaultModeMirror(), ...checkRuleFiles(), ...checkRanges(), ...checkCodes()];
 }

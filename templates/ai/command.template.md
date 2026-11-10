@@ -1,8 +1,8 @@
 ---
 # [filename:case:kebab-case]
-description: One line shown in the command list  # [presence:required]
-agent: agent-name  # [presence:optional]
-model: provider/model-id  # [presence:optional] type=string
+description: One line shown in the command list # [presence:required]
+agent: agent-name # [presence:optional]
+model: provider/model-id # [presence:optional] type=string
 ---
 
 # /command-name [pattern:"{text}"]

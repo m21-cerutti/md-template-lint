@@ -10,14 +10,7 @@
  * - rule: `[rule]` -> inert; prose brackets and plain tokens -> null.
  */
 import type { ParserRuleContext } from "antlr4ng";
-import type {
-  TagBareBracketContext,
-  TagClosedCandidateContext,
-  TagPatternCandidateContext,
-  TagShapedBracketContext,
-  TagShapedCandidateContext,
-  TagUnclosedCandidateContext,
-} from "../../generated/MdTemplateParser.js";
+import type { TagBareBracketContext, TagClosedCandidateContext, TagPatternCandidateContext, TagShapedBracketContext, TagShapedCandidateContext, TagUnclosedCandidateContext } from "../../generated/MdTemplateParser.js";
 import { KNOWN_TYPE_NAMES } from "../types.js";
 import { FamilyVisitor } from "./base.js";
 
@@ -63,9 +56,7 @@ export class BracketShapeVisitor extends FamilyVisitor<BracketShape> {
       return { kind: "inert" };
     }
     const ascii = name.tagHintPiece().every((piece) => piece.UWORD() === null);
-    return ascii && !KNOWN_TYPE_NAMES.has(name.getText().toLowerCase())
-      ? { kind: "bare", ctx }
-      : { kind: "inert" };
+    return ascii && !KNOWN_TYPE_NAMES.has(name.getText().toLowerCase()) ? { kind: "bare", ctx } : { kind: "inert" };
   };
 
   override visitTagShapedBracket = (ctx: TagShapedBracketContext): BracketShape => ({

@@ -13,8 +13,7 @@ const DIR = "tests/fixtures/pairs/MTL305";
 const OTHER_FORMAT_CODES = ["MTL301", "MTL302", "MTL303", "MTL304"];
 
 /** Spec 4.3 message of MTL305; `pylist` is the Python list text, `schemes` the allow-list. */
-const message = (key: string, pylist: string, schemes: string): string =>
-  `Field '${key}': list contains URLs with a disallowed scheme ${pylist} [format:scheme:${schemes}]`;
+const message = (key: string, pylist: string, schemes: string): string => `Field '${key}': list contains URLs with a disallowed scheme ${pylist} [format:scheme:${schemes}]`;
 
 interface TestCase {
   readonly name: string;
@@ -41,9 +40,7 @@ const CASES: readonly TestCase[] = [
   // One error names every disallowed item, in list order, as written.
   {
     name: "fail-list-has-two-disallowed-items-in-list-order",
-    expected: [
-      message("links", "['sftp://files.example.com', 'FTP://files.example.com']", "https"),
-    ],
+    expected: [message("links", "['sftp://files.example.com', 'FTP://files.example.com']", "https")],
   },
   // The list is not deduplicated.
   {
@@ -63,13 +60,7 @@ const CASES: readonly TestCase[] = [
   // Python `repr`: a backslash is doubled, U+200B is `\u200b`.
   {
     name: "fail-backslash-and-zero-width-in-path-escaped-like-python",
-    expected: [
-      message(
-        "links",
-        String.raw`['ftp://files.example.com/a\\b', 'ftp://files.example.com/z\u200bw']`,
-        "https",
-      ),
-    ],
+    expected: [message("links", String.raw`['ftp://files.example.com/a\\b', 'ftp://files.example.com/z\u200bw']`, "https")],
   },
   // An apostrophe makes Python pick double quotes.
   {
@@ -87,28 +78,18 @@ const CASES: readonly TestCase[] = [
   },
   {
     name: "fail-two-fields-in-template-order",
-    expected: [
-      message("links", "['http://a.example.com']", "https"),
-      message("mirrors", "['https://mirror.example.com']", "http"),
-    ],
+    expected: [message("links", "['http://a.example.com']", "https"), message("mirrors", "['https://mirror.example.com']", "http")],
   },
 ];
 
-const read = (path: string): string =>
-  readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
+const read = (path: string): string => readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
 
 /** Diagnostics of this code, and of the other format codes, for the pair of a fixture folder. */
 async function lint(testCase: TestCase) {
   const fixture = `${DIR}/${testCase.name}`;
   const status = await checkTemplate(registry, read(`${fixture}/template.md`));
   if (status.status !== "ok") throw new Error(`${fixture}: template is broken`);
-  const found = await checkTarget(
-    registry,
-    status.model,
-    read(`${fixture}/target.md`),
-    `${fixture}/target.md`,
-    createEnv(),
-  );
+  const found = await checkTarget(registry, status.model, read(`${fixture}/target.md`), `${fixture}/target.md`, createEnv());
   return {
     own: found.filter((diagnostic) => diagnostic.code === CODE),
     others: found.filter((diagnostic) => OTHER_FORMAT_CODES.includes(diagnostic.code)),

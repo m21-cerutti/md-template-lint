@@ -39,9 +39,7 @@ export type LintTemplate =
 /** Template line, then code (spec 8.4 item 4); stable, so equal keys keep source order. */
 function byLineThenCode(diagnostics: readonly Diagnostic[]): Diagnostic[] {
   const line = (diagnostic: Diagnostic) => diagnostic.position?.line ?? 0;
-  return [...diagnostics].sort(
-    (a, b) => line(a) - line(b) || (a.code < b.code ? -1 : a.code > b.code ? 1 : 0),
-  );
+  return [...diagnostics].sort((a, b) => line(a) - line(b) || (a.code < b.code ? -1 : a.code > b.code ? 1 : 0));
 }
 
 /**
@@ -62,10 +60,7 @@ export function withoutText(loaded: LoadedTemplate): LintTemplate {
 }
 
 /** The broken entry of a template: its first error (else its first diagnostic). */
-export function brokenReport(
-  shown: string,
-  diagnostics: readonly Diagnostic[],
-): Extract<TemplateReport, { status: "broken" }> {
+export function brokenReport(shown: string, diagnostics: readonly Diagnostic[]): Extract<TemplateReport, { status: "broken" }> {
   const error = diagnostics.find((diagnostic) => diagnostic.severity === "error") ?? diagnostics[0];
   return {
     path: shown,

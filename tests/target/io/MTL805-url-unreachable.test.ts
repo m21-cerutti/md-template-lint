@@ -27,8 +27,7 @@ const answers = new Map<string, UrlProbe>([
 /** Probe that echoes the timeout it was given, to prove the 5 second limit is passed. */
 const echoingIo: RuleIo = {
   exists: () => Promise.resolve(false),
-  probeUrl: (_url, timeoutMs) =>
-    Promise.resolve({ reachable: false, reason: `timeout after ${timeoutMs} ms` }),
+  probeUrl: (_url, timeoutMs) => Promise.resolve({ reachable: false, reason: `timeout after ${timeoutMs} ms` }),
 };
 
 const memory = createEnv({ io: createMemoryIo([], answers) });
@@ -45,26 +44,19 @@ const CASES = [
     name: "fail-probe-reason-is-reported",
     fixture: "tests/fixtures/pairs/MTL805/fail-probe-reason-is-reported",
     env: createEnv({ io: echoingIo }),
-    expected: [
-      "Field 'site': URL 'https://slow.example.com' not reachable (timeout after 5000 ms)",
-    ],
+    expected: ["Field 'site': URL 'https://slow.example.com' not reachable (timeout after 5000 ms)"],
   },
   {
     name: "fail-list-two-unreachable-items-in-order",
     fixture: "tests/fixtures/pairs/MTL805/fail-list-two-unreachable-items-in-order",
     env: memory,
-    expected: [
-      "Field 'mirrors': URL 'https://gone.example.com/a' not reachable (HTTP 404)",
-      "Field 'mirrors': URL 'https://busy.example.com/b' not reachable (HTTP 503)",
-    ],
+    expected: ["Field 'mirrors': URL 'https://gone.example.com/a' not reachable (HTTP 404)", "Field 'mirrors': URL 'https://busy.example.com/b' not reachable (HTTP 503)"],
   },
   {
     name: "fail-reason-longer-than-60-is-cut",
     fixture: "tests/fixtures/pairs/MTL805/fail-reason-longer-than-60-is-cut",
     env: memory,
-    expected: [
-      `Field 'site': URL 'https://long.example.com' not reachable (${LONG_REASON.slice(0, 57)}...)`,
-    ],
+    expected: [`Field 'site': URL 'https://long.example.com' not reachable (${LONG_REASON.slice(0, 57)}...)`],
   },
   {
     name: "fail-reason-of-exactly-60-is-kept",
@@ -80,20 +72,13 @@ const CASES = [
   },
 ] as const;
 
-const read = (path: string): string =>
-  readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
+const read = (path: string): string => readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
 
 /** Diagnostics of this code for the pair of a fixture folder. */
 async function lint(fixture: string, env: typeof memory) {
   const status = await checkTemplate(registry, read(`${fixture}/template.md`));
   if (status.status !== "ok") throw new Error(`${fixture}: template is broken`);
-  const found = await checkTarget(
-    registry,
-    status.model,
-    read(`${fixture}/target.md`),
-    `${fixture}/target.md`,
-    env,
-  );
+  const found = await checkTarget(registry, status.model, read(`${fixture}/target.md`), `${fixture}/target.md`, env);
   return found.filter((diagnostic) => diagnostic.code === CODE);
 }
 
@@ -127,16 +112,12 @@ describe("MTL805 url-unreachable", () => {
     expect(failing.length).toBeGreaterThanOrEqual(1);
     expect(passing.length + failing.length).toBe(CASES.length);
     expect(CASES.filter((testCase) => testCase.expected.length === 0)).toEqual(passing);
-    expect(CASES.map((testCase) => testCase.fixture)).toEqual(
-      CASES.map((testCase) => `${DIR}/${testCase.name}`),
-    );
+    expect(CASES.map((testCase) => testCase.fixture)).toEqual(CASES.map((testCase) => `${DIR}/${testCase.name}`));
     // Orphan detection: no directory at any depth besides the cases, and each holds only the pair.
     const names = CASES.map((testCase) => testCase.name).sort();
     const tree = listTree();
     expect(tree.dirs).toEqual(names);
-    expect(tree.files).toEqual(
-      names.flatMap((name) => [`${name}/target.md`, `${name}/template.md`]).sort(),
-    );
+    expect(tree.files).toEqual(names.flatMap((name) => [`${name}/target.md`, `${name}/template.md`]).sort());
   });
 
   for (const testCase of CASES) {

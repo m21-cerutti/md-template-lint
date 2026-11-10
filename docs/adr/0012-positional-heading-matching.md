@@ -53,7 +53,7 @@ pattern is invalid.
 - Two owner examples fix the edge case: `## [pattern:"{text}"]`, `## [pattern:"{number}"]`
   against `## 1`, `## tata` must report BOTH headings (example A), while
   `## Unreleased [presence:required]`, `## Release [pattern:"{semver} - {date}"]
-  [repeat-rules:same-level]` against `## 1.2 - 2026-10-01`, `## 1.1.0 - 2026-09-01` must
+[repeat-rules:same-level]` against `## 1.2 - 2026-10-01`, `## 1.1.0 - 2026-09-01` must
   report the missing `Unreleased` AND the bad `1.2` (example E).
 
 ## Decision
@@ -118,22 +118,22 @@ pattern is invalid.
 
 ## Alternatives considered
 
-| Option                                                       | Pros                                       | Cons                                                         | Verdict    |
-| ------------------------------------------------------------ | ------------------------------------------ | ------------------------------------------------------------ | ---------- |
-| Positional adjacent run, greedy first-fit, extras only at the end | One rule for every heading; explainable step by step | Breaking; cascades after a stray heading              | **Chosen** |
-| Keep the non-positional first match (spec 2.6 / C10) plus CLAIM (ADR 0011) | Not breaking; extras allowed anywhere | Ownership rules across the sequence; exact text and patterns behave differently | Rejected (decision 1) |
-| Positional with backtracking (search the split that minimises findings) | Fewer cascades                      | Results depend on a search; costly and hard to explain; owner asked for none | Rejected (decision 2) |
-| Positional that skips extras (a position takes the next matching heading anywhere ahead) | Extras allowed between headings | A pattern like `{text}` swallows everything ahead; order findings come back | Rejected (decision 2) |
-| A literal position takes a non-matching heading as a mismatch too | Same rule for every position          | Example E would lose the `1.2` finding: `Unreleased` would eat it | Rejected   |
-| A placeholder position never takes a non-matching heading    | Same rule as literal positions             | Example A would report only one finding                      | Rejected   |
-| Template-only headings as positions that take nothing        | No set-aside step                          | A stray guidance heading shifts the run and gives two findings | Rejected  |
-| Extras silent unless a sub-heading tag (A72k)                | No new output                              | A typo in the last heading of a run goes unseen               | Rejected (A72l decision 4) |
-| One warning per extra heading                                | One line directive per heading             | A long tail floods the output                                 | Rejected (A72l decision 4) |
-| Merge disallow and no-extra into one tag with an option      | One tag                                    | Two readings of one tag; existing disallow templates change   | Rejected (A72l decision 1) |
-| Keep `[presence:exist]` next to `[pattern:"{text}"]`         | No migration                               | Two mechanisms for "any heading here"; its own code and content rules | Rejected (A72m decision 1) |
-| Ignore the dropped tag silently (peel it, heading still matches any text) | Old templates keep passing | The removed behaviour survives unseen; nothing prompts the migration | Rejected (A72m) |
-| Report the child order only on targets (`MTL611` alone)      | No new code                                | The same template mistake shows once per target, never in `--verify` | Rejected (A72m decision 2) |
-| No `MTL019` for a parent with an invalid pattern (A72m)      | One finding per broken heading             | The outline mistake surfaces only after the pattern is fixed, one run later | Rejected (A72n decision 1) |
+| Option                                                                                   | Pros                                                 | Cons                                                                            | Verdict                    |
+| ---------------------------------------------------------------------------------------- | ---------------------------------------------------- | ------------------------------------------------------------------------------- | -------------------------- |
+| Positional adjacent run, greedy first-fit, extras only at the end                        | One rule for every heading; explainable step by step | Breaking; cascades after a stray heading                                        | **Chosen**                 |
+| Keep the non-positional first match (spec 2.6 / C10) plus CLAIM (ADR 0011)               | Not breaking; extras allowed anywhere                | Ownership rules across the sequence; exact text and patterns behave differently | Rejected (decision 1)      |
+| Positional with backtracking (search the split that minimises findings)                  | Fewer cascades                                       | Results depend on a search; costly and hard to explain; owner asked for none    | Rejected (decision 2)      |
+| Positional that skips extras (a position takes the next matching heading anywhere ahead) | Extras allowed between headings                      | A pattern like `{text}` swallows everything ahead; order findings come back     | Rejected (decision 2)      |
+| A literal position takes a non-matching heading as a mismatch too                        | Same rule for every position                         | Example E would lose the `1.2` finding: `Unreleased` would eat it               | Rejected                   |
+| A placeholder position never takes a non-matching heading                                | Same rule as literal positions                       | Example A would report only one finding                                         | Rejected                   |
+| Template-only headings as positions that take nothing                                    | No set-aside step                                    | A stray guidance heading shifts the run and gives two findings                  | Rejected                   |
+| Extras silent unless a sub-heading tag (A72k)                                            | No new output                                        | A typo in the last heading of a run goes unseen                                 | Rejected (A72l decision 4) |
+| One warning per extra heading                                                            | One line directive per heading                       | A long tail floods the output                                                   | Rejected (A72l decision 4) |
+| Merge disallow and no-extra into one tag with an option                                  | One tag                                              | Two readings of one tag; existing disallow templates change                     | Rejected (A72l decision 1) |
+| Keep `[presence:exist]` next to `[pattern:"{text}"]`                                     | No migration                                         | Two mechanisms for "any heading here"; its own code and content rules           | Rejected (A72m decision 1) |
+| Ignore the dropped tag silently (peel it, heading still matches any text)                | Old templates keep passing                           | The removed behaviour survives unseen; nothing prompts the migration            | Rejected (A72m)            |
+| Report the child order only on targets (`MTL611` alone)                                  | No new code                                          | The same template mistake shows once per target, never in `--verify`            | Rejected (A72m decision 2) |
+| No `MTL019` for a parent with an invalid pattern (A72m)                                  | One finding per broken heading                       | The outline mistake surfaces only after the pattern is fixed, one run later     | Rejected (A72n decision 1) |
 
 ## Research
 
@@ -168,7 +168,7 @@ accepted; where this section and the text above differ, this section wins.
   can occur, since a run is ordered within one level). Syntax category, template ERROR,
   not suppressible; printed on the template file in a normal lint run (exit 1, targets
   still linted, `Failed templates:`) and a `--verify` FAIL (section `Child headings out of
-  level order:`). One finding per parent. `MTL611` stays a target finding.
+level order:`). One finding per parent. `MTL611` stays a target finding.
 - **Content label (decision 3).** A pattern heading's content messages print the target
   text of the checked instance plus the pattern; an exact-text heading keeps its text.
 - **Phases (decision 7).** The cleanup that removes the `exist` handling, the `MTL602` rule

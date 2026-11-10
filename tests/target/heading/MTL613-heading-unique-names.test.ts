@@ -69,11 +69,7 @@ const EXAMPLE_TWO_WIDE = [duplicate("Notes", 9, 13), duplicate("NOTES", 9, 17)];
 /** The MTL616 warning that still lists the second `### Added` of worked example 3. */
 const EXTRA_ADDED: Found = ["MTL616", 17];
 /** Worked example 3 with a duplicate release (line 13) and a switch above the instances. */
-const RELEASES = [
-  duplicate("[1.2.0] - 2026-03-01", 7, 13),
-  duplicate("Added", 9, 15),
-  duplicate("Added", 9, 17),
-];
+const RELEASES = [duplicate("[1.2.0] - 2026-03-01", 7, 13), duplicate("Added", 9, 15), duplicate("Added", 9, 17)];
 
 /** Case -> fixture dir (same name) -> expected findings. At least 1 pass- and 1 fail-. */
 const CASES: readonly TestCase[] = [
@@ -260,8 +256,7 @@ const CASES: readonly TestCase[] = [
   },
 ];
 
-const read = (path: string): string =>
-  readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
+const read = (path: string): string => readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
 
 /**
  * Cases whose target holds one line stored precomposed (NFC) that the test decomposes (NFD)
@@ -346,9 +341,7 @@ describe("MTL613 heading-unique-names", () => {
         // The template-line sort key is cleared (the anchor is internal, spec 8.1).
         expect(diagnostic.position).toBeNull();
       }
-      expect(
-        result.diagnostics.map((diagnostic) => [diagnostic.code, anchorLineOf(diagnostic)]),
-      ).toEqual(testCase.all);
+      expect(result.diagnostics.map((diagnostic) => [diagnostic.code, anchorLineOf(diagnostic)])).toEqual(testCase.all);
       expect(result.suppressed).toBe(testCase.suppressed);
     });
   }
@@ -367,48 +360,32 @@ describe("MTL613 heading-unique-names", () => {
       [CODE, 17],
       ["MTL616", 17],
     ]);
-    expect(found[1]?.message).toBe(
-      "Heading: Section '[1.1.0] - 2026-02-01': 1 extra heading(s) at level H3 after the " +
-        "template headings: ['Added']",
-    );
+    expect(found[1]?.message).toBe("Heading: Section '[1.1.0] - 2026-02-01': 1 extra heading(s) at level H3 after the " + "template headings: ['Added']");
   });
 
   it("worked example 3 with no-extra: MTL615 comes first, MTL613 last, no MTL616", async () => {
     const found = await lintAll("fail-duplicate-also-gets-mtl615-under-no-extra");
     expect(found.map((diagnostic) => diagnostic.severity)).toEqual(["error", "error"]);
     expect(found.map((diagnostic) => diagnostic.code)).toEqual(["MTL615", CODE]);
-    expect(found[0]?.message).toBe(
-      "Heading: Section '[1.1.0] - 2026-02-01': heading 'Added' at level H3 is not declared at " +
-        "this position [content:subheadings:no-extra]",
-    );
+    expect(found[0]?.message).toBe("Heading: Section '[1.1.0] - 2026-02-01': heading 'Added' at level H3 is not declared at " + "this position [content:subheadings:no-extra]");
   });
 
   it("MTL613 is emitted after every other heading error (spec 2.11 emission order)", async () => {
     const name = "fail-duplicate-also-gets-mtl612-under-disallow";
     const status = await checkTemplate(registry, read(`${DIR}/${name}/template.md`));
     if (status.status !== "ok") throw new Error("template is broken");
-    const all = await checkTarget(
-      registry,
-      status.model,
-      read(`${DIR}/${name}/target.md`),
-      "target.md",
-      createEnv(),
-    );
+    const all = await checkTarget(registry, status.model, read(`${DIR}/${name}/target.md`), "target.md", createEnv());
     expect(all.map((diagnostic) => diagnostic.code)).toEqual(["MTL612", "MTL612", CODE]);
   });
 
   it("a missing tagged heading reports only the missing heading, by name", async () => {
     const found = await lintAll("fail-per-heading-missing-tagged-heading-gives-only-mtl601");
-    expect(found.map((diagnostic) => diagnostic.message)).toEqual([
-      "Heading: Missing required heading: 'Usage'",
-    ]);
+    expect(found.map((diagnostic) => diagnostic.message)).toEqual(["Heading: Missing required heading: 'Usage'"]);
   });
 
   it("`# [unique-headings-names]` in the template body is a required H1 with empty text", async () => {
     const found = await lintAll("fail-template-body-switch-line-is-an-empty-h1-heading");
-    expect(found.map((diagnostic) => diagnostic.message)).toEqual([
-      "Heading: Missing required heading: ''",
-    ]);
+    expect(found.map((diagnostic) => diagnostic.message)).toEqual(["Heading: Missing required heading: ''"]);
     // An empty-text template heading gets no MTL616 (spec 2.10 step 4).
     expect(found.map((diagnostic) => diagnostic.code)).not.toContain("MTL616");
   });

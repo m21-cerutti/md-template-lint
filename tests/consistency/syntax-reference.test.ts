@@ -4,13 +4,7 @@
  * real tree, then drift cases that feed deliberately broken inputs.
  */
 import { describe, expect, it } from "vitest";
-import {
-  errorRows,
-  generateBlocks,
-  tagForms,
-  type ErrorRow,
-  type TagForm,
-} from "../../scripts/syntax-doc/generate.js";
+import { errorRows, generateBlocks, tagForms, type ErrorRow, type TagForm } from "../../scripts/syntax-doc/generate.js";
 import { FIX_NOTES, TAG_NOTES } from "../../scripts/syntax-doc/notes.js";
 import { FORMAT_NAMES, USAGE } from "../../src/cli/args.js";
 import { ON_EMPTY_VALUES } from "../../src/config/types.js";
@@ -19,15 +13,7 @@ import { createRegistry } from "../../src/engine/registry.js";
 import { CATEGORIES, defineRule, notImplemented } from "../../src/engine/rule.js";
 import { KNOWN_TYPE_NAMES } from "../../src/tags/types.js";
 import { pendingCodes, specCodes, specRunCodes } from "./consistency.js";
-import {
-  checkEnums,
-  checkFlags,
-  checkFresh,
-  checkNotes,
-  checkPending,
-  documentedFlags,
-  readDoc,
-} from "./syntax-reference.js";
+import { checkEnums, checkFlags, checkFresh, checkNotes, checkPending, documentedFlags, readDoc } from "./syntax-reference.js";
 
 const registered = createRegistry().rules;
 const pending = pendingCodes();
@@ -69,14 +55,7 @@ describe("check:rules syntax reference", () => {
   it("reads non-empty inputs (a style change cannot make a check pass on nothing)", () => {
     expect(rows.length).toBeGreaterThan(80);
     expect(forms.length).toBeGreaterThan(40);
-    expect(documentedFlags(doc)).toEqual([
-      "--config",
-      "--format",
-      "--quiet",
-      "--verify",
-      "--version",
-      "--help",
-    ]);
+    expect(documentedFlags(doc)).toEqual(["--config", "--format", "--quiet", "--verify", "--version", "--help"]);
   });
 
   it("fails: a stale generated block, with the command to run", () => {
@@ -88,34 +67,16 @@ describe("check:rules syntax reference", () => {
   });
 
   it("fails: a code or a tag family without a note, and orphan notes", () => {
-    const without = <T>(notes: Readonly<Record<string, T>>, key: string) =>
-      Object.fromEntries(Object.entries(notes).filter(([name]) => name !== key));
-    expect(
-      checkNotes(rows, forms, without(FIX_NOTES, "MTL001"), without(TAG_NOTES, "heading:pattern")),
-    ).toEqual([
-      "MTL001: no FIX_NOTES entry in scripts/syntax-doc/notes.ts",
-      "heading:pattern: no TAG_NOTES entry in scripts/syntax-doc/notes.ts",
-    ]);
+    const without = <T>(notes: Readonly<Record<string, T>>, key: string) => Object.fromEntries(Object.entries(notes).filter(([name]) => name !== key));
+    expect(checkNotes(rows, forms, without(FIX_NOTES, "MTL001"), without(TAG_NOTES, "heading:pattern"))).toEqual(["MTL001: no FIX_NOTES entry in scripts/syntax-doc/notes.ts", "heading:pattern: no TAG_NOTES entry in scripts/syntax-doc/notes.ts"]);
     const note = { description: "x", example: "y" };
-    expect(
-      checkNotes(
-        rows,
-        forms,
-        { ...FIX_NOTES, MTL999: "x" },
-        { ...TAG_NOTES, "heading:ghost": note },
-      ),
-    ).toEqual([
-      "FIX_NOTES.MTL999: orphan note, no such code",
-      "TAG_NOTES['heading:ghost']: orphan note, no such tag family",
-    ]);
+    expect(checkNotes(rows, forms, { ...FIX_NOTES, MTL999: "x" }, { ...TAG_NOTES, "heading:ghost": note })).toEqual(["FIX_NOTES.MTL999: orphan note, no such code", "TAG_NOTES['heading:ghost']: orphan note, no such tag family"]);
   });
 
   it("fails: a pending code that is implemented, a pending tag already in the grammar", () => {
     const implemented = registered.find((rule) => rule.code === "MTL301");
     expect(implemented).toBeDefined();
-    expect(checkPending({ MTL301: "x" }, registered, doc, forms)).toEqual([
-      "MTL301: pending but implemented in src/rules",
-    ]);
+    expect(checkPending({ MTL301: "x" }, registered, doc, forms)).toEqual(["MTL301: pending but implemented in src/rules"]);
     const stub = defineRule({
       code: "MTL301",
       name: "constant-mismatch",
@@ -127,27 +88,17 @@ describe("check:rules syntax reference", () => {
     });
     expect(checkPending({ MTL301: "x" }, [stub], doc, forms)).toEqual([]);
     const marked = `${doc}\n- \`[format:semver]\` (pending)\n- \`[format:ghost]\` (pending)\n`;
-    expect(checkPending({}, registered, marked, forms)).toEqual([
-      "[format:semver]: marked (pending) in the doc but already in the grammar",
-    ]);
+    expect(checkPending({}, registered, marked, forms)).toEqual(["[format:semver]: marked (pending) in the doc but already in the grammar"]);
   });
 
   it("fails: a documented flag missing from the CLI usage", () => {
     const bogus = doc.replace("| `--quiet`", "| `--bogus`");
-    expect(checkFlags(bogus, USAGE)).toEqual([
-      "--bogus: documented in the CLI table but not in the USAGE of src/cli/args.ts",
-    ]);
+    expect(checkFlags(bogus, USAGE)).toEqual(["--bogus: documented in the CLI table but not in the USAGE of src/cli/args.ts"]);
   });
 
   it("fails: an enum value missing from or extra in the doc", () => {
-    expect(checkEnums(doc, { ...enums, "- Output formats": [...FORMAT_NAMES, "yaml"] })).toEqual([
-      "- Output formats: 'yaml' is in the source but not in the doc",
-    ]);
-    expect(checkEnums(doc, { ...enums, "- Rule categories": CATEGORIES.slice(1) })).toEqual([
-      "- Rule categories: 'syntax' is in the doc but not in the source",
-    ]);
-    expect(checkEnums(doc, { ...enums, "- Unknown list": ["a"] })).toEqual([
-      "- Unknown list: bullet missing in the enums block",
-    ]);
+    expect(checkEnums(doc, { ...enums, "- Output formats": [...FORMAT_NAMES, "yaml"] })).toEqual(["- Output formats: 'yaml' is in the source but not in the doc"]);
+    expect(checkEnums(doc, { ...enums, "- Rule categories": CATEGORIES.slice(1) })).toEqual(["- Rule categories: 'syntax' is in the doc but not in the source"]);
+    expect(checkEnums(doc, { ...enums, "- Unknown list": ["a"] })).toEqual(["- Unknown list: bullet missing in the enums block"]);
   });
 });

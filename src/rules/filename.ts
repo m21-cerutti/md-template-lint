@@ -2,13 +2,7 @@
  * Category `filename` (docs/spec.md 4.3, codes MTL100-MTL199): rules on the
  * target file name. All codes of the category are ported.
  */
-import {
-  defineRule,
-  report,
-  type AnyRule,
-  type FieldContext,
-  type TargetContext,
-} from "../engine/rule.js";
+import { defineRule, report, type AnyRule, type FieldContext, type TargetContext } from "../engine/rule.js";
 import type { Diagnostic } from "../engine/model.js";
 import { matchesCaseStyle, valueText } from "../engine/values.js";
 
@@ -43,12 +37,7 @@ const filenameCase = defineRule({
     if (tag === null) return [];
     const stem = targetFileStem(context.targetPath);
     if (matchesCaseStyle(tag.convention, stem)) return [];
-    return [
-      report(
-        filenameCase,
-        `Filename '${stem}' does not match required case [filename:case:${tag.convention}]`,
-      ),
-    ];
+    return [report(filenameCase, `Filename '${stem}' does not match required case [filename:case:${tag.convention}]`)];
   },
 });
 
@@ -66,19 +55,12 @@ const valueFilename = defineRule({
   phase: "field",
   step: "value-filename",
   check: (context: FieldContext): Diagnostic[] => {
-    const tag = (context.templateField.comment?.tags ?? []).find(
-      (candidate) => candidate.kind === "value-filename",
-    );
+    const tag = (context.templateField.comment?.tags ?? []).find((candidate) => candidate.kind === "value-filename");
     const { value } = context;
     if (tag === undefined || value === null) return [];
     const stem = targetFileStem(context.targetPath);
     if (value === stem) return [];
-    return [
-      report(
-        valueFilename,
-        `Field '${context.key}': expected value to equal filename '${stem}' ([value:filename]), got '${valueText(value)}'`,
-      ),
-    ];
+    return [report(valueFilename, `Field '${context.key}': expected value to equal filename '${stem}' ([value:filename]), got '${valueText(value)}'`)];
   },
 });
 

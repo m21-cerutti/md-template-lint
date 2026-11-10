@@ -5,14 +5,7 @@
  */
 import { describe, expect, it } from "vitest";
 import { BlockedAddressError, createRealIo, type ResolveFn } from "../../../src/io/index.js";
-import {
-  fakeFetch,
-  fakeResolve,
-  PUBLIC_ADDRESS,
-  PUBLIC_HOST,
-  status,
-  type Handler,
-} from "../../helpers/io.js";
+import { fakeFetch, fakeResolve, PUBLIC_ADDRESS, PUBLIC_HOST, status, type Handler } from "../../helpers/io.js";
 
 const REFUSED = "refused-before-any-request";
 
@@ -45,12 +38,7 @@ const CASES: readonly Case[] = [
     resolves: 1,
   },
   // scheme allow-list, before any I/O
-  ...[
-    "file:///etc/passwd",
-    "ftp://ok.example.com/x",
-    "javascript:alert(1)",
-    "gopher://ok.example.com/",
-  ].map((url): Case => ({
+  ...["file:///etc/passwd", "ftp://ok.example.com/x", "javascript:alert(1)", "gopher://ok.example.com/"].map((url): Case => ({
     name: `fail-scheme-${url.split(":")[0]}`,
     url,
     dns,
@@ -164,17 +152,15 @@ const CASES: readonly Case[] = [
     resolves: 1,
   },
   // resolver error codes are all a DNS failure
-  ...["ENOTFOUND", "EAI_AGAIN", "EAI_FAIL", "EAI_NODATA", "ETIMEOUT", "SERVFAIL"].map(
-    (code): Case => ({
-      name: `fail-resolver-rejects-${code.toLowerCase()}`,
-      url: "https://dns.example.com/",
-      dns,
-      dnsError: code,
-      methods: [],
-      reason: "DNS failure",
-      resolves: 1,
-    }),
-  ),
+  ...["ENOTFOUND", "EAI_AGAIN", "EAI_FAIL", "EAI_NODATA", "ETIMEOUT", "SERVFAIL"].map((code): Case => ({
+    name: `fail-resolver-rejects-${code.toLowerCase()}`,
+    url: "https://dns.example.com/",
+    dns,
+    dnsError: code,
+    methods: [],
+    reason: "DNS failure",
+    resolves: 1,
+  })),
   ...["EAI_AGAIN", "EAI_FAIL", "EAI_NODATA"].map((code): Case => ({
     name: `fail-transport-error-${code.toLowerCase()}`,
     url: `https://${PUBLIC_HOST}/lookup`,
@@ -354,9 +340,7 @@ describe("URL probe: reason from a fixed vocabulary, nothing requested before th
           ? fake.resolve
           : (hostname) => {
               resolves.push(hostname);
-              return Promise.reject(
-                Object.assign(new Error("lookup failed"), { code: testCase.dnsError }),
-              );
+              return Promise.reject(Object.assign(new Error("lookup failed"), { code: testCase.dnsError }));
             };
       const io = createRealIo({ fetch, resolve });
       const answer = await io.probeUrl(testCase.url, 5000);
@@ -368,9 +352,7 @@ describe("URL probe: reason from a fixed vocabulary, nothing requested before th
   }
 
   it(`${REFUSED}: every refusal in the table made zero requests`, () => {
-    const refused = CASES.filter(
-      (testCase) => testCase.reason !== null && testCase.methods.length === 0,
-    );
+    const refused = CASES.filter((testCase) => testCase.reason !== null && testCase.methods.length === 0);
     expect(refused.length).toBeGreaterThan(60);
   });
 

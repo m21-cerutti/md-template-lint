@@ -12,8 +12,7 @@ const CODE = "MTL701";
 const DIR = "tests/fixtures/pairs/MTL701";
 
 /** Expected message of a section (spec 4.3: `{label}: [content:non-empty] section body is empty`). */
-const message = (section: string): string =>
-  `Section '${section}': [content:non-empty] section body is empty`;
+const message = (section: string): string => `Section '${section}': [content:non-empty] section body is empty`;
 
 /**
  * Case -> expected MTL701 messages, plus the template warning codes
@@ -77,18 +76,14 @@ const CASES = [
     // have text. A pattern heading is labelled with the TARGET text and the pattern as written
     // (spec 2.6 "Content tags").
     name: "fail-pattern-heading-label-worked-example-1-content-variant",
-    expected: [
-      `Section '[1.1.0] - 2026-02-01' (pattern "[{semver}] - {date}"): [content:non-empty] section body is empty`,
-    ],
+    expected: [`Section '[1.1.0] - 2026-02-01' (pattern "[{semver}] - {date}"): [content:non-empty] section body is empty`],
     warnings: [],
   },
   {
     // Spec 2.6: `{pattern}` is the text between the quotes of the tag, escapes as written
     // (`\"` and `{{` / `}}` stay escaped); `{text}` is the target heading text.
     name: "fail-pattern-heading-label-shows-escapes-as-written",
-    expected: [
-      `Section 'Say "hi" {x}' (pattern "Say \\"{text}\\" {{x}}"): [content:non-empty] section body is empty`,
-    ],
+    expected: [`Section 'Say "hi" {x}' (pattern "Say \\"{text}\\" {{x}}"): [content:non-empty] section body is empty`],
     warnings: [],
   },
 ] as const;
@@ -101,8 +96,7 @@ const ANCHORS: readonly { readonly dir: string; readonly anchor: number }[] = [
   { dir: "fail-pattern-heading-label-shows-escapes-as-written", anchor: 5 },
 ];
 
-const read = (path: string): string =>
-  readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
+const read = (path: string): string => readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
 
 /** Every directory and file under DIR, at any depth, as sorted `/`-separated relative paths. */
 function listTree(): { dirs: string[]; files: string[] } {
@@ -121,13 +115,7 @@ async function lint(testCase: { readonly name: string }) {
   const fixture = `${DIR}/${testCase.name}`;
   const status = await checkTemplate(registry, read(`${fixture}/template.md`));
   if (status.status !== "ok") throw new Error(`${fixture}: template is broken`);
-  const found = await checkTarget(
-    registry,
-    status.model,
-    read(`${fixture}/target.md`),
-    `${fixture}/target.md`,
-    createEnv(),
-  );
+  const found = await checkTarget(registry, status.model, read(`${fixture}/target.md`), `${fixture}/target.md`, createEnv());
   return {
     found: found.filter((diagnostic) => diagnostic.code === CODE),
     warnings: status.warnings,
@@ -156,27 +144,16 @@ describe("MTL701 content-non-empty", () => {
     const names = CASES.map((testCase) => testCase.name).sort();
     const tree = listTree();
     expect(tree.dirs).toEqual(names);
-    expect(tree.files).toEqual(
-      names.flatMap((name) => [`${name}/target.md`, `${name}/template.md`]).sort(),
-    );
+    expect(tree.files).toEqual(names.flatMap((name) => [`${name}/target.md`, `${name}/template.md`]).sort());
   });
 
   it("lists content findings in template section order across codes, not grouped by rule", async () => {
     const fixture = `${DIR}/fail-reported-in-template-section-order-across-codes`;
     const status = await checkTemplate(registry, read(`${fixture}/template.md`));
     if (status.status !== "ok") throw new Error(`${fixture}: template is broken`);
-    const found = await checkTarget(
-      registry,
-      status.model,
-      read(`${fixture}/target.md`),
-      `${fixture}/target.md`,
-      createEnv(),
-    );
+    const found = await checkTarget(registry, status.model, read(`${fixture}/target.md`), `${fixture}/target.md`, createEnv());
     // Legacy `validate_content`: section `Changes` (MTL702) comes before `Overview` (MTL701).
-    expect(found.map((diagnostic) => `${diagnostic.code} ${diagnostic.message}`)).toEqual([
-      "MTL702 Section 'Changes': [content:table] no markdown table row found",
-      `MTL701 ${message("Overview")}`,
-    ]);
+    expect(found.map((diagnostic) => `${diagnostic.code} ${diagnostic.message}`)).toEqual(["MTL702 Section 'Changes': [content:table] no markdown table row found", `MTL701 ${message("Overview")}`]);
   });
 
   for (const { dir, anchor } of ANCHORS) {

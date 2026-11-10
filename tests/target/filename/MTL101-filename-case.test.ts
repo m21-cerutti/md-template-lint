@@ -11,8 +11,7 @@ const CODE = "MTL101";
 const DIR = "tests/fixtures/pairs/MTL101";
 
 /** Spec 4.3 message of MTL101. */
-const message = (stem: string, convention: string): string =>
-  `Filename '${stem}' does not match required case [filename:case:${convention}]`;
+const message = (stem: string, convention: string): string => `Filename '${stem}' does not match required case [filename:case:${convention}]`;
 
 interface TestCase {
   readonly name: string;
@@ -118,8 +117,7 @@ const CASES: readonly TestCase[] = [
   },
 ];
 
-const read = (path: string): string =>
-  readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
+const read = (path: string): string => readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
 
 /**
  * Control outside the pass-/fail- table and outside tests/fixtures/pairs (so the MTL101 split
@@ -134,13 +132,7 @@ const CONTROL_TARGET = "Mixed-Case_Name.md";
 async function lint(testCase: TestCase, fixture = `${DIR}/${testCase.name}`) {
   const status = await checkTemplate(registry, read(`${fixture}/template.md`));
   if (status.status !== "ok") throw new Error(`${fixture}: template is broken`);
-  const found = await checkTarget(
-    registry,
-    status.model,
-    read(`${fixture}/target.md`),
-    `${fixture}/${testCase.targetName}`,
-    createEnv(),
-  );
+  const found = await checkTarget(registry, status.model, read(`${fixture}/target.md`), `${fixture}/${testCase.targetName}`, createEnv());
   return found.filter((diagnostic) => diagnostic.code === CODE);
 }
 

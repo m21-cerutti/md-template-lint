@@ -16,18 +16,15 @@ export const TAG_NOTES: Readonly<Record<string, TagNote>> = {
     example: "`tags: [a] # [count:min:1] [count:max:5]`",
   },
   "frontmatter:filename": {
-    description:
-      "Template-wide file name case; a standalone comment line, binds to no key, read from the template only.",
+    description: "Template-wide file name case; a standalone comment line, binds to no key, read from the template only.",
     example: "`# [filename:case:kebab-case]`",
   },
   "frontmatter:format": {
-    description:
-      "Shape of a value: constant, case style, semver, ISO date, URL scheme allow-list; `elements:` checks each list item.",
+    description: "Shape of a value: constant, case style, semver, ISO date, URL scheme allow-list; `elements:` checks each list item.",
     example: "`slug: x # [format:kebab-case]`",
   },
   "frontmatter:io": {
-    description:
-      "Opt-in existence or reachability check of a path or URL value; findings are warnings.",
+    description: "Opt-in existence or reachability check of a path or URL value; findings are warnings.",
     example: "`home: https://example.org # [io:exists]`",
   },
   "frontmatter:order": {
@@ -35,8 +32,7 @@ export const TAG_NOTES: Readonly<Record<string, TagNote>> = {
     example: "`milestones: [2026-01] # [order:ascending]`",
   },
   "frontmatter:presence": {
-    description:
-      "Required (default), optional, or conditional (documentation only, behaves like optional).",
+    description: "Required (default), optional, or conditional (documentation only, behaves like optional).",
     example: "`owner: x # [presence:optional]`",
   },
   "frontmatter:range": {
@@ -44,8 +40,7 @@ export const TAG_NOTES: Readonly<Record<string, TagNote>> = {
     example: "`rating: 3 # type=int [range:min:1] [range:max:5]`",
   },
   "frontmatter:unique-headings-names": {
-    description:
-      "Standalone comment line: no two target headings may share a name (case folded, any level).",
+    description: "Standalone comment line: no two target headings may share a name (case folded, any level).",
     example: "`# [unique-headings-names]`",
   },
   "frontmatter:value": {
@@ -53,33 +48,27 @@ export const TAG_NOTES: Readonly<Record<string, TagNote>> = {
     example: "`id: x # [value:filename]`",
   },
   "heading:content": {
-    description:
-      "Section body rules (non-empty, table, list, line bounds) and sub-heading rules (disallow, no-extra).",
+    description: "Section body rules (non-empty, table, list, line bounds) and sub-heading rules (disallow, no-extra).",
     example: "`## Overview [content:non-empty] [content:min-lines:3]`",
   },
   "heading:order": {
-    description:
-      "Order of the repeats of one pattern heading, by whole text or by first number, date or semver; needs a repeat tag.",
+    description: "Order of the repeats of one pattern heading, by whole text or by first number, date or semver; needs a repeat tag.",
     example: '`## Step {digits} [pattern:"Step {digits}"] [repeat-rules:same-level] [order:first:number:ascending]`',
   },
   "heading:pattern": {
-    description:
-      "Heading text is a pattern with literal text and placeholders `{text}`, `{number}`, `{digits}`, `{semver}`, `{date}`, `{char}`; escape quotes as `\\\"`.",
+    description: 'Heading text is a pattern with literal text and placeholders `{text}`, `{number}`, `{digits}`, `{semver}`, `{date}`, `{char}`; escape quotes as `\\"`.',
     example: '`## 1.2.0 [pattern:"{semver}"]`',
   },
   "heading:presence": {
-    description:
-      "Required (default), optional, conditional (documentation only), or template-only (guidance that must not appear in the target).",
+    description: "Required (default), optional, conditional (documentation only), or template-only (guidance that must not appear in the target).",
     example: "`## Notes [presence:optional]`",
   },
   "heading:repeat-rules": {
-    description:
-      "Pattern heading may repeat as one consecutive run; optional explicit minimum or maximum (N is 1 or more).",
+    description: "Pattern heading may repeat as one consecutive run; optional explicit minimum or maximum (N is 1 or more).",
     example: '`## Release [pattern:"{semver}"] [repeat-rules:same-level:max:5]`',
   },
   "heading:unique-headings-names": {
-    description:
-      "No two target headings inside the matched section (heading included) may share a name.",
+    description: "No two target headings inside the matched section (heading included) may share a name.",
     example: "`## Changes [unique-headings-names]`",
   },
 };
@@ -95,8 +84,7 @@ export const FIX_NOTES: Readonly<Record<string, string>> = {
   MTL012: "Correct the tag argument to a valid form.",
   MTL013: "Move the tag to the other region (frontmatter comment or heading).",
   MTL014: "Fix the pattern: known placeholder, valid format, no adjacent placeholders.",
-  MTL015:
-    "Remove the tag, or fix the reason it names: drop `[presence:template-only]`, or add a `[pattern:...]`.",
+  MTL015: "Remove the tag, or fix the reason it names: drop `[presence:template-only]`, or add a `[pattern:...]`.",
   MTL016: "Add `[format:date]` or `[format:elements:date]` to the field.",
   MTL017: "Change or remove one of two adjacent headings with the same pattern.",
   MTL018: "Drop `[presence:optional]` or the `min` repeat tag.",

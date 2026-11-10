@@ -47,9 +47,9 @@ open owner decision of [ADR 0005](0005-packaging-and-release.md) and unblocks re
 
 ## Alternatives considered
 
-| Option                                         | Pros                                      | Cons                                                    | Verdict    |
-| ---------------------------------------------- | ----------------------------------------- | ------------------------------------------------------- | ---------- |
-| Generated parser is MIT (project licence)      | One licence for our code, matches ANTLR's usual position | No upstream statement for `antlr-ng` output | **Chosen** |
-| Generated parser is BSD-3-Clause (as `antlr-ng`) | Strictest reading                        | Mixed licences in `dist/`, no upstream statement requires it | Rejected   |
-| Do not ship the generated parser                | No question                               | The package cannot work without it                      | Rejected   |
-| Leave the decision open                         | No commitment                             | Blocks the release                                      | Rejected   |
+| Option                                           | Pros                                                     | Cons                                                         | Verdict    |
+| ------------------------------------------------ | -------------------------------------------------------- | ------------------------------------------------------------ | ---------- |
+| Generated parser is MIT (project licence)        | One licence for our code, matches ANTLR's usual position | No upstream statement for `antlr-ng` output                  | **Chosen** |
+| Generated parser is BSD-3-Clause (as `antlr-ng`) | Strictest reading                                        | Mixed licences in `dist/`, no upstream statement requires it | Rejected   |
+| Do not ship the generated parser                 | No question                                              | The package cannot work without it                           | Rejected   |
+| Leave the decision open                          | No commitment                                            | Blocks the release                                           | Rejected   |

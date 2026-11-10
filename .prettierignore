@@ -4,10 +4,6 @@ node_modules
 tmp
 src/generated
 pnpm-lock.yaml
-*.md
-docs
-templates
 grammar
-.opencode
-scripts
-opencode.jsonc
+tests/fixtures/**
+docs/syntax-reference.md

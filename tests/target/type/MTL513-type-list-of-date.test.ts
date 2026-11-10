@@ -11,11 +11,8 @@ const CODE = "MTL513";
 const DIR = "tests/fixtures/pairs/MTL513";
 
 /** Spec 4.3 messages of MTL513: `Field '<key>' (type=list-of-date): <detail>`. */
-const shape = (key: string, got: string): string =>
-  `Field '${key}' (type=list-of-date): expected a YAML list of dates, got ${got}`;
-const entries = (key: string, items: string): string =>
-  `Field '${key}' (type=list-of-date): list contains invalid date entries ` +
-  `(expected a real calendar date in YYYY-MM-DD / YYYY-MM / YYYY / DD/MM/YYYY / present / présent): ${items}`;
+const shape = (key: string, got: string): string => `Field '${key}' (type=list-of-date): expected a YAML list of dates, got ${got}`;
+const entries = (key: string, items: string): string => `Field '${key}' (type=list-of-date): list contains invalid date entries ` + `(expected a real calendar date in YYYY-MM-DD / YYYY-MM / YYYY / DD/MM/YYYY / present / présent): ${items}`;
 
 interface TestCase {
   readonly name: string;
@@ -55,23 +52,12 @@ const CASES: readonly TestCase[] = [
   // a year-month with month 13; the last item (2026-12-31) is valid.
   {
     name: "fail-calendar-boundaries",
-    expected: [
-      entries(
-        "dates",
-        "['2026-04-31', '2026-01-32', '2026-00-10', '0000', '1900-02-29', '31/02/2020', '2026-13']",
-      ),
-    ],
+    expected: [entries("dates", "['2026-04-31', '2026-01-32', '2026-00-10', '0000', '1900-02-29', '31/02/2020', '2026-13']")],
   },
   // No lenient zero padding, no extra text, other separators, bad markers.
   {
     name: "fail-shapes-without-padding-and-with-extra-text",
-    expected: [
-      entries(
-        "dates",
-        "['2026-1-2', '1/2/2026', '2026-01-15T10:00', '2026/01/15', 'present day', " +
-          "'not present', '2026-01-15 and more']",
-      ),
-    ],
+    expected: [entries("dates", "['2026-1-2', '1/2/2026', '2026-01-15T10:00', '2026/01/15', 'present day', " + "'not present', '2026-01-15 and more']")],
   },
   // Blank items are invalid and printed untrimmed; a null item is ''.
   {
@@ -100,21 +86,14 @@ const CASES: readonly TestCase[] = [
   },
 ];
 
-const read = (path: string): string =>
-  readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
+const read = (path: string): string => readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
 
 /** MTL513 diagnostics for the pair of a fixture folder. */
 async function lint(testCase: TestCase) {
   const fixture = `${DIR}/${testCase.name}`;
   const status = await checkTemplate(registry, read(`${fixture}/template.md`));
   if (status.status !== "ok") throw new Error(`${fixture}: template is broken`);
-  const found = await checkTarget(
-    registry,
-    status.model,
-    read(`${fixture}/target.md`),
-    `${fixture}/target.md`,
-    createEnv(),
-  );
+  const found = await checkTarget(registry, status.model, read(`${fixture}/target.md`), `${fixture}/target.md`, createEnv());
   return found.filter((diagnostic) => diagnostic.code === CODE);
 }
 

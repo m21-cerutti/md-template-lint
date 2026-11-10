@@ -46,12 +46,8 @@ describe("runner: bytes that are not UTF-8", () => {
       ["docs/b-no-frontmatter.md", "fail"],
       ["docs/c-fine.md", "pass"],
     ]);
-    expect(block.files[0]?.errors.map((error) => [error.code, error.message])).toEqual([
-      ["MTL004", "Parse error: file is not valid UTF-8"],
-    ]);
-    expect(block.files[1]?.errors.map((error) => [error.code, error.message])).toEqual([
-      ["MTL001", "Parse error: File must have YAML frontmatter (---...---)"],
-    ]);
+    expect(block.files[0]?.errors.map((error) => [error.code, error.message])).toEqual([["MTL004", "Parse error: file is not valid UTF-8"]]);
+    expect(block.files[1]?.errors.map((error) => [error.code, error.message])).toEqual([["MTL001", "Parse error: File must have YAML frontmatter (---...---)"]]);
     expect(result.summary).toMatchObject({ files: 3, passed: 1, failed: 2, exitCode: 1 });
   });
 
@@ -68,9 +64,7 @@ describe("runner: bytes that are not UTF-8", () => {
     });
     // The two target files are counted for the Target: line but not linted (C02).
     expect(block).toMatchObject({ fileCount: 2, files: [] });
-    expect(result.brokenTemplates).toEqual([
-      { path: "note.template.md", message: "file is not valid UTF-8" },
-    ]);
+    expect(result.brokenTemplates).toEqual([{ path: "note.template.md", message: "file is not valid UTF-8" }]);
     expect(result.runErrors).toEqual([]);
     expect(result.summary).toMatchObject({
       files: 0,

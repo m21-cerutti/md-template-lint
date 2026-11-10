@@ -30,8 +30,7 @@ export function excerptRows(excerpt: SourceExcerpt, indent: number): string[] {
   const number = String(excerpt.line);
   const rows = [text === "" ? `${pad}${number} |` : `${pad}${number} | ${text}`];
   if (excerpt.caret !== null) {
-    const offset =
-      head.length + units.slice(0, excerpt.caret).reduce((sum, unit) => sum + widthOf(unit), 0);
+    const offset = head.length + units.slice(0, excerpt.caret).reduce((sum, unit) => sum + widthOf(unit), 0);
     rows.push(`${pad}${" ".repeat(number.length)} | ${" ".repeat(offset)}^`);
   }
   return rows;

@@ -35,13 +35,7 @@ export async function findingsOf(dir: string, name: string, code: string): Promi
   const fixture = `${dir}/${name}`;
   const status = await checkTemplate(registry, read(`${fixture}/template.md`));
   if (status.status !== "ok") throw new Error(`${fixture}: template is broken`);
-  const { diagnostics } = await lintTarget(
-    registry,
-    status.model,
-    read(`${fixture}/target.md`),
-    `${fixture}/target.md`,
-    createEnv(),
-  );
+  const { diagnostics } = await lintTarget(registry, status.model, read(`${fixture}/target.md`), `${fixture}/target.md`, createEnv());
   return diagnostics
     .filter((diagnostic) => diagnostic.code === code)
     .map((diagnostic) => {
@@ -55,19 +49,14 @@ export async function findingsOf(dir: string, name: string, code: string): Promi
 }
 
 /** At least 1 pass- and 1 fail- case, pass- cases expect nothing, one fixture folder per case. */
-export function expectCases(
-  dir: string,
-  cases: readonly { readonly name: string; readonly expected: readonly Found[] }[],
-): void {
+export function expectCases(dir: string, cases: readonly { readonly name: string; readonly expected: readonly Found[] }[]): void {
   const passing = cases.filter((testCase) => testCase.name.startsWith("pass-"));
   const failing = cases.filter((testCase) => testCase.name.startsWith("fail-"));
   expect(passing.length).toBeGreaterThanOrEqual(1);
   expect(failing.length).toBeGreaterThanOrEqual(1);
   expect(passing.length + failing.length).toBe(cases.length);
   expect(cases.filter((testCase) => testCase.expected.length === 0)).toEqual(passing);
-  expect(readdirSync(join(REPO_ROOT, dir)).sort()).toEqual(
-    cases.map((testCase) => testCase.name).sort(),
-  );
+  expect(readdirSync(join(REPO_ROOT, dir)).sort()).toEqual(cases.map((testCase) => testCase.name).sort());
 }
 
 /** The registry entry of a directive rule: category syntax, warning, target step directives. */

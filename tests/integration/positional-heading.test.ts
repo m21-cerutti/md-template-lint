@@ -43,9 +43,7 @@ interface TestCase {
 
 const unlisted = (parent: string, text: string, level: number, anchor: number): Finding => ({
   code: "MTL612",
-  message:
-    `Heading: Section '${parent}': heading '${text}' at level H${level} ` +
-    "is not in the template [content:subheadings:disallow]",
+  message: `Heading: Section '${parent}': heading '${text}' at level H${level} ` + "is not in the template [content:subheadings:disallow]",
   anchor,
 });
 
@@ -89,11 +87,7 @@ const CASES: readonly TestCase[] = [
     // Variant: line 9 reads `#### Added`, level 4, so it is not listed (and not the match of
     // `### Added`): three errors, lines 9, 13, 17.
     name: "fail-spec-changelog-added-at-level-four-variant",
-    expected: [
-      unlisted("Unreleased", "Added", 4, 9),
-      unlisted("Unreleased", "Details", 4, 13),
-      unlisted("Unreleased", "Misc", 3, 17),
-    ],
+    expected: [unlisted("Unreleased", "Added", 4, 9), unlisted("Unreleased", "Details", 4, 13), unlisted("Unreleased", "Misc", 3, 17)],
   },
   // Variant: no tag, no error (the spec output has the two MTL616 warnings, a later phase).
   { name: "pass-spec-changelog-without-the-disallow-tag", expected: [] },
@@ -146,9 +140,7 @@ const CASES: readonly TestCase[] = [
     expected: [
       {
         code: "MTL603",
-        message:
-          "Heading: Heading 'T' is marked [presence:template-only] " +
-          "and must not appear in the linted file",
+        message: "Heading: Heading 'T' is marked [presence:template-only] " + "and must not appear in the linted file",
         anchor: 7,
       },
     ],
@@ -217,8 +209,7 @@ const CASES: readonly TestCase[] = [
     expected: [
       {
         code: "MTL703",
-        message:
-          "Section '[1.0.0] - 2026-01-10 > Added': [content:list] no markdown list item found",
+        message: "Section '[1.0.0] - 2026-01-10 > Added': [content:list] no markdown list item found",
         anchor: 17,
       },
     ],
@@ -228,10 +219,7 @@ const CASES: readonly TestCase[] = [
   // instance.
   {
     name: "fail-repeat-instances-each-check-disallow-mtl612",
-    expected: [
-      unlisted("[1.2.0] - 2026-03-01", "Deep", 4, 11),
-      unlisted("[1.1.0] - 2026-02-01", "Misc", 3, 15),
-    ],
+    expected: [unlisted("[1.2.0] - 2026-03-01", "Deep", 4, 11), unlisted("[1.1.0] - 2026-02-01", "Misc", 3, 15)],
   },
   // Step 3d3: zero instances of a required repeat heading, nothing taken by step 3d1: MTL605.
   {
@@ -268,9 +256,7 @@ const CASES: readonly TestCase[] = [
     expected: [
       {
         code: "MTL606",
-        message:
-          "Heading: heading '1e5' does not match [pattern:\"{number:format:decimal}\"] " +
-          "at {number:format:decimal}",
+        message: "Heading: heading '1e5' does not match [pattern:\"{number:format:decimal}\"] " + "at {number:format:decimal}",
         anchor: 5,
       },
     ],
@@ -285,9 +271,7 @@ const CASES: readonly TestCase[] = [
     expected: [
       {
         code: "MTL606",
-        message:
-          "Heading: heading 'Item 7' does not match " +
-          '[pattern:"Item {digits:format:padding:3}"] at {digits:format:padding:3}',
+        message: "Heading: heading 'Item 7' does not match " + '[pattern:"Item {digits:format:padding:3}"] at {digits:format:padding:3}',
         anchor: 5,
       },
     ],
@@ -299,17 +283,14 @@ const CASES: readonly TestCase[] = [
     expected: [
       {
         code: "MTL604",
-        message:
-          "Heading: Heading order mismatch: template order ['Top', 'R'] " +
-          "vs target order ['v1.0.0', 'Top', 'v2.0.0']",
+        message: "Heading: Heading order mismatch: template order ['Top', 'R'] " + "vs target order ['v1.0.0', 'Top', 'v2.0.0']",
         anchor: null,
       },
     ],
   },
 ];
 
-const read = (path: string): string =>
-  readFileSync(fileURLToPath(new URL(`../../${path}`, import.meta.url)), "utf8");
+const read = (path: string): string => readFileSync(fileURLToPath(new URL(`../../${path}`, import.meta.url)), "utf8");
 
 /** The error findings (warnings are a later phase's MTL616) for the pair of a case folder. */
 async function lintErrors(name: string): Promise<Finding[]> {
@@ -317,13 +298,7 @@ async function lintErrors(name: string): Promise<Finding[]> {
   const status = await checkTemplate(registry, read(`${fixture}/template.md`));
   if (status.status !== "ok") throw new Error(`${fixture}: template is broken`);
   expect(status.warnings).toEqual([]);
-  const found = await checkTarget(
-    registry,
-    status.model,
-    read(`${fixture}/target.md`),
-    `${fixture}/target.md`,
-    createEnv(),
-  );
+  const found = await checkTarget(registry, status.model, read(`${fixture}/target.md`), `${fixture}/target.md`, createEnv());
   return found
     .filter((diagnostic) => diagnostic.severity === "error")
     .map((diagnostic) => ({
@@ -355,10 +330,7 @@ describe("positional heading match: spec 2.6 worked examples and owner examples"
     // Instances on lines 7, 11 and 13; only line 7 has a body. The pattern-heading label of
     // 2.6 is phase Pl, so only the codes and anchors are asserted here.
     const head = "---\ntitle: x\n---\n\n";
-    const status = await checkTemplate(
-      registry,
-      `${head}# C\n\n## Release [pattern:"v{semver}"] [repeat-rules:same-level] [content:non-empty]\n`,
-    );
+    const status = await checkTemplate(registry, `${head}# C\n\n## Release [pattern:"v{semver}"] [repeat-rules:same-level] [content:non-empty]\n`);
     if (status.status !== "ok") throw new Error("template is broken");
     const target = `${head}# C\n\n## v1.2.0\n\nText.\n\n## v1.1.0\n\n## v1.0.0\n`;
     const found = await checkTarget(registry, status.model, target, "a.md", createEnv());

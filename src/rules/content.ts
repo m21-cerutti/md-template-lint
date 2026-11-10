@@ -103,8 +103,7 @@ function isTableRow(line: string): boolean {
  */
 function isListItem(line: string): boolean {
   const chars = [...line];
-  const isSpaceAt = (index: number): boolean =>
-    index < chars.length && isPythonSpace(chars[index]?.codePointAt(0) ?? 0);
+  const isSpaceAt = (index: number): boolean => index < chars.length && isPythonSpace(chars[index]?.codePointAt(0) ?? 0);
   let index = 0;
   while (isSpaceAt(index)) index += 1;
   const first = chars[index] ?? "";
@@ -127,14 +126,7 @@ const contentNonEmpty = defineRule({
     checkedSections(context).flatMap(({ section, index, found, label }) => {
       if (!hasContentTag(section, "non-empty")) return [];
       if (!isBlank(found.body)) return [];
-      return [
-        reportSection(
-          contentNonEmpty,
-          `${label}: [content:non-empty] section body is empty`,
-          index,
-          found.line,
-        ),
-      ];
+      return [reportSection(contentNonEmpty, `${label}: [content:non-empty] section body is empty`, index, found.line)];
     }),
 });
 
@@ -149,14 +141,7 @@ const contentTable = defineRule({
     checkedSections(context).flatMap(({ section, index, found, label }) => {
       if (!hasContentTag(section, "table")) return [];
       if (found.body.split("\n").some(isTableRow)) return [];
-      return [
-        reportSection(
-          contentTable,
-          `${label}: [content:table] no markdown table row found`,
-          index,
-          found.line,
-        ),
-      ];
+      return [reportSection(contentTable, `${label}: [content:table] no markdown table row found`, index, found.line)];
     }),
 });
 
@@ -171,14 +156,7 @@ const contentList = defineRule({
     checkedSections(context).flatMap(({ section, index, found, label }) => {
       if (!hasContentTag(section, "list")) return [];
       if (found.body.split("\n").some(isListItem)) return [];
-      return [
-        reportSection(
-          contentList,
-          `${label}: [content:list] no markdown list item found`,
-          index,
-          found.line,
-        ),
-      ];
+      return [reportSection(contentList, `${label}: [content:list] no markdown list item found`, index, found.line)];
     }),
 });
 
@@ -195,14 +173,7 @@ const contentMinLines = defineRule({
       if (minimum === null) return [];
       const count = nonBlankLineCount(found.body);
       if (count >= minimum) return [];
-      return [
-        reportSection(
-          contentMinLines,
-          `${label}: [content:min-lines:${minimum}] only ${count} non-blank line(s)`,
-          index,
-          found.line,
-        ),
-      ];
+      return [reportSection(contentMinLines, `${label}: [content:min-lines:${minimum}] only ${count} non-blank line(s)`, index, found.line)];
     }),
 });
 
@@ -219,14 +190,7 @@ const contentMaxLines = defineRule({
       if (maximum === null) return [];
       const count = nonBlankLineCount(found.body);
       if (count <= maximum) return [];
-      return [
-        reportSection(
-          contentMaxLines,
-          `${label}: [content:max-lines:${maximum}] ${count} non-blank line(s)`,
-          index,
-          found.line,
-        ),
-      ];
+      return [reportSection(contentMaxLines, `${label}: [content:max-lines:${maximum}] ${count} non-blank line(s)`, index, found.line)];
     }),
 });
 

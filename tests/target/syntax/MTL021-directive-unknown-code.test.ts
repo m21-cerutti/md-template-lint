@@ -1,12 +1,6 @@
 /** MTL021 directive-unknown-code (src/rules/syntax.ts, docs/spec.md 4.3, 4.4 DIR2). */
 import { describe, expect, it } from "vitest";
-import {
-  at,
-  expectCases,
-  expectDirectiveRule,
-  findingsOf,
-  type Found,
-} from "../../helpers/directives.js";
+import { at, expectCases, expectDirectiveRule, findingsOf, type Found } from "../../helpers/directives.js";
 
 const CODE = "MTL021";
 const DIR = "tests/fixtures/pairs/MTL021";
@@ -25,13 +19,7 @@ const CASES: readonly TestCase[] = [
   // Not `MTL` and three digits, or not a code of the tables; frontmatter trailing comment first.
   {
     name: "fail-unknown-tokens",
-    expected: [
-      at(2, 14, unknown("MTL999")),
-      at(7, 1, unknown("MTL2O1")),
-      at(7, 1, unknown("201")),
-      at(7, 1, unknown("MTL050")),
-      at(7, 1, unknown("MTL1234")),
-    ],
+    expected: [at(2, 14, unknown("MTL999")), at(7, 1, unknown("MTL2O1")), at(7, 1, unknown("201")), at(7, 1, unknown("MTL050")), at(7, 1, unknown("MTL1234"))],
   },
   // `--x` is a word, not the reason marker.
   { name: "fail-glued-reason-marker", expected: [at(7, 1, unknown("--x"))] },

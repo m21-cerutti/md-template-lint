@@ -1,18 +1,11 @@
 /** MTL025 directive-already-disabled (src/rules/syntax.ts, docs/spec.md 4.3, 4.4 DIR8). */
 import { describe, expect, it } from "vitest";
-import {
-  at,
-  expectCases,
-  expectDirectiveRule,
-  findingsOf,
-  type Found,
-} from "../../helpers/directives.js";
+import { at, expectCases, expectDirectiveRule, findingsOf, type Found } from "../../helpers/directives.js";
 
 const CODE = "MTL025";
 const DIR = "tests/fixtures/pairs/MTL025";
 
-const again = (directive: string, code: string, open: number): string =>
-  `'${directive} ${code}' while ${code} is already disabled since line ${open}`;
+const again = (directive: string, code: string, open: number): string => `'${directive} ${code}' while ${code} is already disabled since line ${open}`;
 
 interface TestCase {
   readonly name: string;
@@ -27,10 +20,7 @@ const CASES: readonly TestCase[] = [
   // The first range keeps its start (line 7) for both later openings.
   {
     name: "fail-open-while-open",
-    expected: [
-      at(8, 1, again("begin disable", "MTL202", 7)),
-      at(9, 1, again("disable", "MTL202", 7)),
-    ],
+    expected: [at(8, 1, again("begin disable", "MTL202", 7)), at(9, 1, again("disable", "MTL202", 7))],
   },
   // A range opened in the frontmatter is still open in the body.
   {

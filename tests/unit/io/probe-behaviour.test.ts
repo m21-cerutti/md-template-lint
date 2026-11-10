@@ -5,14 +5,7 @@
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createRealIo, USER_AGENT } from "../../../src/io/index.js";
-import {
-  fakeFetch,
-  fakeResolve,
-  hang,
-  PUBLIC_ADDRESS,
-  PUBLIC_HOST,
-  status,
-} from "../../helpers/io.js";
+import { fakeFetch, fakeResolve, hang, PUBLIC_ADDRESS, PUBLIC_HOST, status } from "../../helpers/io.js";
 
 const URL_OK = `https://${PUBLIC_HOST}/page`;
 const dns = { [PUBLIC_HOST]: [PUBLIC_ADDRESS] };
@@ -33,9 +26,7 @@ describe("URL probe: requests", () => {
       expect(init.headers).toEqual({ "User-Agent": USER_AGENT, Accept: "*/*" });
       expect(init.signal).toBeInstanceOf(AbortSignal);
       for (const name of Object.keys(init.headers)) {
-        expect(["cookie", "authorization", "proxy-authorization"]).not.toContain(
-          name.toLowerCase(),
-        );
+        expect(["cookie", "authorization", "proxy-authorization"]).not.toContain(name.toLowerCase());
       }
     }
   });
@@ -43,10 +34,7 @@ describe("URL probe: requests", () => {
   it("userinfo and fragment are stripped before the request", async () => {
     const { fetch, calls } = fakeFetch(() => status(200));
     const { resolve } = fakeResolve(dns);
-    const answer = await createRealIo({ fetch, resolve }).probeUrl(
-      `https://user:secret@${PUBLIC_HOST}/p?q=1#frag`,
-      5000,
-    );
+    const answer = await createRealIo({ fetch, resolve }).probeUrl(`https://user:secret@${PUBLIC_HOST}/p?q=1#frag`, 5000);
     expect(answer).toEqual({ reachable: true });
     expect(calls).toHaveLength(1);
     expect(calls[0]?.url.href).toBe(`https://${PUBLIC_HOST}/p?q=1`);
@@ -120,11 +108,7 @@ describe("URL probe: run budget", () => {
     const { fetch, calls } = fakeFetch(() => status(200));
     const { resolve, calls: resolves } = fakeResolve(dns);
     const io = createRealIo({ fetch, resolve });
-    const answers = await Promise.all([
-      io.probeUrl(URL_OK, 5000),
-      io.probeUrl(URL_OK, 5000),
-      io.probeUrl(`  ${URL_OK} `, 5000),
-    ]);
+    const answers = await Promise.all([io.probeUrl(URL_OK, 5000), io.probeUrl(URL_OK, 5000), io.probeUrl(`  ${URL_OK} `, 5000)]);
     expect(answers).toEqual([{ reachable: true }, { reachable: true }, { reachable: true }]);
     expect(calls).toHaveLength(1);
     expect(resolves).toHaveLength(1);
@@ -169,11 +153,7 @@ describe("URL probe: private ranges are an explicit opt-in", () => {
     const { fetch, calls } = fakeFetch(() => status(200));
     const { resolve } = fakeResolve(dnsPrivate);
     const io = createRealIo({ fetch, resolve });
-    for (const url of [
-      "http://10.1.2.3/",
-      "http://[fd12:3456::1]/",
-      "http://intranet.example.com/",
-    ]) {
+    for (const url of ["http://10.1.2.3/", "http://[fd12:3456::1]/", "http://intranet.example.com/"]) {
       expect(await io.probeUrl(url, 5000)).toEqual({ reachable: false, reason: "blocked address" });
     }
     expect(calls).toHaveLength(0);
@@ -183,11 +163,7 @@ describe("URL probe: private ranges are an explicit opt-in", () => {
     const { fetch, calls } = fakeFetch(() => status(200));
     const { resolve } = fakeResolve(dnsPrivate);
     const io = createRealIo({ fetch, resolve, allowPrivateNetworks: true });
-    for (const url of [
-      "http://10.1.2.3/",
-      "http://[fd12:3456::1]/",
-      "http://intranet.example.com/",
-    ]) {
+    for (const url of ["http://10.1.2.3/", "http://[fd12:3456::1]/", "http://intranet.example.com/"]) {
       expect(await io.probeUrl(url, 5000)).toEqual({ reachable: true });
     }
     expect(calls).toHaveLength(3);
@@ -197,16 +173,7 @@ describe("URL probe: private ranges are an explicit opt-in", () => {
     const { fetch, calls } = fakeFetch(() => status(200));
     const { resolve } = fakeResolve(dnsPrivate);
     const io = createRealIo({ fetch, resolve, allowPrivateNetworks: true });
-    const urls = [
-      "http://127.0.0.1/",
-      "http://localhost/",
-      "http://169.254.169.254/",
-      "http://100.100.100.200/",
-      "http://[::1]/",
-      "http://[fe80::1]/",
-      "http://[::ffff:7f00:1]/",
-      "http://2130706433/",
-    ];
+    const urls = ["http://127.0.0.1/", "http://localhost/", "http://169.254.169.254/", "http://100.100.100.200/", "http://[::1]/", "http://[fe80::1]/", "http://[::ffff:7f00:1]/", "http://2130706433/"];
     for (const url of urls) {
       expect(await io.probeUrl(url, 5000), url).toEqual({
         reachable: false,

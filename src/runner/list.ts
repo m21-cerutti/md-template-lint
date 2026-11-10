@@ -43,8 +43,7 @@ export interface ListedMatch {
  * on every OS (AS5): `DOCS/A.MD` is another argument than `docs/a.md` (it matches no glob)
  * whatever the order of the arguments, so one spelling never hides the other.
  */
-const argumentKey = (path: string): string =>
-  path.replace(/^[A-Za-z]:\//, (drive) => drive.toLowerCase());
+const argumentKey = (path: string): string => path.replace(/^[A-Za-z]:\//, (drive) => drive.toLowerCase());
 
 /** Resolve the arguments; the same file given twice is kept once, in argument order. */
 export function resolveFileList(input: FileListInput): ListedFile[] {
@@ -69,12 +68,7 @@ export function resolveFileList(input: FileListInput): ListedFile[] {
  * gate would pass silently. Everything BELOW the root keeps its case: globs are case-sensitive
  * on every OS (AS5, spec 6.4), so `DOCS/A.MD` still matches no include.
  */
-export function listedMatches(
-  files: readonly ListedFile[],
-  rootDir: string,
-  pair: PairConfig,
-  ignoreRootCase: boolean = process.platform === "win32",
-): ListedMatch[] {
+export function listedMatches(files: readonly ListedFile[], rootDir: string, pair: PairConfig, ignoreRootCase: boolean = process.platform === "win32"): ListedMatch[] {
   const templateKey = pathKey(pair.templatePath);
   const out: ListedMatch[] = [];
   const seen = new Set<string>();

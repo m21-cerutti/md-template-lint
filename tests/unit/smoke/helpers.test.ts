@@ -44,17 +44,10 @@ function readText(group: string, name: string, extension: "json" | "txt"): strin
   return readFileSync(join(FIXTURES, group, `${name}.${extension}`), "utf8");
 }
 
-const readCase = (group: string, name: string): unknown =>
-  JSON.parse(readText(group, name, "json")) as unknown;
+const readCase = (group: string, name: string): unknown => JSON.parse(readText(group, name, "json")) as unknown;
 
-function expectFolder(
-  group: string,
-  cases: readonly { readonly name: string }[],
-  extension: "json" | "txt" = "json",
-): void {
-  expect(readdirSync(join(FIXTURES, group)).sort()).toEqual(
-    cases.map((testCase) => `${testCase.name}.${extension}`).sort(),
-  );
+function expectFolder(group: string, cases: readonly { readonly name: string }[], extension: "json" | "txt" = "json"): void {
+  expect(readdirSync(join(FIXTURES, group)).sort()).toEqual(cases.map((testCase) => `${testCase.name}.${extension}`).sort());
 }
 
 describe("smoke-pack: parseArgs", () => {
@@ -111,18 +104,15 @@ describe("smoke-pack: parseArgs", () => {
 describe("smoke-pack: pnpmInvocation", () => {
   const node = "/usr/bin/node";
 
-  it.each(["/x/pnpm.cjs", "/x/pnpm.mjs", "/x/pnpm.js", "C:\\x\\PNPM.JS"])(
-    "starts the script %s with Node, never through a shell",
-    (execPath) => {
-      for (const platform of ["linux", "win32"]) {
-        expect(pnpmInvocation({ npm_execpath: execPath }, platform, node)).toEqual({
-          command: node,
-          prefixArgs: [execPath],
-          shell: false,
-        });
-      }
-    },
-  );
+  it.each(["/x/pnpm.cjs", "/x/pnpm.mjs", "/x/pnpm.js", "C:\\x\\PNPM.JS"])("starts the script %s with Node, never through a shell", (execPath) => {
+    for (const platform of ["linux", "win32"]) {
+      expect(pnpmInvocation({ npm_execpath: execPath }, platform, node)).toEqual({
+        command: node,
+        prefixArgs: [execPath],
+        shell: false,
+      });
+    }
+  });
 
   it("starts a native pnpm executable directly, without a shell", () => {
     expect(pnpmInvocation({ npm_execpath: "/x/pnpm" }, "linux", node)).toEqual({
@@ -133,16 +123,13 @@ describe("smoke-pack: pnpmInvocation", () => {
     expect(pnpmInvocation({ npm_execpath: "C:\\x\\pnpm.exe" }, "win32", node).shell).toBe(false);
   });
 
-  it.each(["C:\\x\\pnpm.cmd", "C:\\x\\pnpm.bat", "C:\\x\\PNPM.CMD", "C:\\x\\pnpm.BAT"])(
-    "starts the Windows shim %s through a shell",
-    (execPath) => {
-      expect(pnpmInvocation({ npm_execpath: execPath }, "win32", node)).toEqual({
-        command: execPath,
-        prefixArgs: [],
-        shell: true,
-      });
-    },
-  );
+  it.each(["C:\\x\\pnpm.cmd", "C:\\x\\pnpm.bat", "C:\\x\\PNPM.CMD", "C:\\x\\pnpm.BAT"])("starts the Windows shim %s through a shell", (execPath) => {
+    expect(pnpmInvocation({ npm_execpath: execPath }, "win32", node)).toEqual({
+      command: execPath,
+      prefixArgs: [],
+      shell: true,
+    });
+  });
 
   it.each(["linux", "darwin"])("never uses a shell for a .cmd path on %s", (platform) => {
     expect(pnpmInvocation({ npm_execpath: "/x/pnpm.cmd" }, platform, node).shell).toBe(false);
@@ -194,26 +181,17 @@ describe("smoke-pack: quoteForCmd and spawnPlan", () => {
     expect(quoteForCmd("a\\b")).toBe('"a\\b"');
   });
 
-  it.each(['a"b', "100%", "a!b", "a\nb", "a\rb", "a\0b"])(
-    "refuses the argument %j, which cmd.exe cannot be given literally",
-    (arg) => {
-      expect(() => quoteForCmd(arg)).toThrow("cannot be passed safely");
-    },
-  );
+  it.each(['a"b', "100%", "a!b", "a\nb", "a\rb", "a\0b"])("refuses the argument %j, which cmd.exe cannot be given literally", (arg) => {
+    expect(() => quoteForCmd(arg)).toThrow("cannot be passed safely");
+  });
 
   it("passes the arguments through untouched without a shell", () => {
-    const plan = spawnPlan({ command: "node", prefixArgs: ["pnpm.cjs"], shell: false }, [
-      "add",
-      "a b",
-    ]);
+    const plan = spawnPlan({ command: "node", prefixArgs: ["pnpm.cjs"], shell: false }, ["add", "a b"]);
     expect(plan).toEqual({ command: "node", args: ["pnpm.cjs", "add", "a b"], shell: false });
   });
 
   it("builds one quoted command line with a shell, and no separate argument", () => {
-    const plan = spawnPlan({ command: "C:\\x y\\pnpm.cmd", prefixArgs: [], shell: true }, [
-      "add",
-      "C:\\tmp dir\\p.tgz",
-    ]);
+    const plan = spawnPlan({ command: "C:\\x y\\pnpm.cmd", prefixArgs: [], shell: true }, ["add", "C:\\tmp dir\\p.tgz"]);
     expect(plan).toEqual({
       command: '"C:\\x y\\pnpm.cmd" "add" "C:\\tmp dir\\p.tgz"',
       args: [],
@@ -222,9 +200,7 @@ describe("smoke-pack: quoteForCmd and spawnPlan", () => {
   });
 
   it("refuses an unsafe argument instead of passing it to a shell", () => {
-    expect(() =>
-      spawnPlan({ command: "pnpm", prefixArgs: [], shell: true }, ["add", "a&b%PATH%"]),
-    ).toThrow("cannot be passed safely");
+    expect(() => spawnPlan({ command: "pnpm", prefixArgs: [], shell: true }, ["add", "a&b%PATH%"])).toThrow("cannot be passed safely");
   });
 });
 
@@ -308,13 +284,10 @@ describe("smoke-pack: readPackageFields (fixtures/release/manifest)", () => {
     });
   }
 
-  it.each(["1.2.3", "0.0.0", "1.2.3-rc.1", "1.2.3+b5", "1.2.3-rc.1+b5"])(
-    "accepts the semver version %s",
-    (version) => {
-      const fields = readPackageFields({ name: "p", version, bin: { x: "y.js" } }, "x");
-      expect(fields.version).toBe(version);
-    },
-  );
+  it.each(["1.2.3", "0.0.0", "1.2.3-rc.1", "1.2.3+b5", "1.2.3-rc.1+b5"])("accepts the semver version %s", (version) => {
+    const fields = readPackageFields({ name: "p", version, bin: { x: "y.js" } }, "x");
+    expect(fields.version).toBe(version);
+  });
 
   it("strips a leading ./ from a string bin and reads it as the only executable", () => {
     const fields = readPackageFields({ name: "p", version: "0.0.1", bin: "./bin/run.js" }, "any");
@@ -327,12 +300,9 @@ describe("smoke-pack: readPackageFields (fixtures/release/manifest)", () => {
   });
 
   // Each value is wrapped in its own array: it.each would spread an array value as arguments.
-  it.each([[null], ["package.json"], [["a"]], [42], [undefined]])(
-    "rejects a manifest that is not an object: %j",
-    (manifest) => {
-      expect(() => readPackageFields(manifest, "x")).toThrow("not an object");
-    },
-  );
+  it.each([[null], ["package.json"], [["a"]], [42], [undefined]])("rejects a manifest that is not an object: %j", (manifest) => {
+    expect(() => readPackageFields(manifest, "x")).toThrow("not an object");
+  });
 });
 
 describe("smoke-pack: singleDependency (fixtures/release/consumer)", () => {
@@ -362,32 +332,22 @@ describe("smoke-pack: singleDependency (fixtures/release/consumer)", () => {
 describe("smoke-pack: installedBinPath and binShimPath", () => {
   it("joins consumer, node_modules, package name and the bin entry", () => {
     const fields = { name: "md-template-lint", version: "1.2.3", bin: "dist/cli.js" };
-    expect(installedBinPath("work", fields)).toBe(
-      join("work", "node_modules", "md-template-lint", "dist", "cli.js"),
-    );
+    expect(installedBinPath("work", fields)).toBe(join("work", "node_modules", "md-template-lint", "dist", "cli.js"));
   });
 
   it("splits a scoped package name into its two folders", () => {
     const fields = { name: "@scope/tool", version: "1.0.0", bin: "dist/cli.js" };
-    expect(installedBinPath("work", fields)).toBe(
-      join("work", "node_modules", "@scope", "tool", "dist", "cli.js"),
-    );
+    expect(installedBinPath("work", fields)).toBe(join("work", "node_modules", "@scope", "tool", "dist", "cli.js"));
   });
 
   it("follows a bin entry with several segments", () => {
     const fields = { name: "tool", version: "1.0.0", bin: "dist/bin/cli.js" };
-    expect(installedBinPath("work", fields)).toBe(
-      join("work", "node_modules", "tool", "dist", "bin", "cli.js"),
-    );
+    expect(installedBinPath("work", fields)).toBe(join("work", "node_modules", "tool", "dist", "bin", "cli.js"));
   });
 
   it("puts the shim in node_modules/.bin, with .cmd only on Windows", () => {
-    expect(binShimPath("work", "md-template-lint", "win32")).toBe(
-      join("work", "node_modules", ".bin", "md-template-lint.cmd"),
-    );
-    expect(binShimPath("work", "md-template-lint", "linux")).toBe(
-      join("work", "node_modules", ".bin", "md-template-lint"),
-    );
+    expect(binShimPath("work", "md-template-lint", "win32")).toBe(join("work", "node_modules", ".bin", "md-template-lint.cmd"));
+    expect(binShimPath("work", "md-template-lint", "linux")).toBe(join("work", "node_modules", ".bin", "md-template-lint"));
   });
 });
 
@@ -450,18 +410,14 @@ describe("smoke-pack: checkRun", () => {
 });
 
 describe("smoke-pack: expectations of the installed CLI", () => {
-  const BOGUS_STDERR =
-    "error MTL920: unknown option: --bogus\nTry 'md-template-lint --help' for usage.\n";
+  const BOGUS_STDERR = "error MTL920: unknown option: --bogus\nTry 'md-template-lint --help' for usage.\n";
 
   const cases = [
     {
       name: "pass-real-outputs",
       checks: [
         [{ status: 0, stdout: "1.2.3\n", stderr: "" }, versionExpectation("1.2.3")],
-        [
-          { status: 0, stdout: "x\nAll files passed!\n", stderr: "" },
-          projectLintExpectation("demo-project"),
-        ],
+        [{ status: 0, stdout: "x\nAll files passed!\n", stderr: "" }, projectLintExpectation("demo-project")],
         [{ status: 2, stdout: "", stderr: BOGUS_STDERR }, unknownOptionExpectation()],
       ] as const,
       problems: 0,
@@ -470,24 +426,15 @@ describe("smoke-pack: expectations of the installed CLI", () => {
       name: "fail-version-has-no-newline-or-differs",
       checks: [
         [{ status: 0, stdout: "1.2.3", stderr: "" }, versionExpectation("1.2.3")],
-        [
-          { status: 0, stdout: "md-template-lint 1.2.3\n", stderr: "" },
-          versionExpectation("1.2.3"),
-        ],
+        [{ status: 0, stdout: "md-template-lint 1.2.3\n", stderr: "" }, versionExpectation("1.2.3")],
       ] as const,
       problems: 2,
     },
     {
       name: "fail-lint-exit-1-or-no-success-line",
       checks: [
-        [
-          { status: 1, stdout: "All files passed!", stderr: "" },
-          projectLintExpectation("demo-project"),
-        ],
-        [
-          { status: 0, stdout: "No files linted.\n", stderr: "" },
-          projectLintExpectation("demo-project"),
-        ],
+        [{ status: 1, stdout: "All files passed!", stderr: "" }, projectLintExpectation("demo-project")],
+        [{ status: 0, stdout: "No files linted.\n", stderr: "" }, projectLintExpectation("demo-project")],
       ] as const,
       problems: 2,
     },
@@ -496,10 +443,7 @@ describe("smoke-pack: expectations of the installed CLI", () => {
       checks: [
         [{ status: 1, stdout: "", stderr: BOGUS_STDERR }, unknownOptionExpectation()],
         [{ status: 2, stdout: "", stderr: "" }, unknownOptionExpectation()],
-        [
-          { status: 2, stdout: BOGUS_STDERR, stderr: "error MTL920: unknown option: --bogus\n" },
-          unknownOptionExpectation(),
-        ],
+        [{ status: 2, stdout: BOGUS_STDERR, stderr: "error MTL920: unknown option: --bogus\n" }, unknownOptionExpectation()],
       ] as const,
       problems: 1 + 2 + 1,
     },
@@ -520,10 +464,7 @@ describe("smoke-pack: expectations of the installed CLI", () => {
     expect(unknownOptionExpectation()).toEqual({
       label: "unknown option",
       status: 2,
-      stderrHas: [
-        "error MTL920: unknown option: --bogus",
-        "Try 'md-template-lint --help' for usage.",
-      ],
+      stderrHas: ["error MTL920: unknown option: --bogus", "Try 'md-template-lint --help' for usage."],
     });
   });
 });
@@ -532,12 +473,7 @@ describe("smoke-pack: the fixture project tests/fixtures/smoke/clean-project", (
   it("lints clean through the CLI function: exit 0 and the success line", async () => {
     const cwd = foldPath(join(REPO_ROOT, "tests", "fixtures", "smoke", "clean-project"));
     const run = await runCli([], { cwd, boundary: cwd, isTty: false, noColor: false });
-    expect(
-      checkRun(
-        { status: run.exitCode, stdout: run.stdout, stderr: run.stderr },
-        projectLintExpectation("clean-project"),
-      ),
-    ).toEqual([]);
+    expect(checkRun({ status: run.exitCode, stdout: run.stdout, stderr: run.stderr }, projectLintExpectation("clean-project"))).toEqual([]);
     expect(run.stdout).toContain("Total files:  1");
   });
 });
@@ -565,15 +501,11 @@ describe("smoke-pack: tarball content (fixtures/release/tarball)", () => {
   }
 
   it("drops directory entries and the package/ prefix", () => {
-    expect(
-      tarballEntries("package/dist/\npackage/dist/cli.js\r\n\npackage/package.json\n"),
-    ).toEqual(["dist/cli.js", "package.json"]);
+    expect(tarballEntries("package/dist/\npackage/dist/cli.js\r\n\npackage/package.json\n")).toEqual(["dist/cli.js", "package.json"]);
   });
 
   it("refuses an entry that does not start with package/", () => {
-    expect(() => tarballEntries("package/package.json\nother/file.txt\n")).toThrow(
-      "without the package/ prefix: other/file.txt",
-    );
+    expect(() => tarballEntries("package/package.json\nother/file.txt\n")).toThrow("without the package/ prefix: other/file.txt");
   });
 
   it("reports every required file when the tarball is empty", () => {
@@ -589,25 +521,12 @@ describe("smoke-pack: tarball content (fixtures/release/tarball)", () => {
   });
 
   it.each(["src", "legacy", "tmp"])("flags a file under %s/", (dir) => {
-    const paths = tarballEntries(readText("tarball", "pass-expected-package", "txt")).concat(
-      `${dir}/a.ts`,
-    );
+    const paths = tarballEntries(readText("tarball", "pass-expected-package", "txt")).concat(`${dir}/a.ts`);
     expect(checkTarballEntries(paths)).toEqual([`leaks ${dir}/: ${dir}/a.ts`]);
   });
 
   it("flags a source map outside dist/ as a map, once", () => {
-    expect(
-      checkTarballEntries([
-        "package.json",
-        "README.md",
-        "LICENSE",
-        "CHANGELOG.md",
-        "THIRD_PARTY_NOTICES.md",
-        "dist/cli.js",
-        "dist/index.js",
-        "lib/x.js.map",
-      ]),
-    ).toEqual(["forbidden source map: lib/x.js.map"]);
+    expect(checkTarballEntries(["package.json", "README.md", "LICENSE", "CHANGELOG.md", "THIRD_PARTY_NOTICES.md", "dist/cli.js", "dist/index.js", "lib/x.js.map"])).toEqual(["forbidden source map: lib/x.js.map"]);
   });
 });
 
@@ -673,12 +592,7 @@ describe("release: checkRepositoryUrl (fixtures/release/repository)", () => {
     });
   }
 
-  it.each([
-    "git+https://github.com/o/r.git",
-    "https://github.com/o/r.git",
-    "https://github.com/o/r",
-    "git+https://github.com/O/R.git",
-  ])("accepts the url %s for o/r", (url) => {
+  it.each(["git+https://github.com/o/r.git", "https://github.com/o/r.git", "https://github.com/o/r", "git+https://github.com/O/R.git"])("accepts the url %s for o/r", (url) => {
     expect(checkRepositoryUrl({ repository: { url } }, "o/r")).toEqual([]);
   });
 
@@ -695,9 +609,7 @@ describe("release: checkRepositoryUrl (fixtures/release/repository)", () => {
   });
 
   it("rejects a repository that is not <owner>/<name>", () => {
-    expect(checkRepositoryUrl({ repository: { url: "x" } }, "o")).toEqual([
-      'repository "o" is not <owner>/<name>',
-    ]);
+    expect(checkRepositoryUrl({ repository: { url: "x" } }, "o")).toEqual(['repository "o" is not <owner>/<name>']);
   });
 });
 
@@ -713,9 +625,7 @@ describe("release: checkRelease", () => {
   });
 
   it("reports a package.json without a valid version", () => {
-    expect(checkRelease({ version: "x" }, "vx", "o/r")).toEqual([
-      "package.json: version is not semver: x",
-    ]);
+    expect(checkRelease({ version: "x" }, "vx", "o/r")).toEqual(["package.json: version is not semver: x"]);
   });
 });
 
@@ -727,14 +637,10 @@ describe("release: scripts/smoke/check-release.ts as a process", () => {
   const repository = /github\.com\/(.+?)(?:\.git)?$/.exec(manifest.repository.url)?.[1] ?? "";
 
   function check(...args: string[]) {
-    const result = spawnSync(
-      process.execPath,
-      [TSX_CLI, "scripts/smoke/check-release.ts", ...args],
-      {
-        cwd: REPO_ROOT,
-        encoding: "utf8",
-      },
-    );
+    const result = spawnSync(process.execPath, [TSX_CLI, "scripts/smoke/check-release.ts", ...args], {
+      cwd: REPO_ROOT,
+      encoding: "utf8",
+    });
     return { status: result.status, stdout: result.stdout, stderr: result.stderr };
   }
 
@@ -752,7 +658,7 @@ describe("release: scripts/smoke/check-release.ts as a process", () => {
   });
 
   it("exits 1 for a repository whose name only starts like ours", () => {
-    const run = check(`v${manifest.version}`, repository.replace(/r$/, ""));
+    const run = check(`v${manifest.version}`, repository.slice(0, -1));
     expect(run.status).toBe(1);
     expect(run.stderr).toContain("repository.url");
   });

@@ -66,11 +66,7 @@ export function commandInvocation(command: string, platform: string): Invocation
  * (`.js`, `.cjs`, `.mjs`) is started with Node, anything else is started as a command. Without
  * it, fall back to the bare name `pnpm`, which Windows only resolves through a shell.
  */
-export function pnpmInvocation(
-  env: Readonly<Record<string, string | undefined>>,
-  platform: string,
-  nodePath: string,
-): Invocation {
+export function pnpmInvocation(env: Readonly<Record<string, string | undefined>>, platform: string, nodePath: string): Invocation {
   const execPath = env["npm_execpath"];
   if (execPath !== undefined && execPath !== "") {
     if (/\.(?:c|m)?js$/i.test(execPath)) {
@@ -160,12 +156,7 @@ export function readPackageFields(manifest: unknown, binName: string): PackageFi
   const bin = record["bin"];
   if (typeof name !== "string" || name === "") throw new Error("package.json: name is missing");
   const version = versionOf(record);
-  const entry =
-    typeof bin === "string"
-      ? bin
-      : typeof bin === "object" && bin !== null
-        ? (bin as Record<string, unknown>)[binName]
-        : undefined;
+  const entry = typeof bin === "string" ? bin : typeof bin === "object" && bin !== null ? (bin as Record<string, unknown>)[binName] : undefined;
   if (typeof entry !== "string" || entry === "") {
     throw new Error(`package.json: no bin entry named ${binName}`);
   }
@@ -174,10 +165,7 @@ export function readPackageFields(manifest: unknown, binName: string): PackageFi
 
 /** The name of the one dependency of the consumer package.json. Throws unless there is exactly one. */
 export function singleDependency(manifest: unknown): string {
-  const deps =
-    typeof manifest === "object" && manifest !== null
-      ? (manifest as Record<string, unknown>)["dependencies"]
-      : undefined;
+  const deps = typeof manifest === "object" && manifest !== null ? (manifest as Record<string, unknown>)["dependencies"] : undefined;
   const names = typeof deps === "object" && deps !== null ? Object.keys(deps) : [];
   if (names.length !== 1) {
     throw new Error(`expected one dependency in the consumer package.json, found ${names.length}`);
@@ -244,14 +232,10 @@ export const unknownOptionExpectation = (): Expectation => ({
 export function checkRun(result: RunResult, expected: Expectation): string[] {
   const problems: string[] = [];
   if (result.status !== expected.status) {
-    problems.push(
-      `${expected.label}: exit code ${String(result.status)}, expected ${expected.status}`,
-    );
+    problems.push(`${expected.label}: exit code ${String(result.status)}, expected ${expected.status}`);
   }
   if (expected.stdoutIs !== undefined && result.stdout !== expected.stdoutIs) {
-    problems.push(
-      `${expected.label}: stdout ${JSON.stringify(result.stdout)}, expected ${JSON.stringify(expected.stdoutIs)}`,
-    );
+    problems.push(`${expected.label}: stdout ${JSON.stringify(result.stdout)}, expected ${JSON.stringify(expected.stdoutIs)}`);
   }
   for (const text of expected.stdoutHas ?? []) {
     if (!result.stdout.includes(text)) {
@@ -271,13 +255,7 @@ export function checkRun(result: RunResult, expected: Expectation): string[] {
 // ---------------------------------------------------------------------------------------
 
 /** Files at the package root that the `files` whitelist lets through (package.json is automatic). */
-const ROOT_FILES: readonly string[] = [
-  "package.json",
-  "README.md",
-  "LICENSE",
-  "CHANGELOG.md",
-  "THIRD_PARTY_NOTICES.md",
-];
+const ROOT_FILES: readonly string[] = ["package.json", "README.md", "LICENSE", "CHANGELOG.md", "THIRD_PARTY_NOTICES.md"];
 const REQUIRED_FILES: readonly string[] = [...ROOT_FILES, "dist/cli.js", "dist/index.js"];
 const LEAK_DIRS: readonly string[] = ["tests", "scripts", "src", "legacy", "tmp"];
 
@@ -328,9 +306,7 @@ export function checkTarballEntries(paths: readonly string[]): string[] {
 /** The pushed tag must be exactly `v` followed by the package.json version. */
 export function checkTag(tag: string, version: string): string[] {
   const expected = `v${version}`;
-  return tag === expected
-    ? []
-    : [`tag ${JSON.stringify(tag)} does not match package.json version ${version} (expected ${expected})`];
+  return tag === expected ? [] : [`tag ${JSON.stringify(tag)} does not match package.json version ${version} (expected ${expected})`];
 }
 
 /**
@@ -343,14 +319,11 @@ export function checkRepositoryUrl(manifest: unknown, repository: string): strin
     return [`repository ${JSON.stringify(repository)} is not <owner>/<name>`];
   }
   const repo = asRecord(manifest)["repository"];
-  const url =
-    typeof repo === "object" && repo !== null ? (repo as Record<string, unknown>)["url"] : undefined;
+  const url = typeof repo === "object" && repo !== null ? (repo as Record<string, unknown>)["url"] : undefined;
   if (typeof url !== "string") return ["package.json: repository.url is missing"];
   const base = `github.com/${repository}`.toLowerCase();
   const accepted = [`https://${base}.git`, `git+https://${base}.git`, `https://${base}`, `git+https://${base}`];
-  return accepted.includes(url.toLowerCase())
-    ? []
-    : [`package.json repository.url ${url} is not https://github.com/${repository}.git`];
+  return accepted.includes(url.toLowerCase()) ? [] : [`package.json repository.url ${url} is not https://github.com/${repository}.git`];
 }
 
 /** Every release check, for a pushed `tag` in `repository` (`<owner>/<name>`). */

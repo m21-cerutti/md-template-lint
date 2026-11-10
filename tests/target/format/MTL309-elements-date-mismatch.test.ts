@@ -11,20 +11,10 @@ const registry = createRegistry();
 const CODE = "MTL309";
 const DIR = "tests/fixtures/pairs/MTL309";
 /** The other codes of the format family (tag isolation unless a case lists them). */
-const OTHER_FORMAT_CODES = [
-  "MTL301",
-  "MTL302",
-  "MTL303",
-  "MTL304",
-  "MTL305",
-  "MTL306",
-  "MTL307",
-  "MTL308",
-];
+const OTHER_FORMAT_CODES = ["MTL301", "MTL302", "MTL303", "MTL304", "MTL305", "MTL306", "MTL307", "MTL308"];
 
 /** Spec 4.3 message of MTL309; `pylist` is the Python list of the bad items. */
-const message = (key: string, pylist: string): string =>
-  `Field '${key}': list contains entries not matching [format:elements:date]: ${pylist}`;
+const message = (key: string, pylist: string): string => `Field '${key}': list contains entries not matching [format:elements:date]: ${pylist}`;
 
 interface Finding {
   readonly message: string;
@@ -151,8 +141,7 @@ const CASES: readonly TestCase[] = [
   },
 ];
 
-const read = (path: string): string =>
-  readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
+const read = (path: string): string => readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
 
 async function templateOf(fixture: string) {
   const status = await checkTemplate(registry, read(`${fixture}/template.md`));
@@ -163,21 +152,11 @@ async function templateOf(fixture: string) {
 /** Diagnostics of this code, the other format codes, the type codes, all codes and the suppressed count. */
 async function lint(testCase: TestCase) {
   const fixture = `${DIR}/${testCase.name}`;
-  const result = await lintTarget(
-    registry,
-    await templateOf(fixture),
-    read(`${fixture}/target.md`),
-    `${fixture}/target.md`,
-    createEnv(),
-  );
+  const result = await lintTarget(registry, await templateOf(fixture), read(`${fixture}/target.md`), `${fixture}/target.md`, createEnv());
   return {
     own: result.diagnostics.filter((diagnostic) => diagnostic.code === CODE),
-    others: result.diagnostics
-      .filter((diagnostic) => OTHER_FORMAT_CODES.includes(diagnostic.code))
-      .map((diagnostic) => diagnostic.code),
-    types: result.diagnostics
-      .filter((diagnostic) => diagnostic.code.startsWith("MTL5"))
-      .map((diagnostic) => diagnostic.code),
+    others: result.diagnostics.filter((diagnostic) => OTHER_FORMAT_CODES.includes(diagnostic.code)).map((diagnostic) => diagnostic.code),
+    types: result.diagnostics.filter((diagnostic) => diagnostic.code.startsWith("MTL5")).map((diagnostic) => diagnostic.code),
     all: result.diagnostics.map((diagnostic) => diagnostic.code),
     suppressed: result.suppressed,
   };
@@ -232,18 +211,8 @@ describe("MTL309 elements-date-mismatch", () => {
     // `[format:elements:semver]` written first wins the elements shape kind: no date token.
     expect(rules.get("semver_first")).toEqual(["presence:required", "format:elements:semver"]);
     expect(rules.get("scalar_only")).toEqual(["presence:required", "format:date"]);
-    const ordered = await checkTemplate(
-      registry,
-      '---\nv: ["1"] # [count:min:1] [value:filename] [format:elements:date] [format:elements:semver] [format:date] [format:elements:snake_case]\n---\n',
-    );
+    const ordered = await checkTemplate(registry, '---\nv: ["1"] # [count:min:1] [value:filename] [format:elements:date] [format:elements:semver] [format:date] [format:elements:snake_case]\n---\n');
     if (ordered.status !== "ok") throw new Error("template is broken");
-    expect(describeTemplate(ordered.model).fields[0]?.rules).toEqual([
-      "presence:required",
-      "format:elements:snake_case",
-      "format:date",
-      "format:elements:date",
-      "value:filename",
-      "count:min:1",
-    ]);
+    expect(describeTemplate(ordered.model).fields[0]?.rules).toEqual(["presence:required", "format:elements:snake_case", "format:date", "format:elements:date", "value:filename", "count:min:1"]);
   });
 });

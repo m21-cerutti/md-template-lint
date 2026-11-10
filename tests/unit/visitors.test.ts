@@ -9,11 +9,7 @@
  */
 import { describe, expect, it } from "vitest";
 import type { TagFindingReason } from "../../src/tags/ast.js";
-import {
-  parseFilenameComment,
-  parseHeadingSuffix,
-  parseInlineComment,
-} from "../../src/tags/parser.js";
+import { parseFilenameComment, parseHeadingSuffix, parseInlineComment } from "../../src/tags/parser.js";
 
 interface Outcome {
   readonly tags: readonly object[];
@@ -66,14 +62,7 @@ family(
 
 family(
   "format.ts (FormatVisitor)",
-  [
-    [
-      "scheme list",
-      fm,
-      "[format:scheme:HTTPS,ftp]",
-      { kind: "format-scheme", schemes: ["https", "ftp"] },
-    ],
-  ],
+  [["scheme list", fm, "[format:scheme:HTTPS,ftp]", { kind: "format-scheme", schemes: ["https", "ftp"] }]],
   [
     ["unknown case style", fm, "[format:camelCase]", "malformed"],
     ["empty scheme list", fm, "[format:scheme:]", "malformed"],
@@ -115,14 +104,7 @@ family(
 
 family(
   "range.ts (RangeVisitor)",
-  [
-    [
-      "negative float maximum",
-      fm,
-      "[range:max:-2.5]",
-      { kind: "range", bound: "max", isFloat: true, value: -2.5 },
-    ],
-  ],
+  [["negative float maximum", fm, "[range:max:-2.5]", { kind: "range", bound: "max", isFloat: true, value: -2.5 }]],
   [
     ["exponent", fm, "[range:min:1e5]", "malformed"],
     ["leading dot", fm, "[range:min:.5]", "malformed"],
@@ -138,18 +120,8 @@ family(
   [
     ["mixed case", fm, "[ORDER:Ascending]", { kind: "order-ascending" }],
     // Spec 2.10: on a heading `[order:ascending]` is the body order tag (no longer MTL013).
-    [
-      "on a heading",
-      body,
-      "[order:ascending]",
-      { region: "body", kind: "order", direction: "ascending", by: "text" },
-    ],
-    [
-      "body first date, mixed case",
-      body,
-      "[Order:First:Date:Descending]",
-      { kind: "order", direction: "descending", by: "first-date" },
-    ],
+    ["on a heading", body, "[order:ascending]", { region: "body", kind: "order", direction: "ascending", by: "text" }],
+    ["body first date, mixed case", body, "[Order:First:Date:Descending]", { kind: "order", direction: "descending", by: "first-date" }],
   ],
   [
     // Spec 2.10: `[order:descending]` in a frontmatter comment is misplaced (MTL013).
@@ -166,14 +138,7 @@ family(
 
 family(
   "pattern.ts (PatternVisitor)",
-  [
-    [
-      "placeholders and literals",
-      body,
-      '[pattern:"{semver} - {date}"]',
-      { region: "body", kind: "pattern", text: "{semver} - {date}" },
-    ],
-  ],
+  [["placeholders and literals", body, '[pattern:"{semver} - {date}"]', { region: "body", kind: "pattern", text: "{semver} - {date}" }]],
   [
     ["no quotes", body, "[pattern:Release]", "malformed"],
     ["unclosed quote", body, '[pattern:"x]', "malformed"],
@@ -185,14 +150,7 @@ family(
 
 family(
   "repeat.ts (RepeatVisitor)",
-  [
-    [
-      "minimum",
-      body,
-      "[repeat-rules:same-level:min:2]",
-      { region: "body", kind: "repeat", bound: "min", n: 2 },
-    ],
-  ],
+  [["minimum", body, "[repeat-rules:same-level:min:2]", { region: "body", kind: "repeat", bound: "min", n: 2 }]],
   [
     ["zero minimum", body, "[repeat-rules:same-level:min:0]", "malformed"],
     ["leading zero", body, "[repeat-rules:same-level:min:02]", "malformed"],
@@ -217,14 +175,7 @@ family(
 
 family(
   "filename.ts (FilenameVisitor)",
-  [
-    [
-      "PascalCase line, odd spacing",
-      line,
-      "  #[filename:case:PascalCase] ",
-      { convention: "PascalCase" },
-    ],
-  ],
+  [["PascalCase line, odd spacing", line, "  #[filename:case:PascalCase] ", { convention: "PascalCase" }]],
   [
     ["capitalized convention", line, "# [filename:case:Snake]", "malformed"],
     ["case-sensitive convention", line, "# [filename:case:pascalcase]", "malformed"],
@@ -239,12 +190,7 @@ family(
   "content.ts (ContentVisitor)",
   [
     ["max-lines", body, "[content:max-lines:2]", { kind: "content-lines", bound: "max", value: 2 }],
-    [
-      "subheadings no-extra",
-      body,
-      "[content:subheadings:no-extra]",
-      { kind: "content", check: "subheadings-no-extra" },
-    ],
+    ["subheadings no-extra", body, "[content:subheadings:no-extra]", { kind: "content", check: "subheadings-no-extra" }],
   ],
   [
     ["no-extra plural", body, "[content:subheadings:no-extras]", "malformed"],
@@ -264,12 +210,7 @@ family(
     ["on a heading", body, "[unique-headings-names]", { region: "body", kind: "unique-names" }],
     ["upper case on a heading", body, "[UNIQUE-HEADINGS-NAMES]", { kind: "unique-names" }],
     // Spec 2.11: after a key the tag is well-formed and inert (an inert tag, no finding).
-    [
-      "after a key, inert",
-      fm,
-      "[Unique-Headings-Names]",
-      { region: "frontmatter", kind: "unique-names" },
-    ],
+    ["after a key, inert", fm, "[Unique-Headings-Names]", { region: "frontmatter", kind: "unique-names" }],
   ],
   [
     ["argument on a heading", body, "[unique-headings-names:x]", "malformed"],
@@ -277,32 +218,13 @@ family(
     ["argument after a key", fm, "[unique-headings-names:x]", "malformed"],
     ["singular typo on a heading", body, "[unique-heading-names]", "unknown"],
     ["singular typo after a key", fm, "[unique-heading-names]", "unknown"],
-    [
-      "tag not trailing",
-      (text) => parseHeadingSuffix(`H ${text} tail`),
-      "[unique-headings-names]",
-      "none",
-    ],
+    ["tag not trailing", (text) => parseHeadingSuffix(`H ${text} tail`), "[unique-headings-names]", "none"],
   ],
 );
 
 describe("hints.ts (TypeHintListener)", () => {
-  const kinds = (text: string) =>
-    parseInlineComment(text).hints.map((h) => ("name" in h ? `${h.kind}:${h.name}` : h.kind));
-  it.each([
-    [
-      "every hint form",
-      "Type = INT [Date] YYYY-MM-DD iso lien @gen/",
-      [
-        "type-eq:int",
-        "bracket:date",
-        "date-placeholder",
-        "iso-word",
-        "url-word",
-        "alias-marker:gen",
-      ],
-    ],
-  ])("passes: %s", (_label, text, expected) => {
+  const kinds = (text: string) => parseInlineComment(text).hints.map((h) => ("name" in h ? `${h.kind}:${h.name}` : h.kind));
+  it.each([["every hint form", "Type = INT [Date] YYYY-MM-DD iso lien @gen/", ["type-eq:int", "bracket:date", "date-placeholder", "iso-word", "url-word", "alias-marker:gen"]]])("passes: %s", (_label, text, expected) => {
     expect(kinds(text)).toEqual(expected);
   });
   it.each([
@@ -318,12 +240,9 @@ describe("hints.ts (TypeHintListener)", () => {
 });
 
 describe("brackets.ts (BracketShapeVisitor)", () => {
-  it.each([["rule marker and type token", fm, "[rule] [list-of-path-alias]"]])(
-    "passes (inert): %s",
-    (_label, run, text) => {
-      expect(run(text).findings).toEqual([]);
-    },
-  );
+  it.each([["rule marker and type token", fm, "[rule] [list-of-path-alias]"]])("passes (inert): %s", (_label, run, text) => {
+    expect(run(text).findings).toEqual([]);
+  });
   it.each([
     ["unknown family", fm, "[foo:bar]"],
     ["unknown word", fm, "[foo]"],
@@ -337,14 +256,7 @@ describe("brackets.ts (BracketShapeVisitor)", () => {
 });
 
 describe("heading.ts (HeadingVisitor, peelHeading)", () => {
-  it.each([
-    [
-      "two tags and a trailing HTML comment",
-      "Notes [presence:optional] [content:list] <!-- c -->",
-      "Notes",
-      2,
-    ],
-  ])("passes: %s", (_label, text, expectedText, tagCount) => {
+  it.each([["two tags and a trailing HTML comment", "Notes [presence:optional] [content:list] <!-- c -->", "Notes", 2]])("passes: %s", (_label, text, expectedText, tagCount) => {
     const result = parseHeadingSuffix(text);
     expect(result.findings).toEqual([]);
     expect(result.text).toBe(expectedText);

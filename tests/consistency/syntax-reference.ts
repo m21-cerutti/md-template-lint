@@ -7,12 +7,7 @@
  */
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import {
-  staleBlocks,
-  type BlockName,
-  type ErrorRow,
-  type TagForm,
-} from "../../scripts/syntax-doc/generate.js";
+import { staleBlocks, type BlockName, type ErrorRow, type TagForm } from "../../scripts/syntax-doc/generate.js";
 import type { AnyRule } from "../../src/engine/rule.js";
 import { isStub } from "../../src/engine/rule.js";
 import { ROOT } from "./consistency.js";
@@ -27,25 +22,16 @@ export const tagKey = (form: TagForm) => `${form.region}:${form.family}`;
 
 /** A generated block of the doc differs from what the sources produce. */
 export function checkFresh(doc: string, blocks: Readonly<Record<BlockName, string>>): string[] {
-  return staleBlocks(doc, blocks).map(
-    ({ name, diff }) =>
-      `docs/syntax-reference.md block '${name}' is stale, ${REGENERATE}:\n${diff.join("\n")}`,
-  );
+  return staleBlocks(doc, blocks).map(({ name, diff }) => `docs/syntax-reference.md block '${name}' is stale, ${REGENERATE}:\n${diff.join("\n")}`);
 }
 
 /** Every code and tag family has a note; every note belongs to a known code or family. */
-export function checkNotes(
-  rows: readonly ErrorRow[],
-  forms: readonly TagForm[],
-  fixNotes: Readonly<Record<string, string>>,
-  tagNotes: Readonly<Record<string, unknown>>,
-): string[] {
+export function checkNotes(rows: readonly ErrorRow[], forms: readonly TagForm[], fixNotes: Readonly<Record<string, string>>, tagNotes: Readonly<Record<string, unknown>>): string[] {
   const problems: string[] = [];
   const codes = new Set(rows.map((row) => row.code));
   const families = new Set(forms.map(tagKey));
   for (const code of codes) {
-    if (!(code in fixNotes))
-      problems.push(`${code}: no FIX_NOTES entry in scripts/syntax-doc/notes.ts`);
+    if (!(code in fixNotes)) problems.push(`${code}: no FIX_NOTES entry in scripts/syntax-doc/notes.ts`);
   }
   for (const family of families) {
     if (!(family in tagNotes)) {
@@ -66,16 +52,9 @@ export function checkNotes(
  * scaffold stub does not count) and a tag form the doc marks `(pending)` is
  * not in the grammar. Both are vacuous while nothing is pending.
  */
-export function checkPending(
-  pending: Readonly<Record<string, string>>,
-  registered: readonly AnyRule[],
-  doc: string,
-  forms: readonly TagForm[],
-): string[] {
+export function checkPending(pending: Readonly<Record<string, string>>, registered: readonly AnyRule[], doc: string, forms: readonly TagForm[]): string[] {
   const problems: string[] = [];
-  const implemented = new Set<string>(
-    registered.filter((rule) => !isStub(rule)).map((rule) => rule.code),
-  );
+  const implemented = new Set<string>(registered.filter((rule) => !isStub(rule)).map((rule) => rule.code));
   for (const code of Object.keys(pending)) {
     if (implemented.has(code)) problems.push(`${code}: pending but implemented in src/rules`);
   }
@@ -101,8 +80,7 @@ export function documentedFlags(doc: string): string[] {
   const flags: string[] = [];
   for (const line of text.slice(start, end < 0 ? undefined : end).split("\n")) {
     if (!line.startsWith("| `-")) continue;
-    for (const match of (line.split("|")[1] ?? "").matchAll(/--[a-z][a-z-]*/g))
-      flags.push(match[0]);
+    for (const match of (line.split("|")[1] ?? "").matchAll(/--[a-z][a-z-]*/g)) flags.push(match[0]);
   }
   return flags;
 }
@@ -111,9 +89,7 @@ export function documentedFlags(doc: string): string[] {
 export function checkFlags(doc: string, usage: string): string[] {
   const flags = documentedFlags(doc);
   if (flags.length === 0) return ["docs/syntax-reference.md: no flag found in the CLI table"];
-  return flags
-    .filter((flag) => !usage.split(/\s+/).some((word) => word.replace(/[,=].*$/, "") === flag))
-    .map((flag) => `${flag}: documented in the CLI table but not in the USAGE of src/cli/args.ts`);
+  return flags.filter((flag) => !usage.split(/\s+/).some((word) => word.replace(/[,=].*$/, "") === flag)).map((flag) => `${flag}: documented in the CLI table but not in the USAGE of src/cli/args.ts`);
 }
 
 /** Back-quoted values after the first `: ` of the bullet that starts with `prefix`. */
@@ -128,10 +104,7 @@ function bulletValues(block: string, prefix: string): string[] | undefined {
  * The enums block lists exactly the values of the source constants.
  * `expected` maps a bullet prefix (`- Rule categories`) to the constant.
  */
-export function checkEnums(
-  doc: string,
-  expected: Readonly<Record<string, Iterable<string>>>,
-): string[] {
+export function checkEnums(doc: string, expected: Readonly<Record<string, Iterable<string>>>): string[] {
   const text = doc.replaceAll("\r\n", "\n");
   const begin = "<!-- BEGIN GENERATED: enums -->\n";
   const start = text.indexOf(begin);

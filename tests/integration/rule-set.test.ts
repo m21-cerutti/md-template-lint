@@ -44,10 +44,7 @@ const warning = (code: string, message: string): Expected => ({
 });
 
 /** Spec 2.9: `milestones` is a list-of-date field without [format:elements:date]. */
-const MILESTONES_NO_FORMAT = warning(
-  "MTL016",
-  "Field 'milestones' (type=list-of-date): no [format:elements:date], default date formats apply",
-);
+const MILESTONES_NO_FORMAT = warning("MTL016", "Field 'milestones' (type=list-of-date): no [format:elements:date], default date formats apply");
 
 /**
  * Case -> target path given to the engine, template warnings and the full
@@ -74,32 +71,14 @@ const CASES: readonly {
     targetPath: "release-notes.md",
     templateWarnings: [MILESTONES_NO_FORMAT],
     expected: [
-      error(
-        "MTL102",
-        "Field 'slug': expected value to equal filename 'release-notes' ([value:filename]), got 'Release_Notes'",
-      ),
-      error(
-        "MTL302",
-        "Field 'slug': value 'Release_Notes' does not match required format [kebab-case]",
-      ),
+      error("MTL102", "Field 'slug': expected value to equal filename 'release-notes' ([value:filename]), got 'Release_Notes'"),
+      error("MTL302", "Field 'slug': value 'Release_Notes' does not match required format [kebab-case]"),
       error("MTL402", "Field 'tags': list has 4 item(s), maximum is 3"),
-      error(
-        "MTL303",
-        "Field 'tags': list contains entries not matching [format:elements:kebab-case]: ['Alpha']",
-      ),
+      error("MTL303", "Field 'tags': list contains entries not matching [format:elements:kebab-case]: ['Alpha']"),
       error("MTL404", "Field 'rating': value 9 is above range:max 5"),
-      error(
-        "MTL407",
-        "Field 'milestones': dates are not in ascending order ('2026-06' comes before '2026-01') [order:ascending]",
-      ),
-      error(
-        "MTL304",
-        "Field 'homepage': URL scheme of 'ftp://example.org' is not allowed [format:scheme:https]",
-      ),
-      warning(
-        "MTL517",
-        "Field 'status' (type=enum): value 'published' is not one of the allowed options ['draft', 'accepted']",
-      ),
+      error("MTL407", "Field 'milestones': dates are not in ascending order ('2026-06' comes before '2026-01') [order:ascending]"),
+      error("MTL304", "Field 'homepage': URL scheme of 'ftp://example.org' is not allowed [format:scheme:https]"),
+      warning("MTL517", "Field 'status' (type=enum): value 'published' is not one of the allowed options ['draft', 'accepted']"),
       warning("MTL805", "Field 'homepage': URL 'ftp://example.org' not reachable (not probed)"),
       warning("MTL202", "Unknown key 'extra' not present in template"),
     ],
@@ -118,35 +97,16 @@ const CASES: readonly {
     // `## Changes` is left after the last position: the tail, one MTL616 warning (spec 2.6).
     name: "fail-filename-headings-content",
     targetPath: "Release_Notes.md",
-    templateWarnings: [
-      warning("MTL010", "Field 'reviewer': unknown tag [nope:y]"),
-      MILESTONES_NO_FORMAT,
-    ],
+    templateWarnings: [warning("MTL010", "Field 'reviewer': unknown tag [nope:y]"), MILESTONES_NO_FORMAT],
     expected: [
-      error(
-        "MTL101",
-        "Filename 'Release_Notes' does not match required case [filename:case:kebab-case]",
-      ),
-      error(
-        "MTL102",
-        "Field 'slug': expected value to equal filename 'Release_Notes' ([value:filename]), got 'release-notes'",
-      ),
+      error("MTL101", "Filename 'Release_Notes' does not match required case [filename:case:kebab-case]"),
+      error("MTL102", "Field 'slug': expected value to equal filename 'Release_Notes' ([value:filename]), got 'release-notes'"),
       error("MTL601", "Heading: Missing required heading: 'Steps'"),
       error("MTL601", "Heading: Missing required heading: 'Summary'"),
-      error(
-        "MTL603",
-        "Heading: Heading 'Authoring checklist' is marked [presence:template-only] and must not appear in the linted file",
-      ),
-      contentError(
-        "MTL702",
-        `Section 'Steps' (pattern "{text}"): [content:table] no markdown table row found`,
-        13,
-      ),
+      error("MTL603", "Heading: Heading 'Authoring checklist' is marked [presence:template-only] and must not appear in the linted file"),
+      contentError("MTL702", `Section 'Steps' (pattern "{text}"): [content:table] no markdown table row found`, 13),
       contentError("MTL701", "Section 'Overview': [content:non-empty] section body is empty", 20),
-      warning(
-        "MTL616",
-        "Heading: 1 extra heading(s) at level H2 after the template headings: ['Changes']",
-      ),
+      warning("MTL616", "Heading: 1 extra heading(s) at level H2 after the template headings: ['Changes']"),
     ],
   },
   {
@@ -158,15 +118,11 @@ const CASES: readonly {
     name: "fail-steps-present-list-and-max-lines",
     targetPath: "release-notes.md",
     templateWarnings: [MILESTONES_NO_FORMAT],
-    expected: [
-      contentError("MTL703", "Section 'Steps': [content:list] no markdown list item found", 23),
-      contentError("MTL705", "Section 'Steps': [content:max-lines:3] 4 non-blank line(s)", 23),
-    ],
+    expected: [contentError("MTL703", "Section 'Steps': [content:list] no markdown list item found", 23), contentError("MTL705", "Section 'Steps': [content:max-lines:3] 4 non-blank line(s)", 23)],
   },
 ];
 
-const read = (path: string): string =>
-  readFileSync(fileURLToPath(new URL(`../../${path}`, import.meta.url)), "utf8");
+const read = (path: string): string => readFileSync(fileURLToPath(new URL(`../../${path}`, import.meta.url)), "utf8");
 
 /** Every directory and file under DIR, at any depth, as sorted `/`-separated relative paths. */
 function listTree(): { dirs: string[]; files: string[] } {
@@ -204,9 +160,7 @@ describe("rule set: many-tag template, real registry, in-memory io", () => {
     const names = CASES.map((testCase) => testCase.name).sort();
     const tree = listTree();
     expect(tree.dirs).toEqual(names);
-    expect(tree.files).toEqual(
-      names.flatMap((name) => [`${name}/target.md`, `${name}/template.md`]).sort(),
-    );
+    expect(tree.files).toEqual(names.flatMap((name) => [`${name}/target.md`, `${name}/template.md`]).sort());
   });
 
   for (const testCase of CASES) {
@@ -215,13 +169,7 @@ describe("rule set: many-tag template, real registry, in-memory io", () => {
       const status = await checkTemplate(registry, read(`${fixture}/template.md`));
       if (status.status !== "ok") throw new Error(`${fixture}: template is broken`);
       expect(summary(status.warnings)).toEqual(testCase.templateWarnings);
-      const found = await checkTarget(
-        registry,
-        status.model,
-        read(`${fixture}/target.md`),
-        testCase.targetPath,
-        env,
-      );
+      const found = await checkTarget(registry, status.model, read(`${fixture}/target.md`), testCase.targetPath, env);
       expect(summary(found)).toEqual(testCase.expected);
     });
   }

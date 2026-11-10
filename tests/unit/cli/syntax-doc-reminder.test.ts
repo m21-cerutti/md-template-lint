@@ -81,8 +81,7 @@ describe("SYNTAX_DOC_REMINDER export", () => {
 
   describe("Hardcoded URL constant assertion", () => {
     it("SYNTAX_DOC_REMINDER contains the exact expected URL", () => {
-      const expected =
-        "Template syntax reference: https://github.com/m21-cerutti/markdown-template-linter/blob/main/docs/syntax-reference.md";
+      const expected = "Template syntax reference: https://github.com/m21-cerutti/md-template-lint/blob/main/docs/syntax-reference.md";
       expect(SYNTAX_DOC_REMINDER).toBe(expected);
     });
   });

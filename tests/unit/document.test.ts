@@ -3,19 +3,11 @@ import { isMap, isScalar, parseDocument as parseYaml } from "yaml";
 import { checkTarget, checkTemplate } from "../../src/engine/pipeline.js";
 import { createRegistry } from "../../src/engine/registry.js";
 import { createEnv, createMemoryIo } from "../../src/engine/rule.js";
-import {
-  loadDocument,
-  parseDocument,
-  type BodyHeading,
-  type DocumentModel,
-  type FrontmatterLine,
-} from "../../src/index.js";
+import { loadDocument, parseDocument, type BodyHeading, type DocumentModel, type FrontmatterLine } from "../../src/index.js";
 
 const doc = (...lines: string[]) => parseDocument(lines.join("\n"));
-const headings = (blocks: ReturnType<typeof parseDocument>["body"]): BodyHeading[] =>
-  blocks.filter((b): b is BodyHeading => b.kind === "heading");
-const keyLine = (lines: readonly FrontmatterLine[], key: string) =>
-  lines.find((l) => l.kind === "key" && l.key === key);
+const headings = (blocks: ReturnType<typeof parseDocument>["body"]): BodyHeading[] => blocks.filter((b): b is BodyHeading => b.kind === "heading");
+const keyLine = (lines: readonly FrontmatterLine[], key: string) => lines.find((l) => l.kind === "key" && l.key === key);
 
 describe("document structure", () => {
   it("splits frontmatter and body regions", () => {
@@ -101,27 +93,9 @@ describe("document structure", () => {
   });
 
   it("(d) ignores tags and headings inside fenced code and one-line HTML comments", () => {
-    const result = doc(
-      "# Real [presence:optional]",
-      "````md",
-      "## Fake [presence:bogus]",
-      "```",
-      "## Still code [count:min:x]",
-      "````",
-      "<!-- ## Hidden [content:x] -->",
-      "  ~~~",
-      "# Tilde code [presence:optional]",
-      "~~~~",
-      "## After",
-    );
+    const result = doc("# Real [presence:optional]", "````md", "## Fake [presence:bogus]", "```", "## Still code [count:min:x]", "````", "<!-- ## Hidden [content:x] -->", "  ~~~", "# Tilde code [presence:optional]", "~~~~", "## After");
     expect(result.findings).toEqual([]);
-    expect(result.body.map((b) => b.kind)).toEqual([
-      "heading",
-      "fence",
-      "html-comment",
-      "fence",
-      "heading",
-    ]);
+    expect(result.body.map((b) => b.kind)).toEqual(["heading", "fence", "html-comment", "fence", "heading"]);
     expect(result.body[1]).toMatchObject({
       kind: "fence",
       line: 2,
@@ -145,13 +119,7 @@ describe("document structure", () => {
   it("(e) parses a document without frontmatter", () => {
     const result = doc("# Title", "", "- item", "| a | b |", "plain");
     expect(result.frontmatter).toBeNull();
-    expect(result.body.map((b) => b.kind)).toEqual([
-      "heading",
-      "blank",
-      "list-item",
-      "table-row",
-      "text",
-    ]);
+    expect(result.body.map((b) => b.kind)).toEqual(["heading", "blank", "list-item", "table-row", "text"]);
   });
 
   it("reports an unclosed frontmatter block (rest stays in frontmatter mode)", () => {
@@ -175,14 +143,7 @@ describe("document structure", () => {
   });
 
   it("peels tags of every heading level H1 to H6 (spec 2.6, ADR 0009)", () => {
-    const result = doc(
-      "# One [presence:optional]",
-      "### Deep [presence:optional]",
-      "#### Four [content:list]",
-      "##### Five [presence:required] [content:non-empty]",
-      "###### Six [content:max-lines:3]",
-      "####### seven [presence:optional]",
-    );
+    const result = doc("# One [presence:optional]", "### Deep [presence:optional]", "#### Four [content:list]", "##### Five [presence:required] [content:non-empty]", "###### Six [content:max-lines:3]", "####### seven [presence:optional]");
     expect(result.body).toMatchObject([
       { kind: "heading", level: 1, text: "One", tags: [{ kind: "presence", mode: "optional" }] },
       {
@@ -228,26 +189,14 @@ describe("document structure", () => {
       "plain key: g # [nope:7]",
     ];
     const source = ["---", ...keyLines, "---", ""].join("\n");
-    const subjects = parseDocument(source).findings.map((f) =>
-      f.subject !== null && "field" in f.subject ? f.subject.field : null,
-    );
+    const subjects = parseDocument(source).findings.map((f) => (f.subject !== null && "field" in f.subject ? f.subject.field : null));
     // `\q` is not a YAML escape (yaml rejects it), so that line is left out of the yaml check.
     const valid = keyLines.filter((_, index) => index !== 5);
     const yamlDoc = parseYaml(valid.join("\n"), { schema: "failsafe" });
     expect(yamlDoc.errors).toEqual([]);
-    const yamlKeys = isMap(yamlDoc.contents)
-      ? yamlDoc.contents.items.map((pair) => (isScalar(pair.key) ? String(pair.key.value) : null))
-      : [];
+    const yamlKeys = isMap(yamlDoc.contents) ? yamlDoc.contents.items.map((pair) => (isScalar(pair.key) ? String(pair.key.value) : null)) : [];
     expect(subjects.filter((_, index) => index !== 5)).toEqual(yamlKeys);
-    expect(subjects).toEqual([
-      "it's",
-      'say "hi"',
-      "back\\slash",
-      "tab\there\nnew/slash",
-      "hexA\u00e9\u{1F600}",
-      "keep\\qunknown",
-      "plain key",
-    ]);
+    expect(subjects).toEqual(["it's", 'say "hi"', "back\\slash", "tab\there\nnew/slash", "hexA\u00e9\u{1F600}", "keep\\qunknown", "plain key"]);
   });
 
   it("never throws on unusual input (stage 1 has a catch-all)", () => {
@@ -283,11 +232,7 @@ describe("document structure", () => {
       "none: z",
       "---",
     );
-    const comments = Object.fromEntries(
-      (result.frontmatter?.lines ?? []).flatMap((l) =>
-        l.kind === "key" ? [[l.key, l.comment?.text ?? null]] : [],
-      ),
-    );
+    const comments = Object.fromEntries((result.frontmatter?.lines ?? []).flatMap((l) => (l.kind === "key" ? [[l.key, l.comment?.text ?? null]] : [])));
     expect(comments).toEqual({
       "'it''s'": "c-apos-key",
       owner: "c-apos-value",
@@ -304,9 +249,7 @@ describe("document structure", () => {
 
   it("parses a large document in reasonable time", () => {
     const fm = Array.from({ length: 200 }, (_, i) => `k${i}: "v" # [presence:optional] type=int`);
-    const body = Array.from({ length: 2000 }, (_, i) =>
-      i % 10 === 0 ? `## H${i} [content:non-empty]` : `line ${i} with [x] and | pipes |`,
-    );
+    const body = Array.from({ length: 2000 }, (_, i) => (i % 10 === 0 ? `## H${i} [content:non-empty]` : `line ${i} with [x] and | pipes |`));
     const started = Date.now();
     const result = doc("---", ...fm, "---", ...body);
     expect(Date.now() - started).toBeLessThan(5000);
@@ -329,13 +272,7 @@ describe("DocumentModel.uniqueHeadingNames (spec 2.11)", () => {
   });
 
   it("is true once when the line is written twice", () => {
-    const model = load(
-      "---",
-      "# [unique-headings-names]",
-      "a: x",
-      "# [UNIQUE-HEADINGS-NAMES]",
-      "---",
-    );
+    const model = load("---", "# [unique-headings-names]", "a: x", "# [UNIQUE-HEADINGS-NAMES]", "---");
     expect(model.uniqueHeadingNames).toBe(true);
     expect(model.findings).toEqual([]);
   });
@@ -356,9 +293,7 @@ describe("DocumentModel.uniqueHeadingNames (spec 2.11)", () => {
   ])("is false, with one unknown finding, for a standalone line holding %s", (_label, written) => {
     const model = load("---", written, "a: x", "---");
     expect(model.uniqueHeadingNames).toBe(false);
-    expect(model.findings).toMatchObject([
-      { reason: "unknown", tag: written.slice(2), subject: { commentLine: 2 } },
-    ]);
+    expect(model.findings).toMatchObject([{ reason: "unknown", tag: written.slice(2), subject: { commentLine: 2 } }]);
     expect(model.findings).toHaveLength(1);
     expect(model.document.frontmatter?.lines[0]).toEqual({
       kind: "comment",
@@ -389,17 +324,9 @@ describe("DocumentModel.uniqueHeadingNames (spec 2.11)", () => {
   });
 
   it("is true with a valid line next to a malformed one, which gives one MTL012 finding", () => {
-    const model = load(
-      "---",
-      "# [unique-headings-names:x]",
-      "# [unique-headings-names]",
-      "a: x",
-      "---",
-    );
+    const model = load("---", "# [unique-headings-names:x]", "# [unique-headings-names]", "a: x", "---");
     expect(model.uniqueHeadingNames).toBe(true);
-    expect(model.findings).toMatchObject([
-      { reason: "malformed", tag: "[unique-headings-names:x]", position: { line: 2 } },
-    ]);
+    expect(model.findings).toMatchObject([{ reason: "malformed", tag: "[unique-headings-names:x]", position: { line: 2 } }]);
     expect(model.findings).toHaveLength(1);
   });
 
@@ -422,9 +349,7 @@ describe("DocumentModel.uniqueHeadingNames (spec 2.11)", () => {
     const model = load(...template.split("\n"));
     expect(model.uniqueHeadingNames).toBe(false);
     expect(model.findings).toEqual([]);
-    expect(model.sections).toMatchObject([
-      { level: 1, text: "", line: 4, tags: [{ region: "body", kind: "unique-names" }] },
-    ]);
+    expect(model.sections).toMatchObject([{ level: 1, text: "", line: 4, tags: [{ region: "body", kind: "unique-names" }] }]);
 
     const registry = createRegistry();
     const status = await checkTemplate(registry, template);
@@ -432,8 +357,6 @@ describe("DocumentModel.uniqueHeadingNames (spec 2.11)", () => {
     const env = createEnv({ io: createMemoryIo([]) });
     const target = ["---", "a: x", "---", "# Guide", "", "Text."].join("\n");
     const found = await checkTarget(registry, status.model, target, "t.md", env);
-    expect(found.filter((d) => d.code === "MTL601").map((d) => d.message)).toEqual([
-      "Heading: Missing required heading: ''",
-    ]);
+    expect(found.filter((d) => d.code === "MTL601").map((d) => d.message)).toEqual(["Heading: Missing required heading: ''"]);
   });
 });

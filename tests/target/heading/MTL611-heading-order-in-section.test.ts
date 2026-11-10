@@ -23,8 +23,7 @@ interface TestCase {
   readonly expected: readonly Expected[];
 }
 
-const mismatch = (parent: string, template: string, target: string): string =>
-  `Heading: Section '${parent}': heading order mismatch: template order ${template} vs target order ${target}`;
+const mismatch = (parent: string, template: string, target: string): string => `Heading: Section '${parent}': heading order mismatch: template order ${template} vs target order ${target}`;
 
 /**
  * Reachability under positional matching (spec 2.6 "Order", 2.10, ADR 0012): the template
@@ -97,11 +96,7 @@ const CASES: readonly TestCase[] = [
     name: "fail-last-pair-swapped",
     expected: [
       {
-        message: mismatch(
-          "Context",
-          "['Decision', 'Options', 'Consequences']",
-          "['Decision', 'Consequences', 'Options']",
-        ),
+        message: mismatch("Context", "['Decision', 'Options', 'Consequences']", "['Decision', 'Consequences', 'Options']"),
         heading: "Context",
         anchor: 7,
       },
@@ -112,11 +107,7 @@ const CASES: readonly TestCase[] = [
     name: "fail-parent-target-line-differs-from-template-line",
     expected: [
       {
-        message: mismatch(
-          "Context",
-          "['Decision', 'Consequences']",
-          "['Consequences', 'Decision']",
-        ),
+        message: mismatch("Context", "['Decision', 'Consequences']", "['Consequences', 'Decision']"),
         heading: "Context",
         anchor: 11,
       },
@@ -127,11 +118,7 @@ const CASES: readonly TestCase[] = [
     name: "fail-children-out-of-order-under-matched-parent",
     expected: [
       {
-        message: mismatch(
-          "Context",
-          "['Decision', 'Consequences']",
-          "['Consequences', 'Decision']",
-        ),
+        message: mismatch("Context", "['Decision', 'Consequences']", "['Consequences', 'Decision']"),
         heading: "Context",
         anchor: 7,
       },
@@ -153,11 +140,7 @@ const CASES: readonly TestCase[] = [
     name: "fail-two-parents-reported-in-template-order",
     expected: [
       {
-        message: mismatch(
-          "Context",
-          "['Decision', 'Consequences']",
-          "['Consequences', 'Decision']",
-        ),
+        message: mismatch("Context", "['Decision', 'Consequences']", "['Consequences', 'Decision']"),
         heading: "Context",
         anchor: 7,
       },
@@ -173,11 +156,7 @@ const CASES: readonly TestCase[] = [
     name: "fail-optional-child-present-out-of-order-counts",
     expected: [
       {
-        message: mismatch(
-          "Context",
-          "['Decision', 'Rollout', 'Consequences']",
-          "['Rollout', 'Decision', 'Consequences']",
-        ),
+        message: mismatch("Context", "['Decision', 'Rollout', 'Consequences']", "['Rollout', 'Decision', 'Consequences']"),
         heading: "Context",
         anchor: 7,
       },
@@ -245,21 +224,14 @@ const CASES: readonly TestCase[] = [
   },
 ];
 
-const read = (path: string): string =>
-  readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
+const read = (path: string): string => readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
 
 /** Every diagnostic for the pair of a fixture folder. */
 async function lintAll(name: string) {
   const fixture = `${DIR}/${name}`;
   const status = await checkTemplate(registry, read(`${fixture}/template.md`));
   if (status.status !== "ok") throw new Error(`${fixture}: template is broken`);
-  return checkTarget(
-    registry,
-    status.model,
-    read(`${fixture}/target.md`),
-    `${fixture}/target.md`,
-    createEnv(),
-  );
+  return checkTarget(registry, status.model, read(`${fixture}/target.md`), `${fixture}/target.md`, createEnv());
 }
 
 /** The MTL611 diagnostics for the pair of a fixture folder. */
@@ -297,10 +269,7 @@ describe("MTL611 heading-order-in-section", () => {
       ["MTL611", 5],
       ["MTL604", null],
     ]);
-    expect(found[1]?.message).toBe(
-      "Heading: Heading order mismatch: template order ['Guide', 'Steps'] " +
-        "vs target order ['Steps', 'Guide']",
-    );
+    expect(found[1]?.message).toBe("Heading: Heading order mismatch: template order ['Guide', 'Steps'] " + "vs target order ['Steps', 'Guide']");
   });
 
   it("a same-level swap gives MTL610 for the first heading and no MTL611 (positional match)", async () => {
@@ -311,22 +280,14 @@ describe("MTL611 heading-order-in-section", () => {
       ["MTL610", 7],
       ["MTL616", 11],
     ]);
-    expect(found[0]?.message).toBe(
-      "Heading: Section 'Context': missing required heading 'Decision' (H3)",
-    );
+    expect(found[0]?.message).toBe("Heading: Section 'Context': missing required heading 'Decision' (H3)");
   });
 
   it("a suppressed MTL611 is counted: the directive on the parent line covers it", async () => {
     const fixture = `${DIR}/pass-suppressed-on-parent-heading-line`;
     const status = await checkTemplate(registry, read(`${fixture}/template.md`));
     if (status.status !== "ok") throw new Error(`${fixture}: template is broken`);
-    const result = await lintTarget(
-      registry,
-      status.model,
-      read(`${fixture}/target.md`),
-      `${fixture}/target.md`,
-      createEnv(),
-    );
+    const result = await lintTarget(registry, status.model, read(`${fixture}/target.md`), `${fixture}/target.md`, createEnv());
     expect(result.diagnostics).toEqual([]);
     expect(result.suppressed).toBe(1);
   });
@@ -341,26 +302,16 @@ describe("MTL611 heading-order-in-section", () => {
       ["MTL610", 7],
       ["MTL603", 13],
     ]);
-    expect(found[2]?.message).toBe(
-      "Heading: Section 'Context': missing required heading 'Missing child' (H3)",
-    );
+    expect(found[2]?.message).toBe("Heading: Section 'Context': missing required heading 'Missing child' (H3)");
   });
 
   it("a directive on a child line does not suppress: reported, nothing counted", async () => {
     const fixture = `${DIR}/fail-directive-on-child-line-does-not-suppress`;
     const status = await checkTemplate(registry, read(`${fixture}/template.md`));
     if (status.status !== "ok") throw new Error(`${fixture}: template is broken`);
-    const result = await lintTarget(
-      registry,
-      status.model,
-      read(`${fixture}/target.md`),
-      `${fixture}/target.md`,
-      createEnv(),
-    );
+    const result = await lintTarget(registry, status.model, read(`${fixture}/target.md`), `${fixture}/target.md`, createEnv());
     expect(result.suppressed).toBe(0);
-    expect(
-      result.diagnostics.map((diagnostic) => [diagnostic.code, anchorLineOf(diagnostic)]),
-    ).toEqual([["MTL611", 5]]);
+    expect(result.diagnostics.map((diagnostic) => [diagnostic.code, anchorLineOf(diagnostic)])).toEqual([["MTL611", 5]]);
   });
 
   it("a parent that is not matched gives MTL601 only, nothing for its children", async () => {

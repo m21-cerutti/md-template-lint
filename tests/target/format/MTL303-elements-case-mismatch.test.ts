@@ -13,8 +13,7 @@ const DIR = "tests/fixtures/pairs/MTL303";
 const OTHER_FORMAT_CODES = ["MTL301", "MTL302", "MTL304", "MTL305"];
 
 /** Spec 4.3 message of MTL303; `pylist` is the Python list text of the bad items. */
-const message = (key: string, style: string, pylist: string): string =>
-  `Field '${key}': list contains entries not matching [format:elements:${style}]: ${pylist}`;
+const message = (key: string, style: string, pylist: string): string => `Field '${key}': list contains entries not matching [format:elements:${style}]: ${pylist}`;
 
 interface TestCase {
   readonly name: string;
@@ -81,28 +80,18 @@ const CASES: readonly TestCase[] = [
   },
   {
     name: "fail-two-fields-in-template-order",
-    expected: [
-      message("names", "snake_case", "['Job_Notes']"),
-      message("tags", "kebab-case", "['Release-Notes']"),
-    ],
+    expected: [message("names", "snake_case", "['Job_Notes']"), message("tags", "kebab-case", "['Release-Notes']")],
   },
 ];
 
-const read = (path: string): string =>
-  readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
+const read = (path: string): string => readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
 
 /** Diagnostics of this code, and of the other format codes, for the pair of a fixture folder. */
 async function lint(testCase: TestCase) {
   const fixture = `${DIR}/${testCase.name}`;
   const status = await checkTemplate(registry, read(`${fixture}/template.md`));
   if (status.status !== "ok") throw new Error(`${fixture}: template is broken`);
-  const found = await checkTarget(
-    registry,
-    status.model,
-    read(`${fixture}/target.md`),
-    `${fixture}/target.md`,
-    createEnv(),
-  );
+  const found = await checkTarget(registry, status.model, read(`${fixture}/target.md`), `${fixture}/target.md`, createEnv());
   return {
     own: found.filter((diagnostic) => diagnostic.code === CODE),
     others: found.filter((diagnostic) => OTHER_FORMAT_CODES.includes(diagnostic.code)),

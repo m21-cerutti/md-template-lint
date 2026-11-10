@@ -116,9 +116,7 @@ describe("yaml comment binding spike", () => {
       "",
     ].join("\n");
     const fromYaml = [...bindComments(src).values()];
-    const fromGrammar = (parseMarkdown(`---\n${src}---\n`).frontmatter?.lines ?? []).flatMap(
-      (line) => (line.kind === "key" && line.comment !== null ? [line.comment.text] : []),
-    );
+    const fromGrammar = (parseMarkdown(`---\n${src}---\n`).frontmatter?.lines ?? []).flatMap((line) => (line.kind === "key" && line.comment !== null ? [line.comment.text] : []));
     expect(fromGrammar).toEqual(fromYaml);
   });
 });

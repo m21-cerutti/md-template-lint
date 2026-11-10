@@ -14,22 +14,12 @@ const GROUP = "expand-";
 
 describe("runner expansion", () => {
   it("has one fixture directory per case", () => {
-    expect(fixtureDirs("runner", GROUP)).toEqual([
-      "expand-case-sensitive-base-dir",
-      "expand-include-exclude-sorted-skips-template",
-      "expand-multi-root-declaration-order",
-      "expand-shared-template-parsed-once",
-    ]);
+    expect(fixtureDirs("runner", GROUP)).toEqual(["expand-case-sensitive-base-dir", "expand-include-exclude-sorted-skips-template", "expand-multi-root-declaration-order", "expand-shared-template-parsed-once"]);
   });
 
   it("include minus exclude, code-unit order, dot files kept, template skipped (AS6)", async () => {
     const result = await runFixture(`${GROUP}include-exclude-sorted-skips-template`);
-    expect(lintedFiles(result)).toEqual([
-      "project:all:docs/.hidden.md",
-      "project:all:docs/B.md",
-      "project:all:docs/a.md",
-      "project:all:docs/sub/c.md",
-    ]);
+    expect(lintedFiles(result)).toEqual(["project:all:docs/.hidden.md", "project:all:docs/B.md", "project:all:docs/a.md", "project:all:docs/sub/c.md"]);
     expect(result.summary).toMatchObject({ files: 4, failed: 0, exitCode: 0 });
     const [block] = result.blocks;
     // The count is the targets, not every file under the glob base.
@@ -55,11 +45,7 @@ describe("runner expansion", () => {
 
   it("roots run project first, then the roots map in declaration order, whatever the pair lists (8.4)", async () => {
     const result = await runFixture(`${GROUP}multi-root-declaration-order`);
-    expect(lintedFiles(result)).toEqual([
-      "project:both:docs/p.md",
-      "a:both:docs/x.md",
-      "b:both:docs/y.md",
-    ]);
+    expect(lintedFiles(result)).toEqual(["project:both:docs/p.md", "a:both:docs/x.md", "b:both:docs/y.md"]);
     expect(result.summary).toMatchObject({ files: 3, failed: 0, exitCode: 0 });
   });
 

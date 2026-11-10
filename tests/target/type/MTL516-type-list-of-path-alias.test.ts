@@ -11,11 +11,8 @@ const CODE = "MTL516";
 const DIR = "tests/fixtures/pairs/MTL516";
 
 /** Spec 4.3 messages of MTL516: `Field '<key>' (type=list-of-path-alias): <detail>`. */
-const shape = (key: string, got: string): string =>
-  `Field '${key}' (type=list-of-path-alias): expected a YAML list of path aliases, got ${got}`;
-const entries = (key: string, items: string): string =>
-  `Field '${key}' (type=list-of-path-alias): list contains non-alias entries ` +
-  `(expected @<name>/<rest>): ${items}`;
+const shape = (key: string, got: string): string => `Field '${key}' (type=list-of-path-alias): expected a YAML list of path aliases, got ${got}`;
+const entries = (key: string, items: string): string => `Field '${key}' (type=list-of-path-alias): list contains non-alias entries ` + `(expected @<name>/<rest>): ${items}`;
 
 interface TestCase {
   readonly name: string;
@@ -58,25 +55,13 @@ const CASES: readonly TestCase[] = [
   // last item (@a/b) is valid.
   {
     name: "fail-name-charset-and-structure",
-    expected: [
-      entries(
-        "aliases",
-        "['@/x', '@@a/x', '@as.sets/x', '@as sets/x', '@assèts/x', '@as$ets/x', " +
-          "'@assets', '@assets/', '@assets\\\\x']",
-      ),
-    ],
+    expected: [entries("aliases", "['@/x', '@@a/x', '@as.sets/x', '@as sets/x', '@assèts/x', '@as$ets/x', " + "'@assets', '@assets/', '@assets\\\\x']")],
   },
   // Whitespace in the rest (space, tab, no-break space shown as \xa0), text
   // before the @, a rest of spaces only; items are printed untrimmed.
   {
     name: "fail-whitespace-in-rest-and-leading-text",
-    expected: [
-      entries(
-        "aliases",
-        "['@assets/my logo.svg', '@assets/my\\tlogo', 'x @assets/logo', '@assets/   ', " +
-          "'@assets/a\\xa0b']",
-      ),
-    ],
+    expected: [entries("aliases", "['@assets/my logo.svg', '@assets/my\\tlogo', 'x @assets/logo', '@assets/   ', " + "'@assets/a\\xa0b']")],
   },
   // Blank items are invalid and printed untrimmed; a null item is ''.
   {
@@ -109,21 +94,14 @@ const CASES: readonly TestCase[] = [
   },
 ];
 
-const read = (path: string): string =>
-  readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
+const read = (path: string): string => readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
 
 /** MTL516 diagnostics for the pair of a fixture folder. */
 async function lint(testCase: TestCase) {
   const fixture = `${DIR}/${testCase.name}`;
   const status = await checkTemplate(registry, read(`${fixture}/template.md`));
   if (status.status !== "ok") throw new Error(`${fixture}: template is broken`);
-  const found = await checkTarget(
-    registry,
-    status.model,
-    read(`${fixture}/target.md`),
-    `${fixture}/target.md`,
-    createEnv(),
-  );
+  const found = await checkTarget(registry, status.model, read(`${fixture}/target.md`), `${fixture}/target.md`, createEnv());
   return found.filter((diagnostic) => diagnostic.code === CODE);
 }
 

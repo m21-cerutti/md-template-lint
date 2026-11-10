@@ -13,8 +13,7 @@ const DETAIL = "value is not a valid path alias (expected @<name>/<rest>)";
 const DIR = "tests/fixtures/pairs/MTL507";
 
 /** `Field '<key>' (type=path-alias): <detail>` for each key, in the given order. */
-const invalid = (...keys: string[]): string[] =>
-  keys.map((key) => `Field '${key}' (type=path-alias): ${DETAIL}`);
+const invalid = (...keys: string[]): string[] => keys.map((key) => `Field '${key}' (type=path-alias): ${DETAIL}`);
 
 /** Case -> fixture -> expected result: at least 1 passing case and 1 failing case. */
 const CASES = [
@@ -41,15 +40,7 @@ const CASES = [
   {
     name: "fail-name-charset",
     fixture: `${DIR}/fail-name-charset`,
-    expected: invalid(
-      "dot_in_name",
-      "space_in_name",
-      "dollar_in_name",
-      "accent_in_name",
-      "at_sign_in_name",
-      "hash_in_name",
-      "plus_in_name",
-    ),
+    expected: invalid("dot_in_name", "space_in_name", "dollar_in_name", "accent_in_name", "at_sign_in_name", "hash_in_name", "plus_in_name"),
   },
   {
     name: "fail-whitespace-in-rest",
@@ -69,10 +60,7 @@ const CASES = [
   {
     name: "fail-two-fields-in-template-order",
     fixture: `${DIR}/fail-two-fields-in-template-order`,
-    expected: [
-      "Field 'first' (type=path-alias): expected a scalar, got a list",
-      `Field 'second' (type=path-alias): ${DETAIL}`,
-    ],
+    expected: ["Field 'first' (type=path-alias): expected a scalar, got a list", `Field 'second' (type=path-alias): ${DETAIL}`],
   },
   {
     name: "fail-type-inferred-from-template-alias-value",
@@ -96,20 +84,13 @@ const CASES = [
   },
 ] as const;
 
-const read = (path: string): string =>
-  readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
+const read = (path: string): string => readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
 
 /** Diagnostics of this code for the pair of a fixture folder. */
 async function lint(fixture: string) {
   const status = await checkTemplate(registry, read(`${fixture}/template.md`));
   if (status.status !== "ok") throw new Error(`${fixture}: template is broken`);
-  const found = await checkTarget(
-    registry,
-    status.model,
-    read(`${fixture}/target.md`),
-    `${fixture}/target.md`,
-    createEnv(),
-  );
+  const found = await checkTarget(registry, status.model, read(`${fixture}/target.md`), `${fixture}/target.md`, createEnv());
   return found.filter((diagnostic) => diagnostic.code === CODE);
 }
 
@@ -143,16 +124,12 @@ describe("MTL507 type-path-alias", () => {
     expect(failing.length).toBeGreaterThanOrEqual(1);
     expect(passing.length + failing.length).toBe(CASES.length);
     expect(CASES.filter((testCase) => testCase.expected.length === 0)).toEqual(passing);
-    expect(CASES.map((testCase) => testCase.fixture)).toEqual(
-      CASES.map((testCase) => `${DIR}/${testCase.name}`),
-    );
+    expect(CASES.map((testCase) => testCase.fixture)).toEqual(CASES.map((testCase) => `${DIR}/${testCase.name}`));
     // Orphan detection: no directory at any depth besides the cases, and each holds only the pair.
     const names = CASES.map((testCase) => testCase.name).sort();
     const tree = listTree();
     expect(tree.dirs).toEqual(names);
-    expect(tree.files).toEqual(
-      names.flatMap((name) => [`${name}/target.md`, `${name}/template.md`]).sort(),
-    );
+    expect(tree.files).toEqual(names.flatMap((name) => [`${name}/target.md`, `${name}/template.md`]).sort());
   });
 
   for (const testCase of CASES) {

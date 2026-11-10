@@ -33,8 +33,7 @@ import { runFixture } from "../helpers/run.js";
 const registry = createRegistry();
 const KEYWORD = "md-template-lint";
 
-const runnerText = (fixture: string, file: string): string =>
-  readFileSync(join(fixturePath("runner", fixture), file), "utf8");
+const runnerText = (fixture: string, file: string): string => readFileSync(join(fixturePath("runner", fixture), file), "utf8");
 
 async function lint(template: string, target: string, path = "notes/real.md") {
   const status = await checkTemplate(registry, template);
@@ -44,18 +43,14 @@ async function lint(template: string, target: string, path = "notes/real.md") {
 }
 
 /** `CODE@line` of each diagnostic (`none` without position), sorted: order is not under test. */
-const signature = (diagnostics: readonly Diagnostic[]): string[] =>
-  diagnostics
-    .map((diagnostic) => `${diagnostic.code}@${anchorLineOf(diagnostic) ?? "none"}`)
-    .sort();
+const signature = (diagnostics: readonly Diagnostic[]): string[] => diagnostics.map((diagnostic) => `${diagnostic.code}@${anchorLineOf(diagnostic) ?? "none"}`).sort();
 
 interface Expected {
   readonly code: string;
   /** 1-based file line of the finding; null: no line. */
   readonly line: number | null;
 }
-const sign = (list: readonly Expected[]): string[] =>
-  list.map((entry) => `${entry.code}@${entry.line ?? "none"}`).sort();
+const sign = (list: readonly Expected[]): string[] => list.map((entry) => `${entry.code}@${entry.line ?? "none"}`).sort();
 
 /** Single-line directive comment, as a user writes it. */
 const fm = (body: string): string => `# ${KEYWORD} ${body}`;
@@ -81,8 +76,7 @@ function apply(text: string, edit: Edit) {
   }
   return {
     text: lines.join("\n"),
-    remap: (line: number): number =>
-      line + edit.inserts.filter((insert) => insert.at <= line).length,
+    remap: (line: number): number => line + edit.inserts.filter((insert) => insert.at <= line).length,
   };
 }
 
@@ -131,9 +125,7 @@ function lineEdit(verb: Verb, codes: string, anchor: number, closing: number): E
 
 /** `disable-file` in a body comment (right after the frontmatter) or in the frontmatter. */
 function fileEdit(carrier: FileCarrier, codes: string, closing: number): Edit {
-  return carrier === "html"
-    ? { appends: new Map(), inserts: [{ at: closing + 1, text: html(`disable-file ${codes}`) }] }
-    : { appends: new Map(), inserts: [{ at: 2, text: fm(`disable-file ${codes}`) }] };
+  return carrier === "html" ? { appends: new Map(), inserts: [{ at: closing + 1, text: html(`disable-file ${codes}`) }] } : { appends: new Map(), inserts: [{ at: 2, text: fm(`disable-file ${codes}`) }] };
 }
 
 /** `text` without any directive comment: whole-line comments dropped, trailing ones cut. */
@@ -182,8 +174,7 @@ const datesWithoutFormat = (line: number) => [
   {
     code: "MTL016",
     severity: "warning",
-    message:
-      "Field 'dates' (type=list-of-date): no [format:elements:date], default date formats apply",
+    message: "Field 'dates' (type=list-of-date): no [format:elements:date], default date formats apply",
     position: { line, column: 1 },
   },
 ];
@@ -333,16 +324,12 @@ const UNANCHORED_EXPECTED: readonly Expected[] = [
   { code: "MTL616", line: 9 }, // ## Overview is an extra in the tail (a warning, printed last)
 ];
 /** The codes of the findings without line, each once (a code may fire several times). */
-const NO_ANCHOR_CODES = [
-  ...new Set(UNANCHORED_EXPECTED.filter((entry) => entry.line === null).map((e) => e.code)),
-];
+const NO_ANCHOR_CODES = [...new Set(UNANCHORED_EXPECTED.filter((entry) => entry.line === null).map((e) => e.code))];
 const ALL_CODES = [...new Set(UNANCHORED_EXPECTED.map((entry) => entry.code))];
 /** `UNANCHORED_EXPECTED` without the findings of `code`. */
-const without = (code: string): Expected[] =>
-  UNANCHORED_EXPECTED.filter((other) => other.code !== code);
+const without = (code: string): Expected[] => UNANCHORED_EXPECTED.filter((other) => other.code !== code);
 /** How many findings `code` has in `UNANCHORED_EXPECTED` (the suppressed count of its disable-file). */
-const countOf = (code: string): number =>
-  UNANCHORED_EXPECTED.filter((other) => other.code === code).length;
+const countOf = (code: string): number => UNANCHORED_EXPECTED.filter((other) => other.code === code).length;
 
 describe("codes without anchor (MTL101, MTL201 missing, MTL601 twice) and MTL603", () => {
   const closing = closingFence(UNANCHORED_TARGET);
@@ -433,14 +420,9 @@ describe("codes without anchor (MTL101, MTL201 missing, MTL601 twice) and MTL603
   }
 
   it("MTL603 on the line before the heading is not covered by disable-line", async () => {
-    const { text, remap } = apply(
-      UNANCHORED_TARGET,
-      lineEdit("disable-line", "MTL603", 9, closing),
-    );
+    const { text, remap } = apply(UNANCHORED_TARGET, lineEdit("disable-line", "MTL603", 9, closing));
     const result = await run(text);
-    expect(signature(result.diagnostics)).toEqual(
-      sign(UNANCHORED_EXPECTED.map((o) => ({ code: o.code, line: o.line && remap(o.line) }))),
-    );
+    expect(signature(result.diagnostics)).toEqual(sign(UNANCHORED_EXPECTED.map((o) => ({ code: o.code, line: o.line && remap(o.line) }))));
     expect(result.suppressed).toBe(0);
   });
 
@@ -461,13 +443,7 @@ describe("codes without anchor (MTL101, MTL201 missing, MTL601 twice) and MTL603
     const target = runnerText(name, "notes/Bad_Name.md");
     expect(stripDirectives(target)).toBe(UNANCHORED_TARGET);
     const result = await run(target);
-    expect(result.diagnostics.map((diagnostic) => diagnostic.code).sort()).toEqual([
-      "MTL101",
-      "MTL201",
-      "MTL601",
-      "MTL601",
-      "MTL616",
-    ]);
+    expect(result.diagnostics.map((diagnostic) => diagnostic.code).sort()).toEqual(["MTL101", "MTL201", "MTL601", "MTL601", "MTL616"]);
     expect(result.suppressed).toBe(1);
     expect((await runFixture(name)).summary).toMatchObject({ exitCode: 1, suppressed: 1 });
   });
@@ -476,9 +452,7 @@ describe("codes without anchor (MTL101, MTL201 missing, MTL601 twice) and MTL603
   // matching, spec 2.6 "Order"); an order ACROSS levels does: the H2 `Overview` matches before
   // the H1 `Notes` that precedes it in the template.
   describe("MTL604 across levels (no anchor)", () => {
-    const template = ["---", "title: string", "---", "", "# Notes", "", "## Overview", ""].join(
-      "\n",
-    );
+    const template = ["---", "title: string", "---", "", "# Notes", "", "## Overview", ""].join("\n");
     const target = ["---", "title: x", "---", "", "## Overview", "", "# Notes", ""].join("\n");
     const runOrder = (text: string) => lint(template, text, "notes/order.md");
     const baseClosing = closingFence(target);
@@ -524,8 +498,7 @@ describe("codes without anchor (MTL101, MTL201 missing, MTL601 twice) and MTL603
 // ---------------------------------------------------------------------------------------
 
 describe("MTL804 (io:exists warning)", () => {
-  const dir = (name: string, file: string): string =>
-    readFileSync(join(fixturePath("suppression", name), file), "utf8");
+  const dir = (name: string, file: string): string => readFileSync(join(fixturePath("suppression", name), file), "utf8");
   const template = dir("fail-io-path-missing-warning-reported", "template.md");
   const target = dir("fail-io-path-missing-warning-reported", "target.md");
   const closing = closingFence(target);
@@ -601,10 +574,7 @@ describe("a block over several findings", () => {
   }
 
   // 7a: one block, several findings of the SAME code, all suppressed.
-  for (const name of [
-    "suppress-pass-block-same-code-begin-end",
-    "suppress-pass-block-same-code-open-disable",
-  ]) {
+  for (const name of ["suppress-pass-block-same-code-begin-end", "suppress-pass-block-same-code-open-disable"]) {
     it(`${name}: two MTL202 and two MTL701 inside the ranges, all four suppressed, exit 0`, async () => {
       expect(runnerText(name, "templates/notes.template.md")).toBe(template);
       expect(stripDirectives(text(name))).toBe(text(BASE_A));
@@ -692,10 +662,7 @@ describe("a directive in the TEMPLATE suppresses nothing (DIR4)", () => {
   const codes = REAL_EXPECTED.map((entry) => entry.code).join(", ");
 
   it("html carrier in the template body: MTL302 and the others are still reported", async () => {
-    const template = REAL_TEMPLATE.replace(
-      "# Notes",
-      `${html(`disable-file ${codes}`)}\n\n# Notes`,
-    );
+    const template = REAL_TEMPLATE.replace("# Notes", `${html(`disable-file ${codes}`)}\n\n# Notes`);
     expect(template).not.toBe(REAL_TEMPLATE);
     const result = await lint(template, REAL_TARGET);
     expect(result.warnings).toEqual(datesWithoutFormat(8));
@@ -707,9 +674,7 @@ describe("a directive in the TEMPLATE suppresses nothing (DIR4)", () => {
   it("frontmatter carrier in the template (whole line and trailing): MTL302 still reported", async () => {
     const lines = REAL_TEMPLATE.split("\n");
     lines.splice(1, 0, fm(`disable-file ${codes}`));
-    const template = lines
-      .join("\n")
-      .replace("[format:kebab-case]", `[format:kebab-case] # ${KEYWORD} disable-line MTL302`);
+    const template = lines.join("\n").replace("[format:kebab-case]", `[format:kebab-case] # ${KEYWORD} disable-line MTL302`);
     expect(template).toContain(`# ${KEYWORD} disable-line MTL302`);
     const result = await lint(template, REAL_TARGET);
     // One comment line inserted above the keys: `dates` moves to line 9.
@@ -726,8 +691,7 @@ describe("a directive in the TEMPLATE suppresses nothing (DIR4)", () => {
 
 describe("a directive comment placed right after a heading is section body", () => {
   const name = "pass-directive-comment-only-body-counts-as-content";
-  const read = (file: string): string =>
-    readFileSync(join(fixturePath("suppression", name), file), "utf8");
+  const read = (file: string): string => readFileSync(join(fixturePath("suppression", name), file), "utf8");
   const template = read("template.md");
   const target = read("target.md");
 
@@ -746,18 +710,12 @@ describe("a directive comment placed right after a heading is section body", () 
   });
 
   it("an ordinary HTML comment as the body counts the same way (prose)", async () => {
-    const result = await lint(
-      template,
-      target.replace(html("disable-file MTL202"), "<!-- note -->"),
-    );
+    const result = await lint(template, target.replace(html("disable-file MTL202"), "<!-- note -->"));
     expect(signature(result.diagnostics)).toEqual(["MTL202@3"]);
   });
 
   it("a directive on the heading line keeps the body blank: MTL701 fires", async () => {
-    const onHeading = stripDirectives(target).replace(
-      "## Overview",
-      `## Overview ${html("disable-line MTL202")}`,
-    );
+    const onHeading = stripDirectives(target).replace("## Overview", `## Overview ${html("disable-line MTL202")}`);
     const result = await lint(template, onHeading);
     expect(signature(result.diagnostics)).toEqual(["MTL202@3", "MTL701@8"]);
     expect(result.suppressed).toBe(0);

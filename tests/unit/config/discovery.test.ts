@@ -13,13 +13,7 @@ const HOME = "/home/test";
 
 const dir = (name: string): string => foldPath(fixturePath("config", `${GROUP}${name}`));
 
-const CASE_NAMES = [
-  "explicit-config-path",
-  "fail-missing-config-file",
-  "nearest-wins",
-  "nested-finds-parent-config",
-  "none-found",
-] as const;
+const CASE_NAMES = ["explicit-config-path", "fail-missing-config-file", "nearest-wins", "nested-finds-parent-config", "none-found"] as const;
 
 describe("config discovery", () => {
   it("has one fixture directory per case", () => {
@@ -125,9 +119,7 @@ describe("config discovery", () => {
     expect(result).toMatchObject({
       ok: false,
       display: "custom/missing.yml",
-      errors: [
-        { code: "MTL901", severity: "error", message: "config file not found: custom/missing.yml" },
-      ],
+      errors: [{ code: "MTL901", severity: "error", message: "config file not found: custom/missing.yml" }],
     });
   });
 

@@ -16,12 +16,7 @@ import type { Diagnostic, DocumentModel } from "../../../src/engine/model.js";
 import { runCli } from "../../../src/cli/run.js";
 import { foldPath } from "../../../src/config/paths.js";
 import { HOME } from "../../helpers/run.js";
-import {
-  expectTemplateCases,
-  templatesDir,
-  verifyFixture,
-  type VerifyCase,
-} from "../../helpers/verify.js";
+import { expectTemplateCases, templatesDir, verifyFixture, type VerifyCase } from "../../helpers/verify.js";
 
 const CODE = "MTL016";
 const DIR = "tests/fixtures/templates/MTL016";
@@ -29,8 +24,7 @@ const DATE = "[format:date]";
 const ELEMENTS = "[format:elements:date]";
 
 /** Spec 4.3 message; `tag` is the missing tag of the type. */
-const message = (key: string, type: string, tag: string): string =>
-  `Field '${key}' (type=${type}): no ${tag}, default date formats apply`;
+const message = (key: string, type: string, tag: string): string => `Field '${key}' (type=${type}): no ${tag}, default date formats apply`;
 
 /** Spec 2.9: position is the template key line, column 1. */
 const warning = (key: string, type: string, tag: string, line: number, sourceLine: string) =>
@@ -44,11 +38,8 @@ const warning = (key: string, type: string, tag: string, line: number, sourceLin
   }) as const;
 
 /** The MTL015 finding of `fail-date-field-before-conflicting-tag` (spec 2.7). */
-const CONFLICT_SOURCE =
-  "## Authoring checklist [presence:template-only] [content:subheadings:disallow]";
-const CONFLICT_MESSAGE =
-  "Heading 'Authoring checklist': tag [content:subheadings:disallow] has no effect " +
-  "(the heading is [presence:template-only])";
+const CONFLICT_SOURCE = "## Authoring checklist [presence:template-only] [content:subheadings:disallow]";
+const CONFLICT_MESSAGE = "Heading 'Authoring checklist': tag [content:subheadings:disallow] has no effect " + "(the heading is [presence:template-only])";
 const CONFLICT = {
   code: "MTL015",
   severity: "warning",
@@ -67,73 +58,42 @@ const CASES: readonly VerifyCase[] = [
     name: "fail-date-field-without-format",
     exitCode: 0,
     status: "ok",
-    diagnostics: [
-      warning("released", "date", DATE, 3, "released: 2026-01-01 # [presence:required]"),
-    ],
+    diagnostics: [warning("released", "date", DATE, 3, "released: 2026-01-01 # [presence:required]")],
   },
   // Every item date-like: type `list-of-date` (spec 3.2 step C2), no comment at all.
   {
     name: "fail-list-of-date-field-without-format",
     exitCode: 0,
     status: "ok",
-    diagnostics: [
-      warning("milestones", "list-of-date", ELEMENTS, 3, 'milestones: ["2026-01-01", "2026-02"]'),
-    ],
+    diagnostics: [warning("milestones", "list-of-date", ELEMENTS, 3, 'milestones: ["2026-01-01", "2026-02"]')],
   },
   // The scalar tag on a list-of-date field does not count (spec 2.9).
   {
     name: "fail-scalar-tag-on-list-of-date",
     exitCode: 0,
     status: "ok",
-    diagnostics: [
-      warning(
-        "history",
-        "list-of-date",
-        ELEMENTS,
-        2,
-        'history: ["2025-12-01"] # [presence:optional] [format:date]',
-      ),
-    ],
+    diagnostics: [warning("history", "list-of-date", ELEMENTS, 2, 'history: ["2025-12-01"] # [presence:optional] [format:date]')],
   },
   // The elements tag on a date field does not count either (spec 2.9 "or the reverse").
   {
     name: "fail-elements-tag-on-date-field",
     exitCode: 0,
     status: "ok",
-    diagnostics: [
-      warning("released", "date", DATE, 2, "released: 2026-01-01 # [format:elements:date]"),
-    ],
+    diagnostics: [warning("released", "date", DATE, 2, "released: 2026-01-01 # [format:elements:date]")],
   },
   // Worked example 2 of spec 2.9: two warnings in template order, none for `version`.
   {
     name: "fail-two-fields-in-template-order",
     exitCode: 0,
     status: "ok",
-    diagnostics: [
-      warning("released", "date", DATE, 3, "released: 2026-01-01 # [presence:required]"),
-      warning(
-        "history",
-        "list-of-date",
-        ELEMENTS,
-        4,
-        'history: ["2025-12-01"] # [presence:optional] [format:date]',
-      ),
-    ],
+    diagnostics: [warning("released", "date", DATE, 3, "released: 2026-01-01 # [presence:required]"), warning("history", "list-of-date", ELEMENTS, 4, 'history: ["2025-12-01"] # [presence:optional] [format:date]')],
   },
   // A date-like value with only other tags (presence, case, a semver shape).
   {
     name: "fail-date-like-field-with-other-tags",
     exitCode: 0,
     status: "ok",
-    diagnostics: [
-      warning(
-        "due",
-        "date",
-        DATE,
-        2,
-        "due: 2026-10 # [presence:optional] [format:snake_case] [format:semver]",
-      ),
-    ],
+    diagnostics: [warning("due", "date", DATE, 2, "due: 2026-10 # [presence:optional] [format:snake_case] [format:semver]")],
   },
   // The inferred type counts, so a `type=date` hint does too (spec 3.2 step A1, AS16).
   {
@@ -147,9 +107,7 @@ const CASES: readonly VerifyCase[] = [
     name: "fail-semver-tag-before-date-tag",
     exitCode: 0,
     status: "ok",
-    diagnostics: [
-      warning("released", "date", DATE, 2, "released: 2026-01-01 # [format:semver] [format:date]"),
-    ],
+    diagnostics: [warning("released", "date", DATE, 2, "released: 2026-01-01 # [format:semver] [format:date]")],
   },
   // A duplicate key: the last occurrence wins (Q06), its line and its (empty) comment.
   {
@@ -172,15 +130,7 @@ const CASES: readonly VerifyCase[] = [
     name: "fail-elements-semver-tag-before-elements-date",
     exitCode: 0,
     status: "ok",
-    diagnostics: [
-      warning(
-        "milestones",
-        "list-of-date",
-        ELEMENTS,
-        3,
-        'milestones: ["2026-01-01"] # [format:elements:semver] [format:elements:date]',
-      ),
-    ],
+    diagnostics: [warning("milestones", "list-of-date", ELEMENTS, 3, 'milestones: ["2026-01-01"] # [format:elements:semver] [format:elements:date]')],
   },
   // A `type=list-of-date` hint makes the type (spec 3.2 step A1) even for a non-date item;
   // no tag, or the scalar tag only, still warns with the elements tag.
@@ -188,16 +138,7 @@ const CASES: readonly VerifyCase[] = [
     name: "fail-type-hint-list-of-date-without-format",
     exitCode: 0,
     status: "ok",
-    diagnostics: [
-      warning("history", "list-of-date", ELEMENTS, 2, 'history: ["soon"] # type=list-of-date'),
-      warning(
-        "wrong_kind",
-        "list-of-date",
-        ELEMENTS,
-        3,
-        'wrong_kind: ["soon"] # type=list-of-date [format:date]',
-      ),
-    ],
+    diagnostics: [warning("history", "list-of-date", ELEMENTS, 2, 'history: ["soon"] # type=list-of-date'), warning("wrong_kind", "list-of-date", ELEMENTS, 3, 'wrong_kind: ["soon"] # type=list-of-date [format:date]')],
   },
   // Every other template warning plus MTL016: source order in the JSON diagnostics (spec
   // 4.1, 8.4); the text report puts the date section last (pinned below).
@@ -277,19 +218,12 @@ async function model(text: string): Promise<DocumentModel> {
 }
 
 async function lint(template: string, target: string): Promise<Diagnostic[]> {
-  const result = await lintTarget(
-    registry,
-    await model(template),
-    target,
-    "target.md",
-    createEnv(),
-  );
+  const result = await lintTarget(registry, await model(template), target, "target.md", createEnv());
   expect(result.suppressed).toBe(0);
   return result.diagnostics;
 }
 
-const template = (comment: string): string =>
-  `---\nreleased: 2026-01-01${comment}\n---\n\n# Release notes\n`;
+const template = (comment: string): string => `---\nreleased: 2026-01-01${comment}\n---\n\n# Release notes\n`;
 
 describe("MTL016 date-format-missing (--verify)", () => {
   it("is registered in category syntax, warning, phase template", () => {
@@ -321,12 +255,9 @@ describe("MTL016 date-format-missing (--verify)", () => {
   });
 
   it("is not suppressible: a target directive naming it is MTL022 (DIR6)", async () => {
-    const target =
-      "---\nreleased: 2026-01-01\n---\n\n<!-- md-template-lint disable-file MTL016 -->\n\n# Release notes\n";
+    const target = "---\nreleased: 2026-01-01\n---\n\n<!-- md-template-lint disable-file MTL016 -->\n\n# Release notes\n";
     const found = await lint(template(""), target);
-    expect(found.map(({ code, message }) => ({ code, message }))).toEqual([
-      { code: "MTL022", message: "Directive on line 5: rule code MTL016 cannot be disabled" },
-    ]);
+    expect(found.map(({ code, message }) => ({ code, message }))).toEqual([{ code: "MTL022", message: "Directive on line 5: rule code MTL016 cannot be disabled" }]);
   });
 });
 
@@ -352,11 +283,7 @@ async function verifyText(format: string, name: string): Promise<string[]> {
 }
 
 /** One item of `Date fields without format:` (spec 8.3): text, excerpt 6 spaces in, a caret. */
-const item = (key: string, type: string, tag: string, line: number, source: string): string[] => [
-  `  - ${message(key, type, tag)} (line ${line}, column 1)`,
-  `      ${line} | ${source}`,
-  `      ${" ".repeat(String(line).length)} | ^`,
-];
+const item = (key: string, type: string, tag: string, line: number, source: string): string[] => [`  - ${message(key, type, tag)} (line ${line}, column 1)`, `      ${line} | ${source}`, `      ${" ".repeat(String(line).length)} | ^`];
 
 const SECTION = "Date fields without format:";
 
@@ -364,22 +291,11 @@ const SECTION = "Date fields without format:";
 const TEXT_CASES: readonly { readonly name: string; readonly items: readonly string[][] }[] = [
   {
     name: "fail-two-fields-in-template-order",
-    items: [
-      item("released", "date", DATE, 3, "released: 2026-01-01 # [presence:required]"),
-      item(
-        "history",
-        "list-of-date",
-        ELEMENTS,
-        4,
-        'history: ["2025-12-01"] # [presence:optional] [format:date]',
-      ),
-    ],
+    items: [item("released", "date", DATE, 3, "released: 2026-01-01 # [presence:required]"), item("history", "list-of-date", ELEMENTS, 4, 'history: ["2025-12-01"] # [presence:optional] [format:date]')],
   },
   {
     name: "fail-list-of-date-field-without-format",
-    items: [
-      item("milestones", "list-of-date", ELEMENTS, 3, 'milestones: ["2026-01-01", "2026-02"]'),
-    ],
+    items: [item("milestones", "list-of-date", ELEMENTS, 3, 'milestones: ["2026-01-01", "2026-02"]')],
   },
   {
     name: "fail-duplicate-key-last-occurrence",
@@ -437,13 +353,7 @@ describe("MTL016 in the --verify text report (spec 8.3 `Date fields without form
 });
 
 /** Spec 8.3 order of the sections of the template warnings; the date section is the LAST one. */
-const SECTION_TITLES = [
-  "Unknown tags found (typo or unimplemented feature):",
-  "Malformed tags:",
-  "Misplaced tags:",
-  "Conflicting tags:",
-  SECTION,
-];
+const SECTION_TITLES = ["Unknown tags found (typo or unimplemented feature):", "Malformed tags:", "Misplaced tags:", "Conflicting tags:", SECTION];
 
 describe("MTL016 section is the last one of the --verify text report (spec 8.3)", () => {
   for (const format of ["text", "plain"]) {
@@ -454,13 +364,7 @@ describe("MTL016 section is the last one of the --verify text report (spec 8.3)"
       // section first; the report puts it last.
       expect(out.filter((text) => SECTION_TITLES.includes(text))).toEqual(SECTION_TITLES);
       const start = out.indexOf(SECTION);
-      const expected = [
-        SECTION,
-        ...item("released", "date", DATE, 2, "released: 2026-01-01"),
-        "",
-        "========================",
-        "Summary",
-      ];
+      const expected = [SECTION, ...item("released", "date", DATE, 2, "released: 2026-01-01"), "", "========================", "Summary"];
       expect(out.slice(start, start + expected.length)).toEqual(expected);
     });
   }
@@ -469,7 +373,7 @@ describe("MTL016 section is the last one of the --verify text report (spec 8.3)"
 /** Spec 2.9 worked example 2: the whole plain output, `<version>` being 9.9.9. */
 const WORKED_EXAMPLE_2 = `md-template-lint 9.9.9
 Config: (none)
-Template syntax reference: https://github.com/m21-cerutti/markdown-template-linter/blob/main/docs/syntax-reference.md
+Template syntax reference: https://github.com/m21-cerutti/md-template-lint/blob/main/docs/syntax-reference.md
 ========================
 
   PASS release.template.md
@@ -506,21 +410,12 @@ describe("MTL016 worked example 2 (spec 2.9), golden output", () => {
   beforeAll(() => {
     // The fixture is the worked example template; the spec names it `release.template.md`.
     folder = mkdtempSync(join(tmpdir(), "mtl-mtl016-"));
-    const text = readFileSync(
-      join(templatesDir(CODE), "fail-two-fields-in-template-order.md"),
-      "utf8",
-    ).replaceAll("\r\n", "\n");
+    const text = readFileSync(join(templatesDir(CODE), "fail-two-fields-in-template-order.md"), "utf8").replaceAll("\r\n", "\n");
     writeFileSync(join(folder, "release.template.md"), text);
     // A project for a normal lint run (spec 7.2): one pair, one valid target.
-    writeFileSync(
-      join(folder, "md-template-lint.yml"),
-      "pairs:\n  - name: release\n    template: release.template.md\n    include: docs/*.md\n",
-    );
+    writeFileSync(join(folder, "md-template-lint.yml"), "pairs:\n  - name: release\n    template: release.template.md\n    include: docs/*.md\n");
     mkdirSync(join(folder, "docs"));
-    writeFileSync(
-      join(folder, "docs", "release.md"),
-      '---\nversion: "1.0.0"\nreleased: 2026-10\nhistory: ["2025-12-01"]\n---\n\n# Release notes\n',
-    );
+    writeFileSync(join(folder, "docs", "release.md"), '---\nversion: "1.0.0"\nreleased: 2026-10\nhistory: ["2025-12-01"]\n---\n\n# Release notes\n');
   });
 
   afterAll(() => {
@@ -571,9 +466,7 @@ describe("MTL016 worked example 2 (spec 2.9), golden output", () => {
   it("--verify (pretty) has the same text after a glyph header", async () => {
     const result = await run(["--verify", "release.template.md"]);
     expect(result.exitCode).toBe(0);
-    expect(result.stdout.replace("  ✓ release.template.md", "  PASS release.template.md")).toBe(
-      WORKED_EXAMPLE_2,
-    );
+    expect(result.stdout.replace("  ✓ release.template.md", "  PASS release.template.md")).toBe(WORKED_EXAMPLE_2);
   });
 
   it("--verify --format json lists both warnings in the diagnostics, warnings 2", async () => {
@@ -583,9 +476,7 @@ describe("MTL016 worked example 2 (spec 2.9), golden output", () => {
       templates: { diagnostics: unknown[] }[];
       summary: { warnings: number; exitCode: number };
     };
-    expect(json.templates[0]?.diagnostics).toEqual(
-      CASES.find((testCase) => testCase.name === "fail-two-fields-in-template-order")?.diagnostics,
-    );
+    expect(json.templates[0]?.diagnostics).toEqual(CASES.find((testCase) => testCase.name === "fail-two-fields-in-template-order")?.diagnostics);
     expect(json.summary).toMatchObject({ warnings: 2, exitCode: 0 });
   });
 });

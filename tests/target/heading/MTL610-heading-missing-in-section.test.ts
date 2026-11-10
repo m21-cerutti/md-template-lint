@@ -187,21 +187,14 @@ const CASES: readonly TestCase[] = [
   },
 ];
 
-const read = (path: string): string =>
-  readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
+const read = (path: string): string => readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
 
 /** Every diagnostic for the pair of a fixture folder. */
 async function lintAll(name: string) {
   const fixture = `${DIR}/${name}`;
   const status = await checkTemplate(registry, read(`${fixture}/template.md`));
   if (status.status !== "ok") throw new Error(`${fixture}: template is broken`);
-  const found = await checkTarget(
-    registry,
-    status.model,
-    read(`${fixture}/target.md`),
-    `${fixture}/target.md`,
-    createEnv(),
-  );
+  const found = await checkTarget(registry, status.model, read(`${fixture}/target.md`), `${fixture}/target.md`, createEnv());
   return found;
 }
 
@@ -236,9 +229,7 @@ describe("MTL610 heading-missing-in-section", () => {
   it("a matched template-only parent gives MTL603 for itself, nothing for its child", async () => {
     // Spec 2.6 and 4.3: MTL603 for `## Notes` found in the target; `### Tips` is not checked.
     const found = await lintAll("pass-required-child-of-matched-template-only-parent-is-unchecked");
-    expect(found.map((diagnostic) => [diagnostic.code, diagnostic.heading])).toEqual([
-      ["MTL603", "Notes"],
-    ]);
+    expect(found.map((diagnostic) => [diagnostic.code, diagnostic.heading])).toEqual([["MTL603", "Notes"]]);
   });
 
   it("interleaves with MTL601 by template line (spec 4.3 emission order)", async () => {
@@ -254,9 +245,7 @@ describe("MTL610 heading-missing-in-section", () => {
   it("the spec worked example variant gives exactly one finding", async () => {
     // Spec 2.6 worked example 1 variant: MTL610 on the parent line 7, nothing else.
     const found = await lintAll("fail-same-text-at-deeper-level-does-not-match");
-    expect(found.map((diagnostic) => [diagnostic.code, anchorLineOf(diagnostic)])).toEqual([
-      ["MTL610", 7],
-    ]);
+    expect(found.map((diagnostic) => [diagnostic.code, anchorLineOf(diagnostic)])).toEqual([["MTL610", 7]]);
   });
 
   for (const testCase of CASES) {

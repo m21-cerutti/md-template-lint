@@ -13,8 +13,7 @@ const DIR = "tests/fixtures/pairs/MTL301";
 const OTHER_FORMAT_CODES = ["MTL302", "MTL303", "MTL304", "MTL305"];
 
 /** Spec 4.3 message of MTL301. */
-const message = (key: string, constant: string, got: string): string =>
-  `Field '${key}': expected constant value '${constant}', got '${got}'`;
+const message = (key: string, constant: string, got: string): string => `Field '${key}': expected constant value '${constant}', got '${got}'`;
 
 interface TestCase {
   readonly name: string;
@@ -70,21 +69,14 @@ const CASES: readonly TestCase[] = [
   },
 ];
 
-const read = (path: string): string =>
-  readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
+const read = (path: string): string => readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
 
 /** Diagnostics of this code, and of the other format codes, for the pair of a fixture folder. */
 async function lint(testCase: TestCase) {
   const fixture = `${DIR}/${testCase.name}`;
   const status = await checkTemplate(registry, read(`${fixture}/template.md`));
   if (status.status !== "ok") throw new Error(`${fixture}: template is broken`);
-  const found = await checkTarget(
-    registry,
-    status.model,
-    read(`${fixture}/target.md`),
-    `${fixture}/target.md`,
-    createEnv(),
-  );
+  const found = await checkTarget(registry, status.model, read(`${fixture}/target.md`), `${fixture}/target.md`, createEnv());
   return {
     own: found.filter((diagnostic) => diagnostic.code === CODE),
     others: found.filter((diagnostic) => OTHER_FORMAT_CODES.includes(diagnostic.code)),

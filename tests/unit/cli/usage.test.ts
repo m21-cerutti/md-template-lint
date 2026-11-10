@@ -149,9 +149,7 @@ describe("cli usage: --help, --version and --", () => {
 
   it("before --, --help still wins; the arguments after -- are not read", async () => {
     expect((await runCliIn(FIXTURE, ["--help", "--", "--bogus"])).stdout).toBe(USAGE);
-    expect((await runCliIn(FIXTURE, ["--", "--bogus", "--format", "xml"])).stderr).not.toContain(
-      "MTL92",
-    );
+    expect((await runCliIn(FIXTURE, ["--", "--bogus", "--format", "xml"])).stderr).not.toContain("MTL92");
   });
 
   it("-- alone is a run with no files", () => {
@@ -169,9 +167,7 @@ describe("cli usage: --help, --version and --", () => {
 
 describe("cli usage: parseArgs", () => {
   it("reads --config and --format in both spellings, the last one wins", () => {
-    expect(
-      parseArgs(["--config", "a.yml", "--config=b.yml", "--format=json", "--format", "plain"]),
-    ).toEqual({
+    expect(parseArgs(["--config", "a.yml", "--config=b.yml", "--format=json", "--format", "plain"])).toEqual({
       kind: "run",
       options: { configPath: "b.yml", format: "plain", quiet: false, verify: false, files: [] },
     });

@@ -12,20 +12,12 @@ const CODE = "MTL804";
 const DIR = "tests/fixtures/pairs/MTL804";
 
 const approvedPaths = ["/srv/notes", "C:\\notes", "\\\\server\\share"];
-const io = createMemoryIo([
-  "project-root/docs/a.md",
-  "project-root/docs/b.md",
-  "/srv/notes/a.md",
-  "//server/share/a.md",
-]);
+const io = createMemoryIo(["project-root/docs/a.md", "project-root/docs/b.md", "/srv/notes/a.md", "//server/share/a.md"]);
 /**
  * Same files plus an UNFOLDED `project-root/sub/../shared/a.md`: the probe asks
  * about the folded path (`project-root/shared/a.md`, missing), so it still fails.
  */
-const unfoldedOnlyIo = createMemoryIo([
-  "project-root/docs/a.md",
-  "project-root/sub/../shared/a.md",
-]);
+const unfoldedOnlyIo = createMemoryIo(["project-root/docs/a.md", "project-root/sub/../shared/a.md"]);
 /** Pair root `project-root`, alias `assets`, three approved folders (one UNC share). */
 const rooted = createEnv({
   pairRoot: "project-root",
@@ -72,17 +64,13 @@ const CASES: readonly Case[] = [
     name: "fail-unc-approved-share-keeps-prefix",
     fixture: "tests/fixtures/pairs/MTL804/fail-unc-approved-share-keeps-prefix",
     env: rooted,
-    expected: [
-      "Field 'note': path '\\\\server\\share\\gone.md' does not exist (resolved: //server/share/gone.md)",
-    ],
+    expected: ["Field 'note': path '\\\\server\\share\\gone.md' does not exist (resolved: //server/share/gone.md)"],
   },
   {
     name: "fail-relative-path-missing-resolved-from-pair-root",
     fixture: "tests/fixtures/pairs/MTL804/fail-relative-path-missing-resolved-from-pair-root",
     env: rooted,
-    expected: [
-      "Field 'note': path 'docs/gone.md' does not exist (resolved: project-root/docs/gone.md)",
-    ],
+    expected: ["Field 'note': path 'docs/gone.md' does not exist (resolved: project-root/docs/gone.md)"],
   },
   {
     name: "fail-default-pair-root-is-dot",
@@ -94,25 +82,19 @@ const CASES: readonly Case[] = [
     name: "fail-approved-absolute-path-missing",
     fixture: "tests/fixtures/pairs/MTL804/fail-approved-absolute-path-missing",
     env: rooted,
-    expected: [
-      "Field 'note': path '/srv/notes/gone.md' does not exist (resolved: /srv/notes/gone.md)",
-    ],
+    expected: ["Field 'note': path '/srv/notes/gone.md' does not exist (resolved: /srv/notes/gone.md)"],
   },
   {
     name: "fail-windows-style-approved-path-printed-with-slashes",
     fixture: "tests/fixtures/pairs/MTL804/fail-windows-style-approved-path-printed-with-slashes",
     env: rooted,
-    expected: [
-      "Field 'note': path 'c:\\notes\\gone.md' does not exist (resolved: c:/notes/gone.md)",
-    ],
+    expected: ["Field 'note': path 'c:\\notes\\gone.md' does not exist (resolved: c:/notes/gone.md)"],
   },
   {
     name: "fail-triple-slash-prefix-is-single-root",
     fixture: "tests/fixtures/pairs/MTL804/fail-triple-slash-prefix-is-single-root",
     env: rooted,
-    expected: [
-      "Field 'note': path '///srv/notes/gone.md' does not exist (resolved: /srv/notes/gone.md)",
-    ],
+    expected: ["Field 'note': path '///srv/notes/gone.md' does not exist (resolved: /srv/notes/gone.md)"],
   },
   {
     name: "fail-value-equal-to-approved-folder-is-checked",
@@ -146,31 +128,23 @@ const CASES: readonly Case[] = [
     name: "fail-list-missing-items-in-order",
     fixture: "tests/fixtures/pairs/MTL804/fail-list-missing-items-in-order",
     env: rooted,
-    expected: [
-      "Field 'others': path 'docs/z.md' does not exist (resolved: project-root/docs/z.md)",
-      "Field 'others': path 'docs/y.md' does not exist (resolved: project-root/docs/y.md)",
-    ],
+    expected: ["Field 'others': path 'docs/z.md' does not exist (resolved: project-root/docs/z.md)", "Field 'others': path 'docs/y.md' does not exist (resolved: project-root/docs/y.md)"],
   },
   {
     name: "fail-dot-dot-relative-leaves-pair-root",
     fixture: "tests/fixtures/pairs/MTL804/fail-dot-dot-relative-leaves-pair-root",
     env: createEnv({ pairRoot: "project-root/sub", io: unfoldedOnlyIo }),
-    expected: [
-      "Field 'note': path '../shared/a.md' does not exist (resolved: project-root/sub/../shared/a.md)",
-    ],
+    expected: ["Field 'note': path '../shared/a.md' does not exist (resolved: project-root/sub/../shared/a.md)"],
   },
   {
     name: "fail-surrounding-spaces-are-trimmed",
     fixture: "tests/fixtures/pairs/MTL804/fail-surrounding-spaces-are-trimmed",
     env: rooted,
-    expected: [
-      "Field 'note': path 'docs/gone.md' does not exist (resolved: project-root/docs/gone.md)",
-    ],
+    expected: ["Field 'note': path 'docs/gone.md' does not exist (resolved: project-root/docs/gone.md)"],
   },
 ];
 
-const read = (path: string): string =>
-  readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
+const read = (path: string): string => readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
 
 /** Diagnostics of this code for the pair of a fixture folder. */
 async function lint(testCase: Case) {
@@ -178,13 +152,7 @@ async function lint(testCase: Case) {
   const codes = testCase.codes ?? [CODE];
   const status = await checkTemplate(registry, read(`${fixture}/template.md`));
   if (status.status !== "ok") throw new Error(`${fixture}: template is broken`);
-  const found = await checkTarget(
-    registry,
-    status.model,
-    read(`${fixture}/target.md`),
-    `${fixture}/target.md`,
-    env,
-  );
+  const found = await checkTarget(registry, status.model, read(`${fixture}/target.md`), `${fixture}/target.md`, env);
   return found.filter((diagnostic) => codes.includes(diagnostic.code));
 }
 
@@ -218,16 +186,12 @@ describe("MTL804 path-missing", () => {
     expect(failing.length).toBeGreaterThanOrEqual(1);
     expect(passing.length + failing.length).toBe(CASES.length);
     expect(CASES.filter((testCase) => testCase.expected.length === 0)).toEqual(passing);
-    expect(CASES.map((testCase) => testCase.fixture)).toEqual(
-      CASES.map((testCase) => `${DIR}/${testCase.name}`),
-    );
+    expect(CASES.map((testCase) => testCase.fixture)).toEqual(CASES.map((testCase) => `${DIR}/${testCase.name}`));
     // Orphan detection: no directory at any depth besides the cases, and each holds only the pair.
     const names = CASES.map((testCase) => testCase.name).sort();
     const tree = listTree();
     expect(tree.dirs).toEqual(names);
-    expect(tree.files).toEqual(
-      names.flatMap((name) => [`${name}/target.md`, `${name}/template.md`]).sort(),
-    );
+    expect(tree.files).toEqual(names.flatMap((name) => [`${name}/target.md`, `${name}/template.md`]).sort());
   });
 
   for (const testCase of CASES) {

@@ -58,28 +58,16 @@ const CI = parse(CI_TEXT) as Workflow;
 const RELEASE = parse(RELEASE_TEXT) as Workflow;
 const PACKAGE = JSON.parse(read("package.json")) as PackageJson;
 /** Owner and repository name of package.json `repository.url`, read at runtime (never written here). */
-const [OWNER = "", REPOSITORY_NAME = ""] = new URL(
-  PACKAGE.repository.url.replace(/^git\+/, ""),
-).pathname
+const [OWNER = "", REPOSITORY_NAME = ""] = new URL(PACKAGE.repository.url.replace(/^git\+/, "")).pathname
   .slice(1)
   .replace(/\.git$/, "")
   .split("/");
 
 const stepsOf = (job: Job): string[] => job.steps.flatMap((step) => (step.run ? [step.run] : []));
-const usesOf = (workflow: Workflow): string[] =>
-  Object.values(workflow.jobs).flatMap((job) => job.steps.flatMap((s) => (s.uses ? [s.uses] : [])));
+const usesOf = (workflow: Workflow): string[] => Object.values(workflow.jobs).flatMap((job) => job.steps.flatMap((s) => (s.uses ? [s.uses] : [])));
 
 /** The gates in the order of CONTRIBUTING.md, plus the install step before them. */
-const GATES = [
-  "pnpm install --frozen-lockfile",
-  "pnpm run check:parser",
-  "pnpm run check:rules",
-  "pnpm run typecheck",
-  "pnpm run lint",
-  "pnpm run format:check",
-  "pnpm test",
-  "pnpm run build",
-];
+const GATES = ["pnpm install --frozen-lockfile", "pnpm run check:parser", "pnpm run check:rules", "pnpm run typecheck", "pnpm run lint", "pnpm run format:check", "pnpm test", "pnpm run build"];
 
 describe("ci.yml", () => {
   const job = CI.jobs["gates"] as Job;
@@ -111,9 +99,7 @@ describe("ci.yml", () => {
 
   it("sets up pnpm from packageManager, then Node with the pnpm cache", () => {
     const uses = usesOf(CI);
-    expect(uses.findIndex((use) => use.startsWith("pnpm/action-setup@"))).toBeLessThan(
-      uses.findIndex((use) => use.startsWith("actions/setup-node@")),
-    );
+    expect(uses.findIndex((use) => use.startsWith("pnpm/action-setup@"))).toBeLessThan(uses.findIndex((use) => use.startsWith("actions/setup-node@")));
     const pnpmSetup = job.steps.find((step) => step.uses?.startsWith("pnpm/action-setup@"));
     expect(pnpmSetup).toBeDefined();
     expect(pnpmSetup).not.toHaveProperty("with");
@@ -182,9 +168,7 @@ describe("release.yml", () => {
     for (const use of usesOf(RELEASE)) expect(use.startsWith("actions/")).toBe(true);
     const runs = stepsOf(verify);
     expect(runs.indexOf("corepack enable")).toBeGreaterThanOrEqual(0);
-    expect(runs.indexOf("corepack enable")).toBeLessThan(
-      runs.indexOf("pnpm install --frozen-lockfile"),
-    );
+    expect(runs.indexOf("corepack enable")).toBeLessThan(runs.indexOf("pnpm install --frozen-lockfile"));
     expect(PACKAGE.packageManager).toMatch(/^pnpm@\d+\.\d+\.\d+$/);
   });
 
@@ -204,18 +188,12 @@ describe("release.yml", () => {
   });
 
   it("runs every gate, packs, and smoke-tests the tarball it publishes", () => {
-    const runs = stepsOf(verify).filter(
-      (run) => run.startsWith("pnpm") && !run.startsWith("pnpm exec tsx"),
-    );
+    const runs = stepsOf(verify).filter((run) => run.startsWith("pnpm") && !run.startsWith("pnpm exec tsx"));
     expect(runs.slice(0, GATES.length)).toEqual(GATES);
     expect(runs[GATES.length]).toMatch(/^pnpm pack --pack-destination /);
     expect(runs[GATES.length + 1]).toMatch(/^pnpm run smoke:pack -- --tarball /);
-    expect(verify.steps.some((step) => step.uses?.startsWith("actions/upload-artifact@"))).toBe(
-      true,
-    );
-    expect(publish.steps.some((step) => step.uses?.startsWith("actions/download-artifact@"))).toBe(
-      true,
-    );
+    expect(verify.steps.some((step) => step.uses?.startsWith("actions/upload-artifact@"))).toBe(true);
+    expect(publish.steps.some((step) => step.uses?.startsWith("actions/download-artifact@"))).toBe(true);
   });
 
   it("checks the tag and the repository with the tested script, only on a tag push", () => {
@@ -228,9 +206,7 @@ describe("release.yml", () => {
     expect(check?.run).toBe('pnpm exec tsx scripts/smoke/check-release.ts "$TAG" "$REPOSITORY"');
     // tsx is a devDependency: the check runs after the install step.
     const runs = stepsOf(verify);
-    expect(runs.indexOf("pnpm install --frozen-lockfile")).toBeLessThan(
-      runs.indexOf(check?.run ?? ""),
-    );
+    expect(runs.indexOf("pnpm install --frozen-lockfile")).toBeLessThan(runs.indexOf(check?.run ?? ""));
     // ...and before the first gate (and so before the pack and the publish).
     expect(runs.indexOf(check?.run ?? "")).toBeGreaterThanOrEqual(0);
     expect(runs.indexOf(check?.run ?? "")).toBeLessThan(runs.indexOf("pnpm run check:parser"));
@@ -256,14 +232,7 @@ describe("release.yml", () => {
 
 describe("package.json publish settings", () => {
   it("ships only dist (without source maps), the licence, the notices and the README", () => {
-    expect(PACKAGE.files).toEqual([
-      "dist",
-      "!dist/**/*.map",
-      "LICENSE",
-      "CHANGELOG.md",
-      "THIRD_PARTY_NOTICES.md",
-      "README.md",
-    ]);
+    expect(PACKAGE.files).toEqual(["dist", "!dist/**/*.map", "LICENSE", "CHANGELOG.md", "THIRD_PARTY_NOTICES.md", "README.md"]);
   });
 
   it("points main, types, bin and exports into dist", () => {

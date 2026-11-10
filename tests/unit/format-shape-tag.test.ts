@@ -9,8 +9,7 @@ import { parseDocument, type BodyHeading } from "../../src/index.js";
 import { parseHeadingSuffix, parseInlineComment } from "../../src/tags/parser.js";
 
 const doc = (...lines: string[]) => parseDocument(lines.join("\n"));
-const headings = (result: ReturnType<typeof parseDocument>): BodyHeading[] =>
-  result.body.filter((b): b is BodyHeading => b.kind === "heading");
+const headings = (result: ReturnType<typeof parseDocument>): BodyHeading[] => result.body.filter((b): b is BodyHeading => b.kind === "heading");
 /** Tags of the comment on the frontmatter line at `index` (0-based, after `---`). */
 const keyTags = (result: ReturnType<typeof parseDocument>, index = 0) => {
   const line = result.frontmatter?.lines[index];
@@ -47,16 +46,11 @@ describe("format shape tags on a frontmatter key comment", () => {
     // é (1 code point) : space " 😀 " (3 code points) space # space [ -> column 10.
     const result = doc("---", 'é: "😀" # [format:elements:date]', "---");
     expect(result.findings).toEqual([]);
-    expect(keyTags(result)).toMatchObject([
-      { kind: "format-elements-shape", shape: "date", position: { line: 2, column: 10 } },
-    ]);
+    expect(keyTags(result)).toMatchObject([{ kind: "format-elements-shape", shape: "date", position: { line: 2, column: 10 } }]);
   });
 
   it("parses the four forms with parseInlineComment, located from the comment start", () => {
-    const { tags, findings } = parseInlineComment(
-      "[format:semver] [format:date] [format:elements:semver] [format:elements:date]",
-      { line: 5, column: 3 },
-    );
+    const { tags, findings } = parseInlineComment("[format:semver] [format:date] [format:elements:semver] [format:elements:date]", { line: 5, column: 3 });
     expect(findings).toEqual([]);
     expect(tags).toMatchObject([
       { kind: "format-shape", shape: "semver", position: { line: 5, column: 3 } },
@@ -122,9 +116,7 @@ describe("format shape tags with a bad shape are malformed (MTL012)", () => {
   it("keeps a well-formed neighbour of a malformed shape tag", () => {
     const result = doc("---", "v: x # [format:dates] [format:semver]", "---");
     expect(result.findings).toMatchObject([{ reason: "malformed", tag: "[format:dates]" }]);
-    expect(keyTags(result)).toMatchObject([
-      { kind: "format-shape", shape: "semver", position: { line: 2, column: 23 } },
-    ]);
+    expect(keyTags(result)).toMatchObject([{ kind: "format-shape", shape: "semver", position: { line: 2, column: 23 } }]);
   });
 });
 
@@ -211,9 +203,7 @@ describe("format shape tags with other tags on one key", () => {
   it("[format:constant:date] stays a format-constant tag with the value `date`", () => {
     const result = doc("---", "v: x # [format:constant:date]", "---");
     expect(result.findings).toEqual([]);
-    expect(keyTags(result)).toMatchObject([
-      { kind: "format-constant", value: "date", position: { line: 2, column: 8 } },
-    ]);
+    expect(keyTags(result)).toMatchObject([{ kind: "format-constant", value: "date", position: { line: 2, column: 8 } }]);
     expect(keyTags(result)).toHaveLength(1);
   });
 
@@ -227,9 +217,7 @@ describe("format shape tags with other tags on one key", () => {
   it("[format:scheme:date] stays a format-scheme tag with the scheme `date`", () => {
     const result = doc("---", "v: x # [format:scheme:date]", "---");
     expect(result.findings).toEqual([]);
-    expect(keyTags(result)).toMatchObject([
-      { kind: "format-scheme", argument: "date", schemes: ["date"] },
-    ]);
+    expect(keyTags(result)).toMatchObject([{ kind: "format-scheme", argument: "date", schemes: ["date"] }]);
     expect(keyTags(result)).toHaveLength(1);
   });
 
@@ -241,9 +229,7 @@ describe("format shape tags with other tags on one key", () => {
   });
 
   it("a shape word as the value of a neighbour does not leak into a shape tag", () => {
-    const result = parseInlineComment(
-      "[format:constant:date] [format:date] [format:scheme:semver]",
-    );
+    const result = parseInlineComment("[format:constant:date] [format:date] [format:scheme:semver]");
     expect(result.findings).toEqual([]);
     expect(result.tags).toMatchObject([
       { kind: "format-constant", value: "date" },

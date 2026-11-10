@@ -78,7 +78,7 @@ so. Back to the [docs index](README.md).
 - **placeholder**: a variable slot inside a pattern, written `{name}` or `{name:format:<fmt>}`. The
   vocabulary is fixed: `{semver}`, `{date}`, `{digits}`, `{number}`, `{text}` and `{char}` (one letter).
   A placeholder stands for one value of its kind (`{digits}` matches `7`, `{text}` matches `Release
-  notes` but not `2026`); the optional `format` narrows it (`{semver:format:major-minor}` matches
+notes` but not `2026`); the optional `format` narrows it (`{semver:format:major-minor}` matches
   `1.2`, `{text:format:snakecase}` matches `my_heading`). A format may take an argument,
   `{name:format:<fmt>:<arg>}` (`{digits:format:padding:3}` matches `007`, `{number:format:precision:2}`
   matches `1.50`). Formats: `{digits}` default, `signed`, `hex`, `uid`, `padding:N`; `{number}`

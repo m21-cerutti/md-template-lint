@@ -28,9 +28,7 @@ describe("pretty reporter: the spec 8.2 sample", () => {
     expect(stdout).toContain(`${ESC}[32m  ✓ docs/adr/0001-first.md${ESC}[0m`);
     expect(stdout).toContain(`${ESC}[31m  ✗ docs/adr/0002-second.md${ESC}[0m`);
     expect(stdout).toContain(`${ESC}[35m  TEMPLATE ERROR:`);
-    expect(stdout.replace(SGR, "")).toBe(
-      readFixture("runner", "report-sample", "expected.pretty.txt"),
-    );
+    expect(stdout.replace(SGR, "")).toBe(readFixture("runner", "report-sample", "expected.pretty.txt"));
     expect(stdout.replace(SGR, "").includes(ESC)).toBe(false);
   });
 
@@ -58,9 +56,7 @@ describe("pretty reporter: the spec 8.2 sample", () => {
     const result = await runFixture("inputs-fail-template-missing");
     const { stdout, stderr } = report(result, { format: "pretty", version: VERSION, quiet: true });
     expect(stdout).toBe("");
-    expect(stderr).toBe(
-      "error MTL910: template not found: templates/missing.template.md (pair 'ghost')\n",
-    );
+    expect(stderr).toBe("error MTL910: template not found: templates/missing.template.md (pair 'ghost')\n");
   });
 
   it("zero files with a broken template: the failure summary shows, not No files linted.", async () => {
@@ -92,20 +88,14 @@ describe("pretty reporter: the spec 8.2 sample", () => {
   it("a non-project root adds a Root: line after Template:", async () => {
     const result = await runFixture("expand-multi-root-declaration-order");
     const { stdout } = report(result, { format: "pretty", version: VERSION });
-    expect(stdout).toContain(
-      "Template: templates/note.template.md\nRoot:     a\nTarget:   docs/*.md (1 file(s))\n",
-    );
-    expect(stdout).toContain(
-      "Template: templates/note.template.md\nTarget:   docs/*.md (1 file(s))\n",
-    );
+    expect(stdout).toContain("Template: templates/note.template.md\nRoot:     a\nTarget:   docs/*.md (1 file(s))\n");
+    expect(stdout).toContain("Template: templates/note.template.md\nTarget:   docs/*.md (1 file(s))\n");
   });
 
   it("a run error goes to stderr as error MTLnnn: message and is counted in the summary", async () => {
     const result = await runFixture("inputs-fail-template-missing");
     const { stdout, stderr } = report(result, { format: "pretty", version: VERSION });
-    expect(stderr).toBe(
-      "error MTL910: template not found: templates/missing.template.md (pair 'ghost')\n",
-    );
+    expect(stderr).toBe("error MTL910: template not found: templates/missing.template.md (pair 'ghost')\n");
     expect(stdout).toContain("Run errors:   1\n");
     expect(stdout).not.toContain("MTL910");
     expect(stdout).not.toContain("All files passed!");

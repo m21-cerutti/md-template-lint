@@ -9,8 +9,7 @@ import { expectTemplateCases, verifyFixture, type VerifyCase } from "../../helpe
 const CODE = "MTL011";
 const DIR = "tests/fixtures/templates/MTL011";
 
-const warning = (message: string, line: number, column: number, sourceLine: string) =>
-  ({ code: CODE, severity: "warning", message, line, column, sourceLine }) as const;
+const warning = (message: string, line: number, column: number, sourceLine: string) => ({ code: CODE, severity: "warning", message, line, column, sourceLine }) as const;
 
 /** Case -> fixture `<name>.md` -> expected `--verify` result. */
 const CASES: readonly VerifyCase[] = [
@@ -21,33 +20,21 @@ const CASES: readonly VerifyCase[] = [
     name: "fail-unknown-tag-on-heading",
     exitCode: 0,
     status: "ok",
-    diagnostics: [
-      warning("Heading 'Notes [nope:y]': unknown tag [nope:y]", 4, 10, "## Notes [nope:y]"),
-    ],
+    diagnostics: [warning("Heading 'Notes [nope:y]': unknown tag [nope:y]", 4, 10, "## Notes [nope:y]")],
   },
   // One warning per heading, in source order (H1 and H2).
   {
     name: "fail-unknown-tags-on-two-headings",
     exitCode: 0,
     status: "ok",
-    diagnostics: [
-      warning("Heading 'Title [alpha]': unknown tag [alpha]", 4, 9, "# Title [alpha]"),
-      warning("Heading 'Notes [beta:z]': unknown tag [beta:z]", 6, 10, "## Notes [beta:z]"),
-    ],
+    diagnostics: [warning("Heading 'Title [alpha]': unknown tag [alpha]", 4, 9, "# Title [alpha]"), warning("Heading 'Notes [beta:z]': unknown tag [beta:z]", 6, 10, "## Notes [beta:z]")],
   },
   // Spec 2.11: a typo of `[unique-headings-names]` (singular `heading`) is an unknown tag.
   {
     name: "fail-unique-headings-names-typo",
     exitCode: 0,
     status: "ok",
-    diagnostics: [
-      warning(
-        "Heading 'Notes [unique-heading-names]': unknown tag [unique-heading-names]",
-        4,
-        10,
-        "## Notes [unique-heading-names]",
-      ),
-    ],
+    diagnostics: [warning("Heading 'Notes [unique-heading-names]': unknown tag [unique-heading-names]", 4, 10, "## Notes [unique-heading-names]")],
   },
 ];
 

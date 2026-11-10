@@ -4,17 +4,7 @@
  * in parallel); a few CLI runs use the real script and a unique folder in the git-ignored tmp/.
  */
 import { spawnSync } from "node:child_process";
-import {
-  existsSync,
-  linkSync,
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  realpathSync,
-  rmSync,
-  symlinkSync,
-  writeFileSync,
-} from "node:fs";
+import { existsSync, linkSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -158,11 +148,7 @@ describe("path rules", () => {
   it("refuses a file link that leads outside the root", (context) => {
     writeFileSync(join(outside, "target.md"), "keep");
     mkdirSync(join(root, "tests", "fixtures"), { recursive: true });
-    const linked = link(
-      join(outside, "target.md"),
-      join(root, "tests", "fixtures", "l.md"),
-      "file",
-    );
+    const linked = link(join(outside, "target.md"), join(root, "tests", "fixtures", "l.md"), "file");
     if (!linked) context.skip();
     expect(() => writeEscaped(root, "tests/fixtures/l.md", "a")).toThrow(/outside/);
     expect(readFileSync(join(outside, "target.md"), "utf8")).toBe("keep");
@@ -222,14 +208,7 @@ describe("path rules", () => {
     expect(existsSync(join(root, path))).toBe(false);
   });
 
-  it.each([
-    ["D:x.md"],
-    ["C:x.md"],
-    ["\\\\host\\share\\x.md"],
-    ["//host/share/x.md"],
-    ["\\\\?\\C:\\x.md"],
-    ["\\\\.\\C:\\x.md"],
-  ])("refuses the drive-relative, UNC or device form %s", (path) => {
+  it.each([["D:x.md"], ["C:x.md"], ["\\\\host\\share\\x.md"], ["//host/share/x.md"], ["\\\\?\\C:\\x.md"], ["\\\\.\\C:\\x.md"]])("refuses the drive-relative, UNC or device form %s", (path) => {
     expect(() => checkTarget(root, path)).toThrow(/UNC, device or drive-relative/);
     expect(() => writeEscaped(root, path, "a")).toThrow(/UNC, device or drive-relative/);
   });
@@ -294,9 +273,7 @@ describe("extension allowlist: .md .txt .json .yml .yaml", () => {
     ["tmp/a.md.exe"],
     ["tmp/a.md.ts."],
   ])("refuses %s", (path) => {
-    expect(() => checkTarget(root, path)).toThrow(
-      "refusing path: extension not allowed, use one of .md .txt .json .yml .yaml",
-    );
+    expect(() => checkTarget(root, path)).toThrow("refusing path: extension not allowed, use one of .md .txt .json .yml .yaml");
     expect(() => writeEscaped(root, path, "a")).toThrow(/extension not allowed/);
     expect(existsSync(join(root, path))).toBe(false);
   });
@@ -312,13 +289,10 @@ describe("extension allowlist: .md .txt .json .yml .yaml", () => {
     expect(() => checkTarget(root, "tmp/a.md:x.ts")).toThrow(/contains ':'/);
   });
 
-  it.each([["tmp/A.MD"], ["tmp/a.txt"], ["tmp/a.Json"], ["tmp/a.yml"], ["tmp/a.YAML"]])(
-    "accepts %s (case-insensitive)",
-    (path) => {
-      writeEscaped(root, path, "a");
-      expect(bytesOf(path)).toEqual([0x61]);
-    },
-  );
+  it.each([["tmp/A.MD"], ["tmp/a.txt"], ["tmp/a.Json"], ["tmp/a.yml"], ["tmp/a.YAML"]])("accepts %s (case-insensitive)", (path) => {
+    writeEscaped(root, path, "a");
+    expect(bytesOf(path)).toEqual([0x61]);
+  });
 });
 
 describe("links and spellings that lead out of tests/fixtures/", () => {
@@ -454,27 +428,21 @@ describe("main", () => {
     stdoutSpy = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
 
     expect(main(["../x.md", "a"], root)).toBe(1);
-    const stderrAfterFirstCall = stderrSpy.mock.calls
-      .map((call: unknown[]) => String(call[0]))
-      .join("");
+    const stderrAfterFirstCall = stderrSpy.mock.calls.map((call: unknown[]) => String(call[0])).join("");
     expect(stderrAfterFirstCall).toContain("refusing path");
 
     stderrSpy.mockClear();
     stdoutSpy.mockClear();
 
     expect(main(["ok.md", "a"], root)).toBe(1);
-    const stderrAfterSecondCall = stderrSpy.mock.calls
-      .map((call: unknown[]) => String(call[0]))
-      .join("");
+    const stderrAfterSecondCall = stderrSpy.mock.calls.map((call: unknown[]) => String(call[0])).join("");
     expect(stderrAfterSecondCall).toContain("refusing path");
 
     stderrSpy.mockClear();
     stdoutSpy.mockClear();
 
     expect(main(["tmp/ok.md", "a"], root)).toBe(0);
-    const stdoutAfterSuccess = stdoutSpy.mock.calls
-      .map((call: unknown[]) => String(call[0]))
-      .join("");
+    const stdoutAfterSuccess = stdoutSpy.mock.calls.map((call: unknown[]) => String(call[0])).join("");
     expect(stdoutAfterSuccess).toContain("wrote tmp/ok.md (1 bytes)");
 
     expect(bytesOf("tmp/ok.md")).toEqual([0x61]);
@@ -489,16 +457,13 @@ describe("CLI process", () => {
     rmSync(dir, { recursive: true, force: true });
   });
 
-  const run = (...args: string[]) =>
-    spawnSync(process.execPath, [SCRIPT, ...args], { encoding: "utf8" });
+  const run = (...args: string[]) => spawnSync(process.execPath, [SCRIPT, ...args], { encoding: "utf8" });
 
   it("exits 0, prints path and byte count, writes the control characters", () => {
     const result = run(`tmp/${folder}/c.md`, "a\\n\\u001c\\n\\u0085\\nb\\n");
     expect(result.status).toBe(0);
     expect(result.stdout).toBe(`write-escaped: wrote tmp/${folder}/c.md (9 bytes)\n`);
-    expect([...readFileSync(join(dir, "c.md"))]).toEqual([
-      0x61, 0x0a, 0x1c, 0x0a, 0xc2, 0x85, 0x0a, 0x62, 0x0a,
-    ]);
+    expect([...readFileSync(join(dir, "c.md"))]).toEqual([0x61, 0x0a, 0x1c, 0x0a, 0xc2, 0x85, 0x0a, 0x62, 0x0a]);
   });
 
   it("exits 1 with a message on a bad escape and writes nothing", () => {
@@ -522,15 +487,14 @@ describe("CLI process", () => {
     expect(existsSync(join(dir, ".env"))).toBe(false);
   });
 
-  it.each([["GIT~1/hooks/x"], ["NODE_M~1/x"], ["SECRET~1"]])(
-    "exits 1 on the 8.3 short name %s",
-    (path) => {
-      const result = run(path, "a");
-      expect(result.status).toBe(1);
-      expect(result.stderr).toContain("short-name");
-      expect(existsSync(join(REPO, path))).toBe(false);
-    },
-  );
+  it.each([["GIT~1/hooks/x"], ["NODE_M~1/x"], ["SECRET~1"]])("exits 1 on the 8.3 short name %s", (path) => {
+    // The machine may resolve the short name to a real entry (8.3 alias): assert the script changed nothing.
+    const before = existsSync(join(REPO, path));
+    const result = run(path, "a");
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("short-name");
+    expect(existsSync(join(REPO, path))).toBe(before);
+  });
 
   it("exits 1 on a new file outside tests/fixtures/ and tmp/", () => {
     const path = "docs/write-escaped-probe-never-created.md";

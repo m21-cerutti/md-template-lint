@@ -124,8 +124,7 @@ const CASES: readonly Case[] = [
   },
 ];
 
-const textOf = (name: string, file: string): string =>
-  readFileSync(join(fixturePath("runner", `${GROUP}${name}`), file), "utf8");
+const textOf = (name: string, file: string): string => readFileSync(join(fixturePath("runner", `${GROUP}${name}`), file), "utf8");
 
 /** Lint a variant of a worked example target against the example template. */
 async function variant(name: string, text: string) {
@@ -146,8 +145,7 @@ const unknown = (key: string) => `MTL202 Unknown key '${key}' not present in tem
 const missingHeading = (text: string) => `MTL601 Heading: Missing required heading: '${text}'`;
 const STATUS_MISSING = "MTL201 Field 'status': required but empty or missing";
 const DETAILS_EMPTY = "MTL701 Section 'Details': [content:non-empty] section body is empty";
-const unclosed = (code: string) =>
-  `MTL024 Directive on line 4: 'begin disable ${code}' is never closed, it runs to the end of the file`;
+const unclosed = (code: string) => `MTL024 Directive on line 4: 'begin disable ${code}' is never closed, it runs to the end of the file`;
 
 describe("runner with disable directives: layout", () => {
   it("has at least 1 pass- case, at least 1 fail- case, one directory each", () => {
@@ -188,9 +186,7 @@ describe("runner with disable directives: the worked examples of spec 4.4", () =
       const quiet = report(result, { format: "plain", version: VERSION, quiet: true }).stdout;
       expect(quiet.includes("Suppressed:")).toBe(false);
       const plain = report(result, { format: "plain", version: VERSION }).stdout;
-      expect(plain.includes(`Suppressed:   ${testCase.suppressed}\n`)).toBe(
-        testCase.suppressed > 0,
-      );
+      expect(plain.includes(`Suppressed:   ${testCase.suppressed}\n`)).toBe(testCase.suppressed > 0);
       expect(plain.includes("Suppressed:   0")).toBe(false);
     });
   }
@@ -199,9 +195,7 @@ describe("runner with disable directives: the worked examples of spec 4.4", () =
 describe("runner with disable directives: counts (DIR9)", () => {
   it("summary.suppressed adds every pair-file lint: two files, one of them in two pairs", async () => {
     const result = await runFixture(`${GROUP}pass-sum-over-pair-file-lints`);
-    const files = result.blocks.flatMap((block) =>
-      block.kind === "pair" ? block.files.map((file) => `${block.pair}:${file.path}`) : [],
-    );
+    const files = result.blocks.flatMap((block) => (block.kind === "pair" ? block.files.map((file) => `${block.pair}:${file.path}`) : []));
     expect(files).toEqual(["notes:notes/a.md", "notes:notes/b.md", "first:notes/a.md"]);
     expect(result.summary).toMatchObject({ files: 3, passed: 3, warnings: 0, suppressed: 4 });
   });
@@ -209,68 +203,38 @@ describe("runner with disable directives: counts (DIR9)", () => {
 
 describe("runner with disable directives: variants of the worked examples (engine)", () => {
   it("example 1, negative: disable-line on line 5 covers line 5 only, reviewer is reported", async () => {
-    const text = withLine(
-      textOf("fail-line-directives", "notes/notes.md"),
-      5,
-      "# md-template-lint disable-line MTL202",
-    );
+    const text = withLine(textOf("fail-line-directives", "notes/notes.md"), 5, "# md-template-lint disable-line MTL202");
     const result = await variant("fail-line-directives", text);
     // `reviewer` is a template field here: its two real findings come back, as errors.
-    expect(result.diagnostics.map(shown)).toEqual([
-      "MTL301 Field 'reviewer': expected constant value 'alice', got 'Bob'",
-      "MTL302 Field 'reviewer': value 'Bob' does not match required format [snake_case]",
-      DETAILS_EMPTY,
-      unknown("draft"),
-    ]);
+    expect(result.diagnostics.map(shown)).toEqual(["MTL301 Field 'reviewer': expected constant value 'alice', got 'Bob'", "MTL302 Field 'reviewer': value 'Bob' does not match required format [snake_case]", DETAILS_EMPTY, unknown("draft")]);
     expect(result.suppressed).toBe(2);
   });
 
   it("example 2, without line 7: both ranges run to the end, extra is suppressed, two MTL024 last", async () => {
     const text = withLine(textOf("fail-begin-end-block", "notes/legacy.md"), 7, null);
     const result = await variant("fail-begin-end-block", text);
-    expect(result.diagnostics.map(shown)).toEqual([
-      DETAILS_EMPTY,
-      unclosed("MTL202"),
-      unclosed("MTL301"),
-    ]);
+    expect(result.diagnostics.map(shown)).toEqual([DETAILS_EMPTY, unclosed("MTL202"), unclosed("MTL301")]);
     expect(result.suppressed).toBe(4);
   });
 
   it("example 3, negative: disable instead of disable-file reports all three, nothing suppressed", async () => {
-    const text = textOf("pass-document-covers-unanchored", "notes/draft.md").replace(
-      "disable-file",
-      "disable",
-    );
+    const text = textOf("pass-document-covers-unanchored", "notes/draft.md").replace("disable-file", "disable");
     const result = await variant("pass-document-covers-unanchored", text);
-    expect(result.diagnostics.map(shown)).toEqual([
-      STATUS_MISSING,
-      missingHeading("Details"),
-      missingHeading("Context"),
-    ]);
+    expect(result.diagnostics.map(shown)).toEqual([STATUS_MISSING, missingHeading("Details"), missingHeading("Context")]);
     expect(result.suppressed).toBe(0);
   });
 
   it("example 3, negative: disable-file MTL201 only, the two MTL601 are reported", async () => {
-    const text = textOf("pass-document-covers-unanchored", "notes/draft.md").replace(
-      "MTL201, MTL601",
-      "MTL201",
-    );
+    const text = textOf("pass-document-covers-unanchored", "notes/draft.md").replace("MTL201, MTL601", "MTL201");
     const result = await variant("pass-document-covers-unanchored", text);
-    expect(result.diagnostics.map(shown)).toEqual([
-      missingHeading("Details"),
-      missingHeading("Context"),
-    ]);
+    expect(result.diagnostics.map(shown)).toEqual([missingHeading("Details"), missingHeading("Context")]);
     expect(result.suppressed).toBe(1);
   });
 
   it("example 3: the same result with the directive in the frontmatter or at the end", async () => {
     const original = textOf("pass-document-covers-unanchored", "notes/draft.md");
     const withoutBody = withLine(original, 5, null);
-    const inFrontmatter = withLine(
-      withoutBody,
-      2,
-      "# md-template-lint disable-file MTL201, MTL601\ntitle: Draft",
-    );
+    const inFrontmatter = withLine(withoutBody, 2, "# md-template-lint disable-file MTL201, MTL601\ntitle: Draft");
     const atEnd = `${withoutBody}<!-- md-template-lint disable-file MTL201, MTL601 -->\n`;
     for (const text of [inFrontmatter, atEnd]) {
       const result = await variant("pass-document-covers-unanchored", text);
@@ -280,10 +244,7 @@ describe("runner with disable directives: variants of the worked examples (engin
   });
 
   it("example 4, negative: disable on line 20 starts after both key lines, both are reported", async () => {
-    const text = textOf("pass-document-covers-anchored", "notes/imported.md").replace(
-      "disable-file MTL202",
-      "disable MTL202",
-    );
+    const text = textOf("pass-document-covers-anchored", "notes/imported.md").replace("disable-file MTL202", "disable MTL202");
     const result = await variant("pass-document-covers-anchored", text);
     expect(result.diagnostics.map(shown)).toEqual([unknown("legacy_id"), unknown("legacy_owner")]);
     expect(result.suppressed).toBe(0);
@@ -292,9 +253,7 @@ describe("runner with disable directives: variants of the worked examples (engin
   it("example 5, variant: disable-file with no code on line 16 is MTL020", async () => {
     const text = `${textOf("fail-ignored-places-and-warnings", "notes/ignored.md")}<!-- md-template-lint disable-file -->\n`;
     const result = await variant("fail-ignored-places-and-warnings", text);
-    expect(result.diagnostics.map(shown).at(-1)).toBe(
-      "MTL020 Directive on line 16: 'disable-file' needs at least one rule code",
-    );
+    expect(result.diagnostics.map(shown).at(-1)).toBe("MTL020 Directive on line 16: 'disable-file' needs at least one rule code");
     expect(result.suppressed).toBe(0);
   });
 });

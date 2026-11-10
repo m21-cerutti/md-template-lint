@@ -70,15 +70,15 @@ change ships as a breaking release (0.2.0) without a compatibility flag.
 
 ## Alternatives considered
 
-| Option                                              | Pros                                       | Cons                                                        | Verdict    |
-| --------------------------------------------------- | ------------------------------------------ | ----------------------------------------------------------- | ---------- |
-| All levels, exact levels, opt-out disallow tag       | One rule per level, nested documents work  | Breaking for templates with H3 to H6 and cross-level targets | **Chosen** |
-| Keep the H1/H2 cross match beside exact H3 to H6     | Full parity for H1/H2                      | Two matching rules to explain                               | Rejected (decision 2) |
-| Opt-in `[content:subheadings]` with open or closed argument | No breaking change                  | Deeper headings stay unchecked by default                   | Rejected (round 3) |
-| Unlisted headings as a default warning              | Visible drift                              | Noise on every document with extra detail                   | Rejected (round 4) |
-| Disallow tag on direct children only                | Smaller effect                             | Every listed child must repeat the tag                      | Rejected (decision 3) |
-| Compatibility flag `headings.maxLevel: 2`           | Smooth upgrade                             | Two behaviours to keep and test                             | Rejected (decision 1) |
-| Extra `allow` tag to re-open a subtree under `disallow` | Fine-grained control                   | Two tags to learn, order of tags matters                    | Rejected (decision 3(a)) |
+| Option                                                      | Pros                                      | Cons                                                         | Verdict                  |
+| ----------------------------------------------------------- | ----------------------------------------- | ------------------------------------------------------------ | ------------------------ |
+| All levels, exact levels, opt-out disallow tag              | One rule per level, nested documents work | Breaking for templates with H3 to H6 and cross-level targets | **Chosen**               |
+| Keep the H1/H2 cross match beside exact H3 to H6            | Full parity for H1/H2                     | Two matching rules to explain                                | Rejected (decision 2)    |
+| Opt-in `[content:subheadings]` with open or closed argument | No breaking change                        | Deeper headings stay unchecked by default                    | Rejected (round 3)       |
+| Unlisted headings as a default warning                      | Visible drift                             | Noise on every document with extra detail                    | Rejected (round 4)       |
+| Disallow tag on direct children only                        | Smaller effect                            | Every listed child must repeat the tag                       | Rejected (decision 3)    |
+| Compatibility flag `headings.maxLevel: 2`                   | Smooth upgrade                            | Two behaviours to keep and test                              | Rejected (decision 1)    |
+| Extra `allow` tag to re-open a subtree under `disallow`     | Fine-grained control                      | Two tags to learn, order of tags matters                     | Rejected (decision 3(a)) |
 
 ## Research
 

@@ -1,18 +1,11 @@
 /** MTL024 directive-begin-unclosed (src/rules/syntax.ts, docs/spec.md 4.3, 4.4 DIR8). */
 import { describe, expect, it } from "vitest";
-import {
-  at,
-  expectCases,
-  expectDirectiveRule,
-  findingsOf,
-  type Found,
-} from "../../helpers/directives.js";
+import { at, expectCases, expectDirectiveRule, findingsOf, type Found } from "../../helpers/directives.js";
 
 const CODE = "MTL024";
 const DIR = "tests/fixtures/pairs/MTL024";
 
-const unclosed = (code: string): string =>
-  `'begin disable ${code}' is never closed, it runs to the end of the file`;
+const unclosed = (code: string): string => `'begin disable ${code}' is never closed, it runs to the end of the file`;
 
 interface TestCase {
   readonly name: string;
@@ -32,12 +25,7 @@ const CASES: readonly TestCase[] = [
   // opened again reports the second opening.
   {
     name: "fail-ordered-by-begin-position",
-    expected: [
-      at(3, 1, unclosed("MTL701")),
-      at(8, 1, unclosed("MTL703")),
-      at(8, 48, unclosed("MTL702")),
-      at(11, 1, unclosed("MTL202")),
-    ],
+    expected: [at(3, 1, unclosed("MTL701")), at(8, 1, unclosed("MTL703")), at(8, 48, unclosed("MTL702")), at(11, 1, unclosed("MTL202"))],
   },
 ];
 

@@ -63,11 +63,7 @@ const CASES: readonly Case[] = [
     name: "fail-broken-template",
     args: ["--verify"],
     exitCode: 1,
-    stdout: [
-      "✓ templates/note.template.md",
-      `TEMPLATE ERROR: templates/broken.template.md - ${NO_FRONTMATTER}`,
-      "Templates:    2 checked, 1 broken",
-    ],
+    stdout: ["✓ templates/note.template.md", `TEMPLATE ERROR: templates/broken.template.md - ${NO_FRONTMATTER}`, "Templates:    2 checked, 1 broken"],
     stderr: [],
     absent: ["docs/a.md", "All templates passed!"],
     summary: {
@@ -85,11 +81,7 @@ const CASES: readonly Case[] = [
     name: "fail-template-missing",
     args: ["--verify"],
     exitCode: 2,
-    stdout: [
-      "✓ templates/note.template.md",
-      "Templates:    1 checked, 0 broken",
-      "Run errors:   1",
-    ],
+    stdout: ["✓ templates/note.template.md", "Templates:    1 checked, 0 broken", "Run errors:   1"],
     stderr: ["error MTL910: template not found: templates/missing.template.md (pair 'ghost')"],
     absent: ["All templates passed!"],
     summary: {
@@ -108,11 +100,7 @@ const CASES: readonly Case[] = [
     name: "fail-broken-and-missing-template",
     args: ["--verify"],
     exitCode: 2,
-    stdout: [
-      `TEMPLATE ERROR: templates/broken.template.md - ${NO_FRONTMATTER}`,
-      "Templates:    1 checked, 1 broken",
-      "Run errors:   1",
-    ],
+    stdout: [`TEMPLATE ERROR: templates/broken.template.md - ${NO_FRONTMATTER}`, "Templates:    1 checked, 1 broken", "Run errors:   1"],
     stderr: ["error MTL910: template not found: templates/missing.template.md (pair 'ghost')"],
     absent: ["All templates passed!"],
     summary: {
@@ -130,9 +118,7 @@ const CASES: readonly Case[] = [
     args: ["--verify"],
     exitCode: 2,
     stdout: ["Templates:    0 checked, 0 broken", "Run errors:   1"],
-    stderr: [
-      "error MTL911: template path is not a regular file (for example a directory): templates/dir.template.md (pair 'dir')",
-    ],
+    stderr: ["error MTL911: template path is not a regular file (for example a directory): templates/dir.template.md (pair 'dir')"],
     absent: ["No templates checked."],
     summary: {
       templates: 0,
@@ -167,11 +153,7 @@ const CASES: readonly Case[] = [
     name: "fail-explicit-broken-template",
     args: ["--verify", "templates/note.template.md", "templates/broken.template.md"],
     exitCode: 1,
-    stdout: [
-      "Config: (none)",
-      "✓ templates/note.template.md",
-      `TEMPLATE ERROR: templates/broken.template.md - ${NO_FRONTMATTER}`,
-    ],
+    stdout: ["Config: (none)", "✓ templates/note.template.md", `TEMPLATE ERROR: templates/broken.template.md - ${NO_FRONTMATTER}`],
     stderr: [],
     summary: {
       templates: 2,
@@ -214,26 +196,14 @@ describe("cli --verify (spec 7.3)", () => {
     });
 
     it(`${testCase.name}: JSON summary`, async () => {
-      const run = await runCliIn(`${GROUP}${testCase.name}`, [
-        ...testCase.args,
-        "--format",
-        "json",
-      ]);
+      const run = await runCliIn(`${GROUP}${testCase.name}`, [...testCase.args, "--format", "json"]);
       const json = parseJson(run.stdout);
       expect(run.exitCode).toBe(testCase.exitCode);
       expect(json.mode).toBe("verify");
       expect(json.summary).toEqual(testCase.summary);
       // Spec 8.5: `errors` (A72k) follows `broken`; `suppressed` (always 0 in verify mode)
       // follows `warnings`.
-      expect(Object.keys(json.summary)).toEqual([
-        "templates",
-        "broken",
-        "errors",
-        "warnings",
-        "suppressed",
-        "runErrors",
-        "exitCode",
-      ]);
+      expect(Object.keys(json.summary)).toEqual(["templates", "broken", "errors", "warnings", "suppressed", "runErrors", "exitCode"]);
       expect(run.stderr).toBe("");
     });
   }
@@ -243,9 +213,7 @@ describe("cli --verify: details", () => {
   it("JSON lists each template with its status, schema members and located warnings", async () => {
     const json = parseJson((await runCliIn(PASS, ["--verify", "--format", "json"])).stdout);
     const field = [{ name: "title", type: "string", rules: ["presence:required"] }];
-    const headings = [
-      { level: 2, text: "Summary", rules: ["presence:required", "content:non-empty"] },
-    ];
+    const headings = [{ level: 2, text: "Summary", rules: ["presence:required", "content:non-empty"] }];
     expect(json.templates).toEqual([
       {
         path: "templates/note.template.md",
@@ -303,9 +271,7 @@ describe("cli --verify: details", () => {
   it("plain format prints a broken template as TEMPLATE ERROR, with no PASS line for it", async () => {
     const run = await runCliIn(`${GROUP}fail-broken-template`, ["--verify", "--format", "plain"]);
     expect(run.exitCode).toBe(1);
-    expect(run.stdout).toContain(
-      `  TEMPLATE ERROR: templates/broken.template.md - ${NO_FRONTMATTER}\n`,
-    );
+    expect(run.stdout).toContain(`  TEMPLATE ERROR: templates/broken.template.md - ${NO_FRONTMATTER}\n`);
     expect(run.stdout).not.toContain("PASS templates/broken.template.md");
     expect(run.stdout).not.toContain("\u001b[");
     expect(run.stdout).toContain("Templates:    2 checked, 1 broken");
@@ -326,9 +292,7 @@ describe("cli --verify: details", () => {
     const clean = await runCliIn(PASS, ["--verify", "--quiet"]);
     expect(clean).toMatchObject({ stdout: "", stderr: "", exitCode: 0 });
     const broken = await runCliIn(`${GROUP}fail-broken-template`, ["--verify", "--quiet"]);
-    expect(broken.stdout).toBe(
-      `  TEMPLATE ERROR: templates/broken.template.md - ${NO_FRONTMATTER}\n`,
-    );
+    expect(broken.stdout).toBe(`  TEMPLATE ERROR: templates/broken.template.md - ${NO_FRONTMATTER}\n`);
     expect(broken.exitCode).toBe(1);
   });
 
@@ -336,9 +300,7 @@ describe("cli --verify: details", () => {
     const run = await runCliIn(`${GROUP}fail-template-missing`, ["--verify", "--quiet"]);
     expect(run.exitCode).toBe(2);
     expect(run.stdout).toBe("");
-    expect(run.stderr).toBe(
-      "error MTL910: template not found: templates/missing.template.md (pair 'ghost')\n",
-    );
+    expect(run.stderr).toBe("error MTL910: template not found: templates/missing.template.md (pair 'ghost')\n");
   });
 
   it("--quiet with a broken and a missing template prints both, exit 2", async () => {
@@ -349,21 +311,13 @@ describe("cli --verify: details", () => {
   });
 
   it("template arguments need no config, and win over --config", async () => {
-    const run = await runCliIn(PASS, [
-      "--verify",
-      "--config",
-      "nope.yml",
-      "templates/note.template.md",
-    ]);
+    const run = await runCliIn(PASS, ["--verify", "--config", "nope.yml", "templates/note.template.md"]);
     expect(run.exitCode).toBe(0);
     expect(run.stdout).toContain("Config: (none)");
   });
 
   it("takes absolute and backslash template paths", async () => {
-    const absolute = fixtureFile(
-      `${GROUP}fail-explicit-broken-template`,
-      "templates/broken.template.md",
-    );
+    const absolute = fixtureFile(`${GROUP}fail-explicit-broken-template`, "templates/broken.template.md");
     for (const form of [absolute, absolute.replaceAll("/", "\\")]) {
       const run = await runCliIn(PASS, ["--verify", form]);
       expect(run.exitCode, form).toBe(1);
@@ -378,20 +332,14 @@ describe("cli --verify: details", () => {
   });
 
   it("the same template given twice is checked once", async () => {
-    const run = await runCliIn(PASS, [
-      "--verify",
-      "templates/note.template.md",
-      "./templates/note.template.md",
-    ]);
+    const run = await runCliIn(PASS, ["--verify", "templates/note.template.md", "./templates/note.template.md"]);
     expect(run.stdout).toContain("Templates:    1 checked, 0 broken");
   });
 
   it("without a config and without template paths it is a usage conflict (MTL923), exit 2", async () => {
     const run = await runCliIn("usage-no-config", ["--verify"]);
     expect(run.exitCode).toBe(2);
-    expect(run.stderr).toContain(
-      "error MTL923: --verify needs a config or at least one template path",
-    );
+    expect(run.stderr).toContain("error MTL923: --verify needs a config or at least one template path");
   });
 
   it("an explicit --config that is missing is MTL901, not a usage conflict", async () => {
@@ -408,25 +356,19 @@ describe("cli --verify: a template that is not UTF-8", () => {
   beforeAll(() => {
     folder = mkdtempSync(join(tmpdir(), "mtl-cli-verify-"));
     // 0xFF and 0xFE never occur in UTF-8; the bytes are built here, not stored as a fixture.
-    writeFileSync(
-      join(folder, "bytes.template.md"),
-      Buffer.from([0x2d, 0x2d, 0x2d, 0xff, 0xfe, 0x0a]),
-    );
+    writeFileSync(join(folder, "bytes.template.md"), Buffer.from([0x2d, 0x2d, 0x2d, 0xff, 0xfe, 0x0a]));
   });
 
   afterAll(() => {
     if (folder !== "") rmSync(folder, { recursive: true, force: true });
   });
 
-  const run = (args: readonly string[]) =>
-    runCliIn("usage-no-config", args, { cwd: foldPath(folder), boundary: foldPath(folder) });
+  const run = (args: readonly string[]) => runCliIn("usage-no-config", args, { cwd: foldPath(folder), boundary: foldPath(folder) });
 
   it("is broken (MTL004), exit 1, with a path-free reason", async () => {
     const result = await run(["--verify", "bytes.template.md"]);
     expect(result.exitCode).toBe(1);
-    expect(result.stdout).toContain(
-      "  TEMPLATE ERROR: bytes.template.md - file is not valid UTF-8\n",
-    );
+    expect(result.stdout).toContain("  TEMPLATE ERROR: bytes.template.md - file is not valid UTF-8\n");
     expect(result.stderr).toBe("");
     expect(result.stdout).not.toContain(folder);
   });
@@ -481,8 +423,7 @@ describe("cli --verify: every heading level (spec 8.3, change C10)", () => {
     if (folder !== "") rmSync(folder, { recursive: true, force: true });
   });
 
-  const run = (args: readonly string[]) =>
-    runCliIn("usage-no-config", args, { cwd: foldPath(folder), boundary: foldPath(folder) });
+  const run = (args: readonly string[]) => runCliIn("usage-no-config", args, { cwd: foldPath(folder), boundary: foldPath(folder) });
 
   it("lists H1 to H6 in template order with the disallow token after the content rules", async () => {
     const result = await run(["--verify", "--format", "plain", "levels.template.md"]);

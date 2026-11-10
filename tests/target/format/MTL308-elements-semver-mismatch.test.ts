@@ -14,8 +14,7 @@ const DIR = "tests/fixtures/pairs/MTL308";
 const OTHER_FORMAT_CODES = ["MTL301", "MTL302", "MTL303", "MTL304", "MTL305", "MTL306", "MTL307"];
 
 /** Spec 4.3 message of MTL308; `pylist` is the Python list of the bad items. */
-const message = (key: string, pylist: string): string =>
-  `Field '${key}': list contains entries not matching [format:elements:semver]: ${pylist}`;
+const message = (key: string, pylist: string): string => `Field '${key}': list contains entries not matching [format:elements:semver]: ${pylist}`;
 
 interface Finding {
   readonly message: string;
@@ -115,8 +114,7 @@ const CASES: readonly TestCase[] = [
   },
 ];
 
-const read = (path: string): string =>
-  readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
+const read = (path: string): string => readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
 
 async function templateOf(fixture: string) {
   const status = await checkTemplate(registry, read(`${fixture}/template.md`));
@@ -127,19 +125,11 @@ async function templateOf(fixture: string) {
 /** Diagnostics of this code, of the other format codes, the type codes and the suppressed count. */
 async function lint(testCase: TestCase) {
   const fixture = `${DIR}/${testCase.name}`;
-  const result = await lintTarget(
-    registry,
-    await templateOf(fixture),
-    read(`${fixture}/target.md`),
-    `${fixture}/target.md`,
-    createEnv(),
-  );
+  const result = await lintTarget(registry, await templateOf(fixture), read(`${fixture}/target.md`), `${fixture}/target.md`, createEnv());
   return {
     own: result.diagnostics.filter((diagnostic) => diagnostic.code === CODE),
     others: result.diagnostics.filter((diagnostic) => OTHER_FORMAT_CODES.includes(diagnostic.code)),
-    types: result.diagnostics
-      .filter((diagnostic) => diagnostic.code.startsWith("MTL5"))
-      .map((diagnostic) => diagnostic.code),
+    types: result.diagnostics.filter((diagnostic) => diagnostic.code.startsWith("MTL5")).map((diagnostic) => diagnostic.code),
     suppressed: result.suppressed,
   };
 }
@@ -192,17 +182,8 @@ describe("MTL308 elements-semver-mismatch", () => {
     // `[format:elements:date]` written first wins the elements shape kind: no semver token.
     expect(rules.get("date_first")).not.toContain("format:elements:semver");
     expect(rules.get("scalar_only")).toEqual(["presence:required", "format:semver"]);
-    const ordered = await checkTemplate(
-      registry,
-      '---\nv: ["1"] # [count:min:1] [format:elements:semver] [format:semver] [format:elements:snake_case]\n---\n',
-    );
+    const ordered = await checkTemplate(registry, '---\nv: ["1"] # [count:min:1] [format:elements:semver] [format:semver] [format:elements:snake_case]\n---\n');
     if (ordered.status !== "ok") throw new Error("template is broken");
-    expect(describeTemplate(ordered.model).fields[0]?.rules).toEqual([
-      "presence:required",
-      "format:elements:snake_case",
-      "format:semver",
-      "format:elements:semver",
-      "count:min:1",
-    ]);
+    expect(describeTemplate(ordered.model).fields[0]?.rules).toEqual(["presence:required", "format:elements:snake_case", "format:semver", "format:elements:semver", "count:min:1"]);
   });
 });

@@ -10,8 +10,7 @@ import { expectTemplateCases, verifyFixture, type VerifyCase } from "../../helpe
 const CODE = "MTL012";
 const DIR = "tests/fixtures/templates/MTL012";
 
-const warning = (message: string, line: number, column: number, sourceLine: string) =>
-  ({ code: CODE, severity: "warning", message, line, column, sourceLine }) as const;
+const warning = (message: string, line: number, column: number, sourceLine: string) => ({ code: CODE, severity: "warning", message, line, column, sourceLine }) as const;
 /** A malformed heading tag: the bracket stays in the heading text (spec 2.7). */
 const heading = (text: string, line: number, column: number, sourceLine: string) => {
   const tag = text.slice(text.indexOf("["));
@@ -27,37 +26,21 @@ const CASES: readonly VerifyCase[] = [
     name: "fail-field-tag-bound-not-a-number",
     exitCode: 0,
     status: "ok",
-    diagnostics: [
-      warning("Field 'n': malformed tag [count:min:abc]", 2, 19, "n: x # [count:min:abc]"),
-    ],
+    diagnostics: [warning("Field 'n': malformed tag [count:min:abc]", 2, 19, "n: x # [count:min:abc]")],
   },
   // A heading tag whose bound is not a number.
   {
     name: "fail-heading-tag-bound-not-a-number",
     exitCode: 0,
     status: "ok",
-    diagnostics: [
-      warning(
-        "Heading 'Notes [content:min-lines:x]': malformed tag [content:min-lines:x]",
-        4,
-        29,
-        "## Notes [content:min-lines:x]",
-      ),
-    ],
+    diagnostics: [warning("Heading 'Notes [content:min-lines:x]': malformed tag [content:min-lines:x]", 4, 29, "## Notes [content:min-lines:x]")],
   },
   // The filename comment names an unknown case convention.
   {
     name: "fail-filename-comment-unknown-case",
     exitCode: 0,
     status: "ok",
-    diagnostics: [
-      warning(
-        "Filename comment: malformed tag [filename:case:bogus]",
-        2,
-        18,
-        "# [filename:case:bogus]",
-      ),
-    ],
+    diagnostics: [warning("Filename comment: malformed tag [filename:case:bogus]", 2, 18, "# [filename:case:bogus]")],
   },
   // The four field shape tags, case-insensitive, next to other tags (spec 2.9).
   { name: "pass-format-shape-tags", exitCode: 0, status: "ok", diagnostics: [] },
@@ -66,15 +49,7 @@ const CASES: readonly VerifyCase[] = [
     name: "fail-field-format-shape-bad",
     exitCode: 0,
     status: "ok",
-    diagnostics: [
-      warning("Field 'v': malformed tag [format:dates]", 2, 16, "v: x # [format:dates]"),
-      warning(
-        "Field 'w': malformed tag [format:elements:semvers]",
-        3,
-        25,
-        "w: x # [format:elements:semvers]",
-      ),
-    ],
+    diagnostics: [warning("Field 'v': malformed tag [format:dates]", 2, 16, "v: x # [format:dates]"), warning("Field 'w': malformed tag [format:elements:semvers]", 3, 25, "w: x # [format:elements:semvers]")],
   },
   // The other bad shape forms: column of the first token that does not fit (spec 2.7, 2.9).
   {
@@ -83,12 +58,7 @@ const CASES: readonly VerifyCase[] = [
     status: "ok",
     diagnostics: [
       warning("Field 'a': malformed tag [format:semvers]", 2, 16, "a: x # [format:semvers]"),
-      warning(
-        "Field 'b': malformed tag [format:elements:dates]",
-        3,
-        25,
-        "b: x # [format:elements:dates]",
-      ),
+      warning("Field 'b': malformed tag [format:elements:dates]", 3, 25, "b: x # [format:elements:dates]"),
       warning("Field 'c': malformed tag [format:elements:]", 4, 25, "c: x # [format:elements:]"),
       warning("Field 'd': malformed tag [format:elements]", 5, 24, "d: x # [format:elements]"),
       // Spec 3.2 step A5: the comment holds the word `ISO`, so `e` is a date field, and the
@@ -102,12 +72,7 @@ const CASES: readonly VerifyCase[] = [
         sourceLine: "e: x # [format:iso-date]",
       },
       warning("Field 'e': malformed tag [format:iso-date]", 6, 16, "e: x # [format:iso-date]"),
-      warning(
-        "Field 'f': malformed tag [format:elements:semver:x]",
-        7,
-        31,
-        "f: x # [format:elements:semver:x]",
-      ),
+      warning("Field 'f': malformed tag [format:elements:semver:x]", 7, 31, "f: x # [format:elements:semver:x]"),
     ],
   },
   // The heading tags of spec 2.10 on H1 to H6, keywords in any case, a `]`, `\"`, `\\` and
@@ -119,11 +84,7 @@ const CASES: readonly VerifyCase[] = [
     name: "fail-heading-pattern-tag-malformed",
     exitCode: 0,
     status: "ok",
-    diagnostics: [
-      heading("R [pattern:Release]", 4, 15, "## R [pattern:Release]"),
-      heading('R [pattern:"x\\"]', 5, 20, '## R [pattern:"x\\"]'),
-      heading('R [pattern:"x"y]', 6, 19, '### R [pattern:"x"y]'),
-    ],
+    diagnostics: [heading("R [pattern:Release]", 4, 15, "## R [pattern:Release]"), heading('R [pattern:"x\\"]', 5, 20, '## R [pattern:"x\\"]'), heading('R [pattern:"x"y]', 6, 19, '### R [pattern:"x"y]')],
   },
   // An unclosed quote: the tag ends at the end of the heading (spec 2.10).
   {
@@ -163,9 +124,7 @@ const CASES: readonly VerifyCase[] = [
     name: "fail-heading-content-no-extras",
     exitCode: 0,
     status: "ok",
-    diagnostics: [
-      heading("R [content:subheadings:no-extras]", 4, 35, "## R [content:subheadings:no-extras]"),
-    ],
+    diagnostics: [heading("R [content:subheadings:no-extras]", 4, 35, "## R [content:subheadings:no-extras]")],
   },
   // The dropped `[presence:exist]` on a heading (spec 2.6 "Dropped tag"): MTL012, and the
   // bracket stays in the heading text.
@@ -182,9 +141,7 @@ const CASES: readonly VerifyCase[] = [
     name: "fail-heading-presence-exist-before-content-tag",
     exitCode: 0,
     status: "ok",
-    diagnostics: [
-      heading("Intro [presence:exist]", 4, 20, "## Intro [presence:exist] [content:non-empty]"),
-    ],
+    diagnostics: [heading("Intro [presence:exist]", 4, 20, "## Intro [presence:exist] [content:non-empty]")],
   },
   // The malformed tag is the RIGHTMOST bracket: peeling stops at once, so the recognized
   // `[content:non-empty]` before it stays in the heading text too (spec 2.6, 2.7). The
@@ -193,14 +150,7 @@ const CASES: readonly VerifyCase[] = [
     name: "fail-heading-presence-exist-after-content-tag",
     exitCode: 0,
     status: "ok",
-    diagnostics: [
-      warning(
-        "Heading 'Intro [content:non-empty] [presence:exist]': malformed tag [presence:exist]",
-        4,
-        40,
-        "## Intro [content:non-empty] [presence:exist]",
-      ),
-    ],
+    diagnostics: [warning("Heading 'Intro [content:non-empty] [presence:exist]': malformed tag [presence:exist]", 4, 40, "## Intro [content:non-empty] [presence:exist]")],
   },
   // Keywords are case-insensitive, so `EXIST` is the same dropped word; the tag is printed as
   // written (spec 2, 4.3 `{tag}`).
@@ -215,9 +165,7 @@ const CASES: readonly VerifyCase[] = [
     name: "fail-field-presence-exist-dropped",
     exitCode: 0,
     status: "ok",
-    diagnostics: [
-      warning("Field 'n': malformed tag [presence:exist]", 2, 18, "n: x # [presence:exist]"),
-    ],
+    diagnostics: [warning("Field 'n': malformed tag [presence:exist]", 2, 18, "n: x # [presence:exist]")],
   },
   // `[unique-headings-names]` in every place of the spec 2.11 placement table that gives no
   // finding: the standalone switch line (twice, any case), a mixed comment line, after a key,
@@ -231,18 +179,8 @@ const CASES: readonly VerifyCase[] = [
     exitCode: 0,
     status: "ok",
     diagnostics: [
-      warning(
-        "Filename comment: malformed tag [unique-headings-names:x]",
-        2,
-        25,
-        "# [unique-headings-names:x]",
-      ),
-      warning(
-        "Field 'n': malformed tag [unique-headings-names:]",
-        3,
-        30,
-        "n: x # [unique-headings-names:]",
-      ),
+      warning("Filename comment: malformed tag [unique-headings-names:x]", 2, 25, "# [unique-headings-names:x]"),
+      warning("Field 'n': malformed tag [unique-headings-names:]", 3, 30, "n: x # [unique-headings-names:]"),
       heading("R [unique-headings-names:x]", 5, 28, "## R [unique-headings-names:x]"),
     ],
   },

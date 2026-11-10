@@ -12,12 +12,7 @@ const VERSION = "1.0.0";
 const ESC = String.fromCharCode(27);
 
 describe("plain reporter: expected output", () => {
-  for (const name of [
-    "report-sample",
-    "report-control-characters",
-    "report-config-error",
-    "report-multi-root-warnings",
-  ]) {
+  for (const name of ["report-sample", "report-control-characters", "report-config-error", "report-multi-root-warnings"]) {
     it(`${name}: matches expected.plain.txt`, async () => {
       const result = await runFixture(name);
       const { stdout } = report(result, { format: "plain", version: VERSION, color: true });
@@ -84,10 +79,7 @@ describe("reporters sanitize control characters of echoed values", () => {
     ["ia\ufff9\ufffa\ufffb", "ia\\ufff9\\ufffa\\ufffb"],
     ["tag\u{e0000}\u{e0001}\u{e007f}", "tag\\u{e0000}\\u{e0001}\\u{e007f}"],
     // the neighbours of those ranges stay
-    [
-      "\u00ac\u00ae\u200a\u2065\ufff8\ufffc\u{e0080}",
-      "\u00ac\u00ae\u200a\u2065\ufff8\ufffc\u{e0080}",
-    ],
+    ["\u00ac\u00ae\u200a\u2065\ufff8\ufffc\u{e0080}", "\u00ac\u00ae\u200a\u2065\ufff8\ufffc\u{e0080}"],
     // a break at the ends keeps one space
     ["\nx\n", " x "],
   ];

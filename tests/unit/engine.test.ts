@@ -43,30 +43,8 @@ describe("loadDocument: parse failures", () => {
 
 describe("loadDocument: values and binding", () => {
   it("keeps every scalar a string (failsafe) and the last duplicate value", () => {
-    const model = load(
-      "---",
-      "flag: yes",
-      "when: 2026-08-10",
-      "num: 1.0",
-      "nil: ~",
-      "empty:",
-      "dup: first",
-      "dup: last",
-      "tags: [a, b]",
-      "meta:",
-      "  sub: x",
-      "---",
-    );
-    expect([...model.fields.keys()]).toEqual([
-      "flag",
-      "when",
-      "num",
-      "nil",
-      "empty",
-      "dup",
-      "tags",
-      "meta",
-    ]);
+    const model = load("---", "flag: yes", "when: 2026-08-10", "num: 1.0", "nil: ~", "empty:", "dup: first", "dup: last", "tags: [a, b]", "meta:", "  sub: x", "---");
+    expect([...model.fields.keys()]).toEqual(["flag", "when", "num", "nil", "empty", "dup", "tags", "meta"]);
     const value = (key: string) => model.fields.get(key)?.value;
     expect(value("flag")).toBe("yes");
     expect(value("when")).toBe("2026-08-10");
@@ -80,16 +58,7 @@ describe("loadDocument: values and binding", () => {
   });
 
   it("binds a comment to the top-level key on the same line only", () => {
-    const model = load(
-      "---",
-      "id: x # [presence:optional]",
-      '"a:b": y # quoted',
-      "tags: # [count:min:1]",
-      "  - a # item comment",
-      "meta:",
-      "  sub: x # [presence:optional]",
-      "---",
-    );
+    const model = load("---", "id: x # [presence:optional]", '"a:b": y # quoted', "tags: # [count:min:1]", "  - a # item comment", "meta:", "  sub: x # [presence:optional]", "---");
     expect(model.fields.get("id")?.comment?.text).toBe("[presence:optional]");
     expect(model.fields.get("a:b")?.comment?.text).toBe("quoted");
     expect(model.fields.get("tags")?.comment?.tags).toMatchObject([{ kind: "count" }]);
@@ -97,14 +66,7 @@ describe("loadDocument: values and binding", () => {
   });
 
   it("keeps field findings only on YAML key lines (spec 2.1)", () => {
-    const model = load(
-      "---",
-      "desc: |",
-      "  k: v # [bogus:x]",
-      "id: x # [nope:y]",
-      "---",
-      "## Notes [presence:sometimes]",
-    );
+    const model = load("---", "desc: |", "  k: v # [bogus:x]", "id: x # [nope:y]", "---", "## Notes [presence:sometimes]");
     expect(model.findings.map((f) => [f.region, f.reason, f.tag, f.position.line])).toEqual([
       ["frontmatter", "unknown", "[nope:y]", 4],
       ["body", "malformed", "[presence:sometimes]", 6],
@@ -114,21 +76,7 @@ describe("loadDocument: values and binding", () => {
 
 describe("loadDocument: sections", () => {
   it("builds sections from every level with parents; a body keeps its deeper headings", () => {
-    const model = load(
-      "---",
-      "a: b",
-      "---",
-      "# Title [presence:required]",
-      "intro",
-      "## One",
-      "### Deep",
-      "text",
-      "```",
-      "## not a heading",
-      "```",
-      "## Two",
-      "last",
-    );
+    const model = load("---", "a: b", "---", "# Title [presence:required]", "intro", "## One", "### Deep", "text", "```", "## not a heading", "```", "## Two", "last");
     // Spec 2.6, change C10: H3 to H6 are sections too; parent = nearest lower-level heading.
     expect(model.sections.map((s) => [s.level, s.text, s.line, s.parent])).toEqual([
       [1, "Title", 4, null],

@@ -15,28 +15,11 @@
  */
 import { readFile, stat } from "node:fs/promises";
 import { homedir } from "node:os";
-import {
-  isAlias,
-  isMap,
-  isNode,
-  isScalar,
-  isSeq,
-  LineCounter,
-  parseDocument,
-  type Pair,
-  type YAMLMap,
-} from "yaml";
+import { isAlias, isMap, isNode, isScalar, isSeq, LineCounter, parseDocument, type Pair, type YAMLMap } from "yaml";
 import type { RuleCode } from "../engine/model.js";
 import { compileGlob, type CompiledGlob } from "./glob.js";
 import { displayPath, foldPath, resolvePath, toSlashes } from "./paths.js";
-import {
-  ON_EMPTY_VALUES,
-  type ConfigResult,
-  type LintConfig,
-  type OnEmpty,
-  type PairConfig,
-  type RunDiagnostic,
-} from "./types.js";
+import { ON_EMPTY_VALUES, type ConfigResult, type LintConfig, type OnEmpty, type PairConfig, type RunDiagnostic } from "./types.js";
 
 export const CONFIG_FILE_NAME = "md-template-lint.yml";
 
@@ -55,25 +38,8 @@ const ROOT_OR_ALIAS_NAME = /^[A-Za-z0-9_-]+$/;
 const PAIR_NAME = /^[A-Za-z0-9_.-]+$/;
 const RESERVED_ROOT = "project";
 
-const TOP_KEYS = [
-  "version",
-  "onEmpty",
-  "roots",
-  "aliases",
-  "approvedPaths",
-  "allowPrivateNetworks",
-  "pairs",
-];
-const PAIR_KEYS = [
-  "name",
-  "template",
-  "templateRoot",
-  "roots",
-  "include",
-  "exclude",
-  "description",
-  "onEmpty",
-];
+const TOP_KEYS = ["version", "onEmpty", "roots", "aliases", "approvedPaths", "allowPrivateNetworks", "pairs"];
+const PAIR_KEYS = ["name", "template", "templateRoot", "roots", "include", "exclude", "description", "onEmpty"];
 
 async function isFile(path: string): Promise<boolean> {
   try {
@@ -96,12 +62,7 @@ async function discover(start: string, boundary: string | undefined): Promise<st
   }
 }
 
-function failure(
-  display: string | null,
-  code: RuleCode,
-  message: string,
-  extra: Partial<RunDiagnostic> = {},
-): ConfigResult {
+function failure(display: string | null, code: RuleCode, message: string, extra: Partial<RunDiagnostic> = {}): ConfigResult {
   return {
     ok: false,
     display,
@@ -130,8 +91,7 @@ function describe(node: unknown): string {
   return "nothing";
 }
 
-const stringOf = (node: unknown): string | null =>
-  isScalar(node) && typeof node.value === "string" ? node.value : null;
+const stringOf = (node: unknown): string | null => (isScalar(node) && typeof node.value === "string" ? node.value : null);
 
 interface Entry {
   readonly name: string;
@@ -184,12 +144,7 @@ function entriesOf(errors: Errors, map: YAMLMap, path: string): Entry[] {
   for (const pair of map.items as Pair<unknown, unknown>[]) {
     if (!isScalar(pair.key) || typeof pair.key.value !== "string") {
       const where = path === "" ? "(root)" : path;
-      errors.add(
-        "MTL904",
-        pair.key,
-        where,
-        `${where}: expected a string key, got ${describe(pair.key)}`,
-      );
+      errors.add("MTL904", pair.key, where, `${where}: expected a string key, got ${describe(pair.key)}`);
       continue;
     }
     out.push({ name: String(pair.key.value), key: pair.key, value: pair.value });
@@ -197,12 +152,7 @@ function entriesOf(errors: Errors, map: YAMLMap, path: string): Entry[] {
   return out;
 }
 
-function checkKnown(
-  errors: Errors,
-  entries: readonly Entry[],
-  allowed: readonly string[],
-  path: string,
-) {
+function checkKnown(errors: Errors, entries: readonly Entry[], allowed: readonly string[], path: string) {
   for (const entry of entries) {
     if (allowed.includes(entry.name)) continue;
     const key = join(path, entry.name);
@@ -210,38 +160,22 @@ function checkKnown(
   }
 }
 
-const find = (entries: readonly Entry[], name: string): Entry | undefined =>
-  entries.find((entry) => entry.name === name);
+const find = (entries: readonly Entry[], name: string): Entry | undefined => entries.find((entry) => entry.name === name);
 
 /** A string value (non-empty unless `allowEmpty`), else MTL904. */
 function readText(errors: Errors, entry: Entry, key: string, allowEmpty = false): string | null {
   const text = stringOf(entry.value);
   if (text !== null && (allowEmpty || text.trim() !== "")) return text;
-  errors.add(
-    "MTL904",
-    entry.key,
-    key,
-    `${key}: expected ${allowEmpty ? "string" : "non-empty string"}, got ${describe(entry.value)}`,
-  );
+  errors.add("MTL904", entry.key, key, `${key}: expected ${allowEmpty ? "string" : "non-empty string"}, got ${describe(entry.value)}`);
   return null;
 }
 
-function readEnum<T extends string>(
-  errors: Errors,
-  entry: Entry,
-  key: string,
-  values: readonly T[],
-): T | null {
+function readEnum<T extends string>(errors: Errors, entry: Entry, key: string, values: readonly T[]): T | null {
   const text = stringOf(entry.value);
   const hit = values.find((value) => value === text);
   if (hit !== undefined) return hit;
   const actual = text === null ? describe(entry.value) : `'${text}'`;
-  errors.add(
-    "MTL904",
-    entry.key,
-    key,
-    `${key}: expected one of ${values.join(", ")}, got ${actual}`,
-  );
+  errors.add("MTL904", entry.key, key, `${key}: expected one of ${values.join(", ")}, got ${actual}`);
   return null;
 }
 
@@ -250,12 +184,7 @@ function readEnum<T extends string>(
  * whose value is also a non-empty string. A name with a bad value still counts
  * as declared (one error, not two).
  */
-function readNameMap(
-  errors: Errors,
-  entry: Entry | undefined,
-  path: string,
-  reserved: string | null,
-): { names: Set<string>; rejected: Set<string>; values: Map<string, string> } {
+function readNameMap(errors: Errors, entry: Entry | undefined, path: string, reserved: string | null): { names: Set<string>; rejected: Set<string>; values: Map<string, string> } {
   const out = {
     names: new Set<string>(),
     rejected: new Set<string>(),
@@ -263,12 +192,7 @@ function readNameMap(
   };
   if (entry === undefined) return out;
   if (!isMap(entry.value)) {
-    errors.add(
-      "MTL904",
-      entry.key,
-      path,
-      `${path}: expected a mapping, got ${describe(entry.value)}`,
-    );
+    errors.add("MTL904", entry.key, path, `${path}: expected a mapping, got ${describe(entry.value)}`);
     return out;
   }
   for (const item of entriesOf(errors, entry.value, path)) {
@@ -289,12 +213,7 @@ function readNameMap(
 }
 
 /** One glob or a list of globs; each is compiled (MTL907). */
-function readGlobs(
-  errors: Errors,
-  entry: Entry,
-  key: string,
-  allowEmptyList: boolean,
-): { sources: string[]; compiled: CompiledGlob[] } {
+function readGlobs(errors: Errors, entry: Entry, key: string, allowEmptyList: boolean): { sources: string[]; compiled: CompiledGlob[] } {
   const sources: string[] = [];
   const compiled: CompiledGlob[] = [];
   const take = (node: unknown, itemKey: string, anchor: unknown): void => {
@@ -319,12 +238,7 @@ function readGlobs(
   } else if (stringOf(entry.value) !== null) {
     take(entry.value, key, entry.key);
   } else {
-    errors.add(
-      "MTL904",
-      entry.key,
-      key,
-      `${key}: expected string or list of strings, got ${describe(entry.value)}`,
-    );
+    errors.add("MTL904", entry.key, key, `${key}: expected string or list of strings, got ${describe(entry.value)}`);
   }
   return { sources, compiled };
 }
@@ -341,8 +255,7 @@ interface Context {
 }
 
 /** True for `project`, a declared root, or a declared root already reported as invalid. */
-const isKnownRoot = (context: Context, name: string): boolean =>
-  name === RESERVED_ROOT || context.declared.has(name) || context.rejected.has(name);
+const isKnownRoot = (context: Context, name: string): boolean => name === RESERVED_ROOT || context.declared.has(name) || context.rejected.has(name);
 
 /** `pairs[].roots`: a name, a list of names or `"*"` (spec 6.3). */
 function readPairRoots(context: Context, entry: Entry, key: string): string[] | null {
@@ -357,12 +270,7 @@ function readPairRoots(context: Context, entry: Entry, key: string): string[] | 
   if (text === "*") {
     if (declared.size === 0) {
       if (context.rejected.size > 0) return null;
-      errors.add(
-        "MTL904",
-        entry.key,
-        key,
-        `${key}: expected at least one declared root for "*", got none`,
-      );
+      errors.add("MTL904", entry.key, key, `${key}: expected at least one declared root for "*", got none`);
       return null;
     }
     return [...declared];
@@ -370,12 +278,7 @@ function readPairRoots(context: Context, entry: Entry, key: string): string[] | 
   if (text !== null) return check(text, entry.key, key) ? [text] : null;
   if (isSeq(value)) {
     if (value.items.length === 0) {
-      errors.add(
-        "MTL904",
-        entry.key,
-        key,
-        `${key}: expected at least one root name, got an empty list`,
-      );
+      errors.add("MTL904", entry.key, key, `${key}: expected at least one root name, got an empty list`);
       return null;
     }
     const names: string[] = [];
@@ -384,24 +287,14 @@ function readPairRoots(context: Context, entry: Entry, key: string): string[] | 
       const itemKey = `${key}[${index}]`;
       const name = stringOf(item);
       if (name === null) {
-        errors.add(
-          "MTL904",
-          item,
-          itemKey,
-          `${itemKey}: expected root name, got ${describe(item)}`,
-        );
+        errors.add("MTL904", item, itemKey, `${itemKey}: expected root name, got ${describe(item)}`);
         valid = false;
       } else if (!check(name, item, itemKey)) valid = false;
       else if (!names.includes(name)) names.push(name);
     });
     return valid ? names : null;
   }
-  errors.add(
-    "MTL904",
-    entry.key,
-    key,
-    `${key}: expected root name, list of root names or "*", got ${describe(value)}`,
-  );
+  errors.add("MTL904", entry.key, key, `${key}: expected root name, list of root names or "*", got ${describe(value)}`);
   return null;
 }
 
@@ -419,12 +312,7 @@ interface PairDraft {
   readonly onEmpty: OnEmpty;
 }
 
-function readPair(
-  context: Context,
-  node: unknown,
-  index: number,
-  explicitNames: Map<string, number>,
-): PairDraft | null {
+function readPair(context: Context, node: unknown, index: number, explicitNames: Map<string, number>): PairDraft | null {
   const { errors } = context;
   const path = `pairs[${index}]`;
   if (!isMap(node)) {
@@ -465,15 +353,13 @@ function readPair(
     const text = readText(errors, templateRootEntry, key);
     if (text !== null) {
       if (isKnownRoot(context, text)) templateRoot = text;
-      else
-        errors.add("MTL906", templateRootEntry.key, key, `${key}: root '${text}' is not declared`);
+      else errors.add("MTL906", templateRootEntry.key, key, `${key}: root '${text}' is not declared`);
     }
   }
 
   let roots: string[] = [RESERVED_ROOT];
   const rootsEntry = find(entries, "roots");
-  if (rootsEntry !== undefined)
-    roots = readPairRoots(context, rootsEntry, `${path}.roots`) ?? roots;
+  if (rootsEntry !== undefined) roots = readPairRoots(context, rootsEntry, `${path}.roots`) ?? roots;
 
   let include: ReturnType<typeof readGlobs> = { sources: [], compiled: [] };
   const includeEntry = find(entries, "include");
@@ -483,8 +369,7 @@ function readPair(
 
   let exclude: ReturnType<typeof readGlobs> = { sources: [], compiled: [] };
   const excludeEntry = find(entries, "exclude");
-  if (excludeEntry !== undefined)
-    exclude = readGlobs(errors, excludeEntry, `${path}.exclude`, true);
+  if (excludeEntry !== undefined) exclude = readGlobs(errors, excludeEntry, `${path}.exclude`, true);
 
   let description: string | null = null;
   const descriptionEntry = find(entries, "description");
@@ -536,13 +421,7 @@ function namePairs(drafts: readonly PairDraft[]): PairConfig[] {
   });
 }
 
-function validate(
-  errors: Errors,
-  root: YAMLMap,
-  file: string,
-  display: string,
-  home: string,
-): LintConfig | null {
+function validate(errors: Errors, root: YAMLMap, file: string, display: string, home: string): LintConfig | null {
   const dir = foldPath(`${file}/..`);
   const entries = entriesOf(errors, root, "");
   checkKnown(errors, entries, TOP_KEYS, "");
@@ -551,12 +430,7 @@ function validate(
   if (versionEntry !== undefined) {
     const value: unknown = isScalar(versionEntry.value) ? versionEntry.value.value : undefined;
     if (typeof value !== "number" || !Number.isInteger(value)) {
-      errors.add(
-        "MTL904",
-        versionEntry.key,
-        "version",
-        `version: expected integer, got ${describe(versionEntry.value)}`,
-      );
+      errors.add("MTL904", versionEntry.key, "version", `version: expected integer, got ${describe(versionEntry.value)}`);
     } else if (value !== 1) {
       errors.add("MTL908", versionEntry.key, "version", `unsupported config version ${value}`);
     }
@@ -581,23 +455,13 @@ function validate(
   const approvedEntry = find(entries, "approvedPaths");
   if (approvedEntry !== undefined) {
     if (!isSeq(approvedEntry.value)) {
-      errors.add(
-        "MTL904",
-        approvedEntry.key,
-        "approvedPaths",
-        `approvedPaths: expected list of strings, got ${describe(approvedEntry.value)}`,
-      );
+      errors.add("MTL904", approvedEntry.key, "approvedPaths", `approvedPaths: expected list of strings, got ${describe(approvedEntry.value)}`);
     } else {
       approvedEntry.value.items.forEach((item, index) => {
         const key = `approvedPaths[${index}]`;
         const text = stringOf(item);
         if (text === null || text.trim() === "") {
-          errors.add(
-            "MTL904",
-            item,
-            key,
-            `${key}: expected non-empty string, got ${describe(item)}`,
-          );
+          errors.add("MTL904", item, key, `${key}: expected non-empty string, got ${describe(item)}`);
         } else approvedPaths.push(resolvePath(text, dir, home));
       });
     }
@@ -609,12 +473,7 @@ function validate(
     const value: unknown = isScalar(allowEntry.value) ? allowEntry.value.value : undefined;
     if (typeof value === "boolean") allowPrivateNetworks = value;
     else {
-      errors.add(
-        "MTL904",
-        allowEntry.key,
-        "allowPrivateNetworks",
-        `allowPrivateNetworks: expected boolean, got ${describe(allowEntry.value)}`,
-      );
+      errors.add("MTL904", allowEntry.key, "allowPrivateNetworks", `allowPrivateNetworks: expected boolean, got ${describe(allowEntry.value)}`);
     }
   }
 
@@ -632,12 +491,7 @@ function validate(
   if (pairsEntry === undefined) {
     errors.add("MTL904", root, "pairs", "pairs: required key is missing");
   } else if (!isSeq(pairsEntry.value) || pairsEntry.value.items.length === 0) {
-    errors.add(
-      "MTL904",
-      pairsEntry.key,
-      "pairs",
-      `pairs: expected a non-empty list, got ${describe(pairsEntry.value)}`,
-    );
+    errors.add("MTL904", pairsEntry.key, "pairs", `pairs: expected a non-empty list, got ${describe(pairsEntry.value)}`);
   } else {
     const explicitNames = new Map<string, number>();
     pairsEntry.value.items.forEach((item, index) => {
@@ -711,12 +565,7 @@ export async function loadConfig(options: LoadConfigOptions): Promise<ConfigResu
     return failure(display, "MTL902", `cannot parse ${display}: file is empty`, { file: display });
   }
   if (!isMap(contents)) {
-    return failure(
-      display,
-      "MTL902",
-      `cannot parse ${display}: expected a mapping at the top level, got ${describe(contents)}`,
-      { file: display, line: 1, column: 1 },
-    );
+    return failure(display, "MTL902", `cannot parse ${display}: expected a mapping at the top level, got ${describe(contents)}`, { file: display, line: 1, column: 1 });
   }
   const config = validate(errors, contents, file, display, home);
   if (config === null) return { ok: false, display, errors: errors.sorted() };

@@ -54,25 +54,7 @@ describe("anchor lines of target diagnostics (spec 4.4 DIR5)", () => {
   });
 
   it("MTL202 anchors on the key line; a duplicate key on its last occurrence", async () => {
-    const target = [
-      "---",
-      "title: Notes",
-      "status: draft",
-      "owner: a",
-      "extra: 1",
-      "extra: 2",
-      "other: y",
-      "---",
-      "",
-      "# Notes",
-      "",
-      "## Overview",
-      "",
-      "Text.",
-      "",
-      "## Context",
-      "",
-    ].join("\n");
+    const target = ["---", "title: Notes", "status: draft", "owner: a", "extra: 1", "extra: 2", "other: y", "---", "", "# Notes", "", "## Overview", "", "Text.", "", "## Context", ""].join("\n");
     const found = await anchors(target);
     expect(found.filter(([code]) => code === "MTL202")).toEqual([
       ["MTL202", 6],
@@ -96,9 +78,7 @@ describe("anchor lines of target diagnostics (spec 4.4 DIR5)", () => {
     // (MTL601). `Details` (`{text}` pattern) takes it. `Context` has no sibling left: missing
     // (MTL601). `Details` (an H2) is then matched before `# Notes` (line 9) which precedes it
     // in the template: an order across levels, MTL604, listed after the heading findings.
-    const target = [...head, "## Context", "", "# Notes", "", "## Draft", "", "## Draft", ""].join(
-      "\n",
-    );
+    const target = [...head, "## Context", "", "# Notes", "", "## Draft", "", "## Draft", ""].join("\n");
     expect(await anchors(target)).toEqual([
       ["MTL601", null],
       ["MTL603", 11],
@@ -108,26 +88,7 @@ describe("anchor lines of target diagnostics (spec 4.4 DIR5)", () => {
   });
 
   it("MTL701 to MTL705 anchor on the first target heading of the checked section", async () => {
-    const target = [
-      "---",
-      "title: Notes",
-      "status: draft",
-      "owner: a",
-      "---",
-      "",
-      "# Notes",
-      "",
-      "## Overview",
-      "",
-      "## Details",
-      "",
-      "## Context",
-      "",
-      "## Overview",
-      "",
-      "Text.",
-      "",
-    ].join("\n");
+    const target = ["---", "title: Notes", "status: draft", "owner: a", "---", "", "# Notes", "", "## Overview", "", "## Details", "", "## Context", "", "## Overview", "", "Text.", ""].join("\n");
     // The run takes line 9 (`Overview`, empty body), 11 (`Details`), 13 (`Context`); the second
     // `## Overview` (line 15, with text) is in the tail: not the match, so line 9 is checked.
     // The tail heading is the warning MTL616, anchored on it (spec 2.6 "Extra", DIR5).
@@ -181,9 +142,7 @@ describe("anchor lines of target diagnostics (spec 4.4 DIR5)", () => {
     });
     expect(extra === undefined ? null : exported(extra)).toBe(5);
     // A diagnostic the pipeline did not return has none.
-    expect(anchorLineOf({ code: "MTL202", severity: "warning", message: "", position: null })).toBe(
-      null,
-    );
+    expect(anchorLineOf({ code: "MTL202", severity: "warning", message: "", position: null })).toBe(null);
   });
 
   it("template diagnostics have none", async () => {

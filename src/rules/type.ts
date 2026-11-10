@@ -4,22 +4,8 @@
  * of the category are ported.
  */
 import { defineRule, report, type AnyRule, type FieldContext } from "../engine/rule.js";
-import {
-  isList,
-  isMapping,
-  presenceMode,
-  type Diagnostic,
-  type YamlValue,
-} from "../engine/model.js";
-import {
-  FLOAT_PATTERN,
-  isPathLike,
-  isValidDateValue,
-  isValidPathAliasValue,
-  isValidUrlValue,
-  pyRepr,
-  valueText,
-} from "../engine/values.js";
+import { isList, isMapping, presenceMode, type Diagnostic, type YamlValue } from "../engine/model.js";
+import { FLOAT_PATTERN, isPathLike, isValidDateValue, isValidPathAliasValue, isValidUrlValue, pyRepr, valueText } from "../engine/values.js";
 
 const INT_PATTERN = /^-?\d+$/;
 
@@ -52,9 +38,7 @@ const typeString = defineRule({
     const { value } = context;
     if (context.templateField.type !== "string" || value === null) return [];
     if (!isList(value) && !isMapping(value)) return [];
-    return [
-      report(typeString, typeMessage(context, `expected a plain string, got ${shapeName(value)}`)),
-    ];
+    return [report(typeString, typeMessage(context, `expected a plain string, got ${shapeName(value)}`))];
   },
 });
 
@@ -69,9 +53,7 @@ const typeList = defineRule({
   check: (context: FieldContext): Diagnostic[] => {
     const { value } = context;
     if (context.templateField.type !== "list" || value === null || isList(value)) return [];
-    return [
-      report(typeList, typeMessage(context, `expected a YAML list, got ${shapeName(value)}`)),
-    ];
+    return [report(typeList, typeMessage(context, `expected a YAML list, got ${shapeName(value)}`))];
   },
 });
 
@@ -88,12 +70,7 @@ const typeNestedMap = defineRule({
     if (context.templateField.type !== "nested-map" || value === null || isMapping(value)) {
       return [];
     }
-    return [
-      report(
-        typeNestedMap,
-        typeMessage(context, `expected a mapping (nested-map), got ${shapeName(value)}`),
-      ),
-    ];
+    return [report(typeNestedMap, typeMessage(context, `expected a mapping (nested-map), got ${shapeName(value)}`))];
   },
 });
 
@@ -115,9 +92,7 @@ const typeInt = defineRule({
       return [report(typeInt, typeMessage(context, `expected a scalar, got ${shapeName(value)}`))];
     }
     if (INT_PATTERN.test(value.trim())) return [];
-    const detail = FLOAT_PATTERN.test(value.trim())
-      ? `got a decimal, expected an integer: '${value}'`
-      : "value is not a valid integer";
+    const detail = FLOAT_PATTERN.test(value.trim()) ? `got a decimal, expected an integer: '${value}'` : "value is not a valid integer";
     return [report(typeInt, typeMessage(context, detail))];
   },
 });
@@ -134,9 +109,7 @@ const typeFloat = defineRule({
     const { value } = context;
     if (context.templateField.type !== "float" || value === null) return [];
     if (typeof value !== "string") {
-      return [
-        report(typeFloat, typeMessage(context, `expected a scalar, got ${shapeName(value)}`)),
-      ];
+      return [report(typeFloat, typeMessage(context, `expected a scalar, got ${shapeName(value)}`))];
     }
     if (FLOAT_PATTERN.test(value.trim())) return [];
     return [report(typeFloat, typeMessage(context, "value is not a valid float"))];
@@ -182,16 +155,7 @@ const typeDate = defineRule({
       return [report(typeDate, typeMessage(context, `expected a scalar, got ${shapeName(value)}`))];
     }
     if (isValidDateValue(value)) return [];
-    return [
-      report(
-        typeDate,
-        typeMessage(
-          context,
-          "value is not a valid calendar date in an accepted format " +
-            "(YYYY-MM-DD / YYYY-MM / YYYY / DD/MM/YYYY / present / présent)",
-        ),
-      ),
-    ];
+    return [report(typeDate, typeMessage(context, "value is not a valid calendar date in an accepted format " + "(YYYY-MM-DD / YYYY-MM / YYYY / DD/MM/YYYY / present / présent)"))];
   },
 });
 
@@ -215,12 +179,7 @@ const typeUrl = defineRule({
       return [report(typeUrl, typeMessage(context, `expected a scalar, got ${shapeName(value)}`))];
     }
     if (isValidUrlValue(value)) return [];
-    return [
-      report(
-        typeUrl,
-        typeMessage(context, "value is not syntactically a valid URL (expected scheme://host/...)"),
-      ),
-    ];
+    return [report(typeUrl, typeMessage(context, "value is not syntactically a valid URL (expected scheme://host/...)"))];
   },
 });
 
@@ -262,17 +221,10 @@ const typePathAlias = defineRule({
     const { value } = context;
     if (context.templateField.type !== "path-alias" || value === null) return [];
     if (typeof value !== "string") {
-      return [
-        report(typePathAlias, typeMessage(context, `expected a scalar, got ${shapeName(value)}`)),
-      ];
+      return [report(typePathAlias, typeMessage(context, `expected a scalar, got ${shapeName(value)}`))];
     }
     if (isValidPathAliasValue(value)) return [];
-    return [
-      report(
-        typePathAlias,
-        typeMessage(context, "value is not a valid path alias (expected @<name>/<rest>)"),
-      ),
-    ];
+    return [report(typePathAlias, typeMessage(context, "value is not a valid path alias (expected @<name>/<rest>)"))];
   },
 });
 
@@ -292,12 +244,7 @@ function isIntItem(item: YamlValue): boolean {
  * Python list of strings, in item order. The list is never empty here: the
  * pipeline skips an empty list before step `type`.
  */
-function listOfDetail(
-  value: YamlValue,
-  things: string,
-  entries: string,
-  isValid: (item: YamlValue) => boolean,
-): string | null {
+function listOfDetail(value: YamlValue, things: string, entries: string, isValid: (item: YamlValue) => boolean): string | null {
   if (!isList(value)) return `expected a YAML list of ${things}, got ${shapeName(value)}`;
   const bad = value.filter((item) => !isValid(item)).map(valueText);
   return bad.length === 0 ? null : `list contains ${entries}: ${pyRepr(bad)}`;
@@ -319,23 +266,11 @@ const typeListOfString = defineRule({
     const { value } = context;
     if (context.templateField.type !== "list-of-string" || value === null) return [];
     if (!isList(value)) {
-      return [
-        report(
-          typeListOfString,
-          typeMessage(context, `expected a YAML list of strings, got ${shapeName(value)}`),
-        ),
-      ];
+      return [report(typeListOfString, typeMessage(context, `expected a YAML list of strings, got ${shapeName(value)}`))];
     }
-    const nested = value.flatMap((item, index) =>
-      isList(item) || isMapping(item) ? [`item ${index} is ${shapeName(item)}`] : [],
-    );
+    const nested = value.flatMap((item, index) => (isList(item) || isMapping(item) ? [`item ${index} is ${shapeName(item)}`] : []));
     if (nested.length === 0) return [];
-    return [
-      report(
-        typeListOfString,
-        typeMessage(context, `list contains non-scalar entries: ${pyRepr(nested)}`),
-      ),
-    ];
+    return [report(typeListOfString, typeMessage(context, `list contains non-scalar entries: ${pyRepr(nested)}`))];
   },
 });
 
@@ -366,12 +301,7 @@ const typeListOfDate = defineRule({
   check: (context: FieldContext): Diagnostic[] => {
     const { value } = context;
     if (context.templateField.type !== "list-of-date" || value === null) return [];
-    const detail = listOfDetail(
-      value,
-      "dates",
-      `invalid date entries (expected a real calendar date in ${DATE_FORMATS})`,
-      isValidDateValue,
-    );
+    const detail = listOfDetail(value, "dates", `invalid date entries (expected a real calendar date in ${DATE_FORMATS})`, isValidDateValue);
     return detail === null ? [] : [report(typeListOfDate, typeMessage(context, detail))];
   },
 });
@@ -423,12 +353,7 @@ const typeListOfPathAlias = defineRule({
   check: (context: FieldContext): Diagnostic[] => {
     const { value } = context;
     if (context.templateField.type !== "list-of-path-alias" || value === null) return [];
-    const detail = listOfDetail(
-      value,
-      "path aliases",
-      "non-alias entries (expected @<name>/<rest>)",
-      isValidPathAliasValue,
-    );
+    const detail = listOfDetail(value, "path aliases", "non-alias entries (expected @<name>/<rest>)", isValidPathAliasValue);
     return detail === null ? [] : [report(typeListOfPathAlias, typeMessage(context, detail))];
   },
 });
@@ -471,17 +396,7 @@ const typeEnum = defineRule({
     if (options.length === 0) return [];
     if (typeof value === "string" && options.includes(value)) return [];
     const severity = presenceMode(context.templateField) === "required" ? "error" : "warning";
-    return [
-      report(
-        typeEnum,
-        typeMessage(
-          context,
-          `value '${valueText(value)}' is not one of the allowed options ${pyRepr(options)}`,
-        ),
-        null,
-        severity,
-      ),
-    ];
+    return [report(typeEnum, typeMessage(context, `value '${valueText(value)}' is not one of the allowed options ${pyRepr(options)}`), null, severity)];
   },
 });
 

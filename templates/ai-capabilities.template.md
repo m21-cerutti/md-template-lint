@@ -1,6 +1,6 @@
 ---
-title: AI Capabilities  # [presence:required]
-last_updated: 2026-09-06  # [presence:required] [format:date] type=date
+title: AI Capabilities # [presence:required]
+last_updated: 2026-09-06 # [presence:required] [format:date] type=date
 ---
 
 # AI Capabilities
@@ -27,48 +27,48 @@ the actual folder before relying on it.
 
 Project agents live in `.opencode/agents/`.
 
-| Agent | Role |
-|---|---|
+| Agent    | Role                                  |
+| -------- | ------------------------------------- |
 | `[name]` | [Role, scope and limits in one line.] |
 
 ## Skills [content:table]
 
 Project skills live in `.opencode/skills/`.
 
-| Skill | Purpose |
-|---|---|
+| Skill    | Purpose                              |
+| -------- | ------------------------------------ |
 | `[name]` | [What it does and when it triggers.] |
 
 ## Commands [content:table]
 
 Project commands live in `.opencode/commands/`.
 
-| Command | Purpose |
-|---|---|
+| Command   | Purpose                  |
+| --------- | ------------------------ |
 | `/[name]` | [What the command runs.] |
 
 ## Tools [content:table]
 
 Project tools live in `.opencode/tools/`.
 
-| Tool | Purpose |
-|---|---|
+| Tool     | Purpose                               |
+| -------- | ------------------------------------- |
 | `[name]` | [What it wraps and its side effects.] |
 
 ## Scripts [presence:optional] [content:table]
 
 CLI entry points live in `scripts/`.
 
-| Script | Purpose |
-|---|---|
+| Script      | Purpose                                     |
+| ----------- | ------------------------------------------- |
 | `[name.py]` | [What it does, key flags, dry-run default.] |
 
 ## MCP Servers [presence:optional] [content:table]
 
 Declared in `opencode.jsonc`.
 
-| Server | Enabled | Purpose |
-|---|---|---|
+| Server   | Enabled  | Purpose                                   |
+| -------- | -------- | ----------------------------------------- |
 | `[name]` | [yes/no] | [What it provides and its prerequisites.] |
 
 ## Global Capabilities [content:non-empty]

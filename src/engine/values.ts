@@ -12,12 +12,7 @@
 import type { FilenameConvention } from "../tags/ast.js";
 import { isList, type YamlValue } from "./model.js";
 
-const DATE_SHAPES: readonly RegExp[] = [
-  /^\d{4}-\d{2}-\d{2}$/,
-  /^\d{4}-\d{2}$/,
-  /^\d{4}$/,
-  /^\d{2}\/\d{2}\/\d{4}$/,
-];
+const DATE_SHAPES: readonly RegExp[] = [/^\d{4}-\d{2}-\d{2}$/, /^\d{4}-\d{2}$/, /^\d{4}$/, /^\d{2}\/\d{2}\/\d{4}$/];
 const ONGOING_MARKER = /^pr[ée]sent$/iu;
 const URL_LIKE = /^[A-Za-z][A-Za-z0-9+.-]*:\/\/\S+$/;
 /** Alias-shaped value `@<name>/<rest>`, captures name and rest (spec 2.8 step 1, legacy `_ALIAS_RE`). */
@@ -44,8 +39,7 @@ const CASE_STYLE_PATTERNS: Readonly<Record<FilenameConvention, RegExp>> = {
  * `num` or holds at least one ASCII letter or `-`; `build` is any run of ASCII
  * letters, digits and `-`. No `v` prefix. Non-capturing groups only.
  */
-const SEMVER_PATTERN =
-  /^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-(?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*)(?:\.(?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*))*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/;
+const SEMVER_PATTERN = /^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-(?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*)(?:\.(?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*))*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/;
 
 /**
  * True when `value` is a SEMVER (spec 2.9). The EXACT text is tested: no
@@ -124,8 +118,7 @@ export function isPathLike(value: YamlValue): boolean {
  * and keeps U+001C-001F and U+0085, Python does the opposite. Single source of
  * the Python whitespace set (`isPythonSpace`, `stripPythonSpace`).
  */
-const PY_SPACE =
-  "\\t-\\r\\x1c-\\x20\\x85\\xa0\\u1680\\u2000-\\u200a\\u2028\\u2029\\u202f\\u205f\\u3000";
+const PY_SPACE = "\\t-\\r\\x1c-\\x20\\x85\\xa0\\u1680\\u2000-\\u200a\\u2028\\u2029\\u202f\\u205f\\u3000";
 const PY_SPACE_ANY = new RegExp(`[${PY_SPACE}]`, "u");
 const PY_SPACE_ONE = new RegExp(`^[${PY_SPACE}]$`, "u");
 const PY_SPACE_EDGES = new RegExp(`^[${PY_SPACE}]+|[${PY_SPACE}]+$`, "gu");
@@ -151,10 +144,7 @@ const URL_BAD_AUTHORITY = /[<>"{}|\\^]/;
  * without `]` (or the reverse) in the authority is invalid, as the Python
  * `urlsplit` error; the IPv6 literal itself is not validated.
  */
-export function isValidUrlValue(
-  value: YamlValue,
-  allowedSchemes: ReadonlySet<string> | null = null,
-): boolean {
+export function isValidUrlValue(value: YamlValue, allowedSchemes: ReadonlySet<string> | null = null): boolean {
   if (typeof value !== "string") return false;
   const candidate = value.replace(PY_SPACE_EDGES, "");
   if (candidate === "" || PY_SPACE_ANY.test(candidate)) return false;
@@ -382,9 +372,7 @@ export function pyReprString(text: string): string {
 export function pyRepr(value: YamlValue): string {
   if (typeof value === "string") return pyReprString(value);
   if (isList(value)) return `[${value.map(pyRepr).join(", ")}]`;
-  const entries = [...value.entries()].map(
-    ([key, item]) => `${pyReprString(key)}: ${pyRepr(item)}`,
-  );
+  const entries = [...value.entries()].map(([key, item]) => `${pyReprString(key)}: ${pyRepr(item)}`);
   return `{${entries.join(", ")}}`;
 }
 

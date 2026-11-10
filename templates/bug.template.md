@@ -1,17 +1,17 @@
 ---
 # [filename:case:snake_case]
-id: short_bug_title  # [presence:required] [value:filename] [format:snake_case]
-title: Short description of the bug  # [presence:required]
-status: draft | reported | fixed | wontfix  # [presence:required]
-date: 2026-10-29  # [presence:required] [format:date] type=date
-component: module, script or tool name  # [presence:required]
-severity: low | medium | high | critical  # [presence:optional]
-upstream: https://example.org/project  # [presence:required] type=url [format:scheme:https]
-issue_url: https://example.org/project/issues/1  # [presence:optional] type=url [format:scheme:https]
-environment:  # [presence:optional]
+id: short_bug_title # [presence:required] [value:filename] [format:snake_case]
+title: Short description of the bug # [presence:required]
+status: draft | reported | fixed | wontfix # [presence:required]
+date: 2026-10-29 # [presence:required] [format:date] type=date
+component: module, script or tool name # [presence:required]
+severity: low | medium | high | critical # [presence:optional]
+upstream: https://example.org/project # [presence:required] type=url [format:scheme:https]
+issue_url: https://example.org/project/issues/1 # [presence:optional] type=url [format:scheme:https]
+environment: # [presence:optional]
   - OS and version
   - Runtime or tool version
-tags: [tag-one, tag-two]  # [presence:optional] [count:max:6] [format:elements:kebab-case]
+tags: [tag-one, tag-two] # [presence:optional] [count:max:6] [format:elements:kebab-case]
 ---
 
 # Bug title [pattern:"{text}"]
@@ -31,9 +31,9 @@ The smallest input or command that triggers the bug. Use a code block.
 
 ## Expected vs Result [content:table]
 
-| Expected                 | Result                          |
-| ------------------------ | ------------------------------- |
-| What should happen.      | What happens instead.           |
+| Expected            | Result                |
+| ------------------- | --------------------- |
+| What should happen. | What happens instead. |
 
 ## Context [presence:optional]
 

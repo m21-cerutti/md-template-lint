@@ -90,11 +90,7 @@ function parseArgs(argv: readonly string[]): { positional: string[]; options: Op
   return { positional, options };
 }
 
-const isKebab = (name: string): boolean =>
-  name.length > 0 &&
-  !name.startsWith("-") &&
-  !name.endsWith("-") &&
-  [...name].every((c) => (c >= "a" && c <= "z") || (c >= "0" && c <= "9") || c === "-");
+const isKebab = (name: string): boolean => name.length > 0 && !name.startsWith("-") && !name.endsWith("-") && [...name].every((c) => (c >= "a" && c <= "z") || (c >= "0" && c <= "9") || c === "-");
 
 const codeOf = (number: number): string => `MTL${String(number).padStart(3, "0")}`;
 
@@ -146,9 +142,7 @@ function write(file: string, content: string): void {
   writeFileSync(file, content);
 }
 
-const ranges = JSON.parse(
-  readFileSync(join(repo, "src", "engine", "ranges.json"), "utf8"),
-) as Record<string, CodeRange>;
+const ranges = JSON.parse(readFileSync(join(repo, "src", "engine", "ranges.json"), "utf8")) as Record<string, CodeRange>;
 const { positional, options } = parseArgs(process.argv.slice(2));
 const root = options.root ?? repo;
 const [category, name] = positional;
@@ -226,24 +220,16 @@ if (!updated.includes("notImplemented,")) {
     .map((part) => (typeOnly && !part.startsWith("type ") ? `type ${part}` : part));
   const values = names.filter((part) => !part.startsWith("type "));
   const types = names.filter((part) => part.startsWith("type ")).map((part) => part.slice(5));
-  const merged = [
-    ...["defineRule", "notImplemented", ...values].sort(),
-    ...types.sort().map((part) => `type ${part}`),
-  ];
+  const merged = [...["defineRule", "notImplemented", ...values].sort(), ...types.sort().map((part) => `type ${part}`)];
   const oneLine = `import { ${merged.join(", ")} } ${IMPORT_FROM}`;
-  // Prettier style: one line up to 100 columns, else one name per line.
-  const replacement =
-    oneLine.length <= 100
-      ? oneLine
-      : `import {\n${merged.map((part) => `  ${part},`).join("\n")}\n} ${IMPORT_FROM}`;
+  // Prettier style: one line up to 250 columns, else one name per line.
+  const replacement = oneLine.length <= 250 ? oneLine : `import {\n${merged.map((part) => `  ${part},`).join("\n")}\n} ${IMPORT_FROM}`;
   updated = updated.replace(importLine, replacement);
 }
 
 const family = syntaxLayout ? "syntax" : "target";
 const testFile = join(root, "tests", family, category, `${code}-${name}.test.ts`);
-const fixtureRoot = syntaxLayout
-  ? `tests/fixtures/templates/${code}`
-  : `tests/fixtures/pairs/${code}`;
+const fixtureRoot = syntaxLayout ? `tests/fixtures/templates/${code}` : `tests/fixtures/pairs/${code}`;
 const extension = syntaxLayout ? ".md" : "";
 const cases: Case[] = [
   ["pass-placeholder", `pass-placeholder${extension}`, "clean"],
@@ -259,14 +245,8 @@ const test = [
   "",
   "/** Case -> fixture -> expected result: at least 1 passing and 1 failing case. */",
   "const CASES = [",
-  // One property per line: the placeholder names exceed Prettier's 100 columns on one line.
-  ...cases.flatMap(([caseName, fixture, expected]) => [
-    "  {",
-    `    name: "${caseName}",`,
-    `    fixture: \`\${DIR}/${fixture}\`,`,
-    `    expected: "${expected}",`,
-    "  },",
-  ]),
+  // One property per line: the placeholder names exceed Prettier's 250 columns on one line.
+  ...cases.flatMap(([caseName, fixture, expected]) => ["  {", `    name: "${caseName}",`, `    fixture: \`\${DIR}/${fixture}\`,`, `    expected: "${expected}",`, "  },"]),
   "] as const;",
   "",
   `describe("${code} ${name}", () => {`,
@@ -304,8 +284,5 @@ const relativeTest = `tests/${family}/${category}/${code}-${name}.test.ts`;
 process.stdout.write(`new:rule: ${code} ${name} (stub) added to src/rules/${category}.ts\n`);
 process.stdout.write(`new:rule: test stub ${relativeTest}, fixtures ${fixtureRoot}/\n`);
 if (row === undefined || row.code !== code) {
-  process.stdout.write(
-    `new:rule: ${code} is not a docs/spec.md 4.3 row for '${name}': add the row and a ` +
-      "pending-rules.json entry, or `pnpm run check:rules` fails\n",
-  );
+  process.stdout.write(`new:rule: ${code} is not a docs/spec.md 4.3 row for '${name}': add the row and a ` + "pending-rules.json entry, or `pnpm run check:rules` fails\n");
 }

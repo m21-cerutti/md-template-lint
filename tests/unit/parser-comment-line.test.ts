@@ -55,8 +55,7 @@ const CASES: readonly Expected[] = [
   },
 ];
 
-const read = (name: string): string =>
-  readFileSync(`${fixturePath("tags", name)}/document.md`, "utf8");
+const read = (name: string): string => readFileSync(`${fixturePath("tags", name)}/document.md`, "utf8");
 
 describe("parser: frontmatter comment lines and key comments", () => {
   it("has at least 1 pass- case and at least 1 fail- case, one fixture dir each", () => {
@@ -70,13 +69,9 @@ describe("parser: frontmatter comment lines and key comments", () => {
     it(`${testCase.name}: tests/fixtures/tags/${testCase.name}`, () => {
       const analysis = analyzeDocument(read(testCase.name));
       expect(analysis.grammarErrors).toEqual([]);
-      expect(analysis.document?.frontmatter?.lines.map((line) => line.kind)).toEqual(
-        testCase.frontmatterKinds,
-      );
+      expect(analysis.document?.frontmatter?.lines.map((line) => line.kind)).toEqual(testCase.frontmatterKinds);
       expect(analysis.document?.body.map((block) => block.kind)).toEqual(testCase.bodyKinds);
-      expect(
-        analysis.findings.map((f) => ({ reason: f.reason, tag: f.tag, subject: f.subject })),
-      ).toEqual(testCase.findings);
+      expect(analysis.findings.map((f) => ({ reason: f.reason, tag: f.tag, subject: f.subject }))).toEqual(testCase.findings);
     });
   }
 });
