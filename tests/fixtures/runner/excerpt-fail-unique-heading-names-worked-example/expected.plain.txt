@@ -1,0 +1,26 @@
+md-template-lint 1.0.0
+Config: md-template-lint.yml
+========================
+
+Template: templates/guide.template.md
+Target:   notes/*.md (1 file(s))
+
+  FAIL notes/guide.md
+      error MTL613 Heading: duplicate heading name 'Steps' (first at line 9)
+        13 | ### Steps
+      error MTL613 Heading: duplicate heading name 'setup' (first at line 7)
+        15 | ### setup
+
+========================
+Summary
+========================
+Total files:  1
+Passed:       0
+Failed:       1
+Warnings:     0 (in 0 file(s))
+Templates:    1 checked, 0 broken
+
+Failed files:
+  - notes/guide.md
+
+========================

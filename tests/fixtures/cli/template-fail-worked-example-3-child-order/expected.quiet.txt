@@ -1,0 +1,7 @@
+  ✗ templates/guide.template.md (template)
+      error MTL019 Heading 'Steps' (H3): comes after the deeper child 'Details' (H4, line 9) under 'Setup'
+        11 | ### Steps
+           | ^
+  ✗ notes/guide.md
+      error MTL611 Heading: Section 'Setup': heading order mismatch: template order ['Details', 'Steps'] vs target order ['Steps', 'Details']
+        7 | ## Setup

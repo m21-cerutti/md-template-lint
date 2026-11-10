@@ -5,7 +5,7 @@ agent: agent-name  # [presence:optional]
 model: provider/model-id  # [presence:optional] type=string
 ---
 
-# /command-name [presence:exist]
+# /command-name [pattern:"{text}"]
 
 One sentence: what the command does.
 

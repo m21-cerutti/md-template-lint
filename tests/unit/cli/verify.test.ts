@@ -49,7 +49,15 @@ const CASES: readonly Case[] = [
     ],
     stderr: [],
     absent: ["docs/b.md", "Total files", "✗"],
-    summary: { templates: 2, broken: 0, warnings: 1, suppressed: 0, runErrors: 0, exitCode: 0 },
+    summary: {
+      templates: 2,
+      broken: 0,
+      errors: 0,
+      warnings: 1,
+      suppressed: 0,
+      runErrors: 0,
+      exitCode: 0,
+    },
   },
   {
     name: "fail-broken-template",
@@ -62,7 +70,15 @@ const CASES: readonly Case[] = [
     ],
     stderr: [],
     absent: ["docs/a.md", "All templates passed!"],
-    summary: { templates: 2, broken: 1, warnings: 0, suppressed: 0, runErrors: 0, exitCode: 1 },
+    summary: {
+      templates: 2,
+      broken: 1,
+      errors: 0,
+      warnings: 0,
+      suppressed: 0,
+      runErrors: 0,
+      exitCode: 1,
+    },
   },
   {
     // The missing template is a run error (exit 2); the other template is still checked.
@@ -76,7 +92,15 @@ const CASES: readonly Case[] = [
     ],
     stderr: ["error MTL910: template not found: templates/missing.template.md (pair 'ghost')"],
     absent: ["All templates passed!"],
-    summary: { templates: 1, broken: 0, warnings: 0, suppressed: 0, runErrors: 1, exitCode: 2 },
+    summary: {
+      templates: 1,
+      broken: 0,
+      errors: 0,
+      warnings: 0,
+      suppressed: 0,
+      runErrors: 1,
+      exitCode: 2,
+    },
   },
   {
     // Precedence (spec 7.5): one broken template (1) and one missing template (2) is exit 2.
@@ -91,7 +115,15 @@ const CASES: readonly Case[] = [
     ],
     stderr: ["error MTL910: template not found: templates/missing.template.md (pair 'ghost')"],
     absent: ["All templates passed!"],
-    summary: { templates: 1, broken: 1, warnings: 0, suppressed: 0, runErrors: 1, exitCode: 2 },
+    summary: {
+      templates: 1,
+      broken: 1,
+      errors: 0,
+      warnings: 0,
+      suppressed: 0,
+      runErrors: 1,
+      exitCode: 2,
+    },
   },
   {
     name: "fail-template-is-directory",
@@ -102,7 +134,15 @@ const CASES: readonly Case[] = [
       "error MTL911: template path is not a regular file (for example a directory): templates/dir.template.md (pair 'dir')",
     ],
     absent: ["No templates checked."],
-    summary: { templates: 0, broken: 0, warnings: 0, suppressed: 0, runErrors: 1, exitCode: 2 },
+    summary: {
+      templates: 0,
+      broken: 0,
+      errors: 0,
+      warnings: 0,
+      suppressed: 0,
+      runErrors: 1,
+      exitCode: 2,
+    },
   },
   {
     // A config error stops before any template is read.
@@ -112,7 +152,15 @@ const CASES: readonly Case[] = [
     stdout: ["Templates:    0 checked, 0 broken", "Run errors:   2"],
     stderr: ["error MTL903: pairs[0].inlcude: unknown key 'inlcude'", "error MTL904:"],
     absent: ["✓", "TEMPLATE ERROR"],
-    summary: { templates: 0, broken: 0, warnings: 0, suppressed: 0, runErrors: 2, exitCode: 2 },
+    summary: {
+      templates: 0,
+      broken: 0,
+      errors: 0,
+      warnings: 0,
+      suppressed: 0,
+      runErrors: 2,
+      exitCode: 2,
+    },
   },
   {
     // Template paths on the command line: no config is read (there is none here).
@@ -125,7 +173,15 @@ const CASES: readonly Case[] = [
       `TEMPLATE ERROR: templates/broken.template.md - ${NO_FRONTMATTER}`,
     ],
     stderr: [],
-    summary: { templates: 2, broken: 1, warnings: 0, suppressed: 0, runErrors: 0, exitCode: 1 },
+    summary: {
+      templates: 2,
+      broken: 1,
+      errors: 0,
+      warnings: 0,
+      suppressed: 0,
+      runErrors: 0,
+      exitCode: 1,
+    },
   },
 ];
 
@@ -167,10 +223,12 @@ describe("cli --verify (spec 7.3)", () => {
       expect(run.exitCode).toBe(testCase.exitCode);
       expect(json.mode).toBe("verify");
       expect(json.summary).toEqual(testCase.summary);
-      // Spec 8.5: `suppressed` (always 0 in verify mode) follows `warnings`.
+      // Spec 8.5: `errors` (A72k) follows `broken`; `suppressed` (always 0 in verify mode)
+      // follows `warnings`.
       expect(Object.keys(json.summary)).toEqual([
         "templates",
         "broken",
+        "errors",
         "warnings",
         "suppressed",
         "runErrors",
@@ -193,6 +251,7 @@ describe("cli --verify: details", () => {
         path: "templates/note.template.md",
         status: "ok",
         filenameCase: null,
+        uniqueHeadingNames: false,
         fields: field,
         headings,
         diagnostics: [],
@@ -201,6 +260,7 @@ describe("cli --verify: details", () => {
         path: "templates/tagged.template.md",
         status: "ok",
         filenameCase: null,
+        uniqueHeadingNames: false,
         fields: field,
         headings,
         diagnostics: [
@@ -226,6 +286,7 @@ describe("cli --verify: details", () => {
       status: "broken",
       error: { code: "MTL001", severity: "error", message: NO_FRONTMATTER },
       filenameCase: null,
+      uniqueHeadingNames: false,
       fields: [],
       headings: [],
       diagnostics: [],
@@ -378,10 +439,81 @@ describe("cli --verify: a template that is not UTF-8", () => {
         status: "broken",
         error: { code: "MTL004", severity: "error", message: "file is not valid UTF-8" },
         filenameCase: null,
+        uniqueHeadingNames: false,
         fields: [],
         headings: [],
         diagnostics: [],
       },
+    ]);
+  });
+});
+
+describe("cli --verify: every heading level (spec 8.3, change C10)", () => {
+  let folder = "";
+
+  beforeAll(() => {
+    folder = mkdtempSync(join(tmpdir(), "mtl-cli-verify-levels-"));
+    // Built here, not stored as a fixture: H1 to H6 with tags, and the sub-heading opt-out.
+    writeFileSync(
+      join(folder, "levels.template.md"),
+      [
+        "---",
+        'title: "string"',
+        "---",
+        "",
+        "# Doc",
+        "",
+        "## Release [content:list] [content:subheadings:disallow]",
+        "",
+        "### Added [presence:optional]",
+        "",
+        "#### Detail",
+        "",
+        "##### Deep [content:min-lines:2]",
+        "",
+        "###### Deepest [presence:template-only]",
+        "",
+      ].join("\n"),
+    );
+  });
+
+  afterAll(() => {
+    if (folder !== "") rmSync(folder, { recursive: true, force: true });
+  });
+
+  const run = (args: readonly string[]) =>
+    runCliIn("usage-no-config", args, { cwd: foldPath(folder), boundary: foldPath(folder) });
+
+  it("lists H1 to H6 in template order with the disallow token after the content rules", async () => {
+    const result = await run(["--verify", "--format", "plain", "levels.template.md"]);
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toContain(
+      [
+        "Headings:",
+        "  # Doc (presence:required)",
+        "  ## Release (presence:required, content:list, content:subheadings:disallow)",
+        "  ### Added (presence:optional)",
+        "  #### Detail (presence:required)",
+        "  ##### Deep (presence:required, content:min-lines:2)",
+        "  ###### Deepest (presence:template-only)",
+      ].join("\n"),
+    );
+    expect(result.stdout).not.toContain("Conflicting tags:");
+  });
+
+  it("JSON lists the same headings with level, text and rules", async () => {
+    const result = await run(["--verify", "--format", "json", "levels.template.md"]);
+    expect(parseJson(result.stdout).templates?.[0]?.headings).toEqual([
+      { level: 1, text: "Doc", rules: ["presence:required"] },
+      {
+        level: 2,
+        text: "Release",
+        rules: ["presence:required", "content:list", "content:subheadings:disallow"],
+      },
+      { level: 3, text: "Added", rules: ["presence:optional"] },
+      { level: 4, text: "Detail", rules: ["presence:required"] },
+      { level: 5, text: "Deep", rules: ["presence:required", "content:min-lines:2"] },
+      { level: 6, text: "Deepest", rules: ["presence:template-only"] },
     ]);
   });
 });

@@ -4,7 +4,8 @@
  *
  * - candidate: `[word:...` -> stage 2 decides (known family or not);
  *   `shaped` tells whether an unknown family is reported (tag-shaped);
- * - bare: `[word]` -> type hint; unknown unless a known type name or non-ASCII;
+ * - bare: `[word]` -> type hint; inert for a known type name or non-ASCII, else stage 2
+ *   decides: a colon-less tag (`[unique-headings-names]`, spec 2.11) or unknown;
  * - shaped: `[A-Za-z0-9_:-]+` not starting with `word:` -> unknown;
  * - rule: `[rule]` -> inert; prose brackets and plain tokens -> null.
  */
@@ -12,6 +13,7 @@ import type { ParserRuleContext } from "antlr4ng";
 import type {
   TagBareBracketContext,
   TagClosedCandidateContext,
+  TagPatternCandidateContext,
   TagShapedBracketContext,
   TagShapedCandidateContext,
   TagUnclosedCandidateContext,
@@ -22,6 +24,8 @@ import { FamilyVisitor } from "./base.js";
 export type BracketShape =
   | { readonly kind: "candidate"; readonly ctx: ParserRuleContext; readonly shaped: boolean }
   | { readonly kind: "unknown"; readonly ctx: ParserRuleContext }
+  /** `[word]` of an unknown type name: a colon-less tag when stage 2 knows it, else unknown. */
+  | { readonly kind: "bare"; readonly ctx: ParserRuleContext }
   | { readonly kind: "inert" };
 
 export class BracketShapeVisitor extends FamilyVisitor<BracketShape> {
@@ -43,11 +47,18 @@ export class BracketShapeVisitor extends FamilyVisitor<BracketShape> {
     shaped: false,
   });
 
+  // `[pattern:"` ... : the family is known, so `shaped` never matters.
+  override visitTagPatternCandidate = (ctx: TagPatternCandidateContext): BracketShape => ({
+    kind: "candidate",
+    ctx,
+    shaped: false,
+  });
+
   override visitTagBareBracket = (ctx: TagBareBracketContext): BracketShape => {
     const name = ctx.tagHintName();
     const ascii = name.tagHintPiece().every((piece) => piece.UWORD() === null);
     return ascii && !KNOWN_TYPE_NAMES.has(name.getText().toLowerCase())
-      ? { kind: "unknown", ctx }
+      ? { kind: "bare", ctx }
       : { kind: "inert" };
   };
 

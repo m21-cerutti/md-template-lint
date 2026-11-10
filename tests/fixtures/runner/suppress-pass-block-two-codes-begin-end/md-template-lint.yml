@@ -1,0 +1,5 @@
+# Baseline B with one block `begin disable MTL302, MTL508`: two different codes at once.
+pairs:
+  - name: notes
+    template: templates/notes.template.md
+    include: notes/*.md

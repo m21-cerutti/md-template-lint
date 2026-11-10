@@ -1,0 +1,27 @@
+md-template-lint 9.9.9
+Config: md-template-lint.yml
+========================
+
+Template: templates/versions.template.md
+Target:   notes/*.md (1 file(s))
+
+  ✗ templates/versions.template.md (template)
+      error MTL017 Heading 'Notes': matches the same headings as the previous heading 'Notes' (line 5)
+        7 | ## Notes [presence:optional]
+          |    ^
+  ✓ notes/a.md
+
+========================
+Summary
+========================
+Total files:  1
+Passed:       1
+Failed:       0
+Warnings:     0 (in 0 file(s))
+Templates:    1 checked, 0 broken
+Run errors:   1
+
+Failed templates:
+  - templates/versions.template.md
+
+========================

@@ -24,12 +24,17 @@
  * a file matching no pair is reported in `RunResult.unmatched`. The steps above then
  * run on the existing listed files instead of the walk.
  *
- * Exit code (7.5): 2 with any run error, else 1 with a failed file or a broken
- * template, else 0.
+ * Template errors (`MTL017`, ..., spec 7.5, 8.2, owner decision 2 of A72l): a template that
+ * parses with template errors is not broken; its pair block carries a `fail` template entry
+ * (in every block that uses it), its files are still linted, and it is listed once in
+ * `failedTemplates`. The excerpts of those errors are built at parse time (EX8).
+ *
+ * Exit code (7.5): 2 with any run error, else 1 with a failed file, a broken template or
+ * a template with template errors, else 0.
  */
 import { displayPath, foldPath } from "../config/paths.js";
 import type { ConfigResult, PairConfig, RunDiagnostic } from "../config/types.js";
-import { lintTarget, type TemplateStatus } from "../engine/pipeline.js";
+import { lintTarget } from "../engine/pipeline.js";
 import type { Diagnostic } from "../engine/model.js";
 import { createRegistry, runPhase, type RuleRegistry } from "../engine/registry.js";
 import type { RuleEnv, RuleIo } from "../engine/rule.js";
@@ -42,7 +47,7 @@ import {
   type ListedFile,
   type ListedMatch,
 } from "./list.js";
-import { brokenReport, loadTemplate, withoutText } from "./template.js";
+import { brokenReport, loadTemplate, withoutText, type LintTemplate } from "./template.js";
 import type {
   Block,
   ExitCode,
@@ -51,6 +56,7 @@ import type {
   ReportedDiagnostic,
   RunResult,
   RunSummary,
+  TemplateReport,
 } from "./types.js";
 import { targetsOf } from "./walk.js";
 
@@ -79,6 +85,8 @@ function parseErrorPrefix(diagnostic: Diagnostic): Diagnostic {
 interface Counts {
   readonly checked: number;
   readonly broken: number;
+  /** Distinct templates with template errors (spec 7.5). */
+  readonly failedTemplates: number;
   readonly runErrors: number;
   readonly runWarnings: number;
   readonly suppressed: number;
@@ -94,7 +102,7 @@ function summarize(blocks: readonly Block[], counts: Counts): RunSummary {
   const warnings = files.reduce((count, file) => count + file.warnings.length, 0);
   let exitCode: ExitCode = 0;
   if (counts.runErrors > 0) exitCode = 2;
-  else if (failed > 0 || counts.broken > 0) exitCode = 1;
+  else if (failed > 0 || counts.broken > 0 || counts.failedTemplates > 0) exitCode = 1;
   return {
     files: files.length,
     passed: files.length - failed,
@@ -117,6 +125,7 @@ function finish(
   runWarnings: readonly RunDiagnostic[],
   checked: ReadonlySet<string>,
   broken: ReadonlyMap<string, string>,
+  failedTemplates: ReadonlySet<string> = new Set(),
   unmatched: readonly string[] = [],
   suppressed = 0,
 ): RunResult {
@@ -125,12 +134,14 @@ function finish(
     config,
     blocks,
     brokenTemplates: [...broken].map(([path, message]) => ({ path, message })),
+    failedTemplates: [...failedTemplates],
     runErrors,
     runWarnings,
     unmatched,
     summary: summarize(blocks, {
       checked: checked.size,
       broken: broken.size,
+      failedTemplates: failedTemplates.size,
       runErrors: runErrors.length,
       runWarnings: runWarnings.length,
       suppressed,
@@ -148,11 +159,13 @@ export async function runLint(loaded: ConfigResult, options: RunOptions): Promis
   const runWarnings: RunDiagnostic[] = [];
   const checked = new Set<string>();
   const broken = new Map<string, string>();
+  /** Printed paths of the templates with template errors, in order of appearance. */
+  const failedTemplates = new Set<string>();
   /** Diagnostics removed by disable directives, per pair-file lint (spec 4.4 DIR9). */
   let suppressed = 0;
 
   const problems = new Map<string, Promise<"MTL910" | "MTL911" | null>>();
-  const parsed = new Map<string, Promise<TemplateStatus>>();
+  const parsed = new Map<string, Promise<LintTemplate>>();
   const reportedProblem = new Set<string>();
 
   const problemOf = (path: string) => {
@@ -164,10 +177,11 @@ export async function runLint(loaded: ConfigResult, options: RunOptions): Promis
     return hit;
   };
 
-  const parseOnce = (path: string): Promise<TemplateStatus> => {
+  const parseOnce = (path: string): Promise<LintTemplate> => {
     let hit = parsed.get(path);
     if (hit === undefined) {
-      // The template text is dropped here: a lint run never quotes a template line (EX8).
+      // The template text is dropped here; the only template lines a lint run quotes, those
+      // of the template errors, get their excerpts first (EX8).
       hit = loadTemplate(registry, path).then(withoutText);
       parsed.set(path, hit);
     }
@@ -205,7 +219,7 @@ export async function runLint(loaded: ConfigResult, options: RunOptions): Promis
   };
 
   const lintFile = async (
-    status: Extract<TemplateStatus, { status: "ok" }>,
+    status: Extract<LintTemplate, { status: "ok" }>,
     rootDir: string,
     env: RuleEnv,
     relative: string,
@@ -305,11 +319,17 @@ export async function runLint(loaded: ConfigResult, options: RunOptions): Promis
       pairRoot: rootDir,
       io: options.io,
     };
+    // Template errors fail the template, not its pair: the targets are still linted (7.5).
+    let template: TemplateReport = { path: templateShown, status: "ok" };
+    if (status.errors.length > 0) {
+      template = { path: templateShown, status: "fail", errors: status.errors };
+      failedTemplates.add(templateShown);
+    }
     const results: FileResult[] = [];
     for (const relative of files) results.push(await lintFile(status, rootDir, env, relative));
     const block: PairBlock = {
       ...head,
-      template: { path: templateShown, status: "ok" },
+      template,
       ...tail,
       files: results,
     };
@@ -353,6 +373,7 @@ export async function runLint(loaded: ConfigResult, options: RunOptions): Promis
     runWarnings,
     checked,
     broken,
+    failedTemplates,
     unmatched,
     suppressed,
   );

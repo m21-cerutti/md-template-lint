@@ -34,6 +34,15 @@ options {
     tokenVocab = MdTemplateLexer;
 }
 
+// The only embedded code of this grammar: one predicate, for the count of
+// `[repeat-rules:same-level:min:N]` (N is 1 or more, spec 2.10).
+@members {
+    /** True when the next token does not start with `0`. */
+    private startsWithNonZero(): boolean {
+        return (this.tokenStream.LT(1)?.text ?? "0").charAt(0) !== "0";
+    }
+}
+
 // ===========================================================================
 // Document
 // ===========================================================================
@@ -59,6 +68,7 @@ fmUnclosed
 
 fmLine
     : fmFilenameLine
+    | fmUniqueNamesLine
     | fmCommentLine
     | fmKeyLine
     | fmBlankLine
@@ -68,6 +78,14 @@ fmLine
 // spec 2.5: `^\s*#\s*[filename:case:<convention>]\s*$`, template-wide.
 fmFilenameLine
     : FM_LINE_HASH WS? tagCandidate WS? NL
+    ;
+
+// spec 2.11: `# [unique-headings-names]` alone on a line, template-wide. The tag has no colon, so
+// stage 1 sees a bare bracket: every `# [word]` line parses here and the orchestrator
+// (src/tags/parser.ts) keeps the comment line when stage 2 does not know the name. Listed before
+// fmCommentLine, which would also accept the line.
+fmUniqueNamesLine
+    : FM_LINE_HASH WS? tagBareBracket WS? NL
     ;
 
 // Whole-line comment: binds to no key (spec 2.1).
@@ -137,7 +155,7 @@ bodyBlock
     | bodyTextLine
     ;
 
-// ATX heading 1 to 6. Only levels 1 and 2 carry tags (spec 2.6).
+// ATX heading 1 to 6. Every level carries tags (spec 2.6, ADR 0009).
 bodyHeading
     : H_OPEN bodyHeadingItem* NL
     ;
@@ -198,9 +216,15 @@ bodyHeadingTextEntry
 
 // `[word:` ... : a tag attempt; stage 2 decides whether the family is known.
 tagCandidate
-    : LBRACK tagWord COLON tagShapePiece* RBRACK    # tagShapedCandidate
-    | LBRACK tagWord COLON tagBracketItem* RBRACK   # tagClosedCandidate
-    | LBRACK tagWord COLON tagBracketItem*          # tagUnclosedCandidate
+    : LBRACK tagName COLON tagShapePiece* RBRACK    # tagShapedCandidate
+    | LBRACK tagName COLON tagBracketItem* RBRACK   # tagClosedCandidate
+    | LBRACK tagName COLON tagBracketItem*          # tagUnclosedCandidate
+    | PATTERN_OPEN QUOTED* (QUOTED_END tagBracketItem* RBRACK?)?  # tagPatternCandidate
+    ;
+
+// A tag word, or dashed words (`repeat-rules`).
+tagName
+    : tagWord (DASH tagWord)*
     ;
 
 // Legacy inert marker `[rule]` (spec 2.7).
@@ -282,6 +306,9 @@ tagFamily
     | IO
     | CONTENT
     | FILENAME_CS
+    | PATTERN
+    | REPEAT_RULES
+    | UNIQUE_HEADINGS_NAMES
     ;
 
 tagFreeText
@@ -303,6 +330,7 @@ fmTagBody
     | fmOrderTag
     | fmIoTag
     | fmFilenameTag
+    | fmUniqueNamesTag
     ;
 
 fmPresenceTag
@@ -314,8 +342,15 @@ fmFormatTag
       ( CONSTANT_ARG tagFreeText
       | fmCaseStyle
       | ELEMENTS COLON fmCaseStyle
+      | fmShape
+      | ELEMENTS COLON fmShape
       | SCHEME_ARG SCHEME_TEXT
       )
+    ;
+
+fmShape
+    : SEMVER
+    | DATE
     ;
 
 fmCaseStyle
@@ -368,6 +403,12 @@ fmConvention
     | PASCAL_CASE
     ;
 
+// spec 2.11, no colon and no argument. Effective only on a standalone comment line; after a key
+// it is accepted here so that it stays inert (and `[unique-headings-names:x]` stays malformed).
+fmUniqueNamesTag
+    : UNIQUE_HEADINGS_NAMES
+    ;
+
 // --- body tags (body*), spec 2.6 ---
 
 bodyTagEntry
@@ -377,10 +418,14 @@ bodyTagEntry
 bodyTagBody
     : bodyPresenceTag
     | bodyContentTag
+    | bodyPatternTag
+    | bodyRepeatTag
+    | bodyOrderTag
+    | bodyUniqueNamesTag
     ;
 
 bodyPresenceTag
-    : PRESENCE COLON (REQUIRED | OPTIONAL | EXIST | TEMPLATE_ONLY | CONDITIONAL_ARG tagFreeText)
+    : PRESENCE COLON (REQUIRED | OPTIONAL | TEMPLATE_ONLY | CONDITIONAL_ARG tagFreeText)
     ;
 
 bodyContentTag
@@ -390,7 +435,47 @@ bodyContentTag
       | LIST
       | MIN_LINES COLON NUMBER
       | MAX_LINES COLON NUMBER
+      | SUBHEADINGS COLON DISALLOW
+      | SUBHEADINGS COLON NO_EXTRA
       )
+    ;
+
+// spec 2.10. The quoted text is lexed in mode TAG_PATTERN; its pieces (literal
+// runs, placeholders, invalid pieces) are built and checked by
+// src/tags/visitors/pattern.ts, not here.
+bodyPatternTag
+    : PATTERN COLON PATTERN_QUOTE patternPiece* PAT_END
+    ;
+
+patternPiece
+    : PAT_TEXT
+    | PAT_ESCAPE
+    | PAT_LBRACE2
+    | PAT_RBRACE2
+    | PAT_PLACEHOLDER
+    | PAT_LBRACE
+    | PAT_RBRACE
+    ;
+
+// spec 2.10. N is 1 or more without a leading zero: a count starting with `0`
+// fails the predicate and is a malformed tag at that token.
+bodyRepeatTag
+    : REPEAT_RULES COLON SAME_LEVEL (COLON fmBound COLON repeatCount)?
+    ;
+
+repeatCount
+    : {this.startsWithNonZero()}? NUMBER
+    ;
+
+// spec 2.10: `[order:ascending]` and `[order:descending]` order by the whole
+// text, `[order:first:<number|date|semver>:<direction>]` by the first match.
+bodyOrderTag
+    : ORDER COLON (FIRST COLON (NUMBER_WORD | DATE | SEMVER) COLON)? (ASCENDING | DESCENDING)
+    ;
+
+// spec 2.11: `[unique-headings-names]`, no colon and no argument.
+bodyUniqueNamesTag
+    : UNIQUE_HEADINGS_NAMES
     ;
 
 // ===========================================================================

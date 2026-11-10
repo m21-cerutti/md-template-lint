@@ -1,0 +1,4 @@
+pairs:
+  - name: epics
+    template: templates/epics.template.md
+    include: notes/*.md

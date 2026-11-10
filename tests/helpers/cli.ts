@@ -54,6 +54,7 @@ export interface JsonRun {
     readonly path: string;
     readonly status: string;
     readonly filenameCase: string | null;
+    readonly uniqueHeadingNames: boolean;
     readonly fields: readonly {
       readonly name: string;
       readonly type: string;

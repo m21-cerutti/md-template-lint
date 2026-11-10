@@ -1,4 +1,6 @@
 # Spec 4.4 worked example 1: disable-line and disable-next-line, frontmatter and heading.
+# Difference from the spec text: `reviewer` is a template field with two format rules, so the
+# multi-code list of line 5 (MTL301, MTL302) covers two findings that really fire.
 pairs:
   - name: notes
     template: templates/notes.template.md

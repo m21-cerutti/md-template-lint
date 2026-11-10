@@ -9,7 +9,7 @@ never read a real configuration.
 
 | Family      | Path                                              | What it tests                                                                                              |
 | ----------- | ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| syntax      | `tests/syntax/syntax/<MTLxxx>-<name>.test.ts`     | One template-only code per file: `MTL001` to `MTL004` and `MTL010` to `MTL013`. A template run through `--verify`. |
+| syntax      | `tests/syntax/syntax/<MTLxxx>-<name>.test.ts`     | One template-only code per file: `MTL001` to `MTL004`, `MTL010` to `MTL013`, `MTL015` and `MTL016`. A template run through `--verify`. |
 | target      | `tests/target/<category>/<MTLxxx>-<name>.test.ts` | One code per file that needs a template and a target. The pair is checked and linted.                       |
 | unit        | `tests/unit/`                                     | Engine, parser, config, runner, reporters, io, CLI, scripts and release packaging.                          |
 | integration | `tests/integration/rule-set.test.ts`              | The full ordered diagnostic list of one many-tag template (spec 4.1 and 8.4).                               |
@@ -30,10 +30,10 @@ test or its fixtures in the wrong family.
 | `tests/target/syntax/`  | `MTL020` to `MTL025` (disable directive problems) |
 | `tests/target/filename/`| `MTL101`, `MTL102`                                |
 | `tests/target/presence/`| `MTL201`, `MTL202`                                |
-| `tests/target/format/`  | `MTL301` to `MTL305`                              |
+| `tests/target/format/`  | `MTL301` to `MTL309` (`MTL306` to `MTL309`: step `shape`) |
 | `tests/target/bounds/`  | `MTL401` to `MTL407`                              |
 | `tests/target/type/`    | `MTL501` to `MTL517`                              |
-| `tests/target/heading/` | `MTL601` to `MTL604`                              |
+| `tests/target/heading/` | `MTL601` to `MTL604`, `MTL610` to `MTL612`        |
 | `tests/target/content/` | `MTL701` to `MTL705`                              |
 | `tests/target/io/`      | `MTL801` to `MTL805`                              |
 
@@ -51,7 +51,7 @@ rules: their cases live in the config, runner and CLI unit tests.
 | `tests/unit/reporters/`    | The output formats: `json`, `plain`, `pretty`, `excerpt`.                                       |
 | `tests/unit/io/`           | The production `RuleIo` (`address`, `connect-guard`, `exists`, `probe`, `probe-behaviour`), with a fake network. |
 | `tests/unit/smoke/`        | The `smoke:pack` and release script helpers (`helpers.test.ts`) and the GitHub Actions workflows plus the `package.json` publish settings (`workflows.test.ts`). |
-| `tests/unit/*.test.ts`     | Engine and parser: `anchors`, `content-whitespace`, `directives`, `document`, `engine`, `listeners`, `listeners-defensive`, `parser-comment-line`, `pipeline`, `regions`, `registry`, `suppression`, `tags`, `values`, `visitors`. Scaffold: `new-rule` (`pnpm run new:rule`). Research spikes on the `yaml` package: `yaml-explore`, `yaml-spike`. |
+| `tests/unit/*.test.ts`     | Engine and parser: `anchors`, `content-whitespace`, `directives`, `document`, `engine`, `listeners`, `listeners-defensive`, `parser-comment-line`, `pipeline`, `regions`, `registry`, `sections`, `subheadings-tag`, `suppression`, `tags`, `values`, `visitors`. Scaffold: `new-rule` (`pnpm run new:rule`). Research spikes on the `yaml` package: `yaml-explore`, `yaml-spike`. |
 
 ### Consistency tests
 
@@ -74,7 +74,7 @@ cases, so a fixture without a case fails the run.
 | `tests/fixtures/integration/`   | `tests/integration/rule-set.test.ts`      | `<case>/template.md` and `target.md` of the many-tag template.                       |
 | `tests/fixtures/config/`        | `tests/unit/config/`                      | Projects with an `md-template-lint.yml` (groups `validate-`, `discover-`, `naming-`).|
 | `tests/fixtures/runner/`        | `tests/unit/runner/`, `tests/unit/reporters/` | Projects with config, templates, targets and `expected.*` output files (groups `inputs-`, `empty-`, `broken-`, `parse-`, `suppress-`, `excerpt-`, `expand-`, `io-`, `unreadable-`, `report-`). |
-| `tests/fixtures/cli/`           | `tests/unit/cli/`                         | Projects run through the CLI (groups `exit-`, `list-`, `verify-`, `schema-`, `format-`, `wiring-`, `usage-`, `large-`). |
+| `tests/fixtures/cli/`           | `tests/unit/cli/`                         | Projects run through the CLI (groups `exit-`, `list-`, `verify-`, `schema-`, `format-`, `wiring-`, `usage-`, `suppress-`, `large-`). |
 | `tests/fixtures/directives/`    | `tests/unit/directives.test.ts`           | `<case>/document.md`: documents for the disable directive parser.                    |
 | `tests/fixtures/suppression/`   | `tests/unit/suppression.test.ts`          | `<case>/template.md` and `target.md`: suppression by disable directives.             |
 | `tests/fixtures/tags/`          | `tests/unit/parser-comment-line.test.ts`  | `<case>/document.md`: frontmatter comment lines and key comments of the parser.      |

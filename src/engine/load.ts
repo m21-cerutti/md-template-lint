@@ -2,7 +2,8 @@
  * Load a Markdown template or target (docs/spec.md 1.1, 1.2, 2.1, 2.6):
  * grammar parse (src/tags/parser.ts analyzeDocument, with the collecting
  * listeners), YAML values with `yaml` (failsafe, uniqueKeys false), inline
- * comments joined to top-level keys BY LINE, H1/H2 sections, inferred types.
+ * comments joined to top-level keys BY LINE, sections of every heading level
+ * (H1 to H6, with parents), inferred types.
  */
 import { readFile } from "node:fs/promises";
 import {
@@ -22,6 +23,7 @@ import { inferType } from "./infer.js";
 import type {
   DocumentModel,
   Field,
+  HeadingLevel,
   LoadResult,
   ParseFailure,
   Section,
@@ -71,18 +73,32 @@ function valueInteriorLines(doc: Document, lineCounter: LineCounter, startLine: 
   return lines;
 }
 
-/** Sections from H1/H2 headings; a body runs to the next heading of equal or higher level. */
+const LEVELS: readonly HeadingLevel[] = [1, 2, 3, 4, 5, 6];
+
+/**
+ * Sections from the headings of every level (spec 2.6, change C10): a body
+ * runs to the next heading of equal or higher level; the parent is the nearest
+ * preceding heading with a lower level.
+ */
 function buildSections(headings: readonly BodyHeading[], fileLines: readonly string[]): Section[] {
-  const sections = headings.filter((heading) => heading.level <= 2);
-  return sections.map((heading, index) => {
-    const next = sections.slice(index + 1).find((following) => following.level <= heading.level);
+  return headings.map((heading, index) => {
+    const next = headings.slice(index + 1).find((following) => following.level <= heading.level);
     const end = next === undefined ? fileLines.length : next.line - 1;
+    let parent: number | null = null;
+    for (let before = index - 1; before >= 0; before -= 1) {
+      if ((headings[before]?.level ?? heading.level) < heading.level) {
+        parent = before;
+        break;
+      }
+    }
     return {
-      level: heading.level === 1 ? 1 : 2,
+      level: LEVELS.find((level) => level === heading.level) ?? 6,
       text: heading.text,
       line: heading.line,
       tags: heading.tags,
       body: fileLines.slice(heading.line, end).join("\n"),
+      endLine: end,
+      parent,
     };
   });
 }
@@ -110,8 +126,10 @@ export function loadDocument(text: string): LoadResult {
   const commentLines = new Set<number>();
   for (const line of frontmatter.lines) {
     if (line.kind === "key") comments.set(line.line, line.comment);
-    else if (line.kind === "filename") filenameLines.add(line.line);
-    if (line.kind === "comment" || line.kind === "filename") commentLines.add(line.line);
+    else if (line.kind === "filename" || line.kind === "unique-names") filenameLines.add(line.line);
+    if (line.kind === "comment" || line.kind === "filename" || line.kind === "unique-names") {
+      commentLines.add(line.line);
+    }
   }
 
   const fields = new Map<string, Field>();
@@ -150,6 +168,7 @@ export function loadDocument(text: string): LoadResult {
     fields,
     sections: buildSections(headings, fileLines),
     filename: frontmatter.filename,
+    uniqueHeadingNames: frontmatter.uniqueHeadingNames,
     findings,
     directives,
   };

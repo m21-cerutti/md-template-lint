@@ -114,7 +114,8 @@ const CASES: readonly TestCase[] = [
       message("date_list", "['40']", "5"),
       message("string_typed_scalar_field", "['80']", "5"),
     ],
-    warnings: [],
+    // Spec 2.9: `date_list` is a list-of-date field without [format:elements:date].
+    warnings: ["MTL016"],
   },
   // Legacy takes the leftmost tag: [max:1] wins over a later [max:9] and
   // [max:9] wins over a later [max:1].

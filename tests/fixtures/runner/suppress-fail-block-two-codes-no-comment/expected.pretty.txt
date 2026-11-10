@@ -1,0 +1,26 @@
+md-template-lint 1.0.0
+Config: md-template-lint.yml
+========================
+
+Template: templates/notes.template.md
+Target:   notes/*.md (1 file(s))
+
+  ✗ notes/block.md
+      error MTL302 Field 'slug': value 'Not_Kebab' does not match required format [kebab-case]
+        3 | slug: Not_Kebab
+      error MTL508 Field 'port' (type=int): value is not a valid integer
+        4 | port: abc
+
+========================
+Summary
+========================
+Total files:  1
+Passed:       0
+Failed:       1
+Warnings:     0 (in 0 file(s))
+Templates:    1 checked, 0 broken
+
+Failed files:
+  - notes/block.md
+
+========================

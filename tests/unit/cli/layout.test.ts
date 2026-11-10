@@ -20,6 +20,8 @@ describe("cli fixtures: group prefixes", () => {
       "format-",
       "wiring-",
       "usage-",
+      "suppress-",
+      "template-",
     ]);
   });
 

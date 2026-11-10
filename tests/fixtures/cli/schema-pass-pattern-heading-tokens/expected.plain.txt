@@ -1,0 +1,22 @@
+md-template-lint 9.9.9
+Config: (none)
+========================
+
+  PASS template.md
+Field  Type    Rules
+--------------------
+title  string  presence:required
+
+Headings:
+  # Changelog (presence:required)
+  ## Release (presence:required, pattern:"[{semver}] - {date}", repeat-rules:same-level)
+  ### Step (presence:required, pattern:"Step {digits}", repeat-rules:same-level, repeat-rules:same-level:min:2, repeat-rules:same-level:max:5, content:non-empty, content:list)
+
+========================
+Summary
+========================
+Templates:    1 checked, 0 broken
+Warnings:     0
+
+All templates passed!
+========================

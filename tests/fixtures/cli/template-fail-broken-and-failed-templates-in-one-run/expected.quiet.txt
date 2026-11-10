@@ -1,0 +1,5 @@
+  ✗ templates/versions.template.md (template)
+      error MTL017 Heading 'Notes': matches the same headings as the previous heading 'Notes' (line 5)
+        7 | ## Notes [presence:optional]
+          |    ^
+  TEMPLATE ERROR: templates/broken.template.md - File must have YAML frontmatter (---...---)

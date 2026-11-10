@@ -3,6 +3,7 @@
     "path": "template.md",
     "status": "ok",
     "filenameCase": null,
+    "uniqueHeadingNames": false,
     "fields": [{ "name": "owner", "type": "string", "rules": ["presence:required"] }],
     "headings": [],
     "diagnostics": [

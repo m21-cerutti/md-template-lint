@@ -11,7 +11,7 @@ homepage: "https://example.org" # [format:scheme:https] [io:exists]
 
 # Release notes
 
-## Changes [presence:exist] [content:table]
+## Changes [content:table]
 
 ## Overview [presence:required] [content:non-empty]
 

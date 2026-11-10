@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "tool": "md-template-lint",
+  "version": "1.0.0",
+  "mode": "lint",
+  "config": "md-template-lint.yml",
+  "results": [
+    {
+      "root": "project",
+      "pair": "notes",
+      "template": {
+        "path": "templates/guide.template.md",
+        "status": "ok"
+      },
+      "files": [
+        {
+          "path": "notes/guide.md",
+          "status": "fail",
+          "errors": [
+            {
+              "code": "MTL613",
+              "severity": "error",
+              "message": "Heading: duplicate heading name 'Steps' (first at line 9)",
+              "heading": "Steps"
+            },
+            {
+              "code": "MTL613",
+              "severity": "error",
+              "message": "Heading: duplicate heading name 'setup' (first at line 7)",
+              "heading": "setup"
+            }
+          ],
+          "warnings": []
+        }
+      ]
+    }
+  ],
+  "runErrors": [],
+  "runWarnings": [],
+  "unmatched": [],
+  "summary": {
+    "files": 1,
+    "passed": 0,
+    "failed": 1,
+    "warnings": 0,
+    "filesWithWarnings": 0,
+    "suppressed": 0,
+    "templatesChecked": 1,
+    "templatesBroken": 0,
+    "runErrors": 0,
+    "runWarnings": 0,
+    "exitCode": 1
+  }
+}

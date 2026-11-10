@@ -1,0 +1,13 @@
+  ✗ templates/all.template.md (template)
+      error MTL030 Heading 'Epic': tag [order:ascending] needs [repeat-rules:same-level] (an order compares the repeats of one heading)
+        5 | ## Epic [pattern:"E{digits}"] [order:ascending]
+          |                               ^
+      error MTL019 Heading 'Steps' (H3): comes after the deeper child 'Details' (H4, line 9) under 'Setup'
+        11 | ### Steps
+           | ^
+      error MTL017 Heading 'Notes': matches the same headings as the previous heading 'Notes' (line 13)
+        15 | ## Notes
+           |    ^
+      error MTL018 Heading 'Rel': tag [repeat-rules:same-level:min:2] contradicts [presence:optional] (a minimum of 2 requires the heading)
+        17 | ## Rel [pattern:"{semver}"] [repeat-rules:same-level:min:2] [presence:optional]
+           |                             ^

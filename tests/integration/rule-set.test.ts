@@ -13,24 +13,41 @@ import { describe, expect, it } from "vitest";
 import type { Diagnostic } from "../../src/engine/model.js";
 import { checkTarget, checkTemplate } from "../../src/engine/pipeline.js";
 import { createRegistry } from "../../src/engine/registry.js";
-import { createEnv, createMemoryIo } from "../../src/engine/rule.js";
+import { anchorLineOf, createEnv, createMemoryIo } from "../../src/engine/rule.js";
 
 const registry = createRegistry();
 const DIR = "tests/fixtures/integration";
 
-/** What a case expects of a diagnostic: nothing else is compared. */
+/**
+ * What a case expects of a diagnostic: nothing else is compared. A content
+ * finding (MTL7xx) also carries its target anchor line (spec 4.4 DIR5), so a
+ * check of the wrong target section cannot hide behind a right message.
+ */
 interface Expected {
   readonly code: string;
   readonly severity: "error" | "warning";
   readonly message: string;
+  readonly anchor?: number | null;
 }
 
 const error = (code: string, message: string): Expected => ({ code, severity: "error", message });
+const contentError = (code: string, message: string, anchor: number): Expected => ({
+  code,
+  severity: "error",
+  message,
+  anchor,
+});
 const warning = (code: string, message: string): Expected => ({
   code,
   severity: "warning",
   message,
 });
+
+/** Spec 2.9: `milestones` is a list-of-date field without [format:elements:date]. */
+const MILESTONES_NO_FORMAT = warning(
+  "MTL016",
+  "Field 'milestones' (type=list-of-date): no [format:elements:date], default date formats apply",
+);
 
 /**
  * Case -> target path given to the engine, template warnings and the full
@@ -46,7 +63,7 @@ const CASES: readonly {
   {
     name: "pass-release-notes",
     targetPath: "release-notes.md",
-    templateWarnings: [],
+    templateWarnings: [MILESTONES_NO_FORMAT],
     expected: [],
   },
   {
@@ -55,7 +72,7 @@ const CASES: readonly {
     // homepage: scheme before io); unknown keys last; warnings after errors.
     name: "fail-frontmatter-rules",
     targetPath: "release-notes.md",
-    templateWarnings: [],
+    templateWarnings: [MILESTONES_NO_FORMAT],
     expected: [
       error(
         "MTL102",
@@ -88,12 +105,23 @@ const CASES: readonly {
     ],
   },
   {
-    // File name first, then the field, then headings (template heading order,
-    // order finding last), then content in template SECTION order across codes
-    // (Changes MTL702, Overview MTL701, Steps MTL703 and MTL705).
+    // File name first, then the field, then headings (template heading order), then
+    // content in template SECTION order across codes (Changes MTL702, Overview MTL701).
+    // Positional run (spec 2.6, 2.10, ADR 0012), level 2: `## Authoring checklist` is set
+    // aside (MTL603), the free siblings are Steps (13), Overview (20), Changes (24).
+    // `## Changes [pattern:"{text}"]` (a required placeholder position, spec 2.10 step 3c) takes
+    // the next sibling, `## Steps` (line 13), and its content is checked there (MTL702, anchor
+    // line 13; a pattern heading's label is the target text plus the pattern, spec 2.6).
+    // `## Overview` takes line 20 (MTL701). Template `## Steps` then looks at `## Changes`
+    // (line 24): missing (MTL601), so its list and max-lines tags are not checked. `## Summary`
+    // looks at the same sibling: missing (MTL601). The H2 order is a run: no MTL604. Line 24
+    // `## Changes` is left after the last position: the tail, one MTL616 warning (spec 2.6).
     name: "fail-filename-headings-content",
     targetPath: "Release_Notes.md",
-    templateWarnings: [warning("MTL010", "Field 'reviewer': unknown tag [nope:y]")],
+    templateWarnings: [
+      warning("MTL010", "Field 'reviewer': unknown tag [nope:y]"),
+      MILESTONES_NO_FORMAT,
+    ],
     expected: [
       error(
         "MTL101",
@@ -103,19 +131,36 @@ const CASES: readonly {
         "MTL102",
         "Field 'slug': expected value to equal filename 'Release_Notes' ([value:filename]), got 'release-notes'",
       ),
+      error("MTL601", "Heading: Missing required heading: 'Steps'"),
       error("MTL601", "Heading: Missing required heading: 'Summary'"),
       error(
         "MTL603",
         "Heading: Heading 'Authoring checklist' is marked [presence:template-only] and must not appear in the linted file",
       ),
-      error(
-        "MTL604",
-        "Heading: Heading order mismatch: template order ['Release notes', 'Changes', 'Overview', 'Steps', 'Summary', 'Authoring checklist'] vs target order ['Release notes', 'Steps', 'Overview', 'Authoring checklist', 'Changes']",
+      contentError(
+        "MTL702",
+        `Section 'Steps' (pattern "{text}"): [content:table] no markdown table row found`,
+        13,
       ),
-      error("MTL702", "Section 'Changes': [content:table] no markdown table row found"),
-      error("MTL701", "Section 'Overview': [content:non-empty] section body is empty"),
-      error("MTL703", "Section 'Steps': [content:list] no markdown list item found"),
-      error("MTL705", "Section 'Steps': [content:max-lines:3] 4 non-blank line(s)"),
+      contentError("MTL701", "Section 'Overview': [content:non-empty] section body is empty", 20),
+      warning(
+        "MTL616",
+        "Heading: 1 extra heading(s) at level H2 after the template headings: ['Changes']",
+      ),
+    ],
+  },
+  {
+    // `## Steps` is present in its place (the third sibling after Changes and Overview), so its
+    // content tags are checked end to end (spec 2.6 "Content tags", 2.10 step 3b): the body
+    // (lines 24 to 28) has no list item (MTL703) and 4 non-blank lines against max 3 (MTL705),
+    // both anchored on the heading line 23, in code order inside the one section. The
+    // template-only `## Authoring checklist` is absent: silent.
+    name: "fail-steps-present-list-and-max-lines",
+    targetPath: "release-notes.md",
+    templateWarnings: [MILESTONES_NO_FORMAT],
+    expected: [
+      contentError("MTL703", "Section 'Steps': [content:list] no markdown list item found", 23),
+      contentError("MTL705", "Section 'Steps': [content:max-lines:3] 4 non-blank line(s)", 23),
     ],
   },
 ];
@@ -136,7 +181,11 @@ function listTree(): { dirs: string[]; files: string[] } {
 }
 
 const summary = (diagnostics: readonly Diagnostic[]): Expected[] =>
-  diagnostics.map(({ code, severity, message }) => ({ code, severity, message }));
+  diagnostics.map((diagnostic) => {
+    const { code, severity, message } = diagnostic;
+    if (!code.startsWith("MTL7")) return { code, severity, message };
+    return { code, severity, message, anchor: anchorLineOf(diagnostic) };
+  });
 
 /** In-memory env: only the https homepage of the fixtures is reachable. */
 const env = createEnv({

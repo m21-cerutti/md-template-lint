@@ -1,9 +1,9 @@
 ---
 title: Architecture overview  # [presence:required]
-last_updated: 2026-10-29  # [presence:required] type=date
+last_updated: 2026-10-29  # [presence:required] [format:date] type=date
 ---
 
-# Architecture [presence:exist]
+# Architecture title [pattern:"{text}"]
 
 One paragraph: the shape of the system in plain words. Link the product and
 technical specifications.

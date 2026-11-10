@@ -266,7 +266,7 @@ describe("target pipeline: env is a required argument", () => {
   });
 });
 
-/** The 10 present-value steps of docs/spec.md 4.1 step 3, spelled out (not read from FIELD_STEPS). */
+/** The 11 present-value steps of docs/spec.md 4.1 step 3, spelled out (not read from FIELD_STEPS). */
 const SPEC_STEP_ORDER = [
   "constant",
   "count",
@@ -278,6 +278,7 @@ const SPEC_STEP_ORDER = [
   "case",
   "elements",
   "type",
+  "shape",
 ] as const;
 
 describe("target pipeline: per-field steps run in spec 4.1 order", () => {
@@ -335,38 +336,101 @@ describe("target pipeline: headings step lists presence findings in template hea
     "a: x",
     "---",
     "## Alpha",
-    "## Beta [presence:exist]",
+    '## Beta [pattern:"{text}"]',
     "## Draft notes [presence:template-only]",
     "## Omega",
   );
 
+  // Template level-2 positions: Alpha, Beta (`{text}` pattern), Omega; `Draft notes` is
+  // template-only (not a position). Spec 2.10 steps 2 and 3: each position takes the next
+  // sibling, in order.
   it("passes: a target that satisfies every heading has no finding", async () => {
-    const target = lines("---", "a: x", "---", "# Top", "## Alpha", "## Omega");
+    // `Beta` is a required `{text}` pattern: it takes the next sibling, whatever its text.
+    const target = lines("---", "a: x", "---", "# Top", "## Alpha", "## Anything", "## Omega");
     expect(await findings(templateText, target)).toEqual([]);
   });
 
-  it("fails: MTL601, MTL602, MTL603 interleave by template heading, not by rule", async () => {
-    // Alpha missing (601), no H2 at all for Beta (602), Draft notes present (603), Omega missing (601).
-    const target = lines("---", "a: x", "---", "# Draft notes");
+  it("fails: without a sibling for the pattern heading, Omega is the missing one", async () => {
+    // Alpha takes line 5, Beta (`{text}`) takes `Omega`, so `Omega` has no sibling left: MTL601
+    // for Omega (no MTL605: the pattern position found a sibling).
+    const target = lines("---", "a: x", "---", "# Top", "## Alpha", "## Omega");
     const found = await findings(templateText, target);
     expect(found.map((d) => `${d.code} ${d.message}`)).toEqual([
+      "MTL601 Heading: Missing required heading: 'Omega'",
+    ]);
+  });
+
+  it("fails: MTL601, MTL603 interleave by template heading, not by rule", async () => {
+    // Alpha missing (601), Draft notes present (603), Omega missing (601).
+    // Draft notes is an H1 here: levels match exactly (spec 2.6, change C10).
+    const template = lines(
+      "---",
+      "a: x",
+      "---",
+      "## Alpha",
+      "# Draft notes [presence:template-only]",
+      "## Omega",
+    );
+    const target = lines("---", "a: x", "---", "# Draft notes");
+    const found = await findings(template, target);
+    expect(found.map((d) => `${d.code} ${d.message}`)).toEqual([
       "MTL601 Heading: Missing required heading: 'Alpha'",
-      "MTL602 Heading: Missing heading at level H2 [presence:exist]",
       "MTL603 Heading: Heading 'Draft notes' is marked [presence:template-only] and must not appear in the linted file",
       "MTL601 Heading: Missing required heading: 'Omega'",
     ]);
   });
 
-  it("fails: the template line anchor is cleared, and the order finding comes last", async () => {
-    const target = lines("---", "a: x", "---", "## Omega", "## Alpha", "## Draft notes");
-    const found = await findings(templateText, target);
-    expect(found.map((d) => d.code)).toEqual(["MTL603", "MTL604"]);
-    expect(found.map((d) => d.position)).toEqual([null, null]);
+  it("fails: a dropped [presence:exist] is MTL012 and stays in the heading text, so the heading is missing", async () => {
+    // Spec 2.6 "Dropped tag": the tag is malformed, the heading text is `Intro [presence:exist]`,
+    // so the target heading `Intro` does not match it: MTL601 names the tag to migrate.
+    const text = lines("---", "a: x", "---", "## Intro [presence:exist]");
+    const status = await checkTemplate(real, text);
+    if (status.status !== "ok") throw new Error("template broken");
+    expect(status.warnings.map((d) => d.code)).toEqual(["MTL012"]);
+    expect(status.model.sections.map((section) => section.text)).toEqual([
+      "Intro [presence:exist]",
+    ]);
+    const found = await findings(text, lines("---", "a: x", "---", "## Intro"));
+    expect(found.map((d) => `${d.code} ${d.message}`)).toEqual([
+      "MTL601 Heading: Missing required heading: 'Intro [presence:exist]'",
+    ]);
   });
 
-  it("fails: presence findings carry the template heading text, the order finding none", async () => {
+  // A swapped Omega, Alpha: `Draft notes` is set aside (MTL603, step 1); the free siblings are
+  // Omega, Alpha. Alpha looks at Omega: missing. Beta (`{text}`) takes Omega. Omega looks at
+  // Alpha: missing. Two MTL601 and the MTL603, in template heading order; no MTL604 (same level).
+  it("fails: the template line anchor is cleared, and findings keep the template heading order", async () => {
     const target = lines("---", "a: x", "---", "## Omega", "## Alpha", "## Draft notes");
     const found = await findings(templateText, target);
+    expect(found.map((d) => d.code)).toEqual(["MTL601", "MTL603", "MTL601"]);
+    expect(found.map((d) => d.position)).toEqual([null, null, null]);
+  });
+
+  it("fails: presence findings carry the template heading text", async () => {
+    const target = lines("---", "a: x", "---", "## Omega", "## Alpha", "## Draft notes");
+    const found = await findings(templateText, target);
+    expect(found.map((d) => [d.code, d.heading])).toEqual([
+      ["MTL601", "Alpha"],
+      ["MTL603", "Draft notes"],
+      ["MTL601", "Omega"],
+    ]);
+  });
+
+  // An order ACROSS levels is what MTL604 still reports (spec 2.6 "Order"): the H2 `Alpha`
+  // matches before the H1 `Top` that precedes it in the template.
+  it("fails: the order finding (across levels) comes last and carries no heading", async () => {
+    const template = lines(
+      "---",
+      "a: x",
+      "---",
+      "# Top",
+      "## Alpha",
+      "## Draft notes [presence:template-only]",
+    );
+    const target = lines("---", "a: x", "---", "## Alpha", "# Top", "## Draft notes");
+    const found = await findings(template, target);
+    expect(found.map((d) => d.code)).toEqual(["MTL603", "MTL604"]);
+    expect(found.map((d) => d.position)).toEqual([null, null]);
     expect(found.map((d) => [d.code, d.heading])).toEqual([
       ["MTL603", "Draft notes"],
       ["MTL604", undefined],

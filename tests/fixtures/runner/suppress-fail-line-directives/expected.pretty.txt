@@ -18,7 +18,7 @@ Total files:  1
 Passed:       0
 Failed:       1
 Warnings:     1 (in 1 file(s))
-Suppressed:   3
+Suppressed:   4
 Templates:    1 checked, 0 broken
 
 Failed files:

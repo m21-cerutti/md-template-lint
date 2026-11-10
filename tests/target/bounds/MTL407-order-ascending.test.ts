@@ -23,6 +23,12 @@ interface TestCase {
 }
 
 /**
+ * `count` times MTL016 (spec 2.9): one per template `date` or `list-of-date` field
+ * without its date format tag; no fixture template here carries one.
+ */
+const noDateFormat = (count: number): string[] => Array<string>(count).fill("MTL016");
+
+/**
  * Case -> fixture dir (same name) -> expected result. At least 1 passing case and
  * 1 failing case. Silent branches live in the pass fixture or in
  * `fail-` fixtures where another field of the same file still yields the
@@ -43,18 +49,19 @@ const CASES: readonly TestCase[] = [
   {
     name: "pass-dates-ascending-and-other-values-stay-silent",
     expected: [],
-    warnings: [],
+    // 22 fields: 21 list-of-date (incl. the `[date]` hint), the scalar date; not `string_list`.
+    warnings: noDateFormat(22),
   },
   {
     name: "fail-one-decreasing-pair",
     expected: [message("dates", "2026-03-01", "2026-01-01")],
-    warnings: [],
+    warnings: noDateFormat(1),
   },
   // The marker sorts after every date: a date after it is a violation.
   {
     name: "fail-marker-followed-by-date",
     expected: [message("career", "present", "2026-06-01")],
-    warnings: [],
+    warnings: noDateFormat(1),
   },
   // The year dominates the month and day: 2025-12-31 -> 2026-01-01 passes (pass
   // fixture), 2026-01-01 -> 2025-12-31 fails, in ISO and slash form. Partial
@@ -69,14 +76,14 @@ const CASES: readonly TestCase[] = [
       message("partial_dates", "2026-01-31", "2026"),
       message("partial_dates", "2026", "2025-12"),
     ],
-    warnings: [],
+    warnings: noDateFormat(3),
   },
   // A padded marker is stripped before the marker test: it still sorts last and
   // is shown as written.
   {
     name: "fail-padded-marker-sorts-after-dates",
     expected: [message("career", " present ", "2026-06-01")],
-    warnings: [],
+    warnings: noDateFormat(1),
   },
   // Marker == 9999-12-31 (legacy key): equal is fine, 9999-12-30 after it is
   // not; `PRÉSENT` and `présent` tie, a date after them is a violation, a
@@ -87,7 +94,7 @@ const CASES: readonly TestCase[] = [
       message("case_variants", "présent", "2026-02-01"),
       message("max_date_after_marker", "9999-12-31", "9999-12-30"),
     ],
-    warnings: [],
+    warnings: noDateFormat(2),
   },
   // One error per decreasing adjacent pair; after a violation the previous
   // date moves on (03-01 then 04-01 is fine), so there are exactly two errors.
@@ -97,7 +104,7 @@ const CASES: readonly TestCase[] = [
       message("dates", "2026-05-01", "2026-03-01"),
       message("dates", "2026-04-01", "2026-02-01"),
     ],
-    warnings: [],
+    warnings: noDateFormat(1),
   },
   // The pair forms between neighbouring VALID items: a word, an impossible day,
   // 31/02, a non-leap 02-29, a blank, a nested list, a mapping and a BOM-prefixed
@@ -105,7 +112,7 @@ const CASES: readonly TestCase[] = [
   {
     name: "fail-invalid-items-skipped-pair-forms-between-valid-items",
     expected: [message("dates", "2026-05-01", "2026-02-01")],
-    warnings: [],
+    warnings: noDateFormat(1),
   },
   // Slash and ISO forms compare by calendar date: 15/02/2026 == 2026-02-15 is
   // fine, `YYYY-MM` sorts as the 1st and `YYYY` as January 1st.
@@ -116,27 +123,27 @@ const CASES: readonly TestCase[] = [
       message("dates", "15/02/2026", "2026-02"),
       message("dates", "2026-02", "2026"),
     ],
-    warnings: [],
+    warnings: noDateFormat(1),
   },
   // Items are shown as written (padding and NEL kept); the BOM item is invalid
   // (Python `strip` keeps U+FEFF) and skipped.
   {
     name: "fail-items-shown-as-written-after-python-strip",
     expected: [message("dates", " 2026-03-01 ", "\u00852026-01-01")],
-    warnings: [],
+    warnings: noDateFormat(1),
   },
   // A `[date]` hint promotes a list to list-of-date: the type is the declared
   // one, not only the inferred one.
   {
     name: "fail-hint-promoted-list-of-date-is-checked",
     expected: [message("hinted", "2026-03-01", "2026-01-01")],
-    warnings: [],
+    warnings: noDateFormat(1),
   },
   // The tag has no argument: a repeated tag reports once.
   {
     name: "fail-repeated-order-tag-reports-once",
     expected: [message("dates", "2026-03-01", "2026-01-01")],
-    warnings: [],
+    warnings: noDateFormat(1),
   },
   // Errors follow the template key order (not the target order), pairs in list order.
   {
@@ -146,7 +153,7 @@ const CASES: readonly TestCase[] = [
       message("second", "2026-02-01", "2026-01-15"),
       message("second", "2026-01-15", "2026-01-01"),
     ],
-    warnings: [],
+    warnings: noDateFormat(3),
   },
 ];
 

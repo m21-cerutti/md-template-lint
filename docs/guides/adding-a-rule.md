@@ -1,12 +1,12 @@
 ---
 title: "Guide: adding a rule"
-last_updated: 2026-10-30
+last_updated: 2026-11-04
 ---
 
 # Guide: adding a rule
 
 Step by step, from an empty diff to green gates. The walk-through adds one small rule,
-`no-todo-value` (code `MTL306`, a warning on any frontmatter value that contains the text `TODO`),
+`no-todo-value` (code `MTL310`, a warning on any frontmatter value that contains the text `TODO`),
 so every command and file below is real. Swap in your own category, name and code. The rule is for
 learning: it reads the value but no tag, which a real rule seldom does. If your rule needs a new
 template tag, do [Adding a tag](adding-a-tag.md) first.
@@ -44,18 +44,19 @@ phases a step) that decide when the pipeline runs it.
 | Your rule checks                                   | Category (see spec 4.2) | `--phase`  | `--step`                                      |
 | -------------------------------------------------- | ----------------------- | ---------- | --------------------------------------------- |
 | A file that does not parse                         | `syntax`                | `parse`    | none                                          |
-| A tag problem of a template (a warning)            | `syntax`                | `template` | none                                          |
+| A tag problem of a template (a warning, or a template error such as `MTL017`: severity `error`, exit 1) | `syntax` | `template` | none |
 | One template field against the target value        | by what it checks       | `field`    | one of `FIELD_STEPS` in `src/engine/rule.ts`  |
 | The whole target (file name, headings, content...) | by what it checks       | `target`   | one of `TARGET_STEPS` in `src/engine/rule.ts` |
 
 `FIELD_STEPS` run in this order for each template field: `presence`, `constant`, `count`, `range`,
-`order`, `scheme`, `io`, `value-filename`, `case`, `elements`, `type`. `TARGET_STEPS`: `filename`,
+`order`, `scheme`, `io`, `value-filename`, `case`, `elements`, `type`, `shape` (the format shape checks of `MTL306` to `MTL309`,
+appended last). `TARGET_STEPS`: `filename`,
 `unknown-keys`, `headings`, `content`, `directives`. The step fixes the emission order (spec 4.1).
 The pipeline calls the `field` steps other than `presence` only when the target value is present
 and not empty.
 
 The example is a `field` rule of category `format`, step `case` (the closest step of the value
-shape checks). A code is never renumbered and never reused. `MTL306` is the next code after the
+text checks). A code is never renumbered and never reused. `MTL310` is the next code after the
 `format` rows of the spec table.
 
 ## 2. Write the spec row first
@@ -66,7 +67,7 @@ every registered rule with its row (name, category, severity). Add the row to th
 columns as the rows around it. For the example:
 
 ```text
-| `MTL306` | no-todo-value | warning  | `Field '{key}': value contains TODO` | new |
+| `MTL310` | no-todo-value | warning  | `Field '{key}': value contains TODO` | new |
 ```
 
 A rule that consumes a tag also needs the tag in the tables of spec section 2 and the category
@@ -94,11 +95,11 @@ The arguments are `<category> <name>` and these options (`scripts/new-rule.ts`, 
 | `--syntax`        | A template-only rule in another category (phase `template`).                                                  |
 | `--root <dir>`    | Write into another tree (tests).                                                                              |
 
-With the spec row of section 2 in place, the script picks the code `MTL306` from the row and prints:
+With the spec row of section 2 in place, the script picks the code `MTL310` from the row and prints:
 
 ```text
-new:rule: MTL306 no-todo-value (stub) added to src/rules/format.ts
-new:rule: test stub tests/target/format/MTL306-no-todo-value.test.ts, fixtures tests/fixtures/pairs/MTL306/
+new:rule: MTL310 no-todo-value (stub) added to src/rules/format.ts
+new:rule: test stub tests/target/format/MTL310-no-todo-value.test.ts, fixtures tests/fixtures/pairs/MTL310/
 ```
 
 Without a spec row it chooses the next free code of the range and adds a third line telling you to
@@ -107,11 +108,11 @@ add the row and the pending entry. It never runs git and refuses a name that alr
 What it wrote:
 
 - In `src/rules/format.ts`, above the line `// new:rule inserts above this line`, a `defineRule({...})`
-  entry whose check is `notImplemented("MTL306")` (a stub that throws when run). It also adds
+  entry whose check is `notImplemented("MTL310")` (a stub that throws when run). It also adds
   `notImplemented` to the import from `../engine/rule.js`.
-- `tests/target/format/MTL306-no-todo-value.test.ts`: a stub with `const DIR = "tests/fixtures/pairs/MTL306"`,
+- `tests/target/format/MTL310-no-todo-value.test.ts`: a stub with `const DIR = "tests/fixtures/pairs/MTL310"`,
   a table with `pass-placeholder` and `fail-placeholder`, and `it.todo` cases.
-- `tests/fixtures/pairs/MTL306/pass-placeholder/` and `.../fail-placeholder/`, each with a
+- `tests/fixtures/pairs/MTL310/pass-placeholder/` and `.../fail-placeholder/`, each with a
   `template.md` and a `target.md` holding an empty frontmatter.
 
 The test layout follows the phase, the same rule `check:rules` applies: phase `parse` or `template`
@@ -128,7 +129,7 @@ until the check is real. The file maps a code to a short reason and is `{}` when
 
 ```json
 {
-  "MTL306": "no-todo-value"
+  "MTL310": "no-todo-value"
 }
 ```
 
@@ -139,7 +140,7 @@ pnpm run check:rules
 ```
 
 It must pass now (spec row, bumped count, stub, pending entry, scaffolded fixtures all agree). A
-line such as `MTL306 no-todo-value: stub check, keep it in pending-rules.json` or
+line such as `MTL310 no-todo-value: stub check, keep it in pending-rules.json` or
 `... in docs/spec.md 4.3 but neither implemented ... nor pending ...` says which step is missing.
 
 ## 5. Implement the check
@@ -154,7 +155,7 @@ listed in the exported array, so the check can pass the rule to `report`. Move y
  * `case` only for a present, non-empty value (spec 4.1 step 3).
  */
 const noTodoValue = defineRule({
-  code: "MTL306",
+  code: "MTL310",
   name: "no-todo-value",
   severity: "warning",
   category: "format",
@@ -178,7 +179,7 @@ export const rules: readonly AnyRule[] = [
   fail on an unused import). The shorter import then fits on one line, so run `pnpm run format`
   before the gates. It runs `prettier --write .` over the whole tree: check `git status` first if you
   have other uncommitted files.
-- Remove `MTL306` from `tests/consistency/pending-rules.json` (back to `{}`). While both the real
+- Remove `MTL310` from `tests/consistency/pending-rules.json` (back to `{}`). While both the real
   check and the pending entry exist, `check:rules` says `implemented, remove it from pending-rules.json`.
 - The message is the spec text, character for character.
 - The check receives the context of its phase (`FieldContext`: `key`, `templateField`, `value`,
@@ -205,7 +206,7 @@ folder to its descriptive name (in your editor, or `mv` / `Move-Item`; the folde
 `git mv` does not apply) and edit its files. For the example the two cases
 end up as:
 
-`tests/fixtures/pairs/MTL306/pass-value-without-todo/template.md`:
+`tests/fixtures/pairs/MTL310/pass-value-without-todo/template.md`:
 
 ```markdown
 ---
@@ -213,7 +214,7 @@ title: example
 ---
 ```
 
-`tests/fixtures/pairs/MTL306/pass-value-without-todo/target.md`:
+`tests/fixtures/pairs/MTL310/pass-value-without-todo/target.md`:
 
 ```markdown
 ---
@@ -221,7 +222,7 @@ title: hello
 ---
 ```
 
-`tests/fixtures/pairs/MTL306/fail-value-contains-todo-marker/template.md` (same as above), and
+`tests/fixtures/pairs/MTL310/fail-value-contains-todo-marker/template.md` (same as above), and
 `.../target.md`:
 
 ```markdown
@@ -236,7 +237,7 @@ cases. This is the shape every `tests/target/` file has (compare
 fixture folder, and one test per case:
 
 ```ts
-/** MTL306 no-todo-value (src/rules/format.ts, docs/spec.md 4.3). */
+/** MTL310 no-todo-value (src/rules/format.ts, docs/spec.md 4.3). */
 import { readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
@@ -245,12 +246,12 @@ import { createRegistry } from "../../../src/engine/registry.js";
 import { createEnv } from "../../../src/engine/rule.js";
 
 const registry = createRegistry();
-const CODE = "MTL306";
-const DIR = "tests/fixtures/pairs/MTL306";
+const CODE = "MTL310";
+const DIR = "tests/fixtures/pairs/MTL310";
 
 interface TestCase {
   readonly name: string;
-  /** Expected MTL306 messages, in order. */
+  /** Expected MTL310 messages, in order. */
   readonly expected: readonly string[];
 }
 
@@ -266,7 +267,7 @@ const CASES: readonly TestCase[] = [
 const read = (path: string): string =>
   readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
 
-/** The MTL306 diagnostics for the pair of a fixture folder. */
+/** The MTL310 diagnostics for the pair of a fixture folder. */
 async function lint(testCase: TestCase) {
   const fixture = `${DIR}/${testCase.name}`;
   const status = await checkTemplate(registry, read(`${fixture}/template.md`));
@@ -281,7 +282,7 @@ async function lint(testCase: TestCase) {
   return found.filter((diagnostic) => diagnostic.code === CODE);
 }
 
-describe("MTL306 no-todo-value", () => {
+describe("MTL310 no-todo-value", () => {
   it("is registered in category format, warning, field step case", () => {
     expect(registry.byCode.get(CODE)).toMatchObject({
       name: "no-todo-value",
@@ -347,7 +348,7 @@ pnpm run build
 pnpm test
 ```
 
-`pnpm exec vitest run tests/target/format/MTL306-no-todo-value.test.ts` runs your test file alone.
+`pnpm exec vitest run tests/target/format/MTL310-no-todo-value.test.ts` runs your test file alone.
 `pnpm run format` (`prettier --write .`) rewrites the whole tree in Prettier style when `format:check` complains.
 The coverage gate (`pnpm run coverage`, 85% in `src/engine`, `src/rules` and `src/tags`) is not in CI
 (`ci.yml` runs the other gates); run it by hand before a commit (see [CONTRIBUTING.md](../../CONTRIBUTING.md)).

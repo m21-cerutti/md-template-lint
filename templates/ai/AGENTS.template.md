@@ -1,6 +1,6 @@
 ---
 title: AGENTS.md  # [presence:required]
-last_updated: 2026-10-30  # [presence:required] type=date
+last_updated: 2026-10-30  # [presence:required] [format:date] type=date
 ---
 
 # AGENTS.md

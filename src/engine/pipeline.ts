@@ -21,14 +21,20 @@
  * Errors are returned first, then warnings, each in emission order.
  *
  * Anchor lines (spec 4.4 DIR5) live in the side table of src/engine/rule.ts
- * (`anchorLineOf`): field findings take the target key line, MTL202, MTL603
- * and MTL701 to MTL705 the line their rule recorded, the directive warnings
- * their directive line; every other diagnostic has none.
+ * (`anchorLineOf`): field findings take the target key line, MTL202 and the
+ * heading and content findings (MTL603, MTL606 to MTL609, MTL610 to MTL612,
+ * MTL614 to MTL617, MTL701 to MTL705; MTL607 only when the repeat set has an
+ * instance) the target line their rule recorded, the directive warnings their
+ * directive line; every other diagnostic has none (MTL101, MTL601, MTL604,
+ * MTL605, parse failures, template diagnostics).
  * `env` is required: a caller states its io on purpose (`createEnv` builds an
  * in-memory one for tests; the production runner builds the real one).
  *
- * Template warnings (`checkTemplate`) are sorted by source position (line,
- * then column) across rules, ties in registry order.
+ * `checkTemplate` splits the template-phase diagnostics by severity: tag
+ * WARNINGS (MTL010 to MTL016) and template ERRORS (MTL017, MTL018, MTL019 and
+ * MTL030, spec 2.7). A template with errors is still ok (not broken): the
+ * runner fails it (exit 1) and still lints its targets. Both lists are sorted
+ * by source position (line, then column) across rules, ties in registry order.
  *
  * The pipeline is async: checks may return a Promise (`[io:exists]` needs
  * file system and network access). Rules run one at a time, each awaited
@@ -54,7 +60,18 @@ import {
 } from "./rule.js";
 
 export type TemplateStatus =
-  | { readonly status: "ok"; readonly model: DocumentModel; readonly warnings: Diagnostic[] }
+  | {
+      readonly status: "ok";
+      readonly model: DocumentModel;
+      /** Template WARNINGS (`MTL010` to `MTL016`), source order. */
+      readonly warnings: Diagnostic[];
+      /**
+       * Template ERRORS (spec 2.7: `MTL017`, `MTL018`, `MTL019`, `MTL030`), source order.
+       * Counted apart from the warnings: they do not make the template broken, but fail it
+       * (exit 1 in `--verify` and in a lint run, where the targets are still linted).
+       */
+      readonly errors: Diagnostic[];
+    }
   | { readonly status: "broken"; readonly diagnostics: Diagnostic[] };
 
 /**
@@ -69,7 +86,8 @@ function bySourcePosition(diagnostics: readonly Diagnostic[]): Diagnostic[] {
 
 /**
  * Parse a template. Broken (MTL001 to MTL004) or ok with its tag warnings
- * (MTL010 to MTL013), sorted by source position across rules (spec 4.1, 8.4).
+ * (MTL010 to MTL016) and its template errors (MTL017, MTL018, MTL019, MTL030, spec 2.7)
+ * apart, each sorted by source position across rules (spec 4.1, 8.4).
  */
 export async function checkTemplate(registry: RuleRegistry, text: string): Promise<TemplateStatus> {
   const loaded = loadDocument(text);
@@ -78,10 +96,12 @@ export async function checkTemplate(registry: RuleRegistry, text: string): Promi
     return { status: "broken", diagnostics: await runPhase(registry, "parse", context) };
   }
   const context = { phase: "template", template: loaded.model } as const;
+  const found = bySourcePosition(await runPhase(registry, "template", context));
   return {
     status: "ok",
     model: loaded.model,
-    warnings: bySourcePosition(await runPhase(registry, "template", context)),
+    warnings: found.filter((diagnostic) => diagnostic.severity === "warning"),
+    errors: found.filter((diagnostic) => diagnostic.severity === "error"),
   };
 }
 
@@ -94,15 +114,19 @@ function byStep<R extends FieldRule | TargetRule>(
 }
 
 /**
- * Order of the `headings` step (spec 4.1 step 5): the presence findings
- * (MTL601 to MTL603) in template heading order, as the legacy validator emits
- * them, then the findings that concern no single heading (MTL604).
- * A heading rule anchors its finding on the template heading line (`position`).
+ * Order of the `headings` step (spec 4.1 step 5, 4.3 "heading"): the findings
+ * about one template heading (MTL601, MTL603, MTL605 to MTL610, MTL614, MTL617;
+ * MTL611 on its parent; MTL612 and MTL615 on the tagged heading; MTL616 on the
+ * last position of its run) in template heading order, as the legacy validator
+ * emits them, then the findings that concern no single heading (MTL604). A
+ * heading rule anchors its finding on the template heading line (`position`).
  * The sort is stable, so one heading keeps registry order. The anchor is only a
  * sort key (a line of the template, not of the target): it is cleared, and the
  * text of the heading found at that line becomes the `heading` of the
- * diagnostic (spec 8.1). Kept as an anchor, not replaced by `heading`: two
- * sections may share one text, a line is unique.
+ * diagnostic (spec 8.1), unless the rule already set a `heading` (MTL611: the
+ * target parent text; MTL606, MTL609, MTL612, MTL614 to MTL617: the text of the
+ * reported target heading). The target anchor line is kept apart (`anchorLineOf`),
+ * not replaced by `heading`: two sections may share one text, a line is unique.
  */
 function byTemplateHeading(
   diagnostics: readonly Diagnostic[],
@@ -117,7 +141,7 @@ function byTemplateHeading(
     const copy = {
       ...diagnostic,
       position: null,
-      ...(text === undefined ? {} : { heading: text }),
+      ...(text === undefined || diagnostic.heading !== undefined ? {} : { heading: text }),
     };
     return setAnchorLine(copy, anchorLineOf(diagnostic));
   });

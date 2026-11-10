@@ -7,6 +7,7 @@ import { FrontmatterContext } from "./MdTemplateParser.js";
 import { FmUnclosedContext } from "./MdTemplateParser.js";
 import { FmLineContext } from "./MdTemplateParser.js";
 import { FmFilenameLineContext } from "./MdTemplateParser.js";
+import { FmUniqueNamesLineContext } from "./MdTemplateParser.js";
 import { FmCommentLineContext } from "./MdTemplateParser.js";
 import { FmKeyLineContext } from "./MdTemplateParser.js";
 import { FmValueContext } from "./MdTemplateParser.js";
@@ -31,6 +32,8 @@ import { BodyHeadingTextEntryContext } from "./MdTemplateParser.js";
 import { TagShapedCandidateContext } from "./MdTemplateParser.js";
 import { TagClosedCandidateContext } from "./MdTemplateParser.js";
 import { TagUnclosedCandidateContext } from "./MdTemplateParser.js";
+import { TagPatternCandidateContext } from "./MdTemplateParser.js";
+import { TagNameContext } from "./MdTemplateParser.js";
 import { TagRuleMarkerContext } from "./MdTemplateParser.js";
 import { TagBareBracketContext } from "./MdTemplateParser.js";
 import { TagShapedBracketContext } from "./MdTemplateParser.js";
@@ -48,6 +51,7 @@ import { FmTagEntryContext } from "./MdTemplateParser.js";
 import { FmTagBodyContext } from "./MdTemplateParser.js";
 import { FmPresenceTagContext } from "./MdTemplateParser.js";
 import { FmFormatTagContext } from "./MdTemplateParser.js";
+import { FmShapeContext } from "./MdTemplateParser.js";
 import { FmCaseStyleContext } from "./MdTemplateParser.js";
 import { FmValueTagContext } from "./MdTemplateParser.js";
 import { FmCountTagContext } from "./MdTemplateParser.js";
@@ -58,10 +62,17 @@ import { FmOrderTagContext } from "./MdTemplateParser.js";
 import { FmIoTagContext } from "./MdTemplateParser.js";
 import { FmFilenameTagContext } from "./MdTemplateParser.js";
 import { FmConventionContext } from "./MdTemplateParser.js";
+import { FmUniqueNamesTagContext } from "./MdTemplateParser.js";
 import { BodyTagEntryContext } from "./MdTemplateParser.js";
 import { BodyTagBodyContext } from "./MdTemplateParser.js";
 import { BodyPresenceTagContext } from "./MdTemplateParser.js";
 import { BodyContentTagContext } from "./MdTemplateParser.js";
+import { BodyPatternTagContext } from "./MdTemplateParser.js";
+import { PatternPieceContext } from "./MdTemplateParser.js";
+import { BodyRepeatTagContext } from "./MdTemplateParser.js";
+import { RepeatCountContext } from "./MdTemplateParser.js";
+import { BodyOrderTagContext } from "./MdTemplateParser.js";
+import { BodyUniqueNamesTagContext } from "./MdTemplateParser.js";
 import { DirectiveScanEntryContext } from "./MdTemplateParser.js";
 import { DirectiveScanLineContext } from "./MdTemplateParser.js";
 import { DirectiveScanItemContext } from "./MdTemplateParser.js";
@@ -133,6 +144,16 @@ export class MdTemplateParserListener implements ParseTreeListener {
      * @param ctx the parse tree
      */
     exitFmFilenameLine?: (ctx: FmFilenameLineContext) => void;
+    /**
+     * Enter a parse tree produced by `MdTemplateParser.fmUniqueNamesLine`.
+     * @param ctx the parse tree
+     */
+    enterFmUniqueNamesLine?: (ctx: FmUniqueNamesLineContext) => void;
+    /**
+     * Exit a parse tree produced by `MdTemplateParser.fmUniqueNamesLine`.
+     * @param ctx the parse tree
+     */
+    exitFmUniqueNamesLine?: (ctx: FmUniqueNamesLineContext) => void;
     /**
      * Enter a parse tree produced by `MdTemplateParser.fmCommentLine`.
      * @param ctx the parse tree
@@ -380,6 +401,28 @@ export class MdTemplateParserListener implements ParseTreeListener {
      */
     exitTagUnclosedCandidate?: (ctx: TagUnclosedCandidateContext) => void;
     /**
+     * Enter a parse tree produced by the `tagPatternCandidate`
+     * labeled alternative in `MdTemplateParser.tagCandidate`.
+     * @param ctx the parse tree
+     */
+    enterTagPatternCandidate?: (ctx: TagPatternCandidateContext) => void;
+    /**
+     * Exit a parse tree produced by the `tagPatternCandidate`
+     * labeled alternative in `MdTemplateParser.tagCandidate`.
+     * @param ctx the parse tree
+     */
+    exitTagPatternCandidate?: (ctx: TagPatternCandidateContext) => void;
+    /**
+     * Enter a parse tree produced by `MdTemplateParser.tagName`.
+     * @param ctx the parse tree
+     */
+    enterTagName?: (ctx: TagNameContext) => void;
+    /**
+     * Exit a parse tree produced by `MdTemplateParser.tagName`.
+     * @param ctx the parse tree
+     */
+    exitTagName?: (ctx: TagNameContext) => void;
+    /**
      * Enter a parse tree produced by `MdTemplateParser.tagRuleMarker`.
      * @param ctx the parse tree
      */
@@ -550,6 +593,16 @@ export class MdTemplateParserListener implements ParseTreeListener {
      */
     exitFmFormatTag?: (ctx: FmFormatTagContext) => void;
     /**
+     * Enter a parse tree produced by `MdTemplateParser.fmShape`.
+     * @param ctx the parse tree
+     */
+    enterFmShape?: (ctx: FmShapeContext) => void;
+    /**
+     * Exit a parse tree produced by `MdTemplateParser.fmShape`.
+     * @param ctx the parse tree
+     */
+    exitFmShape?: (ctx: FmShapeContext) => void;
+    /**
      * Enter a parse tree produced by `MdTemplateParser.fmCaseStyle`.
      * @param ctx the parse tree
      */
@@ -650,6 +703,16 @@ export class MdTemplateParserListener implements ParseTreeListener {
      */
     exitFmConvention?: (ctx: FmConventionContext) => void;
     /**
+     * Enter a parse tree produced by `MdTemplateParser.fmUniqueNamesTag`.
+     * @param ctx the parse tree
+     */
+    enterFmUniqueNamesTag?: (ctx: FmUniqueNamesTagContext) => void;
+    /**
+     * Exit a parse tree produced by `MdTemplateParser.fmUniqueNamesTag`.
+     * @param ctx the parse tree
+     */
+    exitFmUniqueNamesTag?: (ctx: FmUniqueNamesTagContext) => void;
+    /**
      * Enter a parse tree produced by `MdTemplateParser.bodyTagEntry`.
      * @param ctx the parse tree
      */
@@ -689,6 +752,66 @@ export class MdTemplateParserListener implements ParseTreeListener {
      * @param ctx the parse tree
      */
     exitBodyContentTag?: (ctx: BodyContentTagContext) => void;
+    /**
+     * Enter a parse tree produced by `MdTemplateParser.bodyPatternTag`.
+     * @param ctx the parse tree
+     */
+    enterBodyPatternTag?: (ctx: BodyPatternTagContext) => void;
+    /**
+     * Exit a parse tree produced by `MdTemplateParser.bodyPatternTag`.
+     * @param ctx the parse tree
+     */
+    exitBodyPatternTag?: (ctx: BodyPatternTagContext) => void;
+    /**
+     * Enter a parse tree produced by `MdTemplateParser.patternPiece`.
+     * @param ctx the parse tree
+     */
+    enterPatternPiece?: (ctx: PatternPieceContext) => void;
+    /**
+     * Exit a parse tree produced by `MdTemplateParser.patternPiece`.
+     * @param ctx the parse tree
+     */
+    exitPatternPiece?: (ctx: PatternPieceContext) => void;
+    /**
+     * Enter a parse tree produced by `MdTemplateParser.bodyRepeatTag`.
+     * @param ctx the parse tree
+     */
+    enterBodyRepeatTag?: (ctx: BodyRepeatTagContext) => void;
+    /**
+     * Exit a parse tree produced by `MdTemplateParser.bodyRepeatTag`.
+     * @param ctx the parse tree
+     */
+    exitBodyRepeatTag?: (ctx: BodyRepeatTagContext) => void;
+    /**
+     * Enter a parse tree produced by `MdTemplateParser.repeatCount`.
+     * @param ctx the parse tree
+     */
+    enterRepeatCount?: (ctx: RepeatCountContext) => void;
+    /**
+     * Exit a parse tree produced by `MdTemplateParser.repeatCount`.
+     * @param ctx the parse tree
+     */
+    exitRepeatCount?: (ctx: RepeatCountContext) => void;
+    /**
+     * Enter a parse tree produced by `MdTemplateParser.bodyOrderTag`.
+     * @param ctx the parse tree
+     */
+    enterBodyOrderTag?: (ctx: BodyOrderTagContext) => void;
+    /**
+     * Exit a parse tree produced by `MdTemplateParser.bodyOrderTag`.
+     * @param ctx the parse tree
+     */
+    exitBodyOrderTag?: (ctx: BodyOrderTagContext) => void;
+    /**
+     * Enter a parse tree produced by `MdTemplateParser.bodyUniqueNamesTag`.
+     * @param ctx the parse tree
+     */
+    enterBodyUniqueNamesTag?: (ctx: BodyUniqueNamesTagContext) => void;
+    /**
+     * Exit a parse tree produced by `MdTemplateParser.bodyUniqueNamesTag`.
+     * @param ctx the parse tree
+     */
+    exitBodyUniqueNamesTag?: (ctx: BodyUniqueNamesTagContext) => void;
     /**
      * Enter a parse tree produced by `MdTemplateParser.directiveScanEntry`.
      * @param ctx the parse tree

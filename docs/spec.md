@@ -1,6 +1,6 @@
 ---
 title: md-template-lint specification
-last_updated: 2026-10-30
+last_updated: 2026-11-04
 ---
 
 # md-template-lint specification
@@ -20,7 +20,7 @@ Conventions in this file:
   `Lnnn` is a line number in the frozen snapshot of the file named just before it.
 - "Frozen" behaviour is kept byte for byte (messages, order, defaults) unless a section says
   "changed". Every change is listed in section 5 (defects D01 to D18), section 10
-  (assumptions AS1 to AS14) or section 11 (kept quirks Q01 to Q08, other changes C01 to C09).
+  (assumptions AS1 to AS17) or section 11 (kept quirks Q01 to Q08, other changes C01 to C13).
 - `AS<n>` is an assumption id, `Q<nn>` a kept quirk, `C<nn>` a change beyond the defect list,
   `DIR<n>` a decision of the disable directives section (4.4).
   Phase ids (A3, A6, A9, A21 to A25) are plan phases and are never used as assumption ids.
@@ -36,8 +36,8 @@ A template is a Markdown file. It IS the schema. There is no separate schema fil
   spaces or tabs after the dashes). A `---` inside a value does not close the block.
 - Each top-level frontmatter key is a field. Its value and its inline comment define the
   field type and rules.
-- The body headings of level 1 and 2 define the section rules. Their suffix tags define
-  presence, order and content rules.
+- The body headings of every level (H1 to H6) define the section rules (change C10). Their
+  suffix tags define presence, order, content and sub-heading rules.
 - A BOM at the start of the file is ignored. Files are UTF-8.
 - Line endings are normalized before parsing: CRLF and a lone CR become LF (legacy read the
   file in text mode, py L1646). The frontmatter delimiters, comment binding, heading
@@ -86,7 +86,7 @@ Three syntaxes carry tags:
 | ------------------------- | -------------------------------------------------- | ------------------ | ------------------- |
 | Inline comment            | trailing `#` comment on a top-level frontmatter key | that key           | `fmKeyLine` / `fmInlineComment` (family `fm*`) |
 | Filename comment          | a standalone `#` comment line in the frontmatter    | the template       | `fmFilenameLine` (family `fm*`)  |
-| Heading suffix            | bracket tags after the text of an H1 or H2 heading | that heading       | `bodyHeading` (family `body*`) |
+| Heading suffix            | bracket tags after the text of a heading (H1 to H6) | that heading      | `bodyHeading` (family `body*`) |
 
 The parser has two rule families: `fm*` for the frontmatter and `body*` for the body. The region
 is decided by lexer modes (`FM*` modes for the leading `---` block, `BODY` and fence modes for the
@@ -106,7 +106,14 @@ typeEq         = "type" "=" typeToken
 filenameLine   = "#" WS "[filename:case:" convention "]" WS EOL
 headingSuffix  = headingText (WS tag)*              ; recognized tags peeled right to left
 convention     = "snake_case" | "kebab-case" | "camelCase" | "PascalCase"
+patternTag     = "[pattern:" '"' patternText '"' "]" ; heading only, 2.10
+patternText    = (escape | any character except '"', "\" and a line end)* ; may contain "]"
+escape         = "\" (any character except a line end) ; only \" and \\ are valid (MTL014)
 ```
+
+Two exceptions to `tag` come with the heading patterns of 2.10 (change C12): the quoted
+argument of `[pattern:"..."]` may contain `]` and an escaped quote `\"` (the tag ends at the
+first unescaped `"` followed by `]`), and a family name may contain a dash (`repeat-rules`).
 
 ### 2.1 Where comments bind (inline comment)
 
@@ -156,6 +163,10 @@ reviewer: "string" # [presence:conditional:only when the change is risky]
 | `[format:kebab-case]`                    | scalar string value               | Must match kebab case. Skipped when the value is not a string.                                         | `MTL302`         |
 | `[format:elements:snake_case]`           | list value                        | Every item must match snake case. Skipped when the value is not a list.                                | `MTL303`         |
 | `[format:elements:kebab-case]`           | list value                        | Every item must match kebab case. Skipped when the value is not a list.                                | `MTL303`         |
+| `[format:semver]`                        | scalar string value               | Must be a semantic version (SemVer 2.0.0, no `v` prefix). Skipped when the value is not a string. See 2.9. | `MTL306`         |
+| `[format:date]`                          | scalar string value               | Must be a calendar-valid `YYYY-MM-DD` date. Silent when the field type `date` already reports the value (`MTL504`). Skipped when the value is not a string. See 2.9. | `MTL307`         |
+| `[format:elements:semver]`               | list value                        | Every item must be a semantic version. Skipped when the value is not a list. See 2.9.                  | `MTL308`         |
+| `[format:elements:date]`                 | list value                        | Every item must be a calendar-valid `YYYY-MM-DD` date. Items that the type `list-of-date` already reports (`MTL513`) are not listed. Skipped when the value is not a list. See 2.9. | `MTL309`         |
 | `[format:scheme:<s1>,<s2>,...]`          | `url`, per item of `list-of-url`  | Allow-list of URL schemes, comma separated, lowercased, case-insensitive. Only a syntactically valid URL is checked (an invalid URL is reported by the type rule). Empty list after trimming means no restriction. | `MTL304`, `MTL305` |
 | `[value:filename]`                       | any present field                 | A scalar value must equal the target file name stem (name without the last extension) as a string. A list or mapping value never matches (legacy compared its Python `str`; accepted deviation, see Q02), so it is always an error. | `MTL102`         |
 | `[count:min:N]`, `[count:max:N]`         | list value                        | Bounds the LENGTH of a list. `N` is a non-negative integer. No-op on a non-list value.                 | `MTL401`, `MTL402` |
@@ -176,7 +187,7 @@ camelCase    ^[a-z][a-zA-Z0-9]*$
 PascalCase   ^[A-Z][a-zA-Z0-9]*$
 ```
 
-(These are value patterns, not tag patterns. They live in the rule files.)
+(These are value patterns, not tag patterns. They live in `src/engine/values.ts`.)
 
 ```yaml
 ---
@@ -221,52 +232,266 @@ id: "string" # [presence:required] [value:filename]
 
 ### 2.6 Heading suffix tags (body sections)
 
-Syntax: bracket tags trailing the text of an H1 or H2 line, space separated, in any order.
-Only headings of level 1 and 2 are read. Headings inside fenced code blocks are ignored.
+Syntax: bracket tags trailing the text of a heading line of any level (H1 to H6), space
+separated, in any order. Every heading level is read and checked (change C10, ADR 0009).
+Headings inside fenced code blocks are ignored. Old behaviour (before C10, kept here only as
+history): only H1 and H2 were read; H3 to H6 lines were plain body text, kept their brackets
+and gave no tag warning.
 
 ```markdown
 ## Overview [presence:required] [content:non-empty]
+### Background [presence:optional]
+### Decision
 ## Notes [presence:optional]
 ## Authoring checklist [presence:template-only]
 ```
 
 Heading extraction rules:
 
-- Line pattern: `#` or `##`, whitespace, text, optional trailing HTML comment (dropped).
+- Line pattern: one to six `#`, whitespace, text, optional trailing HTML comment (dropped).
+  The number of `#` is the level.
 - Fences: a line of three or more backticks or tildes (up to three leading spaces) opens a
   fence. It closes on the same character, at least as long, alone on its line.
 - Known limitation, kept: `#` lines inside a multi-line HTML comment still count as headings.
 - Tags are peeled from the right, one at a time, while the text keeps ending in a recognized
   heading tag. Peeling stops at the first bracket that is not a recognized heading tag; that
   bracket stays in the heading text (a typo does not become a missing-heading error).
+  Peeling, and the tag warnings `MTL011` to `MTL015` (2.7, 2.10), apply to every level.
 - The stored heading text has all recognized tags removed, so `## Notes [presence:optional]`
-  matches a plain `## Notes`. Heading text comparison is exact and case-sensitive. Levels are
-  compared only by `[presence:exist]`.
+  matches a plain `## Notes`. Heading text comparison is exact and case-sensitive.
+- Exact-level matching (change C10): a template heading matches only a target heading of the
+  SAME level, at every level, for every rule (presence, order, content, sub-headings). Old
+  behaviour (removed by C10): levels were compared only by the legacy level-only `exist`
+  presence mode (itself dropped by A72m, C10 note), so a target `# Context` satisfied a
+  template `## Context`.
 - A section body is the raw text between a heading and the next extracted heading of
-  equal or higher level (or the end of the file). H3 and deeper headings stay in the body.
-  Fenced code is part of the body.
+  equal or higher level (or the end of the file). Deeper headings and their text stay in the
+  body (unchanged by C10, so the line counts of `MTL701` to `MTL705` do not change). Fenced
+  code is part of the body.
+
+Levels, parents and scope (change C10). Terms used by the rules below:
+
+- Parent. The template parent of a template heading is the nearest template heading before
+  it with a LOWER level; none when there is no such heading. The target parent of a target
+  heading is defined the same way in the target. A template heading's subtree is every
+  template heading after it up to the next template heading of equal or lower level (its
+  children, their children, and so on).
+- Target section of a target heading at level n: its line and every following line up to the
+  next target heading of level n or lower (or the end of the file). A target heading lies
+  "inside" it when its line is in that range and it is not that heading.
+- Scope of a template heading T, the set of target headings T may match:
+  - FILE scope when T is level 1 or 2, or T has no template parent: every target heading of
+    the file (H1 and H2 keep their legacy file-wide matching);
+  - SECTION scope otherwise (H3 to H6 with a template parent P): the target headings inside
+    the target section of the match of P.
+- Siblings. The SIBLINGS of one scope and level are the target headings of that level in
+  that scope, in file order (in section scope, once per match or instance of the template
+  parent).
+- Sequence. The SEQUENCE of a template heading T is the list, in template order, of the
+  template headings of T's level that share T's scope: every file-scope template heading of
+  that level when T has file scope, else every template heading of that level whose
+  template parent is T's template parent. `[presence:template-only]` headings and headings
+  that are not checked (below; an invalid pattern, `MTL014`, too) are left out. Each member
+  of a sequence is a POSITION.
+- Match of T (POSITIONAL, ADR 0012, phase A72k; it replaces the earlier first-match rule):
+  the positions of one sequence take the siblings of one scope in order, as one ADJACENT
+  run. Each position takes zero or more siblings from the current point onward, never
+  skips a sibling and never goes back (greedy first-fit, no backtracking). An exact-text
+  heading is the literal pattern of its text (`## TOTO` takes exactly what
+  `## [pattern:"TOTO"]` takes); a pattern heading (2.10) takes the next sibling when it
+  matches (`[pattern:"{text}"]` is the "any heading here" form, A72m); a
+  repeat heading (2.10) takes the following siblings for as long as they match. A
+  sibling that matches the current position is always taken by it: an exact-text heading
+  later in the template never takes it away. The steps, with every case and code, are in
+  2.10 "Positional match". The match of T is the sibling its position took (for a repeat
+  heading: each instance; the first instance is "the match" where a rule needs one); a
+  sibling taken as a mismatch (`MTL606`, 2.10) is not a match. A template heading without
+  match is "missing" (presence decides whether that is an error). Every rule below that
+  reads "the match" reads each instance.
+- Extra. The siblings left after the last position of a sequence (the TAIL, 2.10 step 4)
+  are EXTRA headings. An extra never fails the target by itself, but it is always reported
+  (owner decision 4 of A72l): every run with extras gives ONE warning `MTL616`
+  (heading-extra) that lists them, anchored on the first listed one. A tail sibling that an
+  ERROR already names is left out of that list (the error replaces the warning for that
+  heading): `MTL614` (it matches a repeat pattern, 2.10 step 4), `MTL612`
+  (`[content:subheadings:disallow]`, below; also a heading inside a stray block whose
+  topmost unlisted heading gets `MTL612`) and `MTL615` (`[content:subheadings:no-extra]`,
+  below). The error `MTL613` (`[unique-headings-names]`, 2.11) is not one of them: a
+  duplicate extra stays in the list and also gets `MTL613` (2.11 "Interplay", `MTL616`
+  overlap). A sibling before the last taken one is never extra: the run has no gaps. The only
+  siblings outside the run are the ones a `[presence:template-only]` heading sets aside
+  (`MTL603`, 2.10 step 1). A level and scope without a position (no template heading of that
+  level there, or only template-only or unchecked ones) has no run and so no tail: its
+  target headings are free detail, not extras, and give no `MTL616` (for example the H3
+  headings of a document whose template has only H1 and H2 headings).
+- Checked. Every file-scope template heading is checked. A section-scope template heading is
+  checked only when its template parent is checked, is not `[presence:template-only]` and has
+  a match. A heading that is not checked gives no finding of any code (presence, order,
+  content, sub-headings), and neither do its section-scope descendants. Consequences (for
+  section-scope headings only; H1 and H2 stay checked whatever their parent, as before): the
+  children of a missing required parent are not reported again (the parent's `MTL601`,
+  `MTL605`, `MTL606`, `MTL607` or `MTL610` covers them); the
+  children of an absent `[presence:optional]` or
+  `[presence:conditional:...]` parent are not required; the section-scope descendants of a
+  `[presence:template-only]` heading are template guidance and are never checked. A heading
+  whose pattern is invalid (`MTL014`, 2.10) is not checked, at any level, and neither are its
+  section-scope descendants; it is not a position, so the siblings it would have taken go
+  to the next position.
+
+Rationale: H1 and H2 keep file scope so a template without H3 to H6 headings and without the
+new tag gives the same errors as before, except where exact-level and positional matching
+change them (see below and C10); extras now add `MTL616` warnings, which never change the
+exit code. Deeper headings only make sense inside their parent (a
+changelog has an `Added` group under every release), so they match inside the parent's
+section. Not checking the children of a missing or optional parent reports one cause once.
+Rationale for the positional run (owner decision 1 of A72k, ADR 0012): one matching rule
+for exact-text and pattern headings, so a template reads as the outline it describes; the
+template order is the document order by construction; greedy first-fit keeps every result
+explainable heading by heading, with no search. Rationale for the extra warning (owner
+decision 4 of A72l, AS17): a silent extra hid real mistakes (a typo in the last release
+heading of a changelog, an outline heading out of its place); a WARNING makes every extra
+visible while extras stay allowed (exit code unchanged, every existing template stays
+valid, `--quiet` and lint-staged see no change); one warning per run keeps a long tail to
+one line; a heading that an error already names gets that error only (one heading, one
+finding; the error says more).
 
 Presence tags on a heading:
 
 | Tag                              | Meaning                                                                                       | Code     |
 | -------------------------------- | --------------------------------------------------------------------------------------------- | -------- |
-| `[presence:required]`            | Heading with this exact text must exist in the target. Same as no tag.                        | `MTL601` |
-| `[presence:exist]`               | A heading at the SAME LEVEL must exist in the target, any text. Not in the legacy docstring, implemented in code (see Q03). | `MTL602` |
-| `[presence:optional]`            | The target may omit it.                                                                       | none     |
-| `[presence:conditional:<text>]`  | Documentation only, never enforced.                                                           | none     |
-| `[presence:template-only]`       | Template-only guidance. Finding a heading with this text in a target is an error. Absent is the silent, correct outcome. No frontmatter equivalent. | `MTL603` |
+| `[presence:required]`            | The sibling at its position (2.10 "Positional match") must have this exact text. Same as no tag, at every level (an untagged H3 to H6 template heading is REQUIRED). | `MTL601` (file scope), `MTL610` (section scope) |
+| `[presence:optional]`            | The target may omit it: the position takes the next sibling only when it matches.             | none     |
+| `[presence:conditional:<text>]`  | Documentation only, never enforced. Matches like optional.                                    | none     |
+| `[presence:template-only]`       | Template-only guidance, not a position. A sibling with this text (same level and scope) is an error and is set aside from the run (2.10 step 1). Absent is the silent, correct outcome. No frontmatter equivalent. | `MTL603` |
 
-Precedence: conditional, template-only, exist, optional, then required (the default).
+Precedence: conditional, template-only, optional, then required (the default).
 
-Order (`MTL604`): headings of the template found in the target must appear in the same
-relative order. For each template heading the matching target index is the FIRST target
-heading with the same text (for `exist`: the first target heading of the same level). The
-list of indices must be non-decreasing. Extra target headings are allowed. Missing ones are
-covered by presence and are not an order problem.
+Rationale for required by default at every level: one rule for every level is easier to
+learn than a level-dependent default, and a heading written in the template is expected in
+the document unless the template says otherwise (`[presence:optional]`).
 
-Content tags (all errors, target only, skipped when the target lacks the heading, so a
-missing heading is reported once). If the target repeats a heading text, the FIRST
-occurrence is checked.
+Dropped tag (owner decision 1 of A72m, breaking, C10 note): `[presence:exist]` (a sibling
+at the heading's level, any text) no longer exists. The word `exist` is no presence keyword:
+`[presence:exist]` is a known family with a bad argument, so it is a MALFORMED tag, the
+warning `MTL012` of `--verify` (2.7). Like every malformed heading tag, peeling stops at it
+and the bracket stays in the heading text (above), so the heading is an ordinary REQUIRED
+exact-text heading whose text ends with the bracket: no target heading has that text, and a
+lint run reports it missing (`MTL601` or `MTL610`, for example `Missing required heading:
+'Context [presence:exist]'`), which names the tag to migrate. In a frontmatter comment the
+tag gives `MTL012` too (no region accepts it; before A72m it was the misplaced `MTL013`).
+`MTL602` (heading-level-missing, the old check) is RETIRED: reserved, never
+reused (4.2). Migration: the "any heading at this level" form is the pattern
+`[pattern:"{text}"]` (2.10); the text written before the tag is an author hint only (the
+LABEL of 2.10), never compared. Examples:
+
+| Before (A72l)                                        | After (A72m)                                                                              |
+| ---------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `# ADR [presence:exist]`                             | `# ADR - Title [pattern:"ADR - {text}"]`, or `# Title [pattern:"{text}"]` for any H1      |
+| `## Epic A - Title [presence:exist]`                 | `## Epic A - Title [pattern:"Epic {char} - {text}"] [repeat-rules:same-level] [order:ascending]` (one heading per epic, epics in letter order; worked example 7 of 2.10) |
+| `## Changes [presence:exist] [content:table]`        | `## Changes [content:table]` when the heading text is fixed (plain required heading)      |
+| `### Version [presence:exist]`                       | `### 0.0.0 [pattern:"{semver}"]`                                                           |
+
+One difference: `{text}` refuses a PURELY NUMERIC text (2.10), so a heading such as `## 2026`
+needs `{digits}`, `{number}` or `{date:format:year}`; a numeric heading with a leading zero
+(`## 007`) needs `{digits:format:padding:3}` (exactly three digits) or `{number}` (which
+allows leading zeros since A72n); the default `{digits}` refuses it (no leading zero), and
+no `{text}` format accepts a digits-only text (A72n). Rationale: `exist` was a second matching
+mechanism (level only, no text) next to exact text and patterns; `[pattern:"{text}"]` says the
+same with the one mechanism every heading uses, and a pattern can say more (`ADR - {text}`).
+Failing loudly (a heading that can never match) rather than silently ignoring the tag makes
+every template that used it visible on the first run after the upgrade.
+
+Exact-level matching, precise effect on the legacy codes:
+
+- `MTL601` fires for a required file-scope exact-text heading that has no match at its
+  position (2.10 step 3b). A target heading with the same text at another level is not a
+  sibling, so it never satisfies it. The legacy message gains a hint when a sibling with
+  the same text comes later in the run (owner decision 6 of A72l): `Missing required
+  heading: 'Alpha' (found later at line 7, out of order)`; otherwise it is unchanged
+  (definition in 2.10 step 3b, owner example I of 2.10 worked example 4). A same-text
+  heading at another level never gives the hint.
+- `MTL602` never was a "wrong level" check (it was the check of the dropped `exist` tag) and
+  is RETIRED since A72m (above; reserved, 4.2). There is no separate "wrong level" code: a
+  target heading with the right text at the wrong level is simply not a match, so the
+  template heading is missing (`MTL601`, or `MTL610` in a section) and the target heading is
+  an extra heading when it is in the tail of a run (the warning `MTL616`, or `MTL612` under
+  `[content:subheadings:disallow]`).
+- `MTL603` fires only for a sibling (same level, same scope) with the template-only text.
+- `MTL604`, `MTL611` and the content rules use the positional match, which is exact-level.
+- Fixtures whose expected result changes (rewritten in phase A72f, section 9):
+  `tests/fixtures/pairs/MTL601/fail-same-text-at-other-level-still-matches` (target
+  `# Context` against template `## Context`, `## Steps`: today only `'Steps'` is missing,
+  after C10 both `'Context'` and `'Steps'` give `MTL601`; the case is renamed
+  `fail-same-text-at-other-level-does-not-match`) and
+  `tests/fixtures/pairs/MTL603/fail-template-only-heading-at-other-level` (target
+  `# Authoring checklist` against template `## Authoring checklist [presence:template-only]`:
+  no `MTL603` any more; the case becomes `pass-template-only-heading-at-other-level`).
+  The `tests/fixtures/pairs/MTL602/` cases were deleted with the retired rule (phase Pc,
+  done, section 9).
+
+Rationale for exact levels everywhere (owner decision 2(b), ADR 0009): one matching rule
+for every level, no exception to explain; a heading at the wrong level changes the document
+outline, which is what a template fixes. Cost: a breaking change for documents that relied
+on the H1/H2 cross match (major release, migration note, 9).
+
+Order: template headings found in the target must appear in the same relative order. Two
+checks, one per scope:
+
+- `MTL604` (file scope, legacy). The list is every file-scope template heading, in template
+  order, whatever its presence mode (a heading with an invalid pattern, `MTL014`, is left out
+  of this list and of the `MTL611` child lists). For each one the target index is its
+  positional match (the first instance for a repeat heading); a heading without match is
+  skipped. The list of indices must be non-decreasing. The message lists the texts of the file-scope template headings and the
+  texts of the target headings whose level is at most the deepest level of that list (at
+  least 2, so a template with H1 and H2 only prints the same lists as before).
+- `MTL611` (section scope, new). For each checked template heading P that is matched and not
+  template-only, the list is P's direct children (the section-scope template headings whose
+  template parent is P), in template order, whatever their presence mode. Their matches must
+  be in non-decreasing target order. The message lists the texts of those children and the
+  texts of the target headings inside the section of P's match whose level is at most the
+  deepest level of the children. One finding per P at most. Rationale: order is checked per
+  parent so a reordered sibling group is reported once on its parent, not once per heading,
+  and a heading moved under another parent is a scope question (`MTL601`/`MTL610`), not an
+  order one; `MTL604` keeps file scope for H1/H2 unchanged. Within one level the positional
+  run is ordered by construction, so `MTL611` can occur only when P's child list holds a
+  DEEPER child before a SHALLOWER one (`## P`, `#### D`, `### S`: both are direct children
+  of P). That template shape is also the template error `MTL019` (owner decision 2 of A72m,
+  2.7, worked example 3 below); `MTL611` stays a target finding, the template being used as
+  written.
+
+In both, extra target headings are left out of the order lists (they get `MTL616` or an
+error of their own, 2.6 "Extra") and missing ones are covered by presence, not by order.
+Within one sequence the positional run takes siblings in template order by construction,
+so two headings of one level and scope can no longer be out of order: a swapped pair now
+shows as a missing heading (`MTL601` with its "found later" hint, `MTL610`, `MTL605`) or a
+mismatch (`MTL606`), and `MTL604` / `MTL611` only report an order across levels (for example an H2
+matched before the H1 that precedes it in the template). Rationale: the run already states
+the order of one level; the order codes keep the cross-level outline check of C10.
+
+Content tags (all errors, target only, skipped when the template heading has no match or is
+not checked, so a missing heading is reported once). The section checked is the positional
+match of the template heading (2.10 "Positional match"): the sibling its position took, for
+every presence mode, and each instance of a repeat heading. A sibling taken as a mismatch
+(`MTL606`) is not a match: its content is not checked. Rationale: the position is what
+names a section now, so the content rules read the section at that position, and a heading
+that failed its pattern is reported once. The LABEL of the message (owner decision 3 of
+A72m):
+
+- exact-text heading: `Section '{text}'` for a file-scope heading (legacy) and
+  `Section '{parent} > {text}'` for a section-scope heading, `{text}` the template text
+  (equal to the target text, since an exact-text heading matches only its own text);
+- pattern heading (2.10): `Section '{text}' (pattern "{pattern}")` in file scope and
+  `Section '{parent} > {text}' (pattern "{pattern}")` in section scope, `{text}` the text of
+  the checked TARGET heading (the match or instance) and `{pattern}` the pattern as written
+  between the quotes of its tag, escapes as written. Example: `Section 'Epic B - Release'
+  (pattern "Epic {char} - {text}"): [content:table] no markdown table row found` (worked
+  example 7 of 2.10).
+
+`{parent}` is the text of the matched target parent section (the match or instance of the
+template parent). Rationale: the template text of a pattern heading is only an author hint
+(2.10 LABEL), so the target text says WHICH instance failed and the pattern says which
+template heading asked for the content; an exact-text heading needs no pattern, its text is
+both.
 
 | Tag                       | Rule                                                                                  | Code     |
 | ------------------------- | ------------------------------------------------------------------------------------- | -------- |
@@ -282,6 +507,389 @@ A malformed `N` (for example `[content:min-lines:abc]`) is an `MTL012` warning o
 
 The old `<!-- [rule] required -->` HTML comment is dead. It is inert prose.
 
+Sub-heading tag (change C10, owner decision 3(a), ADR 0009):
+
+| Tag                                | Rule                                                                                  | Code     |
+| ---------------------------------- | ------------------------------------------------------------------------------------- | -------- |
+| `[content:subheadings:disallow]`   | No target heading inside the matched section may be a heading the template does not list (whole subtree, every deeper level). | `MTL612` |
+
+- Default without the tag: a target heading that no template heading lists is ALLOWED, at
+  every level, as before (extra headings never were an error), as long as it sits after the
+  last position of its sequence: an extra heading before or between template headings
+  shifts the run (2.6 "Extra", C10). An extra in the tail of a run is reported by the
+  warning `MTL616` (2.6 "Extra"). The error opt-outs are this tag and
+  `[content:subheadings:no-extra]` (`MTL615`, below); where either gives an error for a
+  heading, that error replaces the warning for it. There is no `allow` tag: a listed descendant cannot re-allow its own subtree, and one tag
+  keeps the model small (owner decision 3(a); the rejected alternative is in ADR 0009).
+- Where: a template heading D of any level. Grammar: one more alternative of the existing
+  `bodyContentTag` (`content` family, keywords `subheadings` and `disallow`); a bare
+  `[content:subheadings]` or another argument is malformed (`MTL012`); in a frontmatter
+  comment it is misplaced (`MTL013`). Written twice on one heading, it counts once.
+- Effective when D is checked (above), has a match M and is not `[presence:template-only]`.
+  An absent optional or conditional D: no effect. A template-only D: no effect and the
+  template warning `MTL015` (2.7). The region of D is the target section of M: every target
+  heading inside it, at every deeper level (whole subtree, not only direct children).
+- Listed. A target heading X in the region of D is listed when some checked template
+  heading E in D's subtree, not `[presence:template-only]`, has X's level, has X's text and
+  has X in its scope. Listing compares level and text
+  only: a second target heading with the text of a listed heading is listed too (duplicates
+  are not this tag's concern). A heading with a listed text at another level is NOT listed.
+  For a pattern heading E (2.10), "has X's text" reads "X's text matches E's pattern".
+- Unlisted. X is unlisted when it is in the region of at least one effective D and is not
+  listed for that D.
+- Reported. `MTL612` is reported for an unlisted X only when no target ancestor of X (its
+  target parent, that heading's parent, and so on) is itself unlisted: the topmost unlisted
+  heading of a subtree is reported, its descendants are not. A listed heading does not reset
+  the rule: an unlisted heading below a listed one is reported. At most one `MTL612` per
+  target heading; `{parent}` is the text of M for the innermost D for which X is unlisted
+  (the nearest tag the author wrote above X is the one the message should name). When two
+  tagged template headings share one match across scopes, the first in template order owns
+  the tie.
+- A target heading that gets `MTL606` (a sibling a pattern position took as a mismatch,
+  2.10) never also gets `MTL612`; like the `MTL603` case below, it still counts as unlisted
+  for the topmost rule.
+- A target heading that gets `MTL603` (the first sibling with the text of a checked
+  `[presence:template-only]` template heading, 2.10 step 1) never also gets `MTL612`. This
+  holds also outside the subtree of the tagged heading D. It still counts as unlisted for the
+  topmost rule, so its descendants are not reported either.
+- Listing is not matching: it reads levels and texts (or patterns), not positions, so a
+  listed heading can still be extra in the positional run (a second `### Added`); that is
+  the concern of `[content:subheadings:no-extra]` below.
+- Anchor: the line of the unlisted target heading (DIR5), so `disable-line MTL612` or
+  `disable-next-line MTL612` silences one heading and `disable-file MTL612` the whole file.
+- Order and presence ignore the tag: `MTL604` and `MTL611` look only at template headings and
+  their matches; an unlisted heading never changes an order result.
+
+Rationale: whole subtree (owner decision 3(a)) because the need is "nothing else under this heading"
+(a changelog release must not hold a stray H3 or H4); with direct children only, every listed
+child would have to repeat the tag. Reporting only the topmost unlisted heading gives one
+finding per stray block instead of one per line. Allowed by default keeps every existing
+template valid without edits and keeps documents free to add detail; the `MTL616` warning
+still shows each extra of a run (owner decision 4 of A72l).
+
+Second sub-heading tag (owner decision 6 of A72k, ADR 0012):
+
+| Tag                                | Rule                                                                                  | Code     |
+| ---------------------------------- | ------------------------------------------------------------------------------------- | -------- |
+| `[content:subheadings:no-extra]`   | Every direct target child of the matched section must be taken by a position of the template children (no extra and no undeclared child). | `MTL615` |
+
+- Default without the tag: off; extra headings stay allowed, with the `MTL616` warning (2.6
+  "Extra"). A direct child that gets `MTL615` gets no `MTL616`.
+- Where: a template heading D of any level. Grammar: one more alternative of
+  `bodyContentTag`: `SUBHEADINGS COLON NO_EXTRA`, with a new `TAG_STRICT` keyword `NO_EXTRA`
+  (`no-extra`, case-insensitive); `[content:subheadings:no-extras]` or another argument is
+  malformed (`MTL012`); in a frontmatter comment it is misplaced (`MTL013`). Written twice on
+  one heading, it counts once. It may sit next to `[content:subheadings:disallow]` on one
+  heading; both then apply.
+- Effective as the disallow tag: D checked, with a match M (each instance of a repeat
+  heading), not `[presence:template-only]` (else no effect, and `MTL015` with the reason
+  `the heading is [presence:template-only]`, 2.7).
+- Region: the DIRECT target children of M, the target headings inside the target section of
+  M whose target parent is M (2.6 "Parent"), at any level.
+- Declared: a direct child X is declared when a position of a sequence of D's template
+  children (the template headings whose template parent is D, any level) took X, as a match
+  or as a mismatch (`MTL606`).
+- Reported: `MTL615` for each direct child X that is not declared, in file order, except an
+  X that gets `MTL603`, `MTL612` or `MTL614` (one heading, one finding; those codes say more).
+  So the extras of D's runs (the tails) and every direct child at a level where D has no
+  template child are reported. A deeper heading is never reported by D: it is the concern
+  of the child that contains it (tag that child too).
+- `{parent}` is the text of M; anchor: the line of X (DIR5), suppressible (DIR6).
+- Order and presence ignore the tag, as for the disallow tag.
+
+How the two tags differ (both kept, owner decision 1 of A72l):
+
+| | `[content:subheadings:disallow]` (`MTL612`) | `[content:subheadings:no-extra]` (`MTL615`) |
+| --- | --- | --- |
+| Region | whole subtree of M, every deeper level | direct target children of M only |
+| A heading passes when | some template heading of D's subtree lists its level and text (or pattern), anywhere in scope | a position of D's children took it in the run |
+| Duplicate of a declared text (a second `### Added`) | listed, no `MTL612` (an extra in the tail: warning `MTL616`) | extra in the tail, `MTL615` (no `MTL616`) |
+| Reported | the topmost unlisted heading of each stray block | each direct child not taken |
+
+Rationale: the disallow tag answers "only these kinds of heading below"; the no-extra tag
+answers "exactly the declared outline, nothing after it", which the positional run can state
+and the listing rule cannot. Keeping both (owner decision 6 of A72k, confirmed by owner
+decision 1 of A72l, which answers the merge question of A72k) leaves every existing
+disallow template unchanged, and each tag stays one plain sentence; a merged tag with a
+`subtree` / `direct` option would need two readings of one tag for the same gain.
+
+Worked example 1, exact-level mismatch (file `notes/guide.md`). Template:
+
+```markdown
+---
+title: "string"
+---
+
+# Guide
+
+## Context
+
+### Decision
+```
+
+Target (line numbers on the left are not part of the file):
+
+```text
+1  ---
+2  title: Setup guide
+3  ---
+4
+5  # Guide
+6
+7  # Context
+8
+9  ### Decision
+```
+
+- Level-1 run: the sequence `# Guide` over the level-1 siblings, lines 5 and 7. `# Guide`
+  takes line 5; line 7 `# Context` is in the tail, an extra heading: allowed, listed by one
+  `MTL616` warning anchored on line 7.
+- `## Context` (file scope, required): the level-2 run has no sibling (`# Context` is level
+  1), so nothing is left for its position. `MTL601`, no anchor, and no "found later" hint
+  (line 7 is level 1, not a sibling). Old behaviour (before C10): `# Context` matched and
+  there was no finding.
+- `### Decision` (section scope, parent `## Context`): the parent has no match, so it is not
+  checked (no `MTL610`).
+- `MTL604`: `Guide` has index 0, `Context` has no match and is skipped: no finding.
+- Expected text output:
+
+```text
+  ✗ notes/guide.md
+      error MTL601 Heading: Missing required heading: 'Context'
+      warn  MTL616 Heading: 1 extra heading(s) at level H1 after the template headings: ['Context']
+        7 | # Context
+```
+
+- Variant: lines 7 and 9 become `## Context` and `#### Decision`. `## Context` takes line 7;
+  the level-1 run has no tail. `### Decision` is checked in the section of line 7: its
+  level-3 run has no sibling (`#### Decision` is level 4): `MTL610`, anchored on the parent
+  line 7. `#### Decision` is not in any run (the template has no level-4 heading under
+  `## Context`): free detail, no `MTL616`, allowed without the disallow tag. Expected:
+
+```text
+  ✗ notes/guide.md
+      error MTL610 Heading: Section 'Context': missing required heading 'Decision' (H3)
+        7 | ## Context
+```
+
+Worked example 2, `[content:subheadings:disallow]` (file `CHANGELOG.md`). Template:
+
+```markdown
+---
+version: "string"
+---
+
+# Changelog
+
+## Unreleased [content:subheadings:disallow]
+
+### Added [presence:optional] [content:list]
+
+### Fixed [presence:optional] [content:list]
+
+## Notes [presence:optional]
+```
+
+Target:
+
+```text
+1  ---
+2  version: 1.2.0
+3  ---
+4
+5  # Changelog
+6
+7  ## Unreleased
+8
+9  ### Added
+10
+11 - New flag.
+12
+13 #### Details
+14
+15 Text.
+16
+17 ### Misc
+18
+19 #### Sub
+20
+21 - Item.
+22
+23 ## Fixed
+24
+25 - Old bug.
+```
+
+- Positional runs. Level 2: the sequence `## Unreleased`, `## Notes` over the siblings
+  lines 7 and 23: `## Unreleased` takes line 7; `## Notes` (optional) does not match line 23
+  `## Fixed` and takes nothing; line 23 is in the tail (extra, allowed): `MTL616` lists it.
+  Level 3 in the section of line 7: the sequence `### Added`, `### Fixed` over lines 9 and
+  17: `### Added` takes line 9; `### Fixed` (optional) does not match `### Misc` and takes
+  nothing; line 17 is in the tail, extra. Level 4 has no template heading, so lines 13 and
+  19 are in no run (no tail, no `MTL616`).
+- Region of `## Unreleased`: lines 7 to 22 (the next level-2 heading is line 23).
+- Line 9 `### Added`: listed (template `### Added`, level 3, same text, in scope). It is
+  also the match of `### Added`, so its `[content:list]` body (lines 10 to 16) is checked
+  and holds `- New flag.`: no finding.
+- Line 13 `#### Details`: no level-4 template heading under `## Unreleased`, so unlisted. Its
+  ancestor `### Added` is listed, so it is the topmost unlisted heading: `MTL612`.
+- Line 17 `### Misc`: unlisted, topmost: `MTL612`. The error replaces the `MTL616` warning
+  for line 17, so the level-3 run of line 7 gives no `MTL616` (its list is empty). Line 19
+  `#### Sub`: unlisted, but its ancestor `### Misc` is unlisted: not reported.
+- Line 23 `## Fixed`: outside the region (level 2 ends it). Same text as `### Fixed` but
+  another level: not a match of `### Fixed` (optional, absent: no finding) and allowed as an
+  extra level-2 heading: the level-2 run gives `MTL616` `Heading: 1 extra heading(s) at
+  level H2 after the template headings: ['Fixed']`, anchored on line 23.
+- Expected text output (errors, then the warning, in emission order, 4.3 "heading"):
+
+```text
+  ✗ CHANGELOG.md
+      error MTL612 Heading: Section 'Unreleased': heading 'Details' at level H4 is not in the template [content:subheadings:disallow]
+        13 | #### Details
+      error MTL612 Heading: Section 'Unreleased': heading 'Misc' at level H3 is not in the template [content:subheadings:disallow]
+        17 | ### Misc
+      warn  MTL616 Heading: 1 extra heading(s) at level H2 after the template headings: ['Fixed']
+        23 | ## Fixed
+```
+
+- Variant, exact level under the tag: line 9 becomes `#### Added`. It is level 4, so it is not
+  listed (`### Added` is level 3): `MTL612` for `'Added' at level H4` on line 9. Line 13
+  `#### Details` is still reported: its parent is the nearest heading before it with a lower
+  level, which is `## Unreleased` (line 7), not line 9 (same level). Three errors: lines 9,
+  13 and 17. Line 19 stays unreported (its parent, line 17, is unlisted). The `MTL616`
+  warning for line 23 stays.
+- Variant, suppression: `<!-- md-template-lint disable-line MTL612 -->` at the end of line 17
+  removes the second error (`Suppressed:   1`). Line 17 still gets no `MTL616`: which code
+  reports a heading is decided before suppression, which only filters the output (4.1 step
+  8, DIR10).
+- Variant, no tag: without `[content:subheadings:disallow]` there is no error and the file
+  passes (`✓ CHANGELOG.md`) with two warnings: `MTL616` `Heading: Section 'Unreleased': 1
+  extra heading(s) at level H3 after the template headings: ['Misc']` on line 17, then the
+  `MTL616` for line 23 (the level-3 sequence ends at `### Fixed`, which comes before
+  `## Notes` in the template, 4.3 emission order).
+- Variant, no-extra instead of disallow: template line `## Unreleased
+  [content:subheadings:no-extra]`. The direct target children of line 7 are lines 9 and 17
+  (the target parent of line 13 is line 9, of line 19 is line 17). Line 9 was taken by
+  `### Added`; line 17 was taken by no position: one error, which replaces the `MTL616` for
+  line 17; lines 13 and 19 are not reported:
+
+```text
+  ✗ CHANGELOG.md
+      error MTL615 Heading: Section 'Unreleased': heading 'Misc' at level H3 is not declared at this position [content:subheadings:no-extra]
+        17 | ### Misc
+      warn  MTL616 Heading: 1 extra heading(s) at level H2 after the template headings: ['Fixed']
+        23 | ## Fixed
+```
+
+- Variant, a duplicate group: under the no-extra tag, line 17 reads `### Added`. The
+  level-3 run: `### Added` takes line 9, `### Fixed` does not match line 17, so line 17 is
+  extra: `MTL615` for `'Added' at level H3` on line 17, no `MTL616` for it (line 19 is not a
+  direct child of line 7). Under the disallow tag the same target gives no error for line 17
+  (its level and text are listed), so the warning `MTL616` `Heading: Section 'Unreleased': 1
+  extra heading(s) at level H3 after the template headings: ['Added']` lists it; line 19
+  `#### Sub` is now the topmost unlisted heading of its block (its parent, line 17, is
+  listed): `MTL612` on lines 13 and 19. The `MTL616` for line 23 stays in both.
+- Variant, template-only: `## Authoring checklist [presence:template-only] [content:subheadings:disallow]`
+  gives the `--verify` warning `MTL015` `Heading 'Authoring checklist': tag
+  [content:subheadings:disallow] has no effect (the heading is [presence:template-only])`
+  (a template warning: a lint run does not print it, 2.7).
+
+Worked example 3, a child order conflict (`MTL019` and `MTL611`, A72m). Config
+`md-template-lint.yml` with one pair, template `templates/guide.template.md`, include
+`notes/*.md`, no description. Template:
+
+```text
+1  ---
+2  title: "string"
+3  ---
+4
+5  # Guide
+6
+7  ## Setup
+8
+9  #### Details
+10
+11 ### Steps
+```
+
+Target `notes/guide.md`:
+
+```text
+1  ---
+2  title: x
+3  ---
+4
+5  # Guide
+6
+7  ## Setup
+8
+9  ### Steps
+10
+11 #### Details
+```
+
+- Template parents: line 9 `#### Details` has parent `## Setup` (line 7, the nearest lower
+  level before it); line 11 `### Steps` has parent `## Setup` too (line 9 is level 4, not
+  lower). Both are section-scope direct children of `## Setup`, the deeper one first:
+  `MTL019` on line 11, column 1, `{prev}` `Details`, `{prevLine}` 9, `{parent}` `Setup`.
+- Lint phase, template as written. `# Guide` takes line 5, `## Setup` takes line 7. In the
+  section of line 7 (lines 7 to 11): the level-3 run takes line 9 for `### Steps`, the
+  level-4 run takes line 11 for `#### Details` (line 11 lies inside the section of line 7).
+  `MTL611` for `## Setup`: the children in template order are `Details`, `Steps`, their
+  matches lines 11 and 9, decreasing. Template list `['Details', 'Steps']`; target list: the
+  headings inside the section of line 7 at level 4 or less, `['Steps', 'Details']`. No tail,
+  no other finding.
+- Expected output of `md-template-lint --format plain` (exit 1):
+
+```text
+md-template-lint 1.0.0
+Config: md-template-lint.yml
+========================
+
+Template: templates/guide.template.md
+Target:   notes/*.md (1 file(s))
+
+  FAIL templates/guide.template.md (template)
+      error MTL019 Heading 'Steps' (H3): comes after the deeper child 'Details' (H4, line 9) under 'Setup'
+        11 | ### Steps
+           | ^
+  FAIL notes/guide.md
+      error MTL611 Heading: Section 'Setup': heading order mismatch: template order ['Details', 'Steps'] vs target order ['Steps', 'Details']
+        7 | ## Setup
+
+========================
+Summary
+========================
+Total files:  1
+Passed:       0
+Failed:       1
+Warnings:     0 (in 0 file(s))
+Templates:    1 checked, 0 broken
+
+Failed templates:
+  - templates/guide.template.md
+
+Failed files:
+  - notes/guide.md
+
+========================
+```
+
+- `--verify` of the same template: `FAIL templates/guide.template.md`, the table, then the
+  section (8.3):
+
+```text
+Child headings out of level order:
+  - Heading 'Steps' (H3): comes after the deeper child 'Details' (H4, line 9) under 'Setup' (line 11, column 1)
+      11 | ### Steps
+         | ^
+```
+
+  with `Errors:       1` in the summary, exit 1.
+- Variant, fixed template: lines 9 and 11 swapped (`### Steps`, then `#### Details`, now a
+  child of `### Steps`): no `MTL019`; `#### Details` is checked in the section of target
+  line 9 and takes line 11, no `MTL611`: `PASS notes/guide.md`, `All files passed!`, exit 0.
+
 ### 2.7 Inert, unknown and malformed tags
 
 - The legacy marker `[rule]` is inert and never reported.
@@ -292,12 +900,142 @@ The old `<!-- [rule] required -->` HTML comment is dead. It is inert prose.
 - On a heading, only the single leftover trailing bracket is considered for `MTL011`.
 - A tag of a known family with a bad argument (`[count:min:abc]`, `[filename:case:Snake]`,
   an unterminated `[presence:`) is MALFORMED: warning `MTL012` with line and column. Legacy
-  reported it as unknown (`MTL010`/`MTL011`). New code, same severity.
+  reported it as unknown (`MTL010`/`MTL011`). New code, same severity. The dropped
+  `[presence:exist]` is such a tag since A72m (2.6 "Dropped tag").
 - Heading-only tags written in a frontmatter comment, and the reverse, are known, well-formed
   tags in the wrong region: warning `MTL013` (misplaced tag) with line and column, no effect on
   linting. They are not unknown and not malformed. New code (change C05); legacy ignored them.
-- Unknown, malformed and misplaced tags are shown by `--verify` only (as in legacy). A normal
-  lint run does not print template warnings.
+- Heading tags are read on every level (change C10): a bracket on an H3 to H6 template line
+  is peeled and gives `MTL011` to `MTL013` exactly like on H1 and H2. Old behaviour: H3 to H6
+  lines were not read, their brackets stayed text and gave no warning.
+- A known, well-formed heading tag that cannot have any effect on its heading is a TAG
+  CONFLICT: warning `MTL015` with the line and column of the tag, no effect on linting, never
+  suppressible (DIR6). New code (change C10). Message
+  `Heading '{text}': tag {tag} has no effect ({reason})`, `{tag}` as written. Reasons defined
+  today (one per case; later epics add theirs, section 9):
+  - `[content:subheadings:disallow]` or `[content:subheadings:no-extra]` (A72k) on a
+    `[presence:template-only]` heading, reason
+    `the heading is [presence:template-only]`. Rationale: a template-only heading never has a
+    match in a valid target, so the tag can never apply; a silent no-op would hide an
+    authoring mistake.
+  - `[unique-headings-names]` (A80c, 2.11) on a `[presence:template-only]` heading, same
+    reason and rationale (the tag has no region); one warning per tag as written.
+  - Heading patterns (2.10, change C12) add two reasons, same rationale (the tag can never
+    apply, so the author is told). The tag is ignored, the heading keeps its other tags, and
+    the position is the first tag of the ignored kind. A heading whose pattern is invalid
+    (`MTL014`) gets no `MTL015` for its pattern, repeat or order tags (one cause, one
+    warning). Reasons:
+    - `[pattern:...]`, `[repeat-rules:...]` or `[order:...]` on a `[presence:template-only]`
+      heading: reason `the heading is [presence:template-only]` (the heading stays
+      template-only by text);
+    - `[repeat-rules:...]` or `[order:...]` on a heading without a `[pattern:...]` tag:
+      reason `the heading has no [pattern:...]` (an order tag there gets this warning only,
+      never `MTL030`: the missing pattern is the first cause).
+
+    A72m removed two reasons: the one for these tags on an `exist` heading (the tag is
+    dropped, 2.6) and `the pattern has no orderable placeholder` (an order tag now reads the
+    heading text, not placeholder values, so every repeat heading can be ordered, 2.10).
+    A72n (owner decision 3) removed a third: an order tag on a pattern heading without a
+    repeat tag (reason `the heading has no [repeat-rules:...]`) is now the template ERROR
+    `MTL030` (below).
+- An unknown placeholder, an unknown format option, a bad escape or another invalid pattern
+  in a `[pattern:"..."]` tag is an INVALID PATTERN: warning `MTL014` with the line and column
+  of the offending part, never suppressible (DIR6). New code (change C12). Reasons and
+  rationale in 2.10. A heading whose pattern is invalid gets no `MTL015`, no `MTL017`, no
+  `MTL018` and no `MTL030`, and it is left out of every `MTL019` child list; as a PARENT it
+  still gets `MTL019` (owner decision 1 of A72n, below).
+- Two ADJACENT positions of one template sequence (2.6 "Sequence": same level, same scope, taken from the
+  template without the target-dependent "checked" filter, as in 2.10)
+  that are pattern or exact-text headings with the same pattern (an exact-text heading is
+  the literal pattern of its text, so `## Notes` twice in a row, or `## Notes` next to
+  `## [pattern:"Notes"]`, count; owner decision 5 of A72l) are a DUPLICATE PATTERN: ERROR
+  `MTL017` (heading-pattern-duplicate) on the later heading, with its template line and the
+  column of the `[` of its pattern tag (of the first character of its text for an
+  exact-text heading), never suppressible (DIR6). It is a TEMPLATE ERROR (below). New code
+  (owner decision 7 of A72k). Definition and rationale in 2.10.
+- A repeat heading (2.10) whose presence is `[presence:optional]` and that carries an
+  explicit `[repeat-rules:same-level:min:N]` (`N` is 1 or more by the grammar) is a
+  CONTRADICTORY MINIMUM: ERROR `MTL018` (heading-optional-min-conflict) with the template
+  line of the heading and the column of the `[` of that `min` tag, never suppressible
+  (DIR6). It is a TEMPLATE ERROR (below). New code (owner decision 3 of A72l). Definition
+  and rationale in 2.10 "Repeat rules".
+- A template heading P whose CHILD LIST (the section-scope template headings whose template
+  parent is P, in template order: the list of `MTL611`, 2.6 "Order") holds a heading after a
+  DEEPER one (a higher level number) is a CHILD ORDER CONFLICT: ERROR `MTL019`
+  (heading-child-order-conflict). New code (owner decision 2 of A72m). Precisely:
+  - P is any template heading that is not `[presence:template-only]` (the descendants of a
+    template-only heading are never checked, 2.6); the template phase has no target, so
+    "checked" plays no part otherwise; a P whose own pattern is invalid (`MTL014`) gets
+    `MTL019` too, so such a template reports both codes (owner decision 1 of A72n: the child
+    order is a property of the outline under P, not of P's pattern, and fixing the pattern
+    alone must not reveal a second template mistake one run later; P7i adds a fixture);
+  - the child list leaves out `[presence:template-only]` children (they never match) and
+    children whose pattern is invalid (`MTL014`; they are not positions);
+  - a child C is OFFENDING when some earlier child of the list has a higher level than C;
+    ONE `MTL019` per P, on the FIRST offending child C in template order, `{prev}` being the
+    first earlier child (template order) with a higher level than C;
+  - position: the template line of C, column 1 (the level, written by its `#` marks, is the
+    problem); `{text}` and `{prev}` are template texts or labels (2.10), `{n}` and `{m}` the
+    levels of C and of `{prev}`, `{prevLine}` the template line of `{prev}`, `{parent}` the
+    text or label of P;
+  - severity ERROR, category `syntax`, phase `template`, a TEMPLATE ERROR (below): printed
+    on the template file in a lint run with exit 1, targets still linted; `--verify` FAIL,
+    exit 1, section `Child headings out of level order:` (8.3); never suppressible (DIR6).
+
+  Only this shape lets `MTL611` fire (2.6 "Order": within one level the run is ordered, and
+  a shallower heading after a deeper one under P is a direct child of P only when the
+  template skips a level). The template is used as written in a lint run, so a target in
+  the natural outline order (the shallower heading, then the deeper one inside it) gets
+  `MTL611`. Rationale: a child list that climbs back up a level says "this deeper heading
+  comes first, outside the shallower one", which a document almost never means (the deeper
+  heading was meant inside the shallower one, or a level is mistyped); the author learns it
+  from the template once instead of from `MTL611` on every target. One finding per P, as
+  `MTL611`, because the cause is the outline under P; column 1 because no tag is at fault.
+  Worked example 3 of 2.6.
+- An `[order:...]` tag (any form, 2.10 "Order") on a PATTERN HEADING (2.10: an effective,
+  valid pattern, not `[presence:template-only]`) that has no `[repeat-rules:...]` tag of any
+  of the three kinds is an ORDER WITHOUT REPEAT: ERROR `MTL030`
+  (heading-order-without-repeat). New code (owner decision 3 of A72n; it replaces the
+  `MTL015` reason `the heading has no [repeat-rules:...]`). Precisely:
+  - the order tag is the effective one (the first of its kind, 2.10); one finding per
+    heading; a heading without pattern, a template-only heading and a heading with an
+    invalid pattern get their `MTL015` or `MTL014` instead, never `MTL030` (one cause, one
+    finding);
+  - position: the template line of the heading, column of the `[` of the order tag;
+    `{text}` the label (2.10), `{tag}` the order tag as written;
+  - severity ERROR, category `syntax`, phase `template`, a TEMPLATE ERROR (below): printed
+    on the template file in a lint run with exit 1, targets still linted; `--verify` FAIL,
+    exit 1, section `Order tags without repeat:` (8.3); never suppressible (DIR6);
+  - in a lint run the template is used as written: the heading is a single (not repeat)
+    position, which takes one sibling, so the order tag compares nothing and has no
+    effect.
+
+  Rationale: an order compares the instances of one repeat set, so an order tag without a
+  repeat tag says "these headings are ordered" while the template allows one heading only;
+  the author almost always forgot the repeat tag (worked example 7 J of 2.10), and the
+  targets then show the would-be instances as extras. An error, not the former `MTL015`
+  warning, because the template cannot state what its author meant (the reason `MTL017`,
+  `MTL018` and `MTL019` are errors) and a warning stays invisible outside `--verify`.
+- TEMPLATE ERRORS are `MTL017`, `MTL018`, `MTL019` and `MTL030`: template-phase diagnostics of severity error
+  that do not make the template broken (it parses, its schema is known). They act in BOTH
+  modes (owner decision 2 of A72l): in a lint run each one is printed as an error on the
+  TEMPLATE file, in the block of every pair that uses it, before its targets (8.2), and
+  makes the run exit 1 (7.5); the targets are still linted, with the template as written
+  (the greedy steps of 2.10, the tags as they are). In `--verify` the template FAILS: exit 1
+  (7.3), its table and sections are still printed. Rationale: a template error means the
+  template cannot state what its author meant, so every run must stop CI, not only a
+  `--verify` step that a project may not run; linting the targets anyway keeps their own
+  findings visible (the template can be read, unlike a broken one, which skips its
+  targets); one finding per template, not one per target, because the cause is in the
+  template. Not suppressible because the template carries no directives (DIR4).
+- A template field of type `date` without a `[format:date]` tag, or of type `list-of-date`
+  without a `[format:elements:date]` tag, is a MISSING DATE FORMAT: warning `MTL016` on the
+  template key line, column 1, no effect on linting (the default date shapes of 3.3 apply),
+  never suppressible (DIR6). New code (change C11). Details and rationale in 2.9.
+- Template WARNINGS (unknown, malformed, misplaced and conflicting tags, invalid patterns,
+  missing date formats: `MTL010` to `MTL016`) are shown by `--verify` alone (as in legacy):
+  a lint run does not print them, and they change neither its findings nor its exit code.
+  Template ERRORS (`MTL017`, `MTL018`, `MTL019`, `MTL030`) are shown by both modes (above).
 - The parser layer reports only a region, a reason (unknown, malformed, wrong-region), a location
   and the subject. The rule file `src/rules/syntax.ts` owns the code, the severity and the
   message text (ADR 0002).
@@ -351,6 +1089,1791 @@ Per item (a list contributes one check per non-blank string item):
 
 Existence tests swallow every OS error (treated as "does not exist"). No network access
 happens unless a template uses `[io:exists]` on a url type.
+
+### 2.9 Field formats (`[format:semver]`, `[format:date]`)
+
+Four inline-comment tags of the `format` family constrain the shape of a frontmatter value
+(change C11, ADR 0010, AS16). They bind to a top-level key like every inline-comment tag
+(2.1). On a heading they are misplaced tags (`MTL013`, 2.7).
+
+Tag grammar (informal; `grammar/*.g4` is normative):
+
+```text
+fieldFormat    = "[format:" shape "]"
+elementsFormat = "[format:elements:" shape "]"
+shape          = "semver" | "date"           ; case-insensitive, like every format keyword
+```
+
+A bad argument (`[format:dates]`, `[format:elements:semvers]`) is a malformed tag (`MTL012`,
+2.7), as for any known family. Rationale: one family for value shapes; the `elements:` form
+already exists for case styles (`MTL303`), so a list rule reads the same for every shape.
+
+Terms (defined here, used in 2.9, 3.4 and the `shape` rows of 4.3):
+
+- SEMVER: a semantic version of SemVer 2.0.0. Value pattern (not a tag pattern; it lives in
+  `src/engine/values.ts` like the case styles of 2.3):
+
+  ```text
+  semver = num "." num "." num ("-" pre ("." pre)*)? ("+" build ("." build)*)?
+  num    = "0" | [1-9] [0-9]*                    ; no leading zero
+  pre    = num | [0-9]* [A-Za-z-] [0-9A-Za-z-]*  ; a numeric part has no leading zero
+  build  = [0-9A-Za-z-]+
+  ```
+
+  No `v` prefix: `v1.2.0` is not a SEMVER. ASCII digits and letters only (C06). Rationale:
+  the published SemVer 2.0.0 grammar is the one unambiguous definition, and its FAQ states
+  that `v1.2.3` is not a semantic version; a `v` is a tag name convention.
+- ISO DATE: a value of shape `YYYY-MM-DD` (`^\d{4}-\d{2}-\d{2}$`) that names a real calendar
+  date, year 1 or later, with the calendar test of the type `date` (3.4: `2025-02-29`,
+  `2026-13-40` and year `0000` fail). The ongoing marker and the other three shapes of 3.3 are not ISO dates.
+  Rationale: one sortable, unambiguous shape, the one changelogs and frontmatter dates use.
+- DEFAULT DATE PARSING: what the type `date` accepts today (3.3 shapes and the ongoing marker,
+  with the 3.4 calendar test). A field's format decides how its value is PARSED: with
+  `[format:date]` (`[format:elements:date]` for list items) only an ISO DATE is accepted;
+  without it the default date parsing applies, and `--verify` says so (`MTL016`).
+
+Both predicates test the exact text of the value: no trimming (owner decision, AS16). A value
+with leading or trailing whitespace (only a quoted YAML string can carry it; an unquoted scalar
+is already stripped by the YAML loader) is not a SEMVER and not an ISO DATE, so ` 1.2.0 ` gives
+`MTL306`. A padded date on a `date` field still passes the default date parsing (the type
+`date` trims, C06), so `[format:date]` reports it as `MTL307`: a real date in the wrong shape.
+Rationale: a format tag states the exact shape the author wants; silently accepting padding
+would hide the very drift the tag exists to catch. A message prints the value as loaded.
+
+Checks (field step `shape`, the last step of 4.1 step 3; it runs only on a present,
+non-empty value):
+
+- `[format:semver]`: a scalar string value that is not a SEMVER is `MTL306`. A list or a
+  mapping is skipped (the type rule reports the shape).
+- `[format:date]`: a scalar string value that is not an ISO DATE. When the field type is
+  `date`, `MTL307` fires only if the value passes the default date parsing (`2026-10`, `2026`,
+  `31/12/2026`, `present`); a value that fails it is `MTL504` (type rule) and gets no `MTL307`.
+  For every other field type (`string`, `enum`, ...) the value gets `MTL307`, because no type
+  rule checks dates there. A list or a mapping is skipped.
+- `[format:elements:semver]`: on a list value, one `MTL308` listing every item that is not a
+  SEMVER (Python list, Q02). Items are tested as their text (as `MTL303`), so a nested list
+  or mapping is listed. Skipped when the value is not a list.
+- `[format:elements:date]`: on a list value, one `MTL309` listing every item that is not an
+  ISO DATE, except, when the field type is `list-of-date`, the items that fail the default
+  date parsing (`MTL513` lists those). Skipped when the value is not a list.
+- Type mismatch edge cases: a `list-of-date` field with `[format:date]` and a scalar value
+  gives `MTL513` (type) and `MTL307` (the "every other field type" rule above). A `date`
+  field with `[format:elements:date]` and a list value gives `MTL504` (type) and `MTL309`
+  (every item that is not an ISO DATE, since the type rule lists no items). The shape step
+  never looks at the field type, except to defer to the default date parsing above.
+- The scalar shape tags are one kind: of `[format:semver]` and `[format:date]` on one field,
+  the first wins (2.1). The two elements shape tags are one kind too. Shape tags and case
+  tags (`[format:snake_case]`, `[format:elements:kebab-case]`) are separate kinds: both run.
+- No other interaction: the type rules and `[order:ascending]` (`MTL407`) keep the default
+  date parsing, their codes and messages are unchanged.
+
+Rationale, one problem one error: a value that is no date at all keeps its legacy error
+(`MTL504`, `MTL513`; same code and message, so targets that failed before fail the same way);
+the format code adds only what the type cannot say (a real date in the wrong shape).
+Rationale, step order: the owner decided that `shape` comes after the existing steps;
+appending keeps the position and the emission order of every existing code, and the type
+finding (the root problem) prints before the format detail.
+
+`MTL016` (template side, phase `template`): for every template field whose inferred type
+(3.2) is `date` and whose inline comment has no effective `[format:date]` tag (the first tag of
+its kind counts), or whose type is `list-of-date` and whose comment has no effective
+`[format:elements:date]` tag. One warning per field;
+`{tag}` is the missing tag. Position: the template key line (the last occurrence for a
+duplicate key, Q06), column 1. Shown by `--verify` only (section `Date fields without
+format:`, 8.3), never changes the exit code (7.3), never suppressible (DIR6). A scalar tag on
+a `list-of-date` field (or the reverse) does not count: the target side skips it (above), so
+the template side warns. Rationale: the warning is about the template, so it is reported once
+per template and not once per target; it is a warning, not an error, because the default
+parsing is the legacy behaviour and existing templates keep working; it cannot be suppressed
+because a template carries no directives (DIR4).
+
+Worked example 1, list fields with an elements format (target lint). Template
+`release.template.md`:
+
+```markdown
+---
+version: "1.0.0" # [format:semver]
+released: 2026-01-01 # [presence:required] [format:date]
+supported: ["1.0.0"] # [format:elements:semver]
+milestones: ["2026-01-01"] # [format:elements:date]
+---
+
+# Release
+```
+
+Inferred types (3.2, no hint in the comments): `version` `string`, `released` `date`,
+`supported` `list` (its item is not date-like, url-like or path-like), `milestones`
+`list-of-date`. Target `notes/release.md` (line numbers on the left are not part of the file):
+
+```text
+1  ---
+2  version: v1.2
+3  released: 2026-1-5
+4  supported: [1.2.0, 1.1.x, 2.0.0-rc.1]
+5  milestones: [2026-01-15, 2026-02, 2026-13-01, present]
+6  ---
+7
+8  # Release
+```
+
+- Line 2: `v1.2` has a `v` prefix and two parts: not a SEMVER, `MTL306`. Type `string`
+  passes.
+- Line 3: `2026-1-5` fails the default date parsing (no zero padding, 3.4): `MTL504` from the
+  type step; `MTL307` stays silent (one problem, one error).
+- Line 4: `1.2.0` and `2.0.0-rc.1` are SEMVERs, `1.1.x` is not: one `MTL308`. Type `list`
+  passes.
+- Line 5: `2026-01-15` is an ISO DATE. `2026-13-01` fails the default parsing: `MTL513` lists
+  it and `MTL309` does not. `2026-02` and `present` pass the default parsing but are not ISO
+  dates: `MTL309` lists them. Type step first, then `shape`.
+- Expected text output (errors in emission order, field by field in template order):
+
+```text
+  ✗ notes/release.md
+      error MTL306 Field 'version': value 'v1.2' is not a semantic version [format:semver]
+        2 | version: v1.2
+      error MTL504 Field 'released' (type=date): value is not a valid calendar date in an accepted format (YYYY-MM-DD / YYYY-MM / YYYY / DD/MM/YYYY / present / présent)
+        3 | released: 2026-1-5
+      error MTL308 Field 'supported': list contains entries not matching [format:elements:semver]: ['1.1.x']
+        4 | supported: [1.2.0, 1.1.x, 2.0.0-rc.1]
+      error MTL513 Field 'milestones' (type=list-of-date): list contains invalid date entries (expected a real calendar date in YYYY-MM-DD / YYYY-MM / YYYY / DD/MM/YYYY / present / présent): ['2026-13-01']
+        5 | milestones: [2026-01-15, 2026-02, 2026-13-01, present]
+      error MTL309 Field 'milestones': list contains entries not matching [format:elements:date]: ['2026-02', 'present']
+        5 | milestones: [2026-01-15, 2026-02, 2026-13-01, present]
+```
+
+- Variant, valid versions: line 2 `version: 1.2.0` and line 4
+  `supported: [1.2.0, 1.1.0, 2.0.0-rc.1]`: `MTL306` and `MTL308` disappear.
+  `version: 1.2.0+build.7` passes; `version: 01.2.0` (leading zero) is `MTL306`.
+- Variant, a real date in another shape: line 3 `released: 2026-01`. The default parsing
+  accepts it, so no `MTL504`; it is not an ISO date:
+  `error MTL307 Field 'released': value '2026-01' is not a YYYY-MM-DD date [format:date]`,
+  excerpt row `3 | released: 2026-01`. `released: present` gives the same `MTL307` with
+  `'present'`. `released: 2026-02-30` gives `MTL504` only.
+- Variant, a non-date type: template `due: "string" # [format:date]` (type `string`).
+  Target `due: soon` and target `due: 2026-02-30` both give `MTL307` (no type rule checks a
+  date on a `string` field).
+- Variant, suppression: line 3 `released: 2026-01 # md-template-lint disable-line MTL307`
+  removes the finding (`Suppressed:   1`); `MTL307` anchors on the key line (DIR5).
+- Variant, wrong tag form: the template has `milestones: ["2026-01-01"] # [format:date]`.
+  The target value is a list, so `[format:date]` is skipped: no `MTL309`; `MTL513` still lists
+  `2026-13-01`. `--verify` gives `MTL016` for `milestones` (`no [format:elements:date]`).
+
+Worked example 2, a date field without format (`--verify`). Template `release.template.md`:
+
+```text
+1  ---
+2  version: "1.0.0" # [format:semver]
+3  released: 2026-01-01 # [presence:required]
+4  history: ["2025-12-01"] # [presence:optional] [format:date]
+5  ---
+6
+7  # Release notes
+```
+
+- Line 2: type `string`, not a date field: no `MTL016`.
+- Line 3: type `date` (the value is date-like, 3.2), no `[format:date]`: `MTL016`.
+- Line 4: type `list-of-date`; `[format:date]` is the scalar tag and `[format:elements:date]`
+  is missing: `MTL016` naming the elements tag.
+- Expected output of `md-template-lint --verify --format plain release.template.md` (exit
+  0, warnings never fail; `<version>` is the package version):
+
+```text
+md-template-lint <version>
+Config: (none)
+========================
+
+  PASS release.template.md
+Field     Type          Rules
+-----------------------------
+version   string        presence:required, format:semver
+released  date          presence:required
+history   list-of-date  presence:optional, format:date
+
+Headings:
+  # Release notes (presence:required)
+
+Date fields without format:
+  - Field 'released' (type=date): no [format:date], default date formats apply (line 3, column 1)
+      3 | released: 2026-01-01 # [presence:required]
+        | ^
+  - Field 'history' (type=list-of-date): no [format:elements:date], default date formats apply (line 4, column 1)
+      4 | history: ["2025-12-01"] # [presence:optional] [format:date]
+        | ^
+
+========================
+Summary
+========================
+Templates:    1 checked, 0 broken
+Warnings:     2
+
+All templates passed!
+========================
+```
+
+- Variant, formats added: line 3 gains `[format:date]` and line 4 reads
+  `history: ["2025-12-01"] # [presence:optional] [format:elements:date]`: no warning and no
+  `Date fields without format:` section; the `Rules` column shows `format:date` and
+  `format:elements:date`, and the summary shows `Warnings:     0`.
+- Variant, normal lint run with line 3 unchanged: no `MTL016` is printed (template warnings
+  show in `--verify` only, 2.7), and a target `released: 2026-10` passes (default date
+  parsing).
+- Variant, a target directive naming the code (`<!-- md-template-lint disable-file MTL016
+  -->`): `MTL022` (not suppressible, DIR6) once the rule is registered; while the code is
+  pending it is not a registered code, so the item gives `MTL021` (DIR2 counts a code as known
+  once its rule is registered, whatever the 4.3 table says), as for `MTL015` today.
+
+### 2.10 Heading patterns, repeat rules and order
+
+Three heading suffix tags let one template heading stand for target headings whose text
+varies (a release heading `## [1.2.0] - 2026-03-01`), repeat it, and order the repeats
+(change C12, ADR 0011, AS17). Every template heading, with or without these tags, is matched
+by the positional run of this section (ADR 0012, phase A72k; 2.6 "Match of T"). Owner
+decisions are numbered as in ADR 0011 (phase A72j), ADR 0012 (phase A72k) and AS17 (phases
+A72l, A72m and A72n, recorded in both ADRs). The tags are
+body tags (2.6): in a frontmatter comment they are misplaced (`MTL013`, 2.7). Every heading
+level is checked (C10), untagged H3 to H6 children stay required, and extra headings (the
+tail of a run, 2.6) stay allowed, each run's extras listed by the warning `MTL616`, unless
+`[content:subheadings:disallow]` or `[content:subheadings:no-extra]` gives an error for
+them (2.6).
+
+Tag grammar (informal; `grammar/*.g4` is normative):
+
+```text
+patternTag = "[pattern:" '"' patternText '"' "]"        ; patternText and escape: section 2
+repeatTag  = "[repeat-rules:same-level" (":" bound ":" N)? "]"
+bound      = "min" | "max"
+N          = [1-9] [0-9]*                               ; 1 or more, ASCII digits
+orderTag   = "[order:" ("first:" orderBy ":")? direction "]"   ; forms revised by A72m, A72n
+orderBy    = "number" | "date" | "semver"                ; "semver" added by A72n
+direction  = "ascending" | "descending"
+```
+
+- Keywords are case-insensitive, as every tag keyword (section 2), placeholder names and
+  format names included (`{SemVer}` is `{semver}`, `{semver:FORMAT:Major-Minor}` is
+  `{semver:format:major-minor}`). The literal text of a pattern is case-sensitive.
+- Malformed (`MTL012`, 2.7; the bracket stays in the heading text): `[pattern:Release]` (no
+  quotes), an unclosed quote (`[pattern:"x]`, or `[pattern:"x\"]` where the only quote is
+  escaped), text between the closing `"` and `]`,
+  `[repeat-rules:same-level:min:0]`, `[repeat-rules:same-level:max]`,
+  `[repeat-rules:other-level]`, `[order:sideways]`, and the order forms `[order:first]`,
+  `[order:first:number]`, `[order:first:version:ascending]`, `[order:last:number:ascending]`,
+  `[order:first:number:up]`, `[order:first:date:descending:x]`. Rationale for `N` of 1 or
+  more: a minimum of 0 is what `[presence:optional]` already says (below) and a maximum of 0
+  contradicts a heading that must be present.
+- `[order:ascending]` keeps its frontmatter meaning on a key line (`MTL407`, 2.3); on a
+  heading it is the order tag of this section. `[order:descending]`, every
+  `[order:first:...]` form, `[pattern:...]` and `[repeat-rules:...]` in a frontmatter
+  comment are misplaced (`MTL013`).
+- First tag of a kind wins (owner decision 6 of A72j, as 2.1). Kinds: `pattern`, `order`
+  (all eight order forms are one kind), and three repeat kinds: `[repeat-rules:same-level]`,
+  the `min` form and the `max` form.
+- Escapes (owner decision 5 of A72k): inside the quotes, `\"` is a literal `"` and `\\` a
+  literal `\`. The argument ends at the first `"` that is not escaped. A backslash followed
+  by any other character is an invalid escape (`MTL014`, below); the lexer still pairs it
+  with that character, so `\x` never ends the argument. Rationale: a backslash escape is the
+  convention every quoted string in Markdown tooling uses; defining `\\` keeps a heading
+  with a literal backslash writable; refusing other pairs leaves room for later escapes.
+  This removes the earlier limitation "a pattern cannot contain `"`".
+
+Terms (defined here, used in 2.6, 2.7, 4.3, DIR5 and section 9):
+
+- PATTERN. The text between the quotes after the escapes above, read left to right: `{{` is
+  a literal `{`, `}}` a literal `}`, `{name}`, `{name:format:fmt}` or
+  `{name:format:fmt:arg}` (a `{`, then any characters except `{` and `}`, then `}`; its
+  inner shape is checked below) is a placeholder, every other character is literal
+  text. So `{{semver}}` is the literal text `{semver}`. No `v` prefix is implied: a project
+  that writes `v1.2.0` uses `v{semver}` (owner decision 1 of A72j). The PIECES of a pattern
+  are its placeholders and its literal runs (the longest runs of literal characters between
+  placeholders), left to right.
+- PLACEHOLDERS (owner decision 5 of A72k, revised by owner decision 4 of A72m and owner
+  decision 4 of A72n). The vocabulary is fixed: `{text}`, `{number}`, `{digits}`, `{semver}`,
+  `{date}`, `{char}`; there is no regular-expression placeholder. `{digits}` replaces the
+  former `{int}` (A72n, breaking, pre-release): `{int}` is now an unknown placeholder
+  (`MTL014`). The value of a placeholder is the exact text it covers. `{name:format:<fmt>}`
+  restricts the value to one FORMAT of a fixed table, and `{name:format:<fmt>:<arg>}` gives
+  the format its ARGUMENT; no option and the option naming the default format mean the
+  default. Placeholder shape (informal; the names are matched case-insensitively, as every
+  keyword):
+
+  ```text
+  placeholder = "{" name (":" "format" ":" fmt (":" arg)?)? "}"
+  name, fmt   = one or more characters except "{", "}" and ":"
+  arg         = one or more characters except "{", "}" and ":"
+  ```
+
+  Two formats take an argument and need it: `padding:N` of `{digits}` and `precision:N` of
+  `{number}`; every other format takes none. The argument of those two is ASCII digits, 1 or
+  more, no leading zero; any other argument text is a wrong argument, `MTL014` (INVALID
+  PATTERN below). The formats:
+
+  | Placeholder | Default format                                     | Other formats (`{name:format:<fmt>}`, `{name:format:<fmt>:<arg>}`) |
+  | ----------- | -------------------------------------------------- | --------------------------------------------- |
+  | `{text}`    | `human`                                            | `snakecase`, `camelcase`, `screamcase`, `kebabcase`, `lowercase`, `uppercase` |
+  | `{number}`  | `decimal`                                          | `scientific`, `precision:N`                   |
+  | `{digits}`  | unnamed (cannot be written): digits, no leading zero | `signed`, `hex`, `uid`, `padding:N`         |
+  | `{semver}`  | `full`                                             | `core`, `major-minor`                         |
+  | `{date}`    | `full`                                             | `year-month`, `year`                          |
+  | `{char}`    | none (no format may be written)                    | none                                          |
+
+  LETTER classes (used by `{char}` and the `{text}` case formats, A72n): a LETTER is a
+  Unicode code point of the general category Letter: `Lu` (UPPERCASE), `Ll` (LOWERCASE),
+  `Lt` (titlecase), `Lm` and `Lo` (CASELESS letters, for example CJK). `D` is an ASCII digit
+  (C06).
+
+  NUMERIC TEXT (a value pattern, used by `{text}` and by the FIRST NUMBER of "Order" below):
+  `-?D+(\.D+)?([eE][+-]?D+)?`, `D` an ASCII digit (C06): an optional `-`, digits (leading
+  zeros allowed), an optional `.` followed by digits, an optional exponent. A value is PURELY
+  NUMERIC when its whole text is a NUMERIC TEXT: `1`, `007`, `1.5`, `-2`, `1e5`, `1.5E-3`
+  are; `1.2.0`, `v1`, `1.`, `.5`, `+1`, `1e`, `2026-10`, ` 1` are not.
+
+  Each format, what it accepts and what it rejects (the whole value, never trimmed):
+
+  - `{text}` / `human` (default): one or more characters, any (spaces included), except a
+    PURELY NUMERIC value. Accepts `Release notes`, `1.2.0`, `v1`, `Épique`, `my_heading`;
+    rejects the empty text, `2026`, `1.5`, `-3`, `1e5`.
+  - The four `{text}` CASE formats (A72n: Unicode letters, and never digits only). A WORD
+    is one or more characters of the format's word set. Each value holds at least one
+    LETTER, so a digits-only value (`2026`, `2026_10`) is no case-format value.
+  - `{text:format:snakecase}`: words joined by single `_`; word set: `Ll`, `Lm`, `Lo` and
+    `D`. Accepts `my_heading`, `step_2`, `2_step`, `épique_été`, `данные_2`; rejects
+    `2026`, `2026_10`, `My_heading`, `my-heading`, `my__heading`, `_x`, `my heading`.
+  - `{text:format:camelcase}`: a first character in `Ll`, `Lm` or `Lo`, then characters in
+    `Ll`, `Lu`, `Lm`, `Lo` or `D`. Accepts `myHeading`, `heading`, `step2`, `étéChaud`;
+    rejects `MyHeading`, `my_heading`, `2step`, `2026`, `my heading`.
+  - `{text:format:screamcase}`: words joined by single `_`; word set: `Lu`, `Lm`, `Lo` and
+    `D`. Accepts `MY_HEADING`, `STEP_2`, `ÉTÉ_2`; rejects `2026`, `My_Heading`,
+    `MY-HEADING`, `MY__HEADING`, `my_heading`.
+  - `{text:format:kebabcase}`: words joined by single `-`; word set as `snakecase`. Accepts
+    `my-heading`, `step-2`, `été-chaud`; rejects `2026`, `my_heading`, `My-heading`,
+    `my--heading`, `-x`.
+  - `{text:format:lowercase}` (A72n): one or more characters, at least one LETTER, and no
+    `Lu` or `Lt` letter; any other character is allowed (spaces, digits, punctuation).
+    Accepts `release notes`, `étape 2`, `v1.2 notes`; rejects `Release notes`, `2026`,
+    `-`, the empty text.
+  - `{text:format:uppercase}` (A72n): one or more characters, at least one LETTER, and no
+    `Ll` or `Lt` letter; any other character is allowed. Accepts `RELEASE NOTES`,
+    `ÉTAPE 2`, `V1.2 NOTES`; rejects `Release`, `2026`, the empty text.
+  - `{number}` / `decimal` (default): `-?D+(\.D+)?`, leading zeros allowed (A72n). Accepts
+    `0`, `10`, `007`, `01.5`, `1.5`, `0.25`, `-1.5`; rejects `+1`, `1.`, `.5`, `1e5`, `1,5`,
+    `1 000`.
+  - `{number:format:scientific}`: a `decimal` value as mantissa (leading zeros allowed,
+    A72n), then an optional exponent `[eE][+-]?D+`. Accepts `1e5`, `01e5`, `1.5E-3`,
+    `-2e+10`, `1.5`, `7`; rejects `1e`, `e5`, `1.5e-`, `1e5.0`, `+1e5`.
+  - `{number:format:precision:N}` (A72n): `-?D+\.D{N}`, EXACTLY `N` decimals, leading zeros
+    allowed, no exponent. `precision:2` accepts `1.50`, `01.00`, `-0.25`; rejects `1.5`,
+    `1.500`, `1`, `1.50e0`.
+  - `{digits}` (default, A72n; the former `{int}`): `0|[1-9]D*`, digits only, no sign, no
+    leading zero except the single digit `0`. Accepts `0`, `7`, `42`, `2026`; rejects `-1`,
+    `+1`, `07`, `1.0`, `1e3`.
+  - `{digits:format:signed}` (A72n): `[+-]?(0|[1-9]D*)`, the default with an optional `+` or
+    `-`. Accepts `42`, `+42`, `-7`, `0`; rejects `+07`, `--1`, `+`, `1.0`.
+  - `{digits:format:hex}` (A72n): `[0-9A-Fa-f]+`, one or more hexadecimal digits of either
+    case, leading zeros allowed, no `0x` prefix, no sign. Accepts `ff`, `0A3F`, `007`, `7`;
+    rejects `0x1f`, `g1`, `-1`, the empty text.
+  - `{digits:format:uid}` (A72n): `[A-Za-z0-9]+` holding at least one ASCII letter AND at
+    least one ASCII digit (a user identifier). Accepts `U42`, `a1b2`, `42U`, `user7`; rejects
+    `42`, `abc`, `U-42`, `U 42`, `É1`.
+  - `{digits:format:padding:N}` (A72n): EXACTLY `N` ASCII digits, leading zeros allowed, no
+    sign. `padding:3` accepts `007`, `042`, `123`; rejects `7`, `0007`, `-07`, `1234`.
+  - `{semver}` / `full` (default): a SEMVER (2.9). `core`: `num.num.num` without pre-release
+    or build (`1.2.0`); `major-minor`: `num.num` (`1.2`); `num` as in 2.9 (no leading zero).
+  - `{date}` / `full` (default): an ISO DATE (2.9), `YYYY-MM-DD` and a real calendar date.
+    `year-month`: `YYYY-MM`, month `01` to `12`, year `0001` or later (`2026-10`); `year`:
+    `YYYY`, `0001` or later (`2026`).
+  - `{char}`: exactly one Unicode code point of the general category Letter (`Lu`, `Ll`, `Lt`,
+    `Lm`, `Lo`). Accepts `A`, `b`, `É`, `ß`, `ж`; rejects `1`, `_`, `AB`, the empty text, and a
+    letter followed by a combining mark (two code points).
+
+  Rationale: `{semver}` and `{date}` reuse the field-format predicates of 2.9, so a version
+  or a date means the same in frontmatter and in headings; `{digits}` covers numbered
+  headings (`Step {digits}`), its name saying what it accepts (A72n: `{int}` suggested a
+  sign it never took), with `signed`, `hex` (hash-like ids), `uid` (ids such as `U42`) and
+  `padding:N` (fixed-width numbers such as `007`); `{number}` covers decimal values
+  (`Version 1.5`, `-1.5`, `007`), with `scientific` for measured values (`1.5E-3`) and
+  `precision:N` for a fixed number of decimals (`1.50`); `{text}` covers a free part
+  (`{semver} - {text}`) and, by refusing a purely numeric value, keeps a number from
+  passing as prose (owner example A below); its case formats name the usual identifier
+  styles, plus `lowercase` and `uppercase` for prose in one case, so an identifier-like
+  heading part is checked by its shape; `{char}` covers one-letter ids
+  (`Epic {char} - {text}`). Since A72n the case formats accept every Unicode letter
+  (headings are prose in any language, `épique_été`) and need at least one letter, so a
+  number never passes as a case-format value (`2026` needs `{digits}`, `{number}` or
+  `{date:format:year}`); the field case styles of 2.3 stay ASCII and unchanged. `{digits}`
+  refuses leading zeros so `07` and `7` are not two spellings of one number; `{number}`
+  allows them (A72n) because a measured or padded value is written as it is, and
+  `padding:N` states an exact width. An argument is written as one more `:` part
+  (`{digits:format:padding:3}`), so the placeholder keeps one shape and the argument is a
+  plain number checked by `MTL014`. The format table is fixed, one row per placeholder, so a
+  template cannot invent a shape the linter does not know; `major-minor`, `year-month` and
+  `year` are the short forms changelogs and roadmaps use, `core` is a release without
+  pre-release tag. `1.2.0` is not purely numeric (two dots), so it is a `{text}` value.
+- INVALID PATTERN (`MTL014`). The first problem from the left, one warning per tag; inside
+  one placeholder the checks run in the order below (name, shape, format, argument):
+  - an unknown placeholder name (`{version}`, `{}`, and `{int}` since A72n): reason
+    `unknown placeholder {version}` (the placeholder as written), column of its `{`;
+  - a placeholder with a colon that is not one of the forms `name:format:fmt` and
+    `name:format:fmt:arg` with every part non-empty (`{semver:major-minor}`,
+    `{semver:format:}`, `{digits:format:padding:}`, `{digits:format:padding:3:4}`): reason
+    `malformed placeholder {semver:major-minor}`, column of its `{`;
+  - a format that the table does not allow for that placeholder (`{semver:format:patch}`,
+    `{digits:format:full}`, `{digits:format:decimal}`, `{text:format:upper}`,
+    `{text:format:full}`, `{number:format:hex}`, `{char:format:upper}`): reason `unknown
+    format patch for {semver}`, column of its `{` (a default format name is allowed only
+    for its own placeholder: `full` for `{semver}` and `{date}`, `human` for `{text}`,
+    `decimal` for `{number}`; the default of `{digits}` has no name);
+  - a format ARGUMENT problem (A72n), column of its `{`: a format that needs an argument
+    written without one (`{digits:format:padding}`, `{number:format:precision}`): reason
+    `format padding of {digits} needs an argument`; an argument that is not `[1-9][0-9]*`
+    (`{digits:format:padding:0}`, `padding:03`, `padding:x`): reason `bad argument 0 for
+    format padding of {digits}` (the argument as written); an argument on a format that
+    takes none (`{date:format:year:month}`, `{digits:format:hex:2}`): reason `format year of
+    {date} takes no argument`;
+  - an unmatched brace: a `{` with no `}` before the next `{` or the end, or a `}` that is
+    neither `}}` nor the end of a placeholder: reason `unmatched '{'` or `unmatched '}'`,
+    column of that brace;
+  - two placeholders with no literal text between them (`{digits}{text}`): reason `adjacent
+    placeholders {digits}{text}`, column of the second `{`;
+  - a backslash followed by a character other than `"` and `\` (`\n`, `\{`): reason
+    `invalid escape \n`, column of the backslash;
+  - an empty pattern (`[pattern:""]`): reason `empty pattern`, column of the tag's `[`.
+
+  The tag is still recognized (peeled, so the heading text stays clean), but the heading is
+  not checked and is not a position (2.6), and gets no `MTL015` (2.7), no `MTL017`, no
+  `MTL018` (below) and no `MTL030` (2.7); it is left out of every `MTL019` child list, but
+  as a parent it still gets `MTL019` (owner decision 1 of A72n, 2.7). A template warning (`--verify` alone, 2.7), never suppressible (DIR6). Rationale: `MTL012` is for a tag whose
+  shape is wrong (the bracket stays text); `MTL014` names the exact problem inside a
+  well-formed tag. A pattern that cannot be read matches nothing, and reporting a missing
+  heading on every target would repeat one template mistake per file (the reason `MTL016`
+  is template-side too). Adjacent placeholders are refused because their split is a guess
+  (`{digits}{digits}` on `123`).
+- MATCH. A pattern matches a target heading when its WHOLE stored heading text (2.6, as
+  extracted) can be cut into consecutive parts, one per piece: a literal part equal to its
+  literal text, a placeholder part that is a value of its placeholder (and format). Nothing
+  is trimmed (owner decision 6 of A72j, as 2.9): a space in the pattern must be in the
+  heading, and a value with a stray space is no value. When several cuts exist, each
+  placeholder, from left to right, takes the shortest part for which the rest still
+  matches. Every pattern matches the WHOLE heading text (owner decision 4 of A72m restates
+  it). Rationale: anchoring to the whole text makes a pattern state the whole heading (owner
+  decision 5 of A72k), and a fixed tie-break makes the cut, and so every placeholder value,
+  deterministic.
+- FAILING PIECE (named by `MTL606`). For a heading text the pattern does not match: pieces
+  1 to k MATCH A HEAD of the text when some prefix of the text (the whole text when k is the
+  number of pieces) can be cut into k parts, part i matching piece i. The failing piece is
+  the piece k for the smallest k whose pieces 1 to k match no head. It is printed as the
+  placeholder as written, format and argument included (`{semver}`,
+  `{semver:format:major-minor}`, `{digits:format:padding:3}`) or as its literal text in
+  single quotes (`'['`, `' - '`). Examples: `1.2 - 2026-10-01` against
+  `{semver} - {date}` fails at `{semver}` (no prefix is a SEMVER); `[Unreleased]` against
+  `[{semver}] - {date}` fails at `{semver}` (`[` matches, no SEMVER follows); `12a` against
+  `{digits}` fails at `{digits}` (the last piece must cover the whole rest); `Item 7`
+  against `Item {digits:format:padding:3}` fails at `{digits:format:padding:3}`. Rationale: the user
+  needs the part to fix, and "the first piece that cannot be satisfied" is deterministic and
+  cheap (one left-to-right pass with the cuts above).
+- PATTERN HEADING. A template heading with an effective `[pattern:"..."]` tag (valid, and
+  not ignored by `MTL015`). Its own text, after peeling, is a LABEL: it names the heading in
+  `--verify`, in the template lists of `MTL604` and `MTL611` and in the `heading` member of
+  `MTL605`, `MTL607` and `MTL608` (8.1; an empty label gives `""` there); it is never
+  compared and may be empty. Rationale: owner decision 1 of A72j puts the pattern in a tag,
+  so the heading text stays readable prose (`## Release`). A heading whose pattern tag is
+  ignored by `MTL015` is an exact-text heading.
+- Kinds of position (2.6 "Sequence"). (The EXIST position of the dropped `exist` tag is
+  gone since A72m, 2.6.) A LITERAL position is an exact-text heading (it matches a sibling
+  whose text equals its text, exact and case-sensitive: the literal pattern of its text) or
+  a pattern heading whose pattern has no placeholder. A PLACEHOLDER position is a pattern
+  heading whose pattern has at least one placeholder. A REPEAT position is a pattern heading
+  (literal or placeholder) with at least one effective `[repeat-rules:...]` tag (any of the
+  three kinds), also called a REPEAT HEADING.
+
+Positional match (owner decisions 1, 2, 3 and 8 of A72k; ADR 0012). The run is computed once
+per sequence and scope: in file scope once per level, over the siblings of that level in the
+whole file; in section scope once per level and per match or instance M of the template
+parent, over the siblings of that level inside the target section of M. Steps:
+
+1. Set aside. Take the siblings in file order. For each checked `[presence:template-only]`
+   template heading U of this level and scope (file scope, or the same template parent),
+   every sibling whose text equals U's text is SET ASIDE: it takes no part in steps 2 to 4.
+   The first of them, in file order, gets `MTL603` (one per U, as before). Rationale: a
+   template-only heading must not appear at all, so where it appears is not a position
+   question; setting it aside reports it once and does not shift the run.
+2. Positions. The positions of the sequence, in template order. A cursor starts at the first
+   sibling that is not set aside. "The next sibling" is the sibling at the cursor; "taking"
+   it moves the cursor to the following sibling that is not set aside; "no sibling is left"
+   means the cursor is past the last sibling.
+3. For each position, in order, by kind:
+   a. Retired by A72m: this step was the EXIST position of the dropped `exist` tag (`MTL602`,
+      retired). The letters b to d keep their names so references stay valid.
+   b. LITERAL, no repeat tag: if the next sibling matches, take it: the match. Else take
+      nothing. Required: missing, `MTL601` (exact text, file scope), the first form of
+      `MTL610` (exact text, section scope) or `MTL605` (pattern heading). Optional or
+      conditional: no finding. HINT of `MTL601` (owner decision 6 of A72l): when some
+      sibling from the cursor onward (not set aside, in file order) has exactly the
+      heading's text, the message names the line of the first such sibling:
+      `Missing required heading: '{text}' (found later at line {line}, out of order)`. That
+      sibling is later taken by another position or stays in the tail (then `MTL616` or
+      another tail code still reports it, 2.6 "Extra"); the hint changes no match. A
+      same-text sibling before the cursor (taken by an earlier position, owner example B)
+      gives no hint. `MTL610` and `MTL605` keep their messages.
+   c. PLACEHOLDER, no repeat tag: if the next sibling matches, take it: the match. Else, when
+      no sibling is left: required `MTL605`, optional or conditional silent. Else (a sibling
+      is left and does not match): required: take it as a MISMATCH, `MTL606` on it, and the
+      heading has no match; optional or conditional: take nothing.
+   d. REPEAT:
+      1. Lead: if the next sibling does not match, the position is a placeholder position,
+         it is required and a sibling is left: take that sibling as a mismatch (`MTL606`).
+      2. Run: then take every next sibling that matches, until one does not match or no
+         sibling is left. They are the INSTANCES, in file order; `n` is their number (0 or
+         more). The instances of one run are the REPEAT SET of T in this scope (one per
+         scope, so one per parent match or instance in section scope).
+      3. Count: with an explicit `min` tag and `n` below it, `MTL607` (also when `n` is 0;
+         then it replaces `MTL605`). Else, when `n` is 0, the position is required and step
+         1 took nothing: `MTL605`. With an explicit `max` tag and `n` above it, `MTL608`. The
+         `max` bound never stops the run: every matching sibling is an instance.
+      4. Order: with an effective `[order:...]` tag, at most one `MTL609` (two or more
+         instances with an order key) and, for the `first:` forms, at most one `MTL617`
+         (an instance without key; "Order" below).
+4. Tail. The siblings from the cursor onward are the tail: extra headings (2.6). For each
+   repeat position T of the sequence, in template order, the tail siblings whose text
+   matches T's pattern and that no earlier repeat position of the sequence already lists
+   are listed in ONE `MTL614` (heading-repeat-miss) for T and this scope; no finding when the
+   list is empty. Every other tail sibling, except one that gets `MTL615`
+   (`[content:subheadings:no-extra]`) or `MTL612` (`[content:subheadings:disallow]`), or
+   that lies inside a stray block whose topmost unlisted heading gets `MTL612` (2.6), is
+   listed in ONE warning `MTL616` (heading-extra) for this run (this sequence and this
+   scope: once per level in file scope, once per level and per parent match or instance in
+   section scope), in file order, anchored on the first listed sibling; no finding when the
+   list is empty (owner decision 4 of A72l). A tail sibling that gets `MTL613`
+   (`[unique-headings-names]`) stays in this list (2.11 "Interplay", the `MTL616` overlap).
+
+Consequences, each tied to an owner decision:
+
+- A sibling that matches the current position is always taken by it (an instance, or the
+  match). A later position never takes it away: an exact-text heading does not keep its
+  text from an earlier pattern position (owner decision 4 of A72k; example B below).
+- The run has no gaps and the cursor never goes back: no position is retried and no
+  alternative split is searched (owner decision 2 of A72k, greedy first-fit). Extra
+  headings exist only after the last taken sibling.
+- Only a REQUIRED PLACEHOLDER position takes a sibling it does not match. Rationale: a
+  placeholder position stands for a heading whose text varies, so a heading at that place
+  is read as a malformed instance and is named with its failing piece (`MTL606`, owner
+  decision 3 of A72k; example A); a literal position names one exact heading, so a different
+  heading at its place is another heading and the literal one is missing (example E); an
+  optional position never takes what it does not match (owner decision 2 of A72k).
+- `MTL606` fires only when the position has a sibling; with no sibling left, presence speaks
+  (`MTL605`, or `MTL607` with an explicit `min`), owner decision 8 of A72k.
+- A mismatch is not a match: no content check, no sub-heading check, no section-scope
+  descendants are checked under it, and it is left out of the order lists (one cause, one
+  finding).
+
+Presence of a pattern heading (owner decision 2 of A72j: a required pattern heading needs a
+heading at its position):
+
+| Presence tag of T                 | No sibling left, or (literal pattern) the next sibling differs | Next sibling does not match (placeholder pattern) |
+| --------------------------------- | -------------------------------------------------------------- | ------------------------------------------------- |
+| none or `[presence:required]`     | `MTL605`, no anchor, in file and section scope (`MTL607` instead with an explicit `min` on a repeat heading) | `MTL606` on that sibling, which is taken |
+| `[presence:optional]`, `[presence:conditional:...]` | no finding (`MTL607` with an explicit `min` on a repeat heading; with `[presence:optional]` that combination is also the template error `MTL018`) | no finding, nothing taken |
+| `[presence:template-only]`        | not a pattern heading: the pattern, repeat and order tags are ignored (`MTL015`, 2.7) | same |
+
+A pattern heading never gives `MTL601` or `MTL610`: `MTL605` replaces them. Like
+`MTL601`, `MTL605` has no anchor (owner decision 7 of A72j), so only `disable-file MTL605`
+silences it, also in section scope. Rationale: one code says "no heading of this shape at
+its place", and a missing heading has no line of its own.
+
+Repeat rules (owner decision 3 of A72j, decision 3 of A72k):
+
+- Defaults: presence defaults to required (2.6). The minimum of a repeat heading defaults
+  to 1 when it is required and to 0 when it is optional or conditional; this default is the
+  presence rule itself, so it never gives `MTL607`. An explicit `min` tag overrides it and
+  then decides alone, also at zero instances (`MTL607` replaces `MTL605`). There is no
+  default maximum.
+- `MTL018` heading-optional-min-conflict (owner decision 3 of A72l, template phase): a
+  repeat heading (an effective pattern and an effective repeat tag, so not a heading whose
+  pattern is invalid, `MTL014`, or whose repeat tag `MTL015` ignores) whose presence (2.6
+  precedence) is `[presence:optional]` and that has an effective explicit `min` tag (the
+  first of its kind). One finding per heading: template line of the heading, column of the
+  `[` of that `min` tag; `{tag}` the `min` tag as written, `{min}` its `N`. Severity ERROR,
+  category `syntax`, a TEMPLATE ERROR like `MTL017` (2.7): printed on the template file in
+  a lint run and exit 1, targets still linted; `--verify` FAIL, exit 1, section
+  `Optional headings with a minimum:` (8.3); never suppressible (DIR6). In a lint run the
+  tags apply as written: the `min` decides alone (`MTL607`, also at zero instances), as the
+  presence table above says. `[presence:conditional:...]` with a `min` is NOT `MTL018`.
+  Rationale: `[presence:optional]` says "the heading may be absent" (a minimum of 0) and a
+  `min` of 1 or more says "at least N", so the template states two minimums and the author's
+  intent is unknown; before A72l the `min` won without a word, which hid the mistake. An
+  error, not a `MTL015` warning, because the conflict changes what the run reports (zero
+  instances fail), the reason `MTL017` is an error. The fix is one tag: drop
+  `[presence:optional]` (at least N) or drop the `min` (none or more). A conditional heading
+  is documentation only (2.6) and reads "when the condition holds, at least N", which is not
+  a contradiction (assumption of A72l, AS17).
+- Every instance is a match for the rules on T: its content tags (2.6), its
+  `[content:subheadings:disallow]` and `[content:subheadings:no-extra]`, and its
+  section-scope descendants, which are checked once per instance, in the target section of
+  that instance (`{parent}` is the instance text, `MTL610` and `MTL611` anchor on the
+  instance line). The first instance is the match of T for `MTL604` and `MTL611`.
+- Bounds: `n` below an explicit `min` is `MTL607`, anchored on the first instance (no
+  anchor when `n` is 0); `n` above `max` is `MTL608`, anchored on the instance number
+  `max + 1`. A `min` above the `max` gives no template warning: every target then gets
+  `MTL607`, `MTL608` or both, which shows the mistake. Rationale: one tag per bound keeps each
+  tag standalone (no orphan bound); counting every matching sibling and reporting once
+  keeps one finding per cause.
+- `MTL614` (heading-repeat-miss, owner decision 3 of A72k): one finding per repeat set that
+  has matching siblings in the tail (step 4), listing them in file order (`{pylist}`), anchored
+  on the first listed sibling. A tail sibling is listed under the first repeat heading of
+  the sequence, in template order, whose pattern it matches, so it is listed once.
+  Rationale: `[repeat-rules:same-level]` states that the repeats form one consecutive run; a
+  heading of that shape after the run ended (a stray heading broke the run) is a repeat out of
+  its place, not an allowed extra. It is distinct from `MTL606`: `MTL606` is a heading at a
+  position that has the wrong shape, `MTL614` a heading with the right shape at the wrong
+  place. A tail sibling that matches no pattern stays an allowed extra, listed by the
+  warning `MTL616` (step 4; owner decision 4 of A72l): so a typo in the LAST heading of a
+  run (no later instance to raise `MTL614`) is still shown. `MTL614` stays an error for the
+  tail siblings it lists, and they are left out of the `MTL616` list.
+
+Order (owner decision 4 of A72j, opt-in; forms and keys revised by owner decision 5 of
+A72m, which replaces the placeholder-value key of A72j and A72k, and by owner decision 2 of
+A72n, which adds the `semver` form):
+
+- Forms, on a repeat heading (an order tag on a heading without pattern is `MTL015`; on a
+  pattern heading without repeat tag it is the template error `MTL030`, A72n; 2.7):
+  `[order:ascending]`, `[order:descending]`, `[order:first:number:ascending]`,
+  `[order:first:number:descending]`, `[order:first:date:ascending]`,
+  `[order:first:date:descending]`, `[order:first:semver:ascending]`,
+  `[order:first:semver:descending]`. `{tag}` below is the effective order tag in this
+  canonical lowercase spelling.
+- ORDER KEY of an instance:
+  - `[order:ascending]` / `[order:descending]`: its WHOLE stored heading text (2.6),
+    compared as strings in plain UTF-16 code-unit order, case-sensitive and locale
+    independent (the order of 8.4). So `Epic A - Setup` is below `Epic B - Release`,
+    `Step 10` below `Step 9`, `B` below `a`. Every instance has this key.
+  - `[order:first:number:...]`: the value of its FIRST NUMBER, compared numerically (`9` is
+    below `10`, `-1.5` below `1e0`). The FIRST NUMBER is found by a scan from the left: the
+    first ASCII digit of the text starts it; it extends to the longest NUMERIC TEXT
+    (placeholders above) from that digit, and a `-` right before that digit belongs to it
+    when the character before the `-` is not a letter or digit, or when the `-` is the first
+    character. So `Step 10 - Deploy` gives 10, `v1.5.2` gives 1.5, `Temp -3` gives -3,
+    `Epic-2` gives 2, `1e5 runs` gives 100000, `2026-10-01` gives 2026, and `Intro` has no
+    first number. The value is the decimal number the text denotes, compared as an IEEE
+    double (C06 "Numbers").
+  - `[order:first:date:...]`: its FIRST DATE, compared chronologically: the leftmost
+    substring of 10 characters that is an ISO DATE (2.9: `YYYY-MM-DD`, a real calendar
+    date), with no ASCII digit right before or right after it. A shape that fails the
+    calendar test is skipped and the scan goes on. So `[1.2.0] - 2026-03-01` gives
+    2026-03-01, `Sprint 2026-02-30 / 2026-03-02` gives 2026-03-02, `2026-10` has none.
+  - `[order:first:semver:...]` (A72n): its FIRST SEMVER, compared by SemVer 2.0.0
+    precedence (semver.org, section 11: major, minor and patch numerically, a pre-release
+    below its release, pre-release identifiers compared one by one, build metadata
+    ignored, so `1.0.0+a` and `1.0.0+b` are equal keys). The FIRST SEMVER is found by a scan
+    from the left: a candidate starts at an ASCII digit that has no ASCII digit and no `.`
+    right before it; the candidate is the LONGEST prefix from there that is a SEMVER (2.9);
+    it is kept when no ASCII digit follows it, else (or when no prefix is a SEMVER) the scan
+    goes on at the next start. So `[1.10.0] - 2026-04-01` gives 1.10.0, `v2.0.0-rc.1` gives
+    2.0.0-rc.1, `1.2.0 - 2026-03-01` gives 1.2.0, and `Release 1.2`, `Version 10` and
+    `Intro` have none.
+  - Versions: the string order puts `1.10.0` below `1.9.0` and the first number of
+    `1.10.0` is the text `1.10` (value 1.1), so neither orders versions; a changelog orders
+    its releases by version (`[order:first:semver:descending]`) or by date
+    (`[order:first:date:descending]`), whichever its headings carry (worked example 1).
+- An instance without key (`first:` forms only) takes no part in the pairs below and is
+  reported by `MTL617`.
+- The adjacent pairs of one repeat set: consecutive instances, in file order, among the
+  instances that have a key. With `ascending` a pair is out of order when the later key is
+  lower than the earlier one, with `descending` when it is higher. Equal keys pass. ONE
+  `MTL609` per repeat set with at least one pair out of order (owner decision 3 of A72k):
+  anchored on the later instance of the FIRST pair out of order; `{text}` is that
+  instance's text, `{prev}` the earlier instance's text, `{count}` the number of pairs out of
+  order in the set.
+- `MTL617` heading-order-key-missing (owner decision 5 of A72m): ONE finding per repeat set
+  (at any `n` of 1 or more) whose `first:` order tag finds no key in at least one instance,
+  anchored on the first such instance; `{count}` the number of such instances, `{pylist}`
+  their texts in file order, `{kind}` `number`, `date` or `semver` (the keyword of the
+  form, `semver` since A72n), `{placeholder}` `{number}`, `{date}` or `{semver}` (the message
+  recommends a pattern that requires the key). Severity error,
+  category `heading`, step `headings`, suppressible (DIR6). Rationale for the forms: the
+  owner asked for an order everyone can predict from the text (`Epic A` before `Epic B`),
+  and for the numeric, date and version orders that string order gets wrong (`Step 9`
+  before `Step 10`, dates in other text, `1.9.0` before `1.10.0`; the version form is owner
+  decision 2 of A72n); scanning the text keeps the order tag independent of the
+  pattern's placeholders, so one rule works for any pattern. Rationale for `MTL617`: a
+  heading without the key cannot be placed, which is a different cause and fix (tighten the
+  pattern) than a pair out of order, so it has its own code and own suppression, and
+  `MTL609` keeps its "one per set, pairs only" meaning; one finding per set, like `MTL609`,
+  keeps a pattern that admits keyless headings to one line. Rationale for one finding per
+  set: it keeps a single misplaced release from flooding the output, while the first pair
+  and the count say where to start and how much is wrong.
+
+Duplicate pattern (`MTL017`, owner decision 7 of A72k, template phase):
+
+- Template sequence: for each level and scope of the template alone (the file-scope headings
+  of one level; the headings of one level with one template parent), the template headings
+  in template order, without the `[presence:template-only]` headings and the headings with
+  an invalid pattern (`MTL014`). It is the sequence of 2.6 without the target-dependent
+  "checked" filter.
+- Compared members: pattern headings and exact-text headings (owner decision 5 of A72l).
+  The pattern of an exact-text heading is the literal pattern of its stored text (one
+  literal piece, 2.6 "Match of T"); a heading whose pattern tag `MTL015` ignores is an
+  exact-text heading. Since A72m every member of a template sequence is compared (the
+  dropped `exist` tag, never compared, is gone).
+- Two ADJACENT compared members of a template sequence with the SAME PATTERN give one
+  `MTL017` on the later one. Same pattern: the same list of pieces, a literal piece equal by
+  its text after escapes and brace escapes (case-sensitive), a placeholder equal by name and
+  format, case-insensitively, with no format equal to the placeholder's default format name
+  (`full`, `human`, `decimal`; A72m; `{digits}` has no default name, A72n), and by argument
+  (A72n: compared as written; a valid argument has no leading zero, so equal text is equal
+  value). So `{semver}` and `{SemVer:format:full}` are the same,
+  `{text}` and `{text:format:human}` too, and `{digits:format:padding:3}` and
+  `{Digits:format:PADDING:3}`; `{digits:format:padding:3}` and `{digits:format:padding:4}`
+  are not, nor `{semver}` and `v{semver}`; `## Notes` and
+  `## [pattern:"Notes"]` are the same, `## Notes` and `## notes` are not. Three in a row
+  give two findings (second and third). Presence and repeat tags play no part.
+- Position: the template line of the later heading; the column of the `[` of its pattern
+  tag for a pattern heading, of the first character of its text for an exact-text heading.
+  `{prev}` is the label (pattern heading) or text (exact-text heading) of the earlier
+  heading, `{prevLine}` its template line. Message: the first form of 4.3 when the later
+  heading is a pattern heading (`{pattern}` as written in its tag), the second form
+  (`matches the same headings as the previous heading`) when it is an exact-text heading.
+- Severity ERROR, category `syntax`, phase `template`: a TEMPLATE ERROR (2.7). In a lint run
+  it is printed on the template file and makes the run exit 1 while the targets are still
+  linted (owner decision 2 of A72l, 7.5, 8.2, worked example 5); in `--verify` it is listed
+  in the section `Duplicate patterns:` (8.3) and makes the template FAIL, exit 1 (7.3),
+  without making it broken. Never suppressible (DIR6: the template carries no directives).
+- Rationale: in a greedy run the second of two identical patterns only takes what the first
+  leaves: after a repeat it can never match, and after a single heading the template says
+  "two headings of one shape", which `[repeat-rules:same-level:min:2]` says without
+  ambiguity. An error (not a warning) because the template cannot express what its author
+  meant; template-side because it is a property of the template, reported once and not
+  once per target. Exact-text headings are compared too (owner decision 5 of A72l) because
+  positional matching treats `## Notes` as the literal pattern `"Notes"`: two required
+  `## Notes` in a row ask for two such headings, which is a repeat that
+  `## Notes [pattern:"Notes"] [repeat-rules:same-level:min:2]` states plainly, and the same
+  holds for an exact-text heading next to the literal pattern of its text.
+
+Interplay with the other heading rules:
+
+- `MTL601`, `MTL603`, `MTL604`, `MTL610`, `MTL611`: the index of T in an order list is its match
+  (the first instance); mismatches, set-aside siblings and the tail never change an order
+  result.
+- `MTL603`: step 1; the sibling that gets `MTL603` (the first match of the template-only
+  text) is never also `MTL606`, `MTL614` or `MTL615`. A second set-aside sibling with the
+  same text gets no `MTL603`; it stays set aside (no position, not in the tail) and is
+  subject only to `MTL612`, like any other heading (AS17 (j)).
+- `MTL612`: instances and tail siblings whose text matches a pattern of D's subtree are
+  listed (2.6); a mismatch (`MTL606`) is not listed, so it is not also `MTL612`, but it still
+  counts as unlisted for the topmost rule.
+  `[content:subheadings:disallow]` on a repeat heading applies inside every instance.
+- `MTL615`: a mismatch counts as declared (it was taken); a tail sibling listed by `MTL614`
+  is not also `MTL615`.
+- `MTL616` (heading-extra, warning, owner decision 4 of A72l): one per run with a non-empty
+  list. Each tail sibling of a run gets exactly one of: `MTL614` (it matches a repeat
+  pattern of the sequence; error), `MTL615` (a direct child of a no-extra match; error),
+  `MTL612` (unlisted under a disallow tag, topmost; error), nothing of its own because its
+  topmost unlisted ancestor has `MTL612`, or a place in the `MTL616` list. So the warning
+  lists only the tail headings no error names, and a run whose whole tail is named by errors
+  gives no `MTL616`. Set-aside siblings (`MTL603`) and mismatches (`MTL606`) are not in the
+  tail. Which code reports a tail sibling is decided before suppression: a suppressed
+  `MTL612`, `MTL614` or `MTL615` does not add that heading to the `MTL616` list (4.1 step 8).
+  A heading named by a `MTL601` hint that stays in the tail is still listed by `MTL616`:
+  `MTL601` has no anchor, the warning gives the line (owner example I).
+- `MTL601` hint: computed in step 3b from the siblings of the run; it never changes a
+  match, a tail or an order list.
+- Emission order (4.3): findings about T sort by T's template line, then code, then target
+  line. `MTL616` is about the LAST position of its sequence (the template heading after
+  which the tail lies); warnings print after errors (4.1).
+
+Worked example 1, a changelog (file `CHANGELOG.md`). Template (line numbers on the left are
+not part of the file):
+
+```text
+1  ---
+2  version: "string"
+3  ---
+4
+5  # Changelog
+6
+7  ## Unreleased [presence:optional]
+8
+9  ## Release [pattern:"[{semver}] - {date}"] [repeat-rules:same-level] [order:descending]
+10
+11 ### Added [presence:optional] [content:list]
+```
+
+Target:
+
+```text
+1  ---
+2  version: 1.2.0
+3  ---
+4
+5  # Changelog
+6
+7  ## Unreleased
+8
+9  ## [1.2.0] - 2026-03-01
+10
+11 ### Added
+12
+13 - New flag.
+14
+15 ## [1.0.0] - 2026-01-10
+16
+17 ### Added
+18
+19 First release.
+20
+21 ## [1.1.0] - 2026-02-01
+22
+23 ## 0.9.0 - 2025-12-01
+24
+25 ## [0.8.0] - 2025-11-01
+```
+
+- Level 1: `# Changelog` takes line 5.
+- Level 2 (file scope): sequence `## Unreleased`, `## Release`; siblings lines 7, 9, 15, 21,
+  23, 25. `## Unreleased` (literal, optional) matches line 7 and takes it. `## Release`
+  (repeat, placeholder, required): line 9 matches, so step 3d1 takes nothing; the run takes
+  lines 9, 15 and 21 (they match `[{semver}] - {date}`) and stops at line 23, which has no
+  `[`. `n` is 3, no bound tag: no count finding. The tail is lines 23 and 25.
+- Order keys (`[order:descending]`: the whole texts, A72m): line 9
+  `[1.2.0] - 2026-03-01`, line 15 `[1.0.0] - 2026-01-10`, line 21 `[1.1.0] - 2026-02-01`.
+  Pair 9-15 descends (`2` above `0` at the fourth character); pair 15-21 rises (`1` above
+  `0` there): one pair out of order, one `MTL609` on line 21, `{prev}` the text of line 15,
+  `{count}` 1.
+- Tail: line 25 matches the pattern of `## Release`: `MTL614` listing it, anchored on line
+  25. Line 23 matches no pattern: an allowed extra, listed by the warning `MTL616` of the
+  level-2 run, anchored on line 23 (the typo that broke the run shows twice: as the extra
+  itself and through the `MTL614` after it).
+- `### Added` is checked once per instance. Instance line 9 (section lines 9 to 14): its
+  level-3 run takes line 11, whose body holds `- New flag.`: no finding. Instance line 15
+  (section lines 15 to 20): `### Added` takes line 17, whose body (lines 18 to 20) has no
+  list item: `MTL703`, label `Section '[1.0.0] - 2026-01-10 > Added'`, anchored on line 17.
+  Instance line 21 (section lines 21 to 22): no level-3 sibling, optional: no finding.
+- `MTL604`: `Changelog` (line 5), `Unreleased` (line 7), `Release` (first instance, line 9)
+  are in order: no finding.
+- Expected text output (errors in emission order: step 5 sorted by template line then code,
+  then step 6; then the warning):
+
+```text
+  ✗ CHANGELOG.md
+      error MTL609 Heading: heading '[1.1.0] - 2026-02-01' is not in descending order after '[1.0.0] - 2026-01-10', 1 pair(s) out of order [order:descending]
+        21 | ## [1.1.0] - 2026-02-01
+      error MTL614 Heading: 1 heading(s) match [pattern:"[{semver}] - {date}"] after the end of its run [repeat-rules:same-level]: ['[0.8.0] - 2025-11-01']
+        25 | ## [0.8.0] - 2025-11-01
+      error MTL703 Section '[1.0.0] - 2026-01-10 > Added': [content:list] no markdown list item found
+        17 | ### Added
+      warn  MTL616 Heading: 1 extra heading(s) at level H2 after the template headings: ['0.9.0 - 2025-12-01']
+        23 | ## 0.9.0 - 2025-12-01
+```
+
+- Variant, typo fixed: line 23 reads `## [0.9.0] - 2025-12-01`. The run takes lines 9, 15,
+  21, 23 and 25 (`n` 5), the tail is empty: no `MTL614`, no `MTL616`. Pairs 21-23 and 23-25 descend, so
+  `MTL609` stays the same (`1 pair(s)`), and `MTL703` stays.
+- Variant, maximum: template line 9 gains `[repeat-rules:same-level:max:2]`. Three
+  instances: `MTL608` `Heading: 3 heading(s) match [pattern:"[{semver}] - {date}"], maximum
+  is 2`, anchored on the third instance (line 21), printed before the `MTL609` line (same
+  template heading, codes in order).
+- Variant, minimum: replace `max:2` by `[repeat-rules:same-level:min:4]`: `MTL607` `Heading: 3
+  heading(s) match [pattern:"[{semver}] - {date}"], minimum is 4`, anchored on line 9,
+  printed first.
+- Variant, no release: target lines 8 to 25 removed. `## Unreleased` takes line 7; no
+  sibling is left for `## Release`: `MTL605` `Heading: missing required heading matching
+  [pattern:"[{semver}] - {date}"] (H2)`, no excerpt (no anchor);
+  `<!-- md-template-lint disable-file MTL605 -->` silences it. With `[presence:optional]` on
+  template line 9 there is no finding. With `[repeat-rules:same-level:min:4]` added (with or
+  without `[presence:optional]`): `MTL607` `Heading: 0 heading(s) match
+  [pattern:"[{semver}] - {date}"], minimum is 4`, no anchor, and no `MTL605`. With
+  `[presence:optional]` the template also has the template error `MTL018` (printed on the
+  template file, exit 1; worked example 5).
+- Variant, bracketed `Unreleased`: target line 7 reads `## [Unreleased]`. `## Unreleased`
+  (literal, optional) does not match and takes nothing. `## Release` is required and line 7
+  does not match: step 3d1 takes it as a mismatch, `MTL606` `Heading: heading
+  '[Unreleased]' does not match [pattern:"[{semver}] - {date}"] at {semver}` on line 7,
+  printed first; the run then takes lines 9, 15 and 21 as before.
+- Variant, required group: template line 11 without `[presence:optional]`. Instance line 21
+  has no level-3 sibling: `MTL610` `Heading: Section '[1.1.0] - 2026-02-01': missing required
+  heading 'Added' (H3)`, anchored on line 21, printed after `MTL614` (template line 11 comes
+  after line 9).
+- Variant, suppression: `<!-- md-template-lint disable-line MTL614 -->` at the end of target
+  line 25 (heading extraction drops it, 2.6) removes that finding (`Suppressed:   1`).
+- Variant, no order tag: without `[order:descending]` there is no `MTL609`.
+- Variant, order by date (A72m): `[order:first:date:descending]` instead. First dates:
+  line 9 2026-03-01, line 15 2026-01-10, line 21 2026-02-01; pair 15-21 rises: the same
+  `MTL609` on line 21, ending in `[order:first:date:descending]`. Every instance has a
+  date, so no `MTL617`.
+- Variant, order by version (A72n): `[order:first:semver:descending]` instead. First
+  SEMVERs: line 9 1.2.0, line 15 1.0.0, line 21 1.1.0; pair 9-15 descends, pair 15-21 rises:
+  the same `MTL609` on line 21 (`1 pair(s)`), ending in `[order:first:semver:descending]`.
+  Every instance has a version, so no `MTL617`. A changelog may use this form or the date
+  form: with a release `[1.10.0] - 2026-04-01` above `[1.9.0] - 2026-03-15`,
+  `[order:descending]` reports a pair out of order (`[1.1` is below `[1.9` as strings) while
+  both the version order (1.10.0 above 1.9.0) and the date order pass.
+- Variant, content on the release heading (A72m label): template line 9 gains
+  `[content:non-empty]`. Instance line 21 (section lines 21 to 22, line 22 blank) has an
+  empty body: `MTL701` `Section '[1.1.0] - 2026-02-01' (pattern "[{semver}] - {date}"):
+  [content:non-empty] section body is empty`, anchored on line 21; instances 9 and 15 have
+  text in their bodies.
+
+Worked example 2, template warnings (`--verify`). Template `changelog.template.md`:
+
+```text
+1  ---
+2  version: "string"
+3  ---
+4
+5  # Changelog
+6
+7  ## Unreleased [presence:optional] [order:ascending]
+8
+9  ## Release [pattern:"[{version}] - {date}"] [repeat-rules:same-level]
+10
+11 ### Added [presence:optional] [content:list]
+```
+
+- Line 7: `[order:ascending]` on a heading without pattern: `MTL015`, column 35 (the `[` of
+  the tag).
+- Line 9: `{version}` is not a placeholder: `MTL014`, column 23 (its `{`). No `MTL015` for
+  `[repeat-rules:same-level]` (one cause, one warning). In a lint run `## Release` and its
+  `### Added` are not checked, and `## Release` is not a position.
+- The two sections of the `--verify` output (8.3; the rest follows worked example 2 of 2.9):
+
+```text
+Invalid patterns:
+  - Heading 'Release': invalid pattern [pattern:"[{version}] - {date}"] (unknown placeholder {version}) (line 9, column 23)
+      9 | ## Release [pattern:"[{version}] - {date}"] [repeat-rules:same-level]
+        |                       ^
+
+Conflicting tags:
+  - Heading 'Unreleased': tag [order:ascending] has no effect (the heading has no [pattern:...]) (line 7, column 35)
+      7 | ## Unreleased [presence:optional] [order:ascending]
+        |                                   ^
+```
+
+- Variant, fixed: line 9 reads `[{semver}] - {date}` and line 7 drops `[order:ascending]`: no
+  warning, and the `Headings:` list shows `  ## Release (presence:required,
+  pattern:"[{semver}] - {date}", repeat-rules:same-level)`.
+- Variant, a format: line 9 reads `[pattern:"[{semver:format:patch}] - {date}"]`:
+  `MTL014` with the reason `unknown format patch for {semver}`, column 23.
+- Variant, an escape: `## Quote [pattern:"Say \"{text}\""]` matches `## Say "hi"`;
+  `## Quote [pattern:"a\tb"]` is `MTL014` `invalid escape \t`, column 21 (the backslash).
+
+Worked example 3, a duplicate pattern (`--verify`). Template `versions.template.md`:
+
+```text
+1  ---
+2  title: "string"
+3  ---
+4
+5  ## [pattern:"{semver}"] [repeat-rules:same-level]
+6
+7  ## Hotfix [pattern:"{semver}"] [presence:optional]
+```
+
+- Level-2 template sequence: line 5, line 7; both pattern headings, same pattern `{semver}`:
+  `MTL017` on line 7, column 11 (the `[` of `[pattern:`), `{prev}` the empty label of line 5.
+- Expected output of `md-template-lint --verify --format plain versions.template.md` (exit
+  1; `<version>` is the package version):
+
+```text
+md-template-lint <version>
+Config: (none)
+========================
+
+  FAIL versions.template.md
+Field  Type    Rules
+--------------------
+title  string  presence:required
+
+Headings:
+  ##  (presence:required, pattern:"{semver}", repeat-rules:same-level)
+  ## Hotfix (presence:optional, pattern:"{semver}")
+
+Duplicate patterns:
+  - Heading 'Hotfix': same pattern [pattern:"{semver}"] as the previous heading '' (line 5) (line 7, column 11)
+      7 | ## Hotfix [pattern:"{semver}"] [presence:optional]
+        |           ^
+
+========================
+Summary
+========================
+Templates:    1 checked, 0 broken
+Errors:       1
+Warnings:     0
+
+========================
+```
+
+- In a lint run the template is used as written: for target headings `## 1.2.0` and
+  `## 1.1.0` the repeat heading takes both and `## Hotfix` (optional) takes nothing: no
+  target finding, but the same `MTL017` is printed on the template file and the run exits 1
+  (worked example 5; example G below shows the clean form).
+
+Worked example 4, positional cases (owner examples A to I). Every template has the
+frontmatter `title: "string"` (lines 1 to 3), a blank line 4 and its headings on lines 5, 7
+and 9; every target has `title: x` (lines 1 to 3), a blank line 4 and its headings on lines
+5, 7 and 9 (file `notes/a.md`). All headings are H2, so file scope, one level-2 run.
+
+- A. Template `## [pattern:"{text}"]`, `## [pattern:"{number}"]`; target `## 1` (line 5),
+  `## tata` (line 7). Position 1 (`{text}`, required): `1` is purely numeric, not a `{text}`
+  value, so it is taken as a mismatch. Position 2 (`{number}`, required): `tata` is not a
+  number, taken as a mismatch. Both are reported:
+
+```text
+  ✗ notes/a.md
+      error MTL606 Heading: heading '1' does not match [pattern:"{text}"] at {text}
+        5 | ## 1
+      error MTL606 Heading: heading 'tata' does not match [pattern:"{number}"] at {number}
+        7 | ## tata
+```
+
+- B. Template `## [pattern:"{text}"] [presence:optional]`, `## toto`; target `## toto` (line
+  5). Position 1 matches line 5 and takes it (a matching sibling is always taken). Position
+  2 (literal, required): no sibling left:
+
+```text
+  ✗ notes/a.md
+      error MTL601 Heading: Missing required heading: 'toto'
+```
+
+- C. Template `## [pattern:"{text}"]`, `## toto [presence:optional]`; target `## toto`.
+  Position 1 takes line 5; position 2 is optional, no sibling left: no finding,
+  `✓ notes/a.md`.
+- D. Template `## [pattern:"toto"]`, `## [pattern:"{text}"]`; target `## toto`. Position 1
+  (literal pattern) takes line 5; position 2 (required) has no sibling left (patterns differ,
+  so no `MTL017`):
+
+```text
+  ✗ notes/a.md
+      error MTL605 Heading: missing required heading matching [pattern:"{text}"] (H2)
+```
+
+- E. Template `## Unreleased [presence:required]`,
+  `## Release [pattern:"{semver} - {date}"] [repeat-rules:same-level]`.
+  - Target `## 1.2.0 - 2026-10-01` (line 5), `## 1.1.0 - 2026-09-01` (line 7). Position 1
+    (literal) does not match line 5 and takes nothing: missing. Position 2 runs over lines 5
+    and 7 (`n` 2):
+
+```text
+  ✗ notes/a.md
+      error MTL601 Heading: Missing required heading: 'Unreleased'
+```
+
+  - Target `## 1.2 - 2026-10-01` (line 5), `## 1.1.0 - 2026-09-01` (line 7). `Unreleased` is
+    missing as above. Position 2 is required and line 5 fails at `{semver}` (`1.2` has two
+    parts): taken as a mismatch (step 3d1); the run then takes line 7 (`n` 1):
+
+```text
+  ✗ notes/a.md
+      error MTL601 Heading: Missing required heading: 'Unreleased'
+      error MTL606 Heading: heading '1.2 - 2026-10-01' does not match [pattern:"{semver} - {date}"] at {semver}
+        5 | ## 1.2 - 2026-10-01
+```
+
+- F. Template `## [pattern:"{semver:format:major-minor} - {date}"]`; target
+  `## 1.2 - 2026-10-01`: `1.2` is a `major-minor` value, `2026-10-01` an ISO DATE: no finding.
+  With target `## 1.2.0 - 2026-10-01` it is a mismatch: the prefix `1.2` is a `major-minor`
+  value, but `.0` does not start with `' - '`, so the failing piece is the literal:
+  `MTL606` `Heading: heading '1.2.0 - 2026-10-01' does not match
+  [pattern:"{semver:format:major-minor} - {date}"] at ' - '`, line 5.
+- G. Template `## [pattern:"{semver}"] [repeat-rules:same-level]`,
+  `## Hotfix [pattern:"hotfix {semver}"] [presence:optional]`.
+  - Target `## 1.2.0` (line 5), `## 1.1.0` (line 7): the repeat heading takes both; `Hotfix`
+    (optional) has no sibling left: no finding. With `[pattern:"{semver}"]` on both
+    headings the target result is the same, but the template has `MTL017` (worked examples
+    3 and 5: `--verify` FAIL; a lint run prints it on the template file and exits 1).
+  - Target `## 1.2.0` (line 5), `## hotfix 1.1.1` (line 7), `## 1.1.0` (line 9): the run
+    takes line 5 and stops at line 7; `Hotfix` takes line 7; line 9 is in the tail and
+    matches `{semver}`:
+
+```text
+  ✗ notes/a.md
+      error MTL614 Heading: 1 heading(s) match [pattern:"{semver}"] after the end of its run [repeat-rules:same-level]: ['1.1.0']
+        9 | ## 1.1.0
+```
+
+  - Target `## 1.2.0`, `## 1.1.1-hotfix`: `1.1.1-hotfix` is a SEMVER (pre-release
+    `hotfix`), so the repeat heading takes it as an instance; `Hotfix` takes nothing.
+- H. Template `## [pattern:"{text}"] [repeat-rules:same-level]`, `## Notes [presence:optional]`;
+  target `## Intro` (line 5), `## Notes` (line 7). `Notes` is a `{text}` value, so the run
+  takes both lines; position 2 (optional) has no sibling left: no finding. An exact-text
+  heading later in the template does not take a heading away from an earlier pattern.
+- I (owner decision 6 of A72l). Template `## Alpha`, `## Beta`; target `## Beta` (line 5),
+  `## Alpha` (line 7). Position 1 (`Alpha`, literal, required): line 5 does not match, so
+  it takes nothing and is missing; line 7, from the cursor onward, has the text `Alpha`:
+  the `MTL601` message gets the hint. Position 2 (`Beta`) takes line 5. Line 7 is in the
+  tail: `MTL616`, anchored on line 7. `MTL604`: `Alpha` has no match and is skipped, no
+  finding. `MTL601` has no anchor and no excerpt; the warning quotes line 7:
+
+```text
+  ✗ notes/a.md
+      error MTL601 Heading: Missing required heading: 'Alpha' (found later at line 7, out of order)
+      warn  MTL616 Heading: 1 extra heading(s) at level H2 after the template headings: ['Alpha']
+        7 | ## Alpha
+```
+
+Worked example 5, template errors in a lint run (`MTL017` with an exact-text pair, and
+`MTL018`). Config `md-template-lint.yml` with one pair, template
+`templates/versions.template.md`, include `notes/*.md`, no description. Template:
+
+```text
+1  ---
+2  title: "string"
+3  ---
+4
+5  ## Notes
+6
+7  ## Notes [presence:optional]
+8
+9  ## Release [pattern:"{semver}"] [repeat-rules:same-level:min:2] [presence:optional]
+```
+
+Target `notes/a.md`:
+
+```text
+1  ---
+2  title: x
+3  ---
+4
+5  ## Notes
+6
+7  ## 1.2.0
+8
+9  ## 1.1.0
+```
+
+- Template phase. Level-2 template sequence: lines 5, 7, 9. Lines 5 and 7 are adjacent
+  exact-text headings with the same text `Notes`: `MTL017` on line 7, column 4 (the `N` of
+  its text), second message form, `{prev}` `Notes`, `{prevLine}` 5. Lines 7 and 9: `Notes`
+  and `{semver}` differ. Line 9 is a repeat heading, presence `[presence:optional]`, with
+  the explicit `[repeat-rules:same-level:min:2]` starting at column 33: `MTL018`.
+- Lint phase, template as written. Level-2 run over lines 5, 7, 9: position 1 (`Notes`,
+  required) takes line 5; position 2 (`Notes`, optional) does not match line 7 and takes
+  nothing; position 3 (repeat, `{semver}`) takes lines 7 and 9 (`n` 2, not below `min` 2:
+  no `MTL607`). The tail is empty. The target passes.
+- Expected output of `md-template-lint --format plain` (exit 1, from the template errors
+  alone; the `pretty` form has `✗` and `✓` in place of `FAIL` and `PASS`):
+
+```text
+md-template-lint 1.0.0
+Config: md-template-lint.yml
+========================
+
+Template: templates/versions.template.md
+Target:   notes/*.md (1 file(s))
+
+  FAIL templates/versions.template.md (template)
+      error MTL017 Heading 'Notes': matches the same headings as the previous heading 'Notes' (line 5)
+        7 | ## Notes [presence:optional]
+          |    ^
+      error MTL018 Heading 'Release': tag [repeat-rules:same-level:min:2] contradicts [presence:optional] (a minimum of 2 requires the heading)
+        9 | ## Release [pattern:"{semver}"] [repeat-rules:same-level:min:2] [presence:optional]
+          |                                 ^
+  PASS notes/a.md
+
+========================
+Summary
+========================
+Total files:  1
+Passed:       1
+Failed:       0
+Warnings:     0 (in 0 file(s))
+Templates:    1 checked, 0 broken
+
+Failed templates:
+  - templates/versions.template.md
+
+========================
+```
+
+- No `All files passed!` line (a template failed, 8.2). The template is not broken: its
+  target is linted and counted. `--quiet` prints the `FAIL ... (template)` line with its
+  two errors and excerpts, and nothing for `notes/a.md`.
+- Variant, target line 9 removed: the repeat takes line 7 only (`n` 1): the target also
+  fails with `MTL607` `Heading: 1 heading(s) match [pattern:"{semver}"], minimum is 2`,
+  anchored on line 7, printed under `FAIL notes/a.md` after the template block; `Failed:
+  1`, and `Failed files:` follows `Failed templates:`.
+- Variant, fixed template: line 7 removed (or its text changed) and `[presence:optional]`
+  dropped from line 9: no template error, `All files passed!`, exit 0.
+- `--verify` of the same template: `FAIL templates/versions.template.md`, then the table,
+  the section `Duplicate patterns:` with the `MTL017` item and the section `Optional headings
+  with a minimum:` with the `MTL018` item (8.3), `Errors:       2`, exit 1.
+
+Worked example 6, the extra warning and its interplay (`MTL616` with `MTL612`, `MTL614` and
+`MTL615`; file `CHANGELOG.md`). Template:
+
+```text
+1  ---
+2  version: "string"
+3  ---
+4
+5  # Changelog
+6
+7  ## Unreleased [presence:optional] [content:subheadings:disallow]
+8
+9  ### Added [presence:optional]
+10
+11 ## Release [pattern:"[{semver}] - {date}"] [repeat-rules:same-level] [content:subheadings:no-extra]
+12
+13 ### Added [presence:optional]
+```
+
+Target:
+
+```text
+1  ---
+2  version: 1.2.0
+3  ---
+4
+5  # Changelog
+6
+7  ## Unreleased
+8
+9  ### Added
+10
+11 ### Added
+12
+13 ### Misc
+14
+15 ## [1.2.0] - 2026-03-01
+16
+17 ### Added
+18
+19 ### Notes
+20
+21 ## 1.1.0 - 2026-02-01
+22
+23 ## [1.0.0] - 2026-01-10
+24
+25 ## Links
+```
+
+- Level 1: `# Changelog` takes line 5, no tail.
+- Level 2 (file scope): siblings lines 7, 15, 21, 23, 25. `## Unreleased` (literal,
+  optional) takes line 7. `## Release` (repeat, required) takes line 15 and stops at line 21
+  (no `[`): `n` 1. Tail: lines 21, 23, 25. Line 23 matches the release pattern: `MTL614`,
+  anchored on line 23. Lines 21 and 25 get no error (they are outside every sub-heading tag
+  region): one `MTL616` lists both, anchored on line 21.
+- Level 3 in the section of line 7 (lines 7 to 14): siblings lines 9, 11, 13. `### Added`
+  takes line 9; tail lines 11 and 13. Under `[content:subheadings:disallow]` line 11
+  (`### Added`, level and text listed) gets no `MTL612`; line 13 `### Misc` is unlisted and
+  topmost: `MTL612`, which replaces its warning. One `MTL616` lists line 11 only, anchored
+  on line 11.
+- Level 3 in the section of the instance line 15 (lines 15 to 20): siblings lines 17, 19.
+  `### Added` takes line 17; tail line 19. Under `[content:subheadings:no-extra]` line 19 is
+  a direct child of line 15 taken by no position: `MTL615`, which replaces its warning. The
+  `MTL616` list is empty: no warning for this run.
+- `MTL604`: `Changelog` (line 5), `Unreleased` (line 7), `Release` (line 15) are in order.
+- Emission order: errors by template line, then code: `MTL612` (tagged heading, template line
+  7), `MTL614` and `MTL615` (template line 11); then the warnings by the template line of the
+  last position of their sequence: `### Added` (template line 9) before `## Release`
+  (template line 11).
+
+```text
+  ✗ CHANGELOG.md
+      error MTL612 Heading: Section 'Unreleased': heading 'Misc' at level H3 is not in the template [content:subheadings:disallow]
+        13 | ### Misc
+      error MTL614 Heading: 1 heading(s) match [pattern:"[{semver}] - {date}"] after the end of its run [repeat-rules:same-level]: ['[1.0.0] - 2026-01-10']
+        23 | ## [1.0.0] - 2026-01-10
+      error MTL615 Heading: Section '[1.2.0] - 2026-03-01': heading 'Notes' at level H3 is not declared at this position [content:subheadings:no-extra]
+        19 | ### Notes
+      warn  MTL616 Heading: Section 'Unreleased': 1 extra heading(s) at level H3 after the template headings: ['Added']
+        11 | ### Added
+      warn  MTL616 Heading: 2 extra heading(s) at level H2 after the template headings: ['1.1.0 - 2026-02-01', 'Links']
+        21 | ## 1.1.0 - 2026-02-01
+```
+
+- Variant, suppression: `<!-- md-template-lint disable-line MTL616 -->` at the end of line
+  21 removes the whole level-2 warning (one diagnostic, both headings; `Suppressed:   1`);
+  the same directive on line 25 removes nothing (line 25 is not the anchor).
+- Variant, no no-extra tag: without `[content:subheadings:no-extra]` on template line 11,
+  line 19 gets no `MTL615`; the run of the instance line 15 then gives `MTL616` `Heading:
+  Section '[1.2.0] - 2026-03-01': 1 extra heading(s) at level H3 after the template
+  headings: ['Notes']`, anchored on line 19, printed last (its last position, `### Added`
+  on template line 13, comes after template line 11).
+- Variant, no repeat match in the tail: line 23 reads `## Links 2`. No `MTL614`; the level-2
+  warning lists `['1.1.0 - 2026-02-01', 'Links 2', 'Links']`, `3 extra heading(s)`.
+
+Worked example 7, owner examples of A72m (`{char}`, string order, the content label,
+`[order:first:number:...]` and `MTL617`; the `MTL030` variant of J and the `semver` variant
+of K are A72n). Frontmatter, blank line 4 and file `notes/a.md` as in worked example 4.
+
+- J. Template line 5: `## Epic A - Title [pattern:"Epic {char} - {text}"]
+  [repeat-rules:same-level] [order:ascending] [content:table]` (`Epic A - Title` is the
+  LABEL, an author hint). Target:
+
+```text
+1  ---
+2  title: x
+3  ---
+4
+5  ## Epic A - Setup
+6
+7  | Task | Status |
+8
+9  ## Epic B - Release
+10
+11 Ship it.
+```
+
+  The run takes lines 5 and 9 (`A` and `B` are `{char}` values, `Setup` and `Release`
+  `{text}` values). Order: `Epic A - Setup` is below `Epic B - Release` (`A` below `B`):
+  ascending, no `MTL609`. Content per instance: line 5 (section lines 5 to 8) has the table
+  row on line 7; line 9 (section lines 9 to 11) has none:
+
+```text
+  ✗ notes/a.md
+      error MTL702 Section 'Epic B - Release' (pattern "Epic {char} - {text}"): [content:table] no markdown table row found
+        9 | ## Epic B - Release
+```
+
+  - Variant, line 9 reads `## Epic 2 - Release`: `2` is not a `{char}` value, so the run
+    takes line 5 only and line 9 is in the tail; it matches no repeat pattern, so it is not
+    `MTL614` but an extra: the file passes with the warning `MTL616` `Heading: 1 extra
+    heading(s) at level H2 after the template headings: ['Epic 2 - Release']` on line 9, and
+    no content check reads line 9.
+  - Variant, without `[repeat-rules:same-level]` (template line 5 `## Epic A - Title
+    [pattern:"Epic {char} - {text}"] [order:ascending] [content:table]`, A72n): the order
+    tag on a pattern heading without repeat tag is the template error `MTL030` (2.7), at
+    column 52 (the `[` of `[order:ascending]`: `## ` is 3 characters, the label 14, a space,
+    the pattern tag 32 on columns 19 to 50, a space). In a lint run with a config pair
+    (template `templates/epics.template.md`, include `notes/*.md`) it is printed on the
+    template file and the run exits 1; the target is still linted: the heading (now a
+    single placeholder position) takes line 5, whose section has a table row, and line 9 is
+    in the tail: it matches the pattern, but no repeat position exists, so it is no
+    `MTL614`, only an extra (`MTL616`). The order tag compares nothing. Pair block of the
+    `plain` output (the summary lists the template under `Failed templates:`):
+
+```text
+  FAIL templates/epics.template.md (template)
+      error MTL030 Heading 'Epic A - Title': tag [order:ascending] needs [repeat-rules:same-level] (an order compares the repeats of one heading)
+        5 | ## Epic A - Title [pattern:"Epic {char} - {text}"] [order:ascending] [content:table]
+          |                                                    ^
+  PASS notes/a.md
+      warn  MTL616 Heading: 1 extra heading(s) at level H2 after the template headings: ['Epic B - Release']
+        9 | ## Epic B - Release
+```
+
+  `--verify` of that template: `FAIL`, section `Order tags without repeat:` (8.3), exit 1.
+  An epic list needs the repeat tag.
+- K. Template line 5: `## Step [pattern:"Step {text}"] [repeat-rules:same-level]
+  [order:first:number:ascending]`. Target headings: line 5 `## Step 1 - Install`, line 7
+  `## Step 10 - Deploy`, line 9 `## Step 9 - Test`, line 11 `## Step four - Review`. All four
+  match (`{text}` takes `1 - Install`, and so on; none is purely numeric). First numbers 1,
+  10, 9 and none. Pairs among the keyed instances: 1-10 rises, 10-9 falls: one `MTL609` on
+  line 9. Line 11 has no number: one `MTL617`. Both are about template line 5, so they sort
+  by code:
+
+```text
+  ✗ notes/a.md
+      error MTL609 Heading: heading 'Step 9 - Test' is not in ascending order after 'Step 10 - Deploy', 1 pair(s) out of order [order:first:number:ascending]
+        9 | ## Step 9 - Test
+      error MTL617 Heading: 1 heading(s) have no number to order by [order:first:number:ascending], use a [pattern:...] with {number}: ['Step four - Review']
+        11 | ## Step four - Review
+```
+
+  - Variant, `[order:ascending]` instead: the whole texts are compared; `Step 1 - Install`,
+    `Step 10 - Deploy`, `Step 9 - Test`, `Step four - Review` are in ascending string order
+    (a space is below `0`, `1` below `9`, `9` below `f`): no finding at all. This is the
+    reason for the `first:number` form.
+  - Variant, the pattern advice followed: `[pattern:"Step {digits} - {text}"]` (or
+    `{number}`, which the message names; both reject `four`). Line 11 no
+    longer matches, so the run ends at line 9 and line 11 is an extra (`MTL616` warning);
+    no instance lacks a number, so no `MTL617`; the `MTL609` on line 9 stays.
+  - Variant, `[order:first:semver:ascending]` instead (A72n): no heading holds a SEMVER
+    (`1`, `10` and `9` have one part), so no instance has a key: no pair, no `MTL609`, and
+    one `MTL617` `Heading: 4 heading(s) have no semver to order by
+    [order:first:semver:ascending], use a [pattern:...] with {semver}: ['Step 1 - Install',
+    'Step 10 - Deploy', 'Step 9 - Test', 'Step four - Review']`, anchored on line 5.
+
+### 2.11 Unique heading names (`[unique-headings-names]`)
+
+Specified by phase A80a (owner decisions of 2026-11-04, ADR 0013). The grammar and the tag
+parsing are phase A80b (done: the bracket is a known tag, peeled from a heading text and read
+as the template-wide switch on a standalone frontmatter line). The rule `MTL613`
+(heading-unique-names) is phase A80c (done: rule, `MTL015` reason, `--verify` output), its
+full fixture list phase A80d (section 9). One opt-in tag, written in two places, asks that no
+two target headings of one scope share a name. Every other heading rule is unchanged by it.
+
+Two switches (owner decision 1 of A80a), one tag, spelled `[unique-headings-names]` (the
+plural `headings` is part of the name; keywords are case-insensitive, section 2):
+
+- TEMPLATE-WIDE switch: a standalone comment line in the template FRONTMATTER that holds only
+  this tag, `# [unique-headings-names]`, in the placement family of the filename comment
+  (2.5). It binds to no key. Written on several lines, it counts once. Its SCOPE is the whole
+  target: every target heading of the file.
+- PER-HEADING switch: a heading suffix tag (2.6) on a template heading D of any level,
+  `## Section [unique-headings-names]`. Written twice on one heading, it counts once. Its
+  SCOPE is the REGION of each match M of D (each instance for a repeat heading, 2.10): the
+  heading M itself and every target heading inside the target section of M (2.6 "Target
+  section": up to the next target heading of M's level or lower), at every deeper level.
+- Effective as `[content:subheadings:disallow]` (2.6): D is checked, has a match M and is not
+  `[presence:template-only]`. An absent optional or conditional D, a D that is not checked
+  (a missing or unchecked parent, an invalid pattern, `MTL014`) and a sibling taken as a
+  mismatch (`MTL606`, no match) give no region. A template-only D: no effect and the
+  template warning `MTL015` with the existing reason `the heading is [presence:template-only]`
+  (2.7; one more tag for that reason, added by A80c).
+- Both switches together: the template-wide scope contains every region, so the per-heading
+  tags add nothing (no warning; the findings are those of the template-wide switch alone).
+
+Placement cases (spelled out so A80b has one answer each):
+
+| Written as | Where | Result |
+| --- | --- | --- |
+| `# [unique-headings-names]` alone on a line | template frontmatter | template-wide switch |
+| `[unique-headings-names]` after a heading text | template body, any level | per-heading switch on that heading |
+| `title: "x" # [unique-headings-names]` | template frontmatter key line | inert, not reported (as the filename tag on a key line, 2.5) |
+| `# note [unique-headings-names]` (other text or tags on the line) | template frontmatter comment line | inert, not reported (only a line holding the tag alone is the switch, as 2.5) |
+| `# [unique-headings-names]` | template BODY | an H1 heading with EMPTY text carrying the per-heading tag, not the switch; a required exact-text heading that no normal target has, so every lint run reports `Missing required heading: ''` (`MTL601`) and the author sees the mistake |
+| `[unique-headings-names:x]`, `[unique-headings-names:]` | anywhere | malformed (`MTL012`, a known family with an argument; on a heading the bracket stays in the text) |
+| `[unique-heading-names]` (typo) | a key line or a heading | unknown tag (`MTL010` / `MTL011`); on a standalone comment line it is a plain comment with no finding (2.1 reports field-tag findings only on key lines) |
+| any form | a target file | inert (tags in a target are inert, 2.7; on a target heading the recognized tag is peeled from the text, 2.6) |
+
+DUPLICATE (owner decision 2 of A80a). Two target headings X and Y of one scope are duplicates
+when their stored heading texts (2.6: recognized trailing tags peeled, a trailing HTML
+comment such as a disable directive dropped) are equal after FOLDING. FOLDING is the
+JavaScript `String.prototype.toLowerCase()` of the whole text (the Unicode default lowercase
+mapping, locale independent), then plain code-unit equality. Nothing else is normalized: no
+trimming beyond heading extraction, no whitespace collapsing, no Unicode normalization (NFC
+and NFD spellings of one letter differ), no full case folding. Levels play no part: `# Notes`,
+`## notes` and `#### NOTES` are duplicates. Examples: `Notes`, `NOTES` and `notes` are equal;
+`Étape 2` and `ÉTAPE 2` are equal; `Straße` and `STRASSE` differ; `Notes` and `Notes:`
+differ. Headings inside fenced code are not headings (2.6) and never take part.
+
+Finding (`MTL613` heading-unique-names, owner decision 3 of A80a):
+
+- In one scope (the whole file, or one region), take the target headings in file order. The
+  FIRST heading of each folded text is allowed. Every LATER heading with that folded text
+  gets one `MTL613`, anchored on its own line (DIR5), naming the line of the first one:
+  `Heading: duplicate heading name '{text}' (first at line {line})`, `{text}` the stored text
+  of the later heading as written (not folded), `{line}` the target line of the first
+  heading. Three headings `Notes` give two findings, both naming the first line.
+- Overlapping scopes. Target sections are nested or disjoint, so the regions are too, and
+  the template-wide scope contains them all. A heading X gets at most ONE `MTL613`: it is
+  reported when some scope that contains X holds an earlier heading with X's folded text;
+  `{line}` is the earliest such heading over all those scopes (the outermost one decides).
+  Two disjoint regions (two sibling sections, two instances of a repeat heading) never see
+  each other.
+- Severity error, category `heading`, rule file `src/rules/heading.ts`, phase `target`, step
+  `headings` (4.1 step 5). Suppressible (`MTL101`-`899`, DIR6): `disable-line MTL613` on the
+  later heading, `disable-next-line MTL613` on the line before it, a `disable` /
+  `begin disable` range over it, or `disable-file MTL613`.
+- Emission order: inside step 5, after every other heading finding (after `MTL604`), in
+  target line order. Rationale: the finding is about target text, not about one template
+  heading, and appending keeps the order of every existing code unchanged.
+- JSON and the `heading` member (8.1): the text of the later heading; as for the other
+  heading codes, the anchor is internal and is not emitted as `line` (8.1, DIR5); its
+  source line (8.1, the text excerpt) is the later heading line, and like every anchor-only
+  finding it has no JSON `sourceLine` (8.5; clarified by A80c).
+- The template itself is never linted against itself (1.1): two template headings with one
+  text under the template-wide switch are not reported by the template; a complete target
+  then fails `MTL613` (use the per-heading switch on the right subtree, below).
+
+Interplay (owner decision 4 of A80a; one decision per case). Principle: the rule is ADDITIVE.
+Adding the tag adds `MTL613` findings and changes nothing else: no match, no run, no tail,
+no extra list, no order list and no other finding is affected, and `MTL613` reads only the
+extracted target headings, their lines and the regions. Rationale: a name is a property of
+the text, the other heading codes are properties of the outline; keeping them apart keeps
+each rule one sentence and makes the tag safe to add to an existing template.
+
+- `[repeat-rules:same-level]` (2.10). A heading repeated BY DESIGN (`### Added` under each
+  release) is a duplicate name by the definition above. Decision: the template-wide switch
+  reports it (every `### Added` after the first, each naming the first one); it makes no
+  exception for repeats, because a name is a name and an exception would need a second
+  definition of "duplicate". The scope that avoids the false positives is the PER-HEADING
+  switch on the repeat heading itself (`## Release [pattern:"..."] [repeat-rules:same-level]
+  [unique-headings-names]`): each instance is its own region, so `### Added` once per
+  release passes and a second `### Added` inside ONE release is reported (worked example
+  3). Known limit, accepted: with that placement two instances with the same text (two
+  `## [1.2.0] - 2026-03-01`) are in different regions and are not reported; a tag on the
+  parent (`# Changelog`, or the template-wide switch) reports them, and then the groups
+  too.
+- `[content:subheadings:disallow]` (`MTL612`) and `[content:subheadings:no-extra]`
+  (`MTL615`). Independent: a heading may get `MTL612` or `MTL615` and also `MTL613` (one says
+  "not in the template" or "not at this position", the other "this name is taken"; one fix,
+  removing the duplicate, clears both). The listing rule of `MTL612` still lists a second
+  heading with a listed text (2.6 "Listed": "duplicates are not this tag's concern"); this
+  tag is the one whose concern they are.
+- H1 title. No exception: an H1 is a target heading like any other, so under the
+  template-wide switch `# Guide` and a later `## Guide` are duplicates (the `## Guide` is
+  reported). On an H1 template heading (file scope) the per-heading region is the section of
+  its match, up to the next H1.
+- Pattern headings (2.10). The rule compares the stored TARGET texts, never a pattern or a
+  LABEL: two instances `## Step 1` and `## step 1` of `[pattern:"{text}"]
+  [repeat-rules:same-level]` are duplicates in one scope; two template pattern headings with one pattern are `MTL017`'s concern, not this
+  rule's.
+- Template-only headings (`[presence:template-only]`). Template headings never take part
+  (only target headings are compared), so a template-only heading, which is not in a valid
+  target, is unaffected. A target heading with a template-only text (`MTL603`, set aside, 2.10
+  step 1) is still a target heading: it is compared like any other, and may get `MTL613` too.
+- Extra headings (`MTL616`, 2.6 "Extra"). Decision: independent, both reported. A
+  duplicate in the tail of a run stays in the `MTL616` warning list AND gets the error
+  `MTL613`; `MTL613` is not one of the errors that take a heading out of that list
+  (`MTL612`, `MTL614`, `MTL615`, 2.10 step 4, unchanged). Rationale: those three are outline
+  findings about the tail position itself; `MTL613` is not, and keeping the list unchanged
+  is the additive principle above (worked example 3 shows both lines).
+- Mismatches (`MTL606`), `MTL614` tail headings, missing headings. A mismatch and a tail
+  heading are target headings and are compared; a missing template heading has no target
+  heading and plays no part.
+- Disable directives (4.4). A directive on a heading line is an HTML comment that heading
+  extraction drops, so it never changes the compared text. Suppression filters the output
+  only (4.1 step 8): a suppressed later duplicate still counts as an occurrence, and the
+  first heading of a text stays the first whether or not other findings are suppressed. A
+  directive on the FIRST heading removes nothing (the first heading has no `MTL613`).
+
+`--verify` output (8.3, 8.5; added by A80c):
+
+- The per-heading rule token is `unique-headings-names`, the tag body as written without
+  brackets, like every heading token of 8.3 (`content:subheadings:disallow`,
+  `repeat-rules:same-level`); it prints LAST in the heading's rules list, after
+  `content:subheadings:no-extra`. The token `heading:unique-names` was considered and
+  rejected: no 8.3 token differs from its tag body.
+- The template-wide switch prints the line `Unique heading names: [unique-headings-names]`
+  right after the `Filename:` line (or in its place when the template has none), followed by
+  the blank line before the table, as the `Filename:` line is.
+- JSON verify: each template gains `uniqueHeadingNames` (boolean, always present, `false`
+  without the switch) right after `filenameCase`; additive, `schemaVersion` stays 1.
+
+Grammar at spec level (normative names for A80b; `grammar/*.g4` stays normative for the
+shape):
+
+- Lexer `grammar/MdTemplateLexer.g4`, mode `TAG_STRICT` only (lexer touch list, step 1): the
+  keyword token `UNIQUE_HEADINGS_NAMES : 'unique-headings-names' ;` (case-insensitive by the
+  grammar option, like `REPEAT_RULES` and `NO_EXTRA`).
+- The tag has NO colon and no argument, the third exception to `tag` of section 2 (after the
+  quoted pattern argument and the dashed family): `uniqueNamesTag = "[unique-headings-names]"`.
+  Stage 1 still reads it as a bare bracket (`tagBareBracket`); since A80b stage 2 accepts that
+  exact name (any case) as a known tag, with no tag regex outside `grammar/*.g4`.
+- Parser `grammar/MdTemplateParser.g4`: `tagFamily` gains `UNIQUE_HEADINGS_NAMES`;
+  `bodyTagBody` gains the alternative `bodyUniqueNamesTag : UNIQUE_HEADINGS_NAMES ;`; the
+  frontmatter gains the template-wide line, suggested `fmUniqueNamesLine` (an `fmLine`
+  alternative like `fmFilenameLine`) and, when the inline-comment case needs an `fmTagBody`
+  alternative to stay inert, `fmUniqueNamesTag`. A80b may rename the suggested parser rules
+  (not the token) and records the names it picks here. Picked by A80b, no rename: parser rules
+  `fmUniqueNamesLine` (`FM_LINE_HASH WS? tagBareBracket WS? NL`, before `fmCommentLine`; every
+  standalone `# [word]` line parses there and only the name `unique-headings-names` makes it
+  the switch), `fmUniqueNamesTag` and `bodyUniqueNamesTag`; AST kind `unique-names` (both
+  regions; after a key it is an inert tag, like the filename tag); template-wide switch
+  `uniqueHeadingNames: boolean` on `Frontmatter` and on the loaded document model; no
+  `TAG_TEXT` keyword (stage 1 keeps the bracket as a bare bracket and the stage-2 parse of it
+  decides). A standalone `# [unique-headings-names:x]` is malformed (`MTL012`) like the
+  filename line.
+
+Worked example 1, the template-wide switch (file `notes/guide.md`). Template
+`templates/guide.template.md`:
+
+```text
+1  ---
+2  # [unique-headings-names]
+3  title: "string"
+4  ---
+5
+6  # Guide
+7
+8  ## Setup
+9
+10 ## Usage
+```
+
+Target:
+
+```text
+1  ---
+2  title: Setup guide
+3  ---
+4
+5  # Guide
+6
+7  ## Setup
+8
+9  ### Steps
+10
+11 ## Usage
+12
+13 ### Steps
+14
+15 ### setup
+```
+
+- Positional runs: `# Guide` takes line 5; `## Setup` takes line 7, `## Usage` line 11. The
+  template has no H3, so lines 9, 13 and 15 are in no run: free detail, no `MTL616`.
+- Scope: the whole file, headings in file order: `Guide` (5), `Setup` (7), `Steps` (9),
+  `Usage` (11), `Steps` (13), `setup` (15). Line 13 folds to `steps`, first seen on line 9:
+  `MTL613`. Line 15 folds to `setup`, first seen on line 7 (another level): `MTL613`.
+- Expected text output (exit 1):
+
+```text
+  ✗ notes/guide.md
+      error MTL613 Heading: duplicate heading name 'Steps' (first at line 9)
+        13 | ### Steps
+      error MTL613 Heading: duplicate heading name 'setup' (first at line 7)
+        15 | ### setup
+```
+
+- Variant, H1 title: line 15 reads `### Guide`: `MTL613` `Heading: duplicate heading name
+  'Guide' (first at line 5)` on line 15 (the H1 is not exempt).
+- Variant, suppression: line 13 reads `### Steps <!-- md-template-lint disable-line MTL613 -->`.
+  The text stays `Steps`; the finding of line 13 is removed (`Suppressed:   1`), the one of
+  line 15 stays.
+  A fourth heading `### Steps` on line 17 would still name line 9, not line 13.
+- Variant, no switch: line 2 removed: no finding, `✓ notes/guide.md`.
+
+Worked example 2, the per-heading switch: a duplicate outside the region is allowed. Template:
+
+```text
+1  ---
+2  title: "string"
+3  ---
+4
+5  # Guide
+6
+7  ## Setup
+8
+9  ## Usage [unique-headings-names]
+```
+
+Target `notes/guide.md`:
+
+```text
+1  ---
+2  title: x
+3  ---
+4
+5  # Guide
+6
+7  ## Setup
+8
+9  ### Notes
+10
+11 ## Usage
+12
+13 ### Notes
+14
+15 #### Details
+16
+17 ### NOTES
+```
+
+- `## Usage` takes line 11; its region is lines 11 to 17 (no later heading of level 2 or
+  lower): `Usage` (11), `Notes` (13), `Details` (15), `NOTES` (17).
+- Line 13 has the text of line 9, but line 9 is outside the region: allowed. Line 17 folds to
+  `notes`, first seen in the region on line 13: `MTL613`, naming line 13 (not line 9).
+- Expected text output:
+
+```text
+  ✗ notes/guide.md
+      error MTL613 Heading: duplicate heading name 'NOTES' (first at line 13)
+        17 | ### NOTES
+```
+
+- Variant, the template-wide switch instead (line 2 `# [unique-headings-names]`, tag removed
+  from `## Usage`): lines 13 and 17 are both reported, each `(first at line 9)`.
+- Variant, the tagged heading is missing: target lines 11 to 17 removed. `## Usage` has no
+  match, so no region and no `MTL613`; only `MTL601` `Missing required heading: 'Usage'`.
+- Variant, template-only: `## Usage [presence:template-only] [unique-headings-names]` gives the
+  `--verify` warning `MTL015` `Heading 'Usage': tag [unique-headings-names] has no effect (the
+  heading is [presence:template-only])`, and no `MTL613` in a lint run.
+
+Worked example 3, a repeat heading (file `CHANGELOG.md`; `MTL613` next to `MTL616`).
+Template:
+
+```text
+1  ---
+2  version: "string"
+3  ---
+4
+5  # Changelog
+6
+7  ## Release [pattern:"[{semver}] - {date}"] [repeat-rules:same-level] [unique-headings-names]
+8
+9  ### Added [presence:optional]
+10
+11 ### Fixed [presence:optional]
+```
+
+Target:
+
+```text
+1  ---
+2  version: 1.2.0
+3  ---
+4
+5  # Changelog
+6
+7  ## [1.2.0] - 2026-03-01
+8
+9  ### Added
+10
+11 ### Fixed
+12
+13 ## [1.1.0] - 2026-02-01
+14
+15 ### Added
+16
+17 ### Added
+```
+
+- Level 2: the repeat takes lines 7 and 13 (`n` 2). Regions: instance line 7 (lines 7 to 12)
+  and instance line 13 (lines 13 to 17), disjoint.
+- Instance 7: `### Added` takes line 9, `### Fixed` line 11; no duplicate in lines 7 to 12.
+- Instance 13: `### Added` takes line 15; `### Fixed` (optional) does not match line 17 and
+  takes nothing; line 17 is in the tail: the warning `MTL616`. In the region, line 17 folds
+  to `added`, first seen on line 15: `MTL613`. Line 15 against line 9: other region, allowed.
+- Expected text output (errors, then warnings, 4.1):
+
+```text
+  ✗ CHANGELOG.md
+      error MTL613 Heading: duplicate heading name 'Added' (first at line 15)
+        17 | ### Added
+      warn  MTL616 Heading: Section '[1.1.0] - 2026-02-01': 1 extra heading(s) at level H3 after the template headings: ['Added']
+        17 | ### Added
+```
+
+- Variant, the template-wide switch instead (line 2 `# [unique-headings-names]` before
+  `version:`, tag removed from line 7): every repeated group is a duplicate: line 15
+  `(first at line 9)` and line 17 `(first at line 9)`, plus the same `MTL616`. This is the
+  false positive the per-heading placement avoids.
+- Variant, no-extra: line 7 also carries `[content:subheadings:no-extra]`. Line 17 gets
+  `MTL615` (which replaces its `MTL616`, 2.6) AND `MTL613`; two errors, `MTL615` first
+  (`MTL613` comes last in step 5).
+- Variant, a duplicate release: line 13 reads `## [1.2.0] - 2026-03-01`. Both instances are
+  still taken, each its own region: no `MTL613` for line 13 (known limit above); with the
+  template-wide switch line 13 is reported `(first at line 7)`.
+
+Fixtures to write (phase A80d, another agent than the A80c rule author; pair fixtures
+`tests/fixtures/pairs/MTL613/<case>/template.md` and `target.md`, template fixtures under
+`tests/fixtures/templates/MTL015/`, test
+`tests/target/heading/MTL613-heading-unique-names.test.ts`):
+
+- `fail-template-wide-duplicate-at-another-level` (worked example 1);
+- `fail-template-wide-case-insensitive-duplicate` (`Notes` and `NOTES`, `Étape` and `ÉTAPE`);
+- `fail-template-wide-h1-title-repeated-as-h2` (H1 variant of worked example 1);
+- `fail-three-duplicates-give-two-findings-naming-the-first`;
+- `fail-per-heading-duplicate-inside-the-region` (worked example 2);
+- `fail-per-heading-region-includes-the-tagged-heading` (a child with the text of M);
+- `fail-repeat-instance-duplicate-group` (worked example 3, with its `MTL616`);
+- `fail-template-wide-reports-repeated-groups` (template-wide variant of worked example 3);
+- `fail-duplicate-also-gets-mtl615-under-no-extra` (no-extra variant of worked example 3);
+- `fail-duplicate-also-gets-mtl612-under-disallow`;
+- `fail-pattern-instances-with-the-same-text`;
+- `fail-nested-tagged-regions-give-one-finding-naming-the-outermost-first`;
+- `pass-per-heading-duplicate-outside-the-region-is-allowed`;
+- `pass-repeat-instances-each-their-own-region` (worked example 3 without line 17);
+- `pass-no-switch-duplicates-allowed`;
+- `pass-differs-after-folding` (`Straße` and `STRASSE`, `Notes` and `Notes:`);
+- `pass-heading-in-fenced-code-is-not-compared`;
+- `pass-absent-optional-tagged-heading-has-no-effect`;
+- `pass-template-only-tagged-heading-has-no-effect`;
+- `pass-tag-on-a-key-line-is-inert`;
+- `pass-disable-line-on-the-later-duplicate` (and one each for `disable-next-line`,
+  `begin disable` / `end disable` and `disable-file`);
+- template fixture
+  `tests/fixtures/templates/MTL015/fail-template-only-with-unique-headings-names.md`.
+
+Rationale. One tag in two places answers both owner needs: a document whose headings must
+all differ (template-wide, one line in the frontmatter, the place of the other template-wide
+tag) and a section whose subtree must not repeat itself while the outline repeats it by
+design (per-heading, a repeat heading's instances). Case-insensitive because `Notes` and
+`NOTES` read as one name to a reader and to most anchor generators. One finding per later
+heading, on its own line, because each later heading is a separate fix and a separate
+suppression; naming the first line tells which heading to keep. Error, not warning, because
+the author opted in. The code `MTL613` was reserved for this rule (4.2); its row is in
+4.3 and it is listed in DIR6.
 
 ## 3. Types
 
@@ -435,7 +2958,7 @@ of `a list`, `a mapping`, `a scalar`.
 | `string`             | Not a list and not a mapping.                                                                        | `MTL501` |
 | `list`               | A YAML list (items unchecked).                                                                       | `MTL502` |
 | `nested-map`         | A mapping. Sub-keys are never checked.                                                               | `MTL503` |
-| `date`               | Trimmed value is the ongoing marker, or one of the four shapes AND a real calendar date (`2025-02-29`, `2026-13-40`, `31/02/2020` fail; no lenient zero padding). | `MTL504` |
+| `date`               | Trimmed value is the ongoing marker, or one of the four shapes AND a real calendar date (`2025-02-29`, `2026-13-40`, `31/02/2020` fail; year `0000` fails; no lenient zero padding). | `MTL504` |
 | `url`                | See "url predicate".                                                                                 | `MTL505` |
 | `path`               | See "path predicate".                                                                                | `MTL506` |
 | `path-alias`         | Trimmed value matches `^@[A-Za-z0-9_-]+/\S+$`.                                                       | `MTL507` |
@@ -452,6 +2975,11 @@ of `a list`, `a mapping`, `a scalar`.
 
 A list type given a non-list value fails with `expected a YAML list of <things>, got <shape>`.
 Block and flow YAML lists are both valid. A comma separated scalar is NOT a list.
+
+The `date` and `list-of-date` checks above are the default date parsing of 2.9. A
+`[format:date]` or `[format:elements:date]` tag narrows the accepted shape to `YYYY-MM-DD`
+through its own codes (`MTL307`, `MTL309`); `MTL504` and `MTL513` keep this predicate and
+their messages (change C11).
 
 Enum: options come from the TEMPLATE field value split on ` | `, each trimmed, empty
 dropped. A target holds one option. No options (hint without a pipe list): no check. A value
@@ -493,9 +3021,15 @@ reproduces this for parity. Placeholder `{pylist}` in section 4.
    Otherwise run, in this order: constant (`MTL301`), count (`MTL401`, `MTL402`), range
    (`MTL403` to `MTL406`), order (`MTL407`), scheme (`MTL304`, `MTL305`), `[io:exists]`
    (`MTL80x`), value-filename (`MTL102`), case (`MTL302`), elements case (`MTL303`), then
-   enum (`MTL517`) or the type rule (`MTL501` to `MTL516`).
+   enum (`MTL517`) or the type rule (`MTL501` to `MTL516`), then shape (`MTL306` to
+   `MTL309`, 2.9; step `shape`, appended last by change C11).
 4. Unknown keys, in target key order (`MTL202`, warning).
-5. Heading presence and order (`MTL601` to `MTL604`), message prefix `Heading: `.
+5. Heading presence, order and sub-headings (`MTL601`, `MTL603`, `MTL604`, `MTL610` to
+   `MTL612`, `MTL615`; `MTL602` retired, A72m and Pc), heading patterns, repeat rules and order
+   (`MTL605` to `MTL609`, `MTL614`, `MTL617`, 2.10, change C12), the extra warning
+   (`MTL616`, A72l), all on the positional match of 2.10 (ADR 0012), then the unique heading
+   names (`MTL613`, A80c, 2.11; last in the step, in target line order), message prefix
+   `Heading: `.
 6. Section content (`MTL701` to `MTL705`).
 7. Directive diagnostics of the target (`MTL020` to `MTL025`, warnings, 4.4), in directive
    source order, `MTL024` last (DIR8).
@@ -508,8 +3042,12 @@ to 6 stay valid. A target without directives gives the same diagnostics and the 
 output as before (parity); JSON only gains the always present `summary.suppressed` key (8.5).
 Errors are printed first, then warnings, each list in emission order.
 
-Template-side diagnostics (`MTL001` to `MTL004` fatal, `MTL010` to `MTL013` warnings) come
-from the template parse.
+Template-side diagnostics (`MTL001` to `MTL004` fatal, `MTL010` to `MTL016` warnings,
+`MTL017` to `MTL019` and `MTL030` errors) come from the template parse, once per template, before any
+target. `MTL017`, `MTL018`, `MTL019` and `MTL030` are the non-fatal TEMPLATE ERRORS (2.7): a lint run prints
+them on the template file and exits 1, and still runs steps 1 to 8 on every target with
+the template as written; `--verify` fails the template, exit 1 (7.3, 7.5, 8.2). The
+template warnings `MTL010` to `MTL016` stay `--verify` output.
 
 ### 4.2 Code ranges
 
@@ -528,13 +3066,31 @@ from the template parse.
 
 Sub-ranges inside `syntax` (prose on purpose: the table above is read by `pnpm run
 check:rules`, one row per category): `MTL001`-`009` parse errors, `MTL010`-`019` template
-tag warnings (`MTL014`-`019` free), `MTL020`-`029` target directive warnings (4.4;
-`MTL026`-`029` free).
+tag diagnostics (`MTL014` used by C12; `MTL015` used by C10; `MTL016` used by C11;
+`MTL017` used by A72k, the template error heading-pattern-duplicate; `MTL018` used by A72l,
+the template error heading-optional-min-conflict; `MTL019` used by A72m, the template error
+heading-child-order-conflict; the sub-range is now full),
+`MTL020`-`029` target directive warnings (4.4;
+`MTL026`-`029` free, kept for directives), `MTL030`-`039` template tag diagnostics,
+continued (A72n: `MTL030` heading-order-without-repeat, the template error of owner decision 3;
+`MTL031`-`039` free), `MTL040`-`099` free. Inside `format`: `MTL301`-`305` legacy, `MTL306`-`309` field formats
+(C11). Inside `heading`: `MTL601`-`604` legacy (`MTL602` heading-level-missing RETIRED by
+A72m with the dropped `exist` tag: reserved, never reused; it has no 4.3 row and no rule
+since phase Pc, and stays reserved here), `MTL605`-`609` heading patterns, repeat
+rules and order (C12, 2.10), `MTL610`-`612` all levels (C10); `MTL613` heading-unique-names,
+the rule the code was reserved for (owner decision; the next free code of the heading range
+after `MTL612`), specified by phase A80a (2.11, ADR 0013); its row is in the `heading` table
+of 4.3 since phase A80b and the rule is implemented since phase A80c (no longer pending in
+`tests/consistency/pending-rules.json`); `MTL614` heading-repeat-miss and `MTL615`
+heading-subheadings-only-declared (A72k, ADR 0012); `MTL616` heading-extra (A72l, the only
+heading warning); `MTL617` heading-order-key-missing (A72m); `MTL618`-`699` free.
 
 ### 4.3 Code table
 
 Placeholders: `{key}` field name, `{value}` value as text, `{stem}` file name stem, `{text}`
-heading text, `{pylist}` Python-style list, `{shape}` see 3.4. Messages are the legacy text
+heading text, `{pylist}` Python-style list, `{shape}` see 3.4, `{type}` the field type (3.2),
+`{tag}` the tag as written, `{pattern}` the PATTERN of a `[pattern:"..."]` tag as written
+between the quotes (2.10). Messages are the legacy text
 (after the code, in output). Changed messages are marked "changed".
 
 #### syntax (`src/rules/syntax.ts`)
@@ -549,15 +3105,23 @@ heading text, `{pylist}` Python-style list, `{shape}` see 3.4. Messages are the 
 | `MTL011` | unknown-heading-tag       | warning  | `Heading '{text}': unknown tag {tag}`                                | py L864-871 `split_heading_tags`, L2232-2234 `describe` |
 | `MTL012` | malformed-tag             | warning  | `Field '{key}': malformed tag {tag}`, `Heading '{text}': malformed tag {tag}` or `Filename comment: malformed tag {tag}` | new (phase A6, located errors) |
 | `MTL013` | misplaced-tag             | warning  | `Field '{key}': tag {tag} is not valid in frontmatter` or `Heading '{text}': tag {tag} is not valid in a heading` | new (change C05) |
+| `MTL014` | heading-pattern-invalid   | warning  | `Heading '{text}': invalid pattern [pattern:"{pattern}"] ({reason})` (`{text}` the template heading label; reasons and column in 2.10: unknown placeholder, malformed placeholder, unknown format, format argument (needs an argument, bad argument, takes no argument), unmatched brace, adjacent placeholders, invalid escape, empty pattern) | new (change C12; reasons extended by A72k and A72n) |
+| `MTL015` | heading-tag-conflict      | warning  | `Heading '{text}': tag {tag} has no effect ({reason})` (template line and column of the tag; reasons in 2.7) | new (change C10) |
+| `MTL016` | date-format-missing       | warning  | `Field '{key}' (type={type}): no {tag}, default date formats apply` (`{tag}` is `[format:date]` or `[format:elements:date]`; template key line, column 1; 2.9) | new (change C11) |
+| `MTL017` | heading-pattern-duplicate | error    | `Heading '{text}': same pattern [pattern:"{pattern}"] as the previous heading '{prev}' (line {prevLine})` when the later heading is a pattern heading, or `Heading '{text}': matches the same headings as the previous heading '{prev}' (line {prevLine})` when it is an exact-text heading (`{text}` and `{prev}` template heading labels or texts, `{prevLine}` the template line of the earlier heading; phase `template`, template line and column of the later pattern tag's `[`, or of the first character of the later heading's text; template error: lint exit 1 with targets still linted, `--verify` FAIL; 2.7, 2.10) | new (A72k, ADR 0012; exact-text headings and lint runs added by A72l) |
+| `MTL018` | heading-optional-min-conflict | error | `Heading '{text}': tag {tag} contradicts [presence:optional] (a minimum of {min} requires the heading)` (`{text}` the template heading label, `{tag}` the explicit `min` tag as written, `{min}` its `N`; phase `template`, template line of the heading and column of that tag's `[`; template error like `MTL017`; 2.10 "Repeat rules") | new (A72l) |
+| `MTL019` | heading-child-order-conflict | error | `Heading '{text}' (H{n}): comes after the deeper child '{prev}' (H{m}, line {prevLine}) under '{parent}'` (`{text}` the first offending child of P, `{prev}` the first earlier child of P with a higher level, `{parent}` P, as template texts or labels; `{n}`, `{m}` their levels, `{prevLine}` the template line of `{prev}`; phase `template`, template line of the offending child, column 1; one per parent; template error like `MTL017`; 2.7) | new (A72m) |
 | `MTL020` | directive-malformed          | warning  | `Directive on line {line}: unknown directive '{word}' (expected disable, disable-line, disable-next-line, disable-file, begin disable or end disable)` or `Directive on line {line}: '{directive}' needs at least one rule code` | new (C08) |
 | `MTL021` | directive-unknown-code       | warning  | `Directive on line {line}: unknown rule code '{token}'`                                                     | new (C08)     |
 | `MTL022` | directive-code-not-suppressible | warning | `Directive on line {line}: rule code {code} cannot be disabled`                                           | new (C08)     |
 | `MTL023` | directive-end-without-begin  | warning  | `Directive on line {line}: 'end disable {code}' has no open 'disable' or 'begin disable' for {code}`        | new (C08)     |
 | `MTL024` | directive-begin-unclosed     | warning  | `Directive on line {line}: 'begin disable {code}' is never closed, it runs to the end of the file`          | new (C08)     |
 | `MTL025` | directive-already-disabled   | warning  | `Directive on line {line}: '{directive} {code}' while {code} is already disabled since line {open}`         | new (C08)     |
+| `MTL030` | heading-order-without-repeat | error    | `Heading '{text}': tag {tag} needs [repeat-rules:same-level] (an order compares the repeats of one heading)` (`{text}` the template heading label, `{tag}` the effective order tag as written; phase `template`, template line of the heading and column of that tag's `[`; an order tag on a pattern heading without any repeat tag; template error like `MTL017`; 2.7) | new (A72n) |
 
 `MTL020` to `MTL025` are the target directive warnings; their placeholders and rules are
-under "Directive warnings" below (4.3) and in 4.4.
+under "Directive warnings" below (4.3) and in 4.4. `MTL030` (A72n) is a template tag
+diagnostic like `MTL010` to `MTL019`, numbered after the directive sub-range (4.2).
 
 `MTL001` to `MTL004` on a target print `Parse error: <message>`. On a template the same
 diagnostic makes the template "broken" and is printed in ONE form everywhere (text, verify and
@@ -605,8 +3169,16 @@ The `MTL911` outcome is a change from legacy, recorded as C04.
 | `MTL303` | elements-case-mismatch      | error    | `Field '{key}': list contains entries not matching [format:elements:{case}]: {pylist}`        | py L2025-2033 `_check_field`   |
 | `MTL304` | scheme-disallowed           | error    | `Field '{key}': URL scheme of '{value}' is not allowed [format:scheme:{schemes}]`             | py L1964-1970 `_check_url_schemes` |
 | `MTL305` | scheme-disallowed-item      | error    | `Field '{key}': list contains URLs with a disallowed scheme {pylist} [format:scheme:{schemes}]` | py L1972-1980 `_check_url_schemes` |
+| `MTL306` | semver-mismatch             | error    | `Field '{key}': value '{value}' is not a semantic version [format:semver]`                    | new (change C11)               |
+| `MTL307` | date-format-mismatch        | error    | `Field '{key}': value '{value}' is not a YYYY-MM-DD date [format:date]`                       | new (change C11)               |
+| `MTL308` | elements-semver-mismatch    | error    | `Field '{key}': list contains entries not matching [format:elements:semver]: {pylist}`        | new (change C11)               |
+| `MTL309` | elements-date-mismatch      | error    | `Field '{key}': list contains entries not matching [format:elements:date]: {pylist}`          | new (change C11)               |
 
-`{schemes}` is the allow-list, lowercased, sorted, comma joined.
+`{schemes}` is the allow-list, lowercased, sorted, comma joined. `MTL306` to `MTL309` (2.9)
+run in field step `shape`, anchor on the target key line (DIR5) and are suppressible (DIR6).
+`MTL307` is silent for a value that fails the type `date` (`MTL504` reports it), and
+`MTL309` does not list the items that fail the type `list-of-date` (`MTL513` lists them).
+`{pylist}` holds the bad items in list order, as their text (Q02).
 
 #### bounds (`src/rules/bounds.ts`)
 
@@ -665,14 +3237,109 @@ All messages carry the prefix `Heading: ` (py L2112). Source: py L1456-1523
 
 | Code     | Name                   | Severity | Message                                                                                                   | Legacy source |
 | -------- | ---------------------- | -------- | --------------------------------------------------------------------------------------------------------- | ------------- |
-| `MTL601` | heading-missing        | error    | `Missing required heading: '{text}'`                                                                      | py L1488      |
-| `MTL602` | heading-level-missing  | error    | `Missing heading at level H{n} [presence:exist]`                                                          | py L1484      |
+| `MTL601` | heading-missing        | error    | `Missing required heading: '{text}'`, or `Missing required heading: '{text}' (found later at line {line}, out of order)` when a sibling with that text comes later in the run (changed by A72l, 2.10 step 3b) | py L1488      |
 | `MTL603` | heading-template-only  | error    | `Heading '{text}' is marked [presence:template-only] and must not appear in the linted file`              | py L1490      |
 | `MTL604` | heading-order          | error    | `Heading order mismatch: template order {pylist} vs target order {pylist}`                                | py L1519      |
+| `MTL605` | heading-pattern-missing | error   | `{in}missing required heading matching [pattern:"{pattern}"] (H{n})`                                     | new (change C12) |
+| `MTL606` | heading-pattern-mismatch | error  | `{in}heading '{text}' does not match [pattern:"{pattern}"] at {piece}` (changed by A72k)                 | new (change C12) |
+| `MTL607` | heading-repeat-min     | error    | `{in}{count} heading(s) match [pattern:"{pattern}"], minimum is {min}` (`{count}` may be 0 since A72k)    | new (change C12) |
+| `MTL608` | heading-repeat-max     | error    | `{in}{count} heading(s) match [pattern:"{pattern}"], maximum is {max}`                                   | new (change C12) |
+| `MTL609` | heading-pattern-order  | error    | `{in}heading '{text}' is not in {direction} order after '{prev}', {count} pair(s) out of order {tag}` (changed by A72k: one per repeat set; changed by A72m: `{tag}` is the order tag, 2.10 "Order") | new (change C12) |
+| `MTL610` | heading-missing-in-section | error | `Section '{parent}': missing required heading '{text}' (H{n})` (the second form of the dropped `exist` tag is gone since A72m) | new (change C10) |
+| `MTL611` | heading-order-in-section | error  | `Section '{parent}': heading order mismatch: template order {pylist} vs target order {pylist}`           | new (change C10) |
+| `MTL612` | heading-unlisted       | error    | `Section '{parent}': heading '{text}' at level H{n} is not in the template [content:subheadings:disallow]` | new (change C10) |
+| `MTL613` | heading-unique-names | error    | `duplicate heading name '{text}' (first at line {line})` (category `heading`, prefix `Heading: `; phase `target`, step `headings`; `{text}` the stored text of the later duplicate target heading as written, `{line}` the target line of the first heading with the same folded text in the scope; one finding per later duplicate, anchored on its line, suppressible; emitted after every other step 5 finding, in target line order; 2.11) | new (A80a, ADR 0013) |
+| `MTL614` | heading-repeat-miss    | error    | `{in}{count} heading(s) match [pattern:"{pattern}"] after the end of its run [repeat-rules:same-level]: {pylist}` | new (A72k, ADR 0012) |
+| `MTL615` | heading-subheadings-only-declared | error | `Section '{parent}': heading '{text}' at level H{n} is not declared at this position [content:subheadings:no-extra]` | new (A72k, ADR 0012) |
+| `MTL616` | heading-extra          | warning  | `{in}{count} extra heading(s) at level H{n} after the template headings: {pylist}`                        | new (A72l)    |
+| `MTL617` | heading-order-key-missing | error | `{in}{count} heading(s) have no {kind} to order by {tag}, use a [pattern:...] with {placeholder}: {pylist}` (2.10 "Order") | new (A72m)    |
+
+Since change C10 (2.6) and the positional match of A72k (2.10, ADR 0012): the legacy
+messages of `MTL601`, `MTL603` and `MTL604` are unchanged (except the "found later" hint
+that `MTL601` gains in A72l), but their matches are positional and
+exact-level. `MTL601` (exact-text heading) fires when the heading's position has no match
+(2.10 step 3b; `MTL602`, the check of the dropped `exist` tag, is retired by A72m);
+`MTL601` and `MTL604` apply to file-scope template headings only (H1, H2, and a deeper
+heading without template parent).
+The `MTL601` hint (A72l, owner decision 6): `{line}` is the target line of the first
+sibling, from the cursor of step 3b onward, whose text equals `{text}`; without such a
+sibling the legacy message is printed. The line is message text only: `MTL601` keeps no
+anchor and no excerpt (DIR5, DIR7).
+`MTL603` applies in both scopes: the first sibling (same level, same scope: the whole file,
+or the target section matched by the template parent) with the text of a checked
+`[presence:template-only]` template heading is reported with the message above unchanged
+(the text and line name the heading, no `Section '{parent}'` form), and every such sibling
+is set aside from the run (2.10 step 1). `MTL610` to `MTL612` and `MTL615` are the other
+section-scope findings:
+
+- `MTL610`: a checked section-scope required exact-text template heading is missing.
+  `{parent}` is the text of the target heading matched
+  by the template parent, `{text}` and `{n}` the text and level of the missing template
+  heading. Anchor: the line of that target parent heading.
+- `MTL611`: the order check of 2.6 for the direct children of one template heading; the two
+  lists as defined in 2.6. Anchor: the line of the target parent heading.
+- `MTL612`: the topmost unlisted target heading under `[content:subheadings:disallow]` (2.6).
+  `{text}` and `{n}` are the text and level of that target heading, `{parent}` the text of
+  the target heading matched by the tagged template heading. Anchor: the unlisted heading's
+  line. Suppressible (DIR6).
+- `MTL615` (A72k, 2.6): a direct target child of the match M of a heading D tagged
+  `[content:subheadings:no-extra]` that no position of D's children took. `{text}` and `{n}`
+  are the text and level of that child, `{parent}` the text of M. Anchor: the child's line.
+  Suppressible (DIR6).
+- `MTL605` to `MTL609`, `MTL614` and `MTL617` (change C12, A72k, A72m, 2.10) are about one
+  pattern heading T. `{in}` is empty
+  when T has file scope and `Section '{parent}': ` when T has section scope, `{parent}` being
+  the text of the target heading matched by T's template parent (the parent instance under a
+  repeat parent). `{n}` is T's level. `{text}` is the text of the reported target heading.
+  `{piece}` is the failing piece of 2.10 (a placeholder as written, or a literal in single
+  quotes). `{count}` is the number of instances of one repeat set (`MTL607`, `MTL608`; 0 is
+  possible for `MTL607`), the number of pairs out of order (`MTL609`) or the number of
+  listed headings (`MTL614`, `MTL617`); `{min}` and `{max}` the bound of the explicit `min`
+  or `max` tag, `{direction}` `ascending` or `descending`, `{tag}` the effective order tag
+  in its canonical lowercase form (2.10 "Order"), `{prev}` the text of the earlier instance
+  of the first pair out of order, `{pylist}` the texts of the listed headings in file order
+  (the tail headings for `MTL614`, the instances without order key for `MTL617`), `{kind}`
+  `number`, `date` or `semver` (A72n) and `{placeholder}` the literal text `{number}`,
+  `{date}` or `{semver}` (`MTL617`). `MTL605`: a required pattern heading whose position has no sibling left (or, for a
+  literal pattern, a different sibling), no anchor. `MTL606`: the sibling a required
+  placeholder position took as a mismatch, anchored on it. `MTL607`: fewer instances than an
+  explicit `min`, anchored on the first instance (no anchor at zero instances; then it
+  replaces `MTL605`). `MTL608`: more instances than `max`, anchored on the instance number
+  `max + 1`. `MTL609`: one per repeat set out of order, anchored on the later instance of the
+  first pair out of order. `MTL614`: one per repeat set with matching tail headings, anchored
+  on the first listed heading. `MTL617` (A72m): one per repeat set under a `first:` order
+  tag with at least one instance without order key, anchored on the first such instance.
+  All suppressible (DIR6).
+- `MTL616` (A72l, 2.6 "Extra", 2.10 step 4), the only WARNING of the category: one per run
+  (one sequence in one scope) whose tail holds headings that no error names (`MTL612`,
+  `MTL614`, `MTL615`, 2.10 "Interplay"). `{in}` as above (empty in file scope,
+  `Section '{parent}': ` in section scope, `{parent}` the text of the target heading matched
+  by the template parent of the sequence, or the instance text under a repeat parent), `{n}`
+  the level of the run, `{count}` the number of listed headings, `{pylist}` their texts in
+  file order. Anchor: the first listed heading. Suppressible (DIR6); a warning never changes
+  the exit code (7.5).
+- `MTL613` (A80c, 2.11): one per later duplicate name in a scope of
+  `[unique-headings-names]` (the whole file, or the region of each match or instance of an
+  effective tagged heading), at most one per heading. `{text}` the text of that heading as
+  written, `{line}` the target line of the earliest heading with the same folded text over
+  the scopes that contain it. Anchor: the duplicate's line. Suppressible (DIR6). It has no
+  template heading to sort by.
+- Emission order inside step 5: findings sort by the template line of the template heading
+  they are about (`MTL601`, `MTL603`, `MTL610`: that heading; `MTL611`: the parent;
+  `MTL612` and `MTL615`: the tagged heading; `MTL605` to `MTL609`, `MTL614`, `MTL617`: the pattern
+  heading; `MTL616`: the last position of its sequence), then by code, then by target line (for `MTL605` and an anchorless `MTL607`, the
+  line of the target parent heading in section scope; two such file-scope findings sort by
+  template line only); `MTL604` comes after them, and `MTL613` (A80c) last of all, in target
+  line order. A template without H3 to H6 headings and without the new tags gives the legacy
+  order.
 
 #### content (`src/rules/content.ts`)
 
-Source: py L1526-1581 `HeadingOrderValidator.validate_content`. The `{label}` is `Section '{text}'`.
+Source: py L1526-1581 `HeadingOrderValidator.validate_content`. The `{label}` is `Section '{text}'`
+for a file-scope heading and `Section '{parent} > {text}'` for a section-scope heading (change
+C10, 2.6); for a pattern heading `{text}` is the checked target heading's text and the label
+gains ` (pattern "{pattern}")`, `{pattern}` as written in its tag (changed by A72m, owner
+decision 3, 2.6 "Content tags").
 
 | Code     | Name                 | Severity | Message                                                                       | Legacy source |
 | -------- | -------------------- | -------- | ----------------------------------------------------------------------------- | ------------- |
@@ -886,10 +3553,20 @@ the text output (change C09).
 | `MTL101`                                                         | none (the file name)                                                      |
 | `MTL201`                                                         | the target key line when the key is present with an empty value; none when the key is missing |
 | `MTL202`                                                         | the target key line                                                       |
-| field steps: `MTL102`, `MTL301`-`MTL305`, `MTL401`-`MTL407`, `MTL501`-`MTL517`, `MTL801`-`MTL805` | the target key line of that field                                         |
-| `MTL601`, `MTL602`, `MTL604`                                     | none (missing heading, order of the whole file)                           |
-| `MTL603`                                                         | the line of the first target heading with that text (the one that fired)   |
-| `MTL701`-`MTL705`                                                | the line of the target heading whose section was checked (the first occurrence, 2.6) |
+| field steps: `MTL102`, `MTL301`-`MTL309`, `MTL401`-`MTL407`, `MTL501`-`MTL517`, `MTL801`-`MTL805` | the target key line of that field (`MTL306`-`MTL309`: change C11)         |
+| `MTL601`, `MTL604`, `MTL605`                                     | none (missing heading, order of the whole file; `MTL605`: change C12, also in section scope; the "found later" line of the `MTL601` hint, A72l, is message text, not an anchor; the retired `MTL602` had none either) |
+| `MTL606`, `MTL609`                                               | the line of the reported target heading (the sibling taken as a mismatch; for `MTL609` the later instance of the first pair out of order; 2.10, change C12, A72k) |
+| `MTL607`                                                         | the line of the first instance of the repeat set; none when the set has no instance (2.10, change C12, A72k) |
+| `MTL608`                                                         | the line of the instance number `max + 1` of the repeat set (2.10, change C12) |
+| `MTL614`                                                         | the line of the first tail heading the finding lists (2.10, A72k)         |
+| `MTL617`                                                         | the line of the first instance without order key the finding lists (2.10 "Order", A72m) |
+| `MTL616`                                                         | the line of the first tail heading the warning lists (2.6 "Extra", 2.10 step 4, A72l) |
+| `MTL603`                                                         | the line of the first set-aside sibling with that text (the one that fired, 2.10 step 1) |
+| `MTL610`, `MTL611`                                               | the line of the target parent heading (the match of the template parent, 2.6; change C10) |
+| `MTL612`                                                         | the line of the unlisted target heading that is reported (2.6; change C10) |
+| `MTL613`                                                         | the line of the later duplicate target heading that is reported (2.11; A80c) |
+| `MTL615`                                                         | the line of the undeclared direct child that is reported (2.6; A72k)      |
+| `MTL701`-`MTL705`                                                | the line of the target heading whose section was checked (the positional match or instance, 2.6, 2.10) |
 
 A key line is the line of the key itself (for a duplicate key, the last occurrence, Q06),
 never the lines of a multi-line value. Rationale: the key line is what the user sees as the
@@ -901,13 +3578,34 @@ suppressible, and named in a directive they give `MTL022`:
 
 - `MTL001` to `MTL004`, on a target or a template: a file that does not parse is not linted
   and its directives are not read; a broken template is never suppressed;
-- `MTL010` to `MTL013`: template tag warnings; they are never emitted for a target (tags in a
-  target are inert, 2.7), and the template cannot carry directives (DIR4);
+- `MTL010` to `MTL019` and `MTL030`: template tag diagnostics (warnings, and the template
+  errors `MTL017`, `MTL018`, `MTL019` and `MTL030`); they are never
+  emitted for a target (tags in a target are inert, 2.7; in a lint run the template errors
+  are printed on the template file, not on a target, 8.2), and the template cannot carry
+  directives (DIR4). `MTL015` (change C10), `MTL016` (change C11), `MTL014` (change C12),
+  `MTL017` (A72k), `MTL018` (A72l), `MTL019` (A72m) and `MTL030` (A72n) join this list for
+  the same reason;
 - `MTL020` to `MTL025`: directive warnings; a directive cannot silence its own diagnostics;
 - `MTL900` to `MTL999`: run diagnostics; they belong to the run, not to a file line.
 
 Rationale: only findings about the content of one target are local to that file; the others
-describe the template, the run or the directives themselves.
+describe the template, the run or the directives themselves. The new heading codes
+`MTL610` to `MTL612` (change C10) are in `MTL101` to `MTL899`, so they are suppressible;
+all three have an anchor (DIR5), so a line directive covers them per heading. In particular
+`MTL612` is suppressible and `MTL015` is not. Likewise the field format codes `MTL306` to
+`MTL309` (change C11) are suppressible and anchor on the target key line, while `MTL016`
+is not suppressible. The heading pattern codes `MTL605` to `MTL609` (change C12),
+`MTL614`, `MTL615` (A72k), the warning `MTL616` (A72l) and `MTL617` (A72m) are
+suppressible: `MTL606`, `MTL608`, `MTL609`, `MTL614`, `MTL615`, `MTL616`, `MTL617` per
+heading line (for `MTL614`, `MTL616` and `MTL617` the line of the first listed heading,
+which removes the whole finding), `MTL607` per
+heading line when it has an anchor, `MTL605` and an anchorless `MTL607` (no instance) only
+by `disable-file`. `MTL613` (A80c, 2.11) is suppressible per later duplicate heading line
+(`disable-line`, `disable-next-line`, a range over it, or `disable-file MTL613`); `MTL014`,
+`MTL017`, `MTL018`, `MTL019` and `MTL030` are not suppressible. `MTL601` with its
+"found later" hint (A72l) stays anchorless (DIR7). The retired `MTL602` (A72m, rule
+removed by phase Pc) is no registered code and has no 4.3 row, so a directive naming it
+gives `MTL021` (DIR2).
 
 DIR7. Coverage rule. A suppressible diagnostic with code C is removed when:
 
@@ -919,8 +3617,12 @@ DIR7. Coverage rule. A suppressible diagnostic with code C is removed when:
   that starts at or before A and is not closed before A; the `end disable` line itself is
   covered).
 
-A diagnostic without anchor (`MTL101`, `MTL201` for a missing key, `MTL601`, `MTL602`,
-`MTL604`; DIR5) is covered ONLY by `disable-file`. `disable`, `begin disable`,
+A diagnostic without anchor (`MTL101`, `MTL201` for a missing key, `MTL601` with or without
+its "found later" hint, `MTL604`, `MTL605`, `MTL607` with no instance; DIR5) is
+covered ONLY by `disable-file`. A finding that lists several headings (`MTL614`, `MTL616`,
+`MTL617`)
+is one diagnostic with one anchor: a line directive on its anchor removes it whole, a directive on
+another listed line removes nothing. `disable`, `begin disable`,
 `disable-line` and `disable-next-line` never cover it, whether their range is closed or runs
 to the end of the file. The match is by code only: a `disable-file MTL601` silences every
 missing heading of the file, not one named heading.
@@ -1000,8 +3702,10 @@ mode and flag without special cases.
 
 #### Worked examples
 
-Template for the examples (fields `title`, `status` required; headings `# Notes`,
-`## Overview [content:non-empty]`, `## Details [content:non-empty]`, `## Context`).
+Template for the examples (fields `title`, `status` required; `reviewer: alice # [format:constant:alice]
+[format:snake_case]` and `legacy_id: 7 # [format:constant:7]` only where an example uses them; headings
+`# Notes`, `## Overview [content:non-empty]`, `## Details [content:non-empty]`, `## Context`).
+The suppressed codes are real: each example fires them without its directives.
 
 Example 1, `disable-line` and `disable-next-line` in the frontmatter and on a heading:
 
@@ -1010,8 +3714,8 @@ Example 1, `disable-line` and `disable-next-line` in the frontmatter and on a he
 title: Notes
 status: draft
 owner: alice # md-template-lint disable-line MTL202
-# md-template-lint disable-next-line MTL202, MTL301
-reviewer: bob
+# md-template-lint disable-next-line MTL301, MTL302
+reviewer: Bob
 draft: yes
 ---
 
@@ -1025,14 +3729,14 @@ draft: yes
 ```
 
 - Line 4 `owner`: `MTL202` anchored on line 4, covered by its `disable-line`. Suppressed.
-- Line 6 `reviewer`: `MTL202` anchored on line 6, covered by the `disable-next-line` of line 5
-  (multi-code list; `MTL301` never fires here, which is fine). Suppressed.
+- Line 6 `reviewer`: `MTL301` (not the constant `alice`) and `MTL302` (not snake_case) anchored on
+  line 6, both covered by the `disable-next-line` of line 5 (multi-code list). Two suppressed.
 - Line 7 `draft`: `MTL202` anchored on line 7, no directive. Reported (negative case).
 - Line 12 `## Overview`: `MTL701` anchored on line 12, covered. Suppressed.
 - Line 14 `## Details`: `MTL701` anchored on line 14, no directive. Reported (negative case).
 - Negative variant: `# md-template-lint disable-line MTL202` alone on line 5 covers line 5
-  only, so `reviewer` would be reported.
-- Summary: `Suppressed:   3`.
+  only, so `reviewer` would still report `MTL301` and `MTL302`.
+- Summary: `Suppressed:   4`.
 
 Example 2, a `begin disable` / `end disable` block over several keys, with a multi-code list
 (frontmatter only; the body is the one of example 1):
@@ -1049,8 +3753,8 @@ extra: x
 ---
 ```
 
-- Range for `MTL202` and `MTL301`: lines 4 to 7. `legacy_id` (line 5) and `legacy_owner`
-  (line 6): `MTL202` suppressed.
+- Range for `MTL202` and `MTL301`: lines 4 to 7. `legacy_id` (line 5, value `42` is not the
+  constant `7`): `MTL301` suppressed. `legacy_owner` (line 6): `MTL202` suppressed.
 - `extra` (line 8): after the block, `MTL202` reported (negative case).
 - Without line 7, both ranges run to the end of the file: `extra` is suppressed too, and two
   `MTL024` warnings are printed, `Directive on line 4: 'begin disable MTL202' is never
@@ -1376,7 +4080,7 @@ md-template-lint --verify [options] [templates...]
 | ----------------- | ---------------------------------------------------------------------------------------------------------- |
 | `--config <path>` | Config file. Also `--config=<path>`. Default: discovery (6.1).                                              |
 | `--format <name>` | `text` (default, same as `pretty`), `plain` or `json` (8.2). Other value: `MTL922`.                                |
-| `--quiet`         | Text only: print only failing files, broken templates and run errors. No headers, no OK lines, no warnings, no summary. JSON is always complete. |
+| `--quiet`         | Text only: print only failing files, broken templates, templates with template errors and run errors. No headers, no OK lines, no warnings, no summary. JSON is always complete. |
 | `--verify`        | Template-syntax check only. No target is read (7.3).                                                        |
 | `--version`       | Print the package version and exit 0.                                                                       |
 | `--help`, `-h`    | Print usage and exit 0.                                                                                     |
@@ -1419,9 +4123,16 @@ lint-staged config:
 - Each template is parsed and its schema printed (field, inferred type, rules, headings,
   unknown and malformed tags). No target file is read, no `[io:exists]` check runs, no
   network access.
-- Exit 0 when every template parses (warnings `MTL010` to `MTL013` do not fail). A template
-  that does not parse or cannot be read (`MTL001` to `MTL004`, including a file that is not
-  UTF-8) is broken: exit 1, as in legacy. A template path that does not exist is `MTL910` and
+- Exit 0 when every template parses and has no template error (warnings `MTL010` to
+  `MTL016` do not fail). A template that does not parse or cannot be read (`MTL001` to
+  `MTL004`, including a file that is not UTF-8) is broken: exit 1, as in legacy. A template
+  that parses but has a template ERROR (`MTL017` heading-pattern-duplicate, A72k;
+  `MTL018` heading-optional-min-conflict, A72l; `MTL019` heading-child-order-conflict,
+  A72m; `MTL030` heading-order-without-repeat, A72n) FAILS: exit 1; it is not broken (its table
+  and sections are printed, it counts in `Errors:`, not in `broken`, 8.3). A lint run gives
+  exit 1 for the same template too (7.5, 2.7). Rationale: the template cannot state what
+  its author meant, so CI must stop; keeping it out of `broken` keeps "broken" meaning
+  "cannot be read". A template path that does not exist is `MTL910` and
   one that is not a regular file is `MTL911`: exit 2 (checks in 4.3, "Template file checks").
   No config and no template path: `MTL923`.
 - Disable directives (4.4) play no role: no target is read, and a directive-like comment in a
@@ -1450,15 +4161,20 @@ templates:`, `Run errors:`) and `No files linted.` is not printed.
 | Code | Meaning                                                                                                    |
 | ---- | ---------------------------------------------------------------------------------------------------------- |
 | 0    | No file with errors, no broken template, no run error. Warnings may exist. Also `--help`, `--version`.     |
-| 1    | At least one target has an error, or a template is broken, and there is no run error.                      |
+| 1    | At least one target has an error, or a template is broken, or a template has a template error (`MTL017`, `MTL018`, `MTL019`, `MTL030`; in a lint run and in `--verify`, A72l, A72m, A72n), and there is no run error. |
 | 2    | A run error occurred (usage, config, missing root, template or file). Takes precedence over 1.             |
 
 The engine keeps going after a run error when the remaining work is independent (D14), and
 reports exit 2 at the end. A usage or config validation error stops before any lint.
 
+A template error in a lint run (owner decision 2 of A72l): the `MTL017`, `MTL018`,
+`MTL019` and `MTL030` errors of a template are printed on the template file in each pair block that uses it (8.2), every
+target of the pair is still linted, and the run exits 1 even when every target passes
+(exit 2 still wins on a run error). No directive can hide it (DIR6).
+
 Suppressed diagnostics (4.4) are removed before the exit code is computed: a target whose
 only errors are suppressed counts as passed (exit 0 when nothing else fails). The directive
-warnings `MTL020` to `MTL025` never change the exit code. Run diagnostics (`MTL9xx`) are never
+warnings `MTL020` to `MTL025` and the extra warning `MTL616` never change the exit code. Run diagnostics (`MTL9xx`) are never
 suppressible, so exit 2 is never hidden.
 
 ## 8. Output
@@ -1468,7 +4184,18 @@ suppressible, so exit 2 is never hidden.
 Every finding is `{ code, severity, message }`, plus optional `heading`, `line`, `column`
 (1-based, only where known, for example tag errors) and, in JSON only, `sourceLine` (the
 source line, below and 8.5). `heading` is set for heading and content
-findings (MTL601-603, MTL701-705; MTL604 has no anchor and gets no heading). A `field` member is NOT emitted (change C07). `message` is the legacy text
+findings (MTL601, MTL603, MTL605-617, MTL701-705; MTL604 has no anchor and
+gets no heading; the retired MTL602 had one while it was emitted).
+For `MTL610` it is the text of the missing template heading, for `MTL611` the text of the
+target parent heading, for `MTL612` the text of the unlisted target heading (change C10).
+For `MTL605`, `MTL607` and `MTL608` it is the label of the pattern heading, for `MTL606` and
+`MTL609` the text of the reported target heading (change C12, 2.10), for `MTL614` the text of
+the first listed tail heading and for `MTL615` the text of the undeclared child (A72k), for
+`MTL616` the text of the first listed tail heading (A72l), for `MTL617` the text of the
+first listed instance without order key (A72m), for `MTL613` the text of the later
+duplicate heading (A80c, 2.11); for `MTL601` it stays the text of
+the missing template heading, with or without the hint. The template diagnostics `MTL010`
+to `MTL019` and `MTL030` carry no `heading` member. A `field` member is NOT emitted (change C07). `message` is the legacy text
 without the code. Comparisons with the legacy output use `(path, severity, code, message)` after normalizing
 separators (D18). The directive warnings `MTL020` to `MTL025` carry `line` and `column` of
 the directive in the target (4.4). The anchor line used for suppression (4.4, DIR5) is
@@ -1485,7 +4212,8 @@ resolved once per diagnostic, by the runner, in this order:
 
 The source file is the file the diagnostic belongs to: the TARGET file for a target
 diagnostic (the field, filename, heading, content and directive codes), the TEMPLATE file for
-a template-phase diagnostic (`MTL010` to `MTL013`, shown by `--verify`, 8.3). `MTL001` to
+a template-phase diagnostic (`MTL010` to `MTL019` and `MTL030`, shown by `--verify`, 8.3;
+the template errors `MTL017`, `MTL018`, `MTL019` and `MTL030` also in a lint run, 8.2). `MTL001` to
 `MTL004` (no position, no anchor) and the run diagnostics `MTL9xx` have no source line. A line
 number outside the file (below 1 or above its line count) gives no source line. Line numbers
 and text follow the line-ending normalization of 1.1: CRLF and a lone CR are line ends, a
@@ -1495,12 +4223,12 @@ read again. What the runner keeps while matching, and what stays on a diagnostic
 (8.2, EX8).
 
 Rationale for step 2: most findings concern one key or heading and have no column, so a
-position-only excerpt would show almost nothing (in a lint run only `MTL020` to `MTL025` have
-a position). The anchor is already known, cheap (a table lookup) and unambiguous (DIR5 gives
+position-only excerpt would show almost nothing (in a lint run only `MTL020` to `MTL025`
+and the template errors `MTL017` to `MTL019` and `MTL030` have a position). The anchor is already known, cheap (a table lookup) and unambiguous (DIR5 gives
 one target line per code, or none), and it is the line a user must edit: the key line of a
 field, the heading line of a section. A diagnostic about the whole file (`MTL101`, a missing
-key, `MTL601`, `MTL602`, `MTL604`) has no anchor and no excerpt: showing line 1 or the
-first heading would point at a line that did not cause it.
+key, `MTL601`, `MTL604`, `MTL605`, `MTL607` with no instance) has no anchor and
+no excerpt: showing line 1 or the first heading would point at a line that did not cause it.
 
 ### 8.2 Text format
 
@@ -1582,10 +4310,21 @@ Rules:
   The legacy extra line `(skipping remaining N target file(s) for this template)` is dropped
   (change C02). The template is counted once in `checked` and once in `broken`, and is listed
   under `Broken templates:`.
+- Template with a template error (`MTL017`, `MTL018`, `MTL019`, `MTL030`, 2.7; owner decision 2 of A72l): under
+  its `Template:` and `Target:` lines, before the files of the pair, one entry
+  `✗ <template> (template)` (`FAIL <template> (template)` in `plain`), then one `error` line
+  per template error, in template line order then code, each with the excerpt of its
+  TEMPLATE line and a caret row (EX1 to EX6; the column is known). The template is not
+  broken: the files of the pair are then linted and printed as usual. The entry is printed
+  in every block of a pair that uses the template; the template is counted once in
+  `Templates:` `checked` (not in `broken`, not in `Total files`, `Passed` or `Failed`) and
+  listed once, by path, under `Failed templates:`. Template warnings (`MTL010` to `MTL016`)
+  are never printed in a lint run. Worked example 5 of 2.10.
 - `Run errors:` and `Run warnings:` are shown only when greater than 0 (never as `0`).
-  `Broken templates:` and `Failed files:` lists appear only when non-empty, in that order.
-  The line `All files passed!` appears only when there is no failed file, no broken template,
-  no run error and at least one file was linted (run warnings do not prevent it).
+  `Broken templates:`, `Failed templates:` (A72l) and `Failed files:` lists appear only when
+  non-empty, in that order. The line `All files passed!` appears only when there is no
+  failed file, no broken template, no failed template, no run error and at least one file
+  was linted (run warnings do not prevent it).
   `No files linted.` replaces it only when zero files were linted, there is no broken
   template and no error-severity run diagnostic (same single rule as 7.4); otherwise the
   failure summary shows and `No files linted.` is not printed.
@@ -1597,7 +4336,8 @@ Rules:
   greater than 0 (never as `0`), so the sample above has none. Suppressed diagnostics are
   never printed and never count in `Warnings:`, `Failed` or `Failed files:`.
 - `--quiet` prints only the `✗` lines with their `error` lines (and the excerpts of those
-  lines, see below), `TEMPLATE ERROR` lines and run errors. Nothing when clean.
+  lines, see below), the template entries with their template errors, `TEMPLATE ERROR`
+  lines and run errors. Nothing when clean.
 
 #### Source excerpt (change C09, AS14)
 
@@ -1650,9 +4390,11 @@ Rows added under a diagnostic line, in `pretty` and `plain` alike:
   window, and for the JSON `sourceLine` the first 100 characters) and a few numbers; each
   string is a copy that owns its characters, so a diagnostic never keeps the line, nor the
   file text, alive. The prepared lines live only while the diagnostics of one file are
-  matched. In a lint run the template text is not retained after it is parsed (no template
-  line is ever quoted in lint mode); `--verify` holds a template text only until its tag
-  warnings have their excerpts. A source line is therefore never held per diagnostic, and a
+  matched. In a lint run the template text is not retained after it is parsed: the only
+  template lines quoted in lint mode are those of the template errors (`MTL017`, `MTL018`,
+  `MTL019`, `MTL030`; A72l, A72m, A72n), whose excerpts are built from the parsed text before it is dropped, at the same
+  bounded cost per diagnostic; `--verify` holds a template text only until its tag
+  diagnostics have their excerpts. A source line is therefore never held per diagnostic, and a
   report of N diagnostics holds O(N x 100) characters of source, not O(N x line length).
 - EX9. Echo. An excerpt echoes the content of the linted file, including frontmatter values
   such as tokens, e-mail addresses or paths, into the terminal and into CI logs and JSON
@@ -1661,7 +4403,7 @@ Rows added under a diagnostic line, in `pretty` and `plain` alike:
   content should not write it into lines that lint messages can quote.
 
 Example (a caret row exists only for a diagnostic with a column: in a lint run
-`MTL020` to `MTL025`):
+`MTL020` to `MTL025` and the template errors `MTL017` to `MTL019` and `MTL030`):
 
 ```text
   ✗ docs/adr/0004-fourth.md
@@ -1702,18 +4444,58 @@ Unknown tags found (typo or unimplemented feature):
         |                 ^
 ```
 
-- The `Filename:` line only when the template declares it. Columns are padded to the widest
-  name and type, the rule line is a run of `-` of the header length.
-- Rule order per field: presence, constant, case, elements case, value-filename, count min,
-  count max, range min, range max, order, scheme (sorted), io, enum options. `-` when none.
-- Headings print as `  <#s> <text> (<rules>)`, presence first, then content rules.
+- The `Filename:` line only when the template declares it. The line `Unique heading names:
+  [unique-headings-names]` (A80c, 2.11) only under the template-wide switch, right after
+  `Filename:` (or in its place), then the one blank line before the table. Columns are padded
+  to the widest name and type, the rule line is a run of `-` of the header length.
+- Rule order per field: presence, constant, case, elements case, shape, elements shape,
+  value-filename, count min, count max, range min, range max, order, scheme (sorted), io, enum
+  options. `-` when none. Shape tokens (change C11, 2.9): `format:semver`, `format:date`,
+  `format:elements:semver`, `format:elements:date` (the first tag of each kind).
+- Headings print as `  <#s> <text> (<rules>)`, presence first, then content rules. The
+  heading pattern tags (change C12, 2.10) print right after presence, the first tag of each
+  kind, in this order: `pattern:"<pattern>"`, `repeat-rules:same-level`,
+  `repeat-rules:same-level:min:N`, `repeat-rules:same-level:max:N`, then the order tag in
+  its canonical lowercase form (`order:ascending`, `order:descending`,
+  `order:first:number:ascending` and the other `first:` forms of 2.10, A72m, `semver` ones
+  since A72n). A tag ignored
+  by `MTL015` or a pattern that is invalid (`MTL014`) still
+  prints as written: the table shows the template, the sections below say what is wrong.
+  The presence token of the dropped `exist` tag no longer exists (A72m): such a heading
+  prints with `presence:required` and its text keeps the malformed bracket (2.6).
 - The unknown tags section lists fields first, then headings. Malformed tags (`MTL012`) are
   listed in a section `Malformed tags:` with line and column. Misplaced tags (`MTL013`) are
-  listed in a section `Misplaced tags:` with line and column.
+  listed in a section `Misplaced tags:` with line and column. Invalid patterns (`MTL014`,
+  2.10, change C12) are listed in a section `Invalid patterns:` with line and column, after
+  `Misplaced tags:` (sections follow code order). Tags without effect (`MTL015`,
+  2.7) are listed in a section `Conflicting tags:` with line and column. Missing date formats
+  (`MTL016`, 2.9, change C11) are listed in a section `Date fields without format:`
+  with line and column (worked example 2 of 2.9). Duplicate patterns (`MTL017`, 2.10, A72k)
+  follow, in a section `Duplicate patterns:`, one item per finding, `  - <message>
+  (line L, column C)` with its excerpt, like the other sections (worked example 3 of 2.10).
+  Contradictory minimums (`MTL018`, 2.10, A72l) follow, in a section `Optional
+  headings with a minimum:`, in the same item form. Child order conflicts (`MTL019`, 2.7,
+  A72m) follow, in a section `Child headings out of level order:`, in the same item form
+  (worked example 3 of 2.6). Order tags without repeat (`MTL030`, 2.7, A72n) are listed
+  last, in a section `Order tags without repeat:`, in the same item form (worked example 7
+  J of 2.10).
+- A template with at least one template error (`MTL017`, `MTL018`, `MTL019`, `MTL030`) prints its header line with the
+  fail word (`✗ <path>` in `pretty`, `FAIL <path>` in `plain`) instead of `✓` / `PASS`, then
+  its table as usual. The summary gains the line `Errors:       <n>` (the number of template
+  errors of the run) right after `Templates:`, shown only when greater than 0, and the
+  closing line `All templates passed!` is not printed when it is greater than 0 (as for a
+  broken template, no other closing line replaces it). `--quiet` still prints such a
+  template: its fail header line and its `Duplicate patterns:`, `Optional headings with
+  a minimum:`, `Child headings out of level order:` and `Order tags without repeat:`
+  sections only (an error is never hidden by `--quiet`).
+- Every heading level is listed (H1 to H6, change C10), in template order, with the same
+  `<#s>` prefix; `content:subheadings:disallow` prints in the rules list after the other
+  content rules, then `content:subheadings:no-extra` (A72k), then `unique-headings-names`
+  last (A80c, 2.11; once, however often the tag is written).
 - A broken template prints `TEMPLATE ERROR: <template> - <message>` instead of its table.
-- Source excerpt (change C09, AS14). Every item of the three sections above is followed by
-  the excerpt of its TEMPLATE line (the tag warnings `MTL010` to `MTL013` all carry line and
-  column), with the rules EX2 to EX6 of 8.2 except that the rows are indented 6 spaces
+- Source excerpt (change C09, AS14). Every item of the tag sections above is followed by
+  the excerpt of its TEMPLATE line (the tag diagnostics `MTL010` to `MTL019` and `MTL030` all carry line
+  and column), with the rules EX2 to EX6 of 8.2 except that the rows are indented 6 spaces
   instead of 8 (the item text starts at column 5, the excerpt sits 2 columns to the right of
   it, as in 8.2). The caret is under the character the `column` names (for a malformed tag,
   the bad part). An item whose line does not exist has no excerpt. Example:
@@ -1724,8 +4506,9 @@ Unknown tags found (typo or unimplemented feature):
         2 | tags: ["a"] # [count:min:abc]
           |                          ^
   ```
-- `--quiet` hides the table and shows only broken templates and run errors; the sections, and
-  so the excerpts, are hidden with the table.
+- `--quiet` hides the table and shows only broken templates, templates with a template error
+  (as above) and run errors; the other sections, and so their excerpts, are hidden with the
+  table.
 
 ### 8.4 Ordering
 
@@ -1735,7 +4518,9 @@ Everything is deterministic:
 2. Within a root: pairs in config order.
 3. Within a pair-root: files sorted by root-relative path, plain code-unit order, `/`
    separators, case-sensitive, locale independent.
-4. Within a file: errors, then warnings, each in emission order (4.1).
+4. Within a file: errors, then warnings, each in emission order (4.1). Within a pair-root
+   block of a lint run, the template entry of a template with template errors (8.2) comes
+   before the files; its errors sort by template line, then code.
 5. `--verify`: templates in config pair order, deduplicated by resolved path.
 
 ### 8.5 JSON format
@@ -1806,9 +4591,23 @@ lists are complete), so the counts above also include the two passing files of t
 sample.
 
 - `mode` is `lint` or `verify`. In verify mode `results` is replaced by `templates`: for each
-  template `{ path, status, filenameCase, fields: [{ name, type, rules }], headings: [{ level, text, rules }], diagnostics }`.
-- `template.status` is `ok` or `broken`; a broken template carries `error` (a diagnostic) and
-  an empty `files` array.
+  template `{ path, status, filenameCase, uniqueHeadingNames, fields: [{ name, type, rules }], headings: [{ level, text, rules }], diagnostics }`.
+  `uniqueHeadingNames` (A80c, 2.11) is a boolean, always present, `false` without the
+  template-wide `# [unique-headings-names]` switch, right after `filenameCase`; additive,
+  pinned by the template key-order test of `tests/unit/reporters/json.test.ts`.
+  A verify template `status` is `ok`, `broken`, or `fail` (A72k: it parses and has a
+  template error, `MTL017`, `MTL018` since A72l, `MTL019` since A72m or `MTL030` since A72n, in its `diagnostics` with `severity`
+  `error`). The verify
+  `summary` gains `errors` (the number of template errors, always present, 0 when none),
+  right after `broken`: `templates`, `broken`, `errors`, `warnings`, `suppressed`,
+  `runErrors`, `exitCode`. Both are additive, so `schemaVersion` stays 1.
+- `template.status` is `ok`, `broken` or `fail`; a broken template carries `error` (a
+  diagnostic) and an empty `files` array. A lint template with template errors (`MTL017`,
+  `MTL018`, A72l; `MTL019`, A72m; `MTL030`, A72n) has `status` `fail` and carries `diagnostics`, the array of those errors
+  (each with `line`, `column` and `sourceLine` of its template line, 8.1), and its `files`
+  array as usual (the targets are linted). `summary.exitCode` is 1 for it (7.5). No summary
+  key is added (the failed templates are the results with `status` `fail`), so
+  `schemaVersion` stays 1.
 - `unmatched` lists the file-list arguments that matched no pair (paths as normalized
   strings). It is empty in a full run.
 - `runErrors` holds the error-severity `MTL9xx` diagnostics with their `pair` or `root` when
@@ -1822,15 +4621,15 @@ sample.
   `errors` or `warnings` array, and a file whose only errors are suppressed has status
   `pass`. In verify mode it is 0. The key is additive, so `schemaVersion` stays 1. Its
   position is fixed: between `filesWithWarnings` and `templatesChecked` (sample above). In
-  the verify document it follows `warnings` (`templates`, `broken`, `warnings`,
-  `suppressed`, `runErrors`, `exitCode`). Pinned by the summary key-order list of
+  the verify document it follows `warnings` (`templates`, `broken`, `errors`, `warnings`,
+  `suppressed`, `runErrors`, `exitCode`; `errors` since A72k). Pinned by the summary key-order list of
   `tests/unit/reporters/json.test.ts` and the `summary` object of every
   `tests/fixtures/runner/*/expected.json`.
 - `--quiet` does not shrink JSON.
 - `sourceLine` (change C09, AS14) is an optional string member of a diagnostic, placed right
   after `column`. It is the text of line `line` of the diagnostic's source file (the target
   file for the diagnostics of `files[]`, the template file for the `diagnostics` of a verify
-  template, 8.1), shown as in EX3 of 8.2 (escapes, whitespace controls as single spaces, runs
+  template or of a lint template with template errors, 8.1), shown as in EX3 of 8.2 (escapes, whitespace controls as single spaces, runs
   not collapsed) and cut after 100 characters with `...` when longer (EX5, but never a
   window and no caret: `column` already says where). It is present exactly when the
   diagnostic has `line` and that line exists in the file. It is absent otherwise: an
@@ -1866,13 +4665,13 @@ pending, ADR 0002). A negated-set lexer token needs a `TOKEN_SAMPLES` entry in
 
 | File                      | Codes                 | Tags and checks                                                                      |
 | ------------------------- | --------------------- | ------------------------------------------------------------------------------------ |
-| `src/rules/syntax.ts`     | `MTL001`-`MTL004`, `MTL010`-`MTL013`, `MTL020`-`MTL025` | Frontmatter and YAML parse errors, unknown, malformed and misplaced tags; target disable directive warnings (4.4). |
+| `src/rules/syntax.ts`     | `MTL001`-`MTL004`, `MTL010`-`MTL019`, `MTL020`-`MTL025`, `MTL030` | Frontmatter and YAML parse errors, unknown, malformed, misplaced and conflicting tags, invalid heading patterns, date fields without format, duplicate heading patterns, optional repeat headings with a minimum, child headings out of level order, order tags without repeat; target disable directive warnings (4.4). |
 | `src/rules/filename.ts`   | `MTL101`, `MTL102`    | `[filename:case:<convention>]`, `[value:filename]`.                                  |
 | `src/rules/presence.ts`   | `MTL201`, `MTL202`    | `[presence:required]`, `[presence:optional]`, `[presence:conditional:<text>]` on fields; unknown keys. |
-| `src/rules/format.ts`     | `MTL301`-`MTL305`     | `[format:constant:...]`, `[format:snake_case]`, `[format:kebab-case]`, `[format:elements:...]`, `[format:scheme:...]`. |
+| `src/rules/format.ts`     | `MTL301`-`MTL309`     | `[format:constant:...]`, `[format:snake_case]`, `[format:kebab-case]`, `[format:elements:...]`, `[format:scheme:...]`, `[format:semver]`, `[format:date]`, `[format:elements:semver]`, `[format:elements:date]`. |
 | `src/rules/bounds.ts`     | `MTL401`-`MTL407`     | `[count:min:N]`, `[count:max:N]`, `[range:min:N]`, `[range:max:N]`, `[order:ascending]`. |
 | `src/rules/type.ts`       | `MTL501`-`MTL517`     | The 17 types and enum membership; type inference lives in the engine core.           |
-| `src/rules/heading.ts`    | `MTL601`-`MTL604`     | Heading suffix presence tags (required, exist, optional, conditional, template-only) and order. |
+| `src/rules/heading.ts`    | `MTL601`-`MTL617` (`MTL602` retired, rule removed by phase Pc; `MTL613` since A80c) | Heading suffix presence tags (required, optional, conditional, template-only) and order, at every level and per parent section, on the positional match; `[content:subheadings:disallow]`, `[content:subheadings:no-extra]`; `[pattern:"..."]`, `[repeat-rules:same-level...]` and the eight `[order:...]` forms on headings (2.10); the extra-heading warning of every run's tail; `[unique-headings-names]`, template-wide and per heading (2.11). |
 | `src/rules/content.ts`    | `MTL701`-`MTL705`     | `[content:non-empty]`, `[content:table]`, `[content:list]`, `[content:min-lines:N]`, `[content:max-lines:N]`. |
 | `src/rules/io.ts`         | `MTL801`-`MTL805`     | `[io:exists]`.                                                                       |
 
@@ -1893,6 +4692,606 @@ none); line directives and ranges match by code and anchor line, and never a dia
 without anchor. The JSON reporter has `summary.suppressed` between `filesWithWarnings` and
 `templatesChecked` (8.5). A62 documents the directives in the README.
 
+All heading levels (change C10, ADR 0009, Epic L of `tmp/PLAN.md` row A72), split by phase.
+A72b (this spec and the ADR) adds the four codes `MTL015`, `MTL610`, `MTL611`, `MTL612` to
+4.3 and to `tests/consistency/pending-rules.json`, and raises the spec-code pin of
+`tests/consistency/rules.test.ts` from 61 to 65. Handoff:
+
+- A72c grammar and tags: drop the `level > 2` early return of `src/tags/parser.ts` so every
+  level peels tags and reports `MTL011` to `MTL013`; add the `TAG_STRICT` keywords
+  `SUBHEADINGS` (`subheadings`) and `DISALLOW` (`disallow`) and one `bodyContentTag`
+  alternative `SUBHEADINGS COLON DISALLOW` (no new `bodyTagBody` alternative, so the pins
+  `tagFamily` 9, `tagWord` 10, `fmTagBody` 8, `bodyTagBody` 2 and the `TAG_TEXT` keywords
+  stay); the AST `content` tag of `src/tags/ast.ts` gains a `check` value for the new tag
+  (the A72c author picks the exact shape and keeps the AST kind check green); update the parser comment
+  that says only H1 and H2 are read, the stale doc comment at `src/tags/ast.ts:230`
+  ("Consumers building sections must filter `level <= 2`").
+- A72d tests for A72c (another agent): `tests/unit/document.test.ts` and
+  `tests/unit/regions.test.ts` cases that assert H3 to H6 keep their brackets are rewritten;
+  `MTL012` for `[content:subheadings]`, `MTL013` for the tag in frontmatter.
+- A72e engine and rules: `buildSections` keeps every level, `Section.level` is 1 to 6 and
+  gains the parent; scope, match and "checked" of 2.6; `MTL601` to `MTL604` and
+  `MTL701` to `MTL705` on the exact-level match; new rules `MTL610` to `MTL612` in
+  `src/rules/heading.ts` (phase `target`, step `headings`) and `MTL015` in
+  `src/rules/syntax.ts` (phase `template`); emission order and anchors of 4.3 and DIR5;
+  remove each code from `pending-rules.json` as it lands. Also the level filter at
+  `src/engine/load.ts:76` and every stale "H1/H2 only" comment in `src/engine/load.ts`
+  (lines 5, 74), `src/engine/model.ts` (lines 3, 63, 70), `src/runner/schema.ts:3` and
+  `src/tags/ast.ts` (lines 229, 241).
+- A72f fixtures and engine tests for A72e (another agent, committed with A72e): pass and fail
+  cases for `MTL610` (H3 missing, exist at H4, parent missing gives no `MTL610`), `MTL611`,
+  `MTL612` (unlisted H3 and H4 under the tag, topmost only, listed descendant does not reset,
+  allowed without the tag, `disable-line MTL612`), `MTL603` in section scope (a checked
+  `[presence:template-only]` H3 under a matched H2: fail when the target has it under that
+  H2, pass when it is absent or sits under another H2), template cases for `MTL015`; the
+  prose "Level 3 headings are not sections." in the targets of
+  `MTL601/fail-heading-only-at-level-three` and
+  `MTL603/fail-template-only-heading-in-code-fence-or-level-three-is-ignored` is reworded
+  (their results do not change); the two
+  fixtures renamed in 2.6 (`MTL601/fail-same-text-at-other-level-still-matches`,
+  `MTL603/fail-template-only-heading-at-other-level`); the worked examples of 2.6; any other
+  expectation that the full suite shows changed is listed in the phase report.
+- A72g `--verify` all levels (8.3; the `Conflicting tags:` section already shipped with
+  `MTL015`), `docs/migration.md` section "H3
+  and deeper headings are checked" (fix: add `[presence:optional]` or remove the heading from
+  the template; levels now matched exactly), README, `docs/architecture.md` (free code
+  ranges, heading model), `templates/CHANGELOG.template.md` interim tags, dogfood run. The
+  breaking change of C10 and ADR 0009 ships as a major release: the A53 release phase picks
+  the version number and writes the CHANGELOG release note that points to the migration
+  section.
+- Later epics: F (field formats) and P (heading patterns, repeat rules and order, spec phase
+  A72j) are specified below.
+
+Field formats (change C11, ADR 0010, AS16, Epic F of `tmp/PLAN.md` row A72), split by phase,
+one rule per phase (owner rule: each new rule has its own phase, QA and commit; tests and
+fixtures by another agent, committed with their rule). A72h (this spec and the ADR) adds the
+five codes `MTL016`, `MTL306`, `MTL307`, `MTL308`, `MTL309` to 4.3 and to
+`tests/consistency/pending-rules.json`, and raises the spec-code pin of
+`tests/consistency/rules.test.ts` from 65 to 70. Each rule phase removes its own code from
+`pending-rules.json` and adds its pass and fail fixtures (`check:rules` needs both). Handoff:
+
+- F1 grammar and tags (no rule): lexer `grammar/MdTemplateLexer.g4` mode `TAG_STRICT` gains
+  the keywords `SEMVER` (`semver`) and `DATE` (`date`); parser `grammar/MdTemplateParser.g4`
+  rule `fmFormatTag` gains the alternatives `fmShape` and `ELEMENTS COLON fmShape`, with a new
+  rule `fmShape : SEMVER | DATE`. No new family and no new `fmTagBody` alternative, so the
+  pins `tagFamily` 9, `tagWord` 10, `fmTagBody` 8, `bodyTagBody` 2 and the `TAG_TEXT`
+  keywords stay. AST (`src/tags/ast.ts`): two new frontmatter kinds, suggested
+  `format-shape` and `format-elements-shape` with `shape: "semver" | "date"`, in
+  `FRONTMATTER_KIND_SET` (the F1 author picks the exact names and keeps the AST kind check
+  green). Visitor `src/tags/visitors/format.ts` builds them; its header comment (lines 1 to 4)
+  lists the new tags. `pnpm run gen:parser` then `pnpm run check:parser`. Tests by another
+  agent: `[format:semver]`, `[format:DATE]` (case-insensitive), `[format:elements:date]`
+  parse; `[format:dates]` is `MTL012`; `[format:semver]` on a heading is `MTL013`.
+- F2 `MTL306` semver-mismatch: the SEMVER predicate in `src/engine/values.ts` (value pattern,
+  2.9; its header comment names it); `FIELD_STEPS` of `src/engine/rule.ts` gains `shape`
+  after `type` (and its doc comment, lines 49 to 53); the spelled-out step list and the
+  "10 present-value steps" comment of `tests/unit/pipeline.test.ts` (lines 269 to 280) gain
+  `shape` (11 steps); the rule in `src/rules/format.ts` (its header "All codes of the category
+  are ported" is updated); `--verify` rule token `format:semver` in `src/runner/schema.ts`
+  (header comment lines 7 to 9, rule order of 8.3). Fixtures `tests/fixtures/pairs/MTL306/`,
+  test `tests/target/format/MTL306-semver-mismatch.test.ts`.
+- F3 `MTL307` date-format-mismatch: the ISO DATE predicate in `src/engine/values.ts` (reuse
+  `DATE_PARTS` and the calendar test of `isValidDateValue`); the rule in
+  `src/rules/format.ts`, silent when the field type is `date` and `isValidDateValue` fails;
+  token `format:date`. Fixtures `tests/fixtures/pairs/MTL307/` (pass: ISO date; fail:
+  `2026-10`, `present`, a `string` field with `soon`; pass for this code: `2026-1-5` on a
+  `date` field gives only `MTL504`), test `tests/target/format/MTL307-date-format-mismatch.test.ts`.
+- F4 `MTL308` elements-semver-mismatch: rule in `src/rules/format.ts`, items as text (as
+  `MTL303`); token `format:elements:semver`. Fixtures `tests/fixtures/pairs/MTL308/`, test
+  `tests/target/format/MTL308-elements-semver-mismatch.test.ts`.
+- F5 `MTL309` elements-date-mismatch: rule in `src/rules/format.ts`, skips the items that
+  fail `isValidDateValue` when the field type is `list-of-date`; token
+  `format:elements:date`. Fixtures `tests/fixtures/pairs/MTL309/` (worked example 1 of 2.9),
+  test `tests/target/format/MTL309-elements-date-mismatch.test.ts`.
+- F6 `MTL016` date-format-missing: rule in `src/rules/syntax.ts`, phase `template`, position
+  key line and column 1 (header comment line 3 "MTL010-MTL013" updated); `--verify` section
+  `Date fields without format:` as the last section (after `Conflicting tags:`, which
+  `MTL015` added) in `src/cli/verify-report.ts`
+  (header lines 8 to 10, the section list near line 212); stale "MTL010 to MTL013" comments
+  in `src/engine/pipeline.ts:72` and `src/tags/parser.ts:574`. Fixtures
+  `tests/fixtures/templates/MTL016/` (fail: `date` and `list-of-date` without format, the
+  scalar tag on a list; pass: both tags present, a `string` field), test
+  `tests/syntax/syntax/MTL016-date-format-missing.test.ts`; CLI fixture for worked example 2.
+  Expect every existing `--verify` expectation with a `date` field to gain the section.
+- F7 docs and dogfood: README rule syntax and `docs/architecture.md` (free code ranges),
+  `[format:date]` on the date fields of `templates/*.template.md` and
+  `templates/ai/AGENTS.template.md` (all ten carry `type=date` without format today, so
+  `--verify` warns until then), `templates/CHANGELOG.template.md` line 2, dogfood run (every
+  dogfood date is already `YYYY-MM-DD`). Minor release: no existing target changes its
+  findings without a new tag.
+
+Heading patterns, repeat rules and order (change C12, ADR 0011, AS17, Epic P of
+`tmp/PLAN.md` row A72), and positional heading matching (ADR 0012, phase A72k), split by
+phase, one rule per phase (owner rule, as Epic F; tests and fixtures by a different agent
+than the rule author, committed with their rule; `check:rules` needs a pass and a fail
+fixture per registered code). A72j (spec and ADR 0011) added the six codes `MTL014`,
+`MTL605`, `MTL606`, `MTL607`, `MTL608`, `MTL609` and raised the spec-code pin of
+`tests/consistency/rules.test.ts` from 70 to 76. A72k (ADR 0012) added the three
+codes `MTL017` (heading-pattern-duplicate), `MTL614` (heading-repeat-miss) and `MTL615`
+(heading-subheadings-only-declared) to 4.3 and to `tests/consistency/pending-rules.json`,
+and raised the pin from 76 to 79. A72l (owner decisions of AS17, ADR 0011
+and 0012 updated) added the two codes `MTL018` (heading-optional-min-conflict, template
+error) and `MTL616` (heading-extra, warning) to 4.3 and to `pending-rules.json` and raised
+the pin from 79 to 81; it also widened `MTL017` (exact-text headings, lint runs) and added the
+`MTL601` hint, without new codes. A72m (this revision, owner decisions 1 to 8 of
+2026-11-03, AS17, revision sections of ADR 0011 and ADR 0012) adds the two codes `MTL019`
+(heading-child-order-conflict, template error) and `MTL617` (heading-order-key-missing) to
+4.3 and to `pending-rules.json` and raises the pin from 81 to 83; it retires `MTL602` (its
+row stayed, marked retired, while the rule was registered; phase Pc, done, removed both and
+lowered the pin by one), drops the `exist` presence tag, revises placeholders (formats, `{char}`), the
+order tags and the content label. A72n (owner decisions 1 to 5 of 2026-11-03, AS17,
+revision sections of ADR 0011 and ADR 0012) adds the code `MTL030`
+(heading-order-without-repeat, template error) to 4.3 and to `pending-rules.json` and
+raises the pin from 83 to 84 (Pc then lowered it to 83, done); it also lets `MTL019` fire for a
+parent with an invalid pattern, adds the `[order:first:semver:...]` forms, renames `{int}`
+to `{digits}` with the formats `signed`, `hex`, `uid` and `padding:N`, lets `{number}`
+take leading zeros and the format `precision:N`, makes the `{text}` case formats Unicode
+and never digits-only and adds `lowercase` and `uppercase`. Each rule phase removes only its own code from
+`pending-rules.json`. `MTL613` stays reserved (4.2). Rationale for the order: the positional
+matcher changes every heading rule, so it lands first and alone (breaking, its own QA);
+the grammar follows without any rule; then one rule per phase. The two-competing-patterns
+fixtures planned by A72j for P3 and P4 ("the earlier pattern owns the heading") are dropped:
+under the positional run there is no owner, only the position; they are replaced by the
+owner examples A to H of 2.10 worked example 4. Phase order after A72n: Pm (done), P1, P2,
+P3, P4, Pf, Pl, P5, P6, P7, P7h, P7a, P7b, P7c, P7d, P7e, P7i, P7j, P7f, P7g, P8, Pc
+(A72n adds P7j). Rationale
+for Pc LAST (owner list named the cleanup first): removing `exist` before patterns match
+(P3, P4) would leave the ten shipped templates and about sixty fixtures without any
+replacement, so P8 first migrates them to `[pattern:"{text}"]` while `exist` still works
+(each migrated file checked against the working pattern engine), then Pc removes the old
+path; both land in the same major release, so no release has docs and code disagreeing.
+
+Status note (2026-11-04): phase Pc is DONE (`[presence:exist]` and `MTL602`
+removed, `HeadingMatch.textMatch` removed, the pin is 83), and the `exist` migration of the
+shipped templates and fixtures is DONE. The handoff below is
+the planning record and is kept as written. Fixture names that were renamed or deleted
+since are marked in brackets.
+
+Handoff:
+
+- Pm positional matcher (DONE; its `exist` parts are superseded by A72m
+  and were removed by phase Pc, done). Refactor `matchHeadings` and
+  `HeadingMatch` in `src/engine/model.ts` from the first-match rule to the positional run
+  of 2.10 steps 1 to 4 for exact-text and `exist` headings (patterns do not
+  parse yet): sequences per level and scope (2.6 "Sequence"), the cursor, set-aside
+  template-only siblings (step 1, `MTL603` on the first), literal positions (step 3b),
+  `exist` positions (step 3a), the tail. `HeadingMatch` must expose, per position, the match
+  (or none) and per scope the tail, so later phases add placeholder, mismatch, repeat and
+  tail data without another refactor. Callers: `src/rules/heading.ts` (`MTL601` to `MTL604`,
+  `MTL610` to `MTL612`; update its header comment, lines 1 to 12, which describes the
+  first-match rule) and `src/rules/content.ts` (`MTL701` to `MTL705` read the positional
+  match, `exist` included, 2.6). Expectations that change (another agent rewrites them and
+  lists every other change the full suite shows): `tests/fixtures/pairs/MTL604/*` whose two
+  headings share one level (`fail-two-headings-swapped`,
+  `fail-present-optional-heading-out-of-order`, `fail-present-conditional-heading-out-of-order`,
+  `fail-duplicate-target-heading-uses-first-match` [now `fail-duplicate-target-heading-is-a-tail-extra`],
+  `fail-exist-heading-uses-first-heading-of-the-level` [removed],
+  `fail-exist-heading-matched-by-level` [now `fail-pattern-heading-matched-by-level`],
+  `fail-heading-text-with-quote-uses-python-repr`,
+  `fail-case-differing-heading-is-not-matched-for-order`
+  [now `fail-case-differing-heading-takes-nothing-both-missing`],
+  `fail-equal-index-is-not-an-order-problem` (now also `MTL602` for the `exist` position)
+  [removed],
+  `fail-order-checked-without-absent-optional-heading` [removed] (now `MTL601` for `Summary`, no
+  `MTL604`); a swapped same-level pair now gives
+  `MTL601` and no `MTL604`); `tests/fixtures/pairs/MTL611/*` with same-level children
+  (`fail-children-out-of-order-under-matched-parent`, `fail-last-pair-swapped`,
+  `fail-optional-child-present-out-of-order-counts`, `fail-section-scope-parent`,
+  `fail-two-parents-reported-in-template-order`, `fail-equal-index-pair-after-a-later-heading`
+  and the others that swap siblings; they become `MTL610` cases or are rewritten as
+  cross-level order cases); `MTL601/pass-leading-h3-without-template-parent-matches-anywhere-in-file`
+  (an extra before the heading is no longer skipped), `MTL601/fail-multiple-missing-template-order`,
+  `MTL602/fail-exist-is-a-set-check-not-a-count` [removed with the whole `MTL602` folder],
+  `MTL603/fail-template-only-h3-first-match-in-parent-section-anchors`
+  [now `fail-template-only-h3-first-sibling-in-parent-section-anchors`],
+  `MTL610/fail-emitted-in-template-order-not-target-order`, `MTL610/fail-heading-only-in-another-parent-section`,
+  the `exist` content cases (each now a pattern case): `MTL702/fail-exist-heading-same-text-section-without-table`
+  [now `fail-pattern-heading-checks-the-sibling-at-its-position`],
+  `MTL702/pass-exist-heading-checks-same-text-section`
+  [now `pass-pattern-heading-checks-the-sibling-at-its-position`],
+  `MTL702/fail-section-scope-exist-heading-checks-same-text-section`
+  [now `fail-section-scope-pattern-heading-checks-the-sibling-at-its-position`],
+  `MTL702/pass-section-scope-exist-heading-checks-same-text-section`
+  [now `pass-section-scope-pattern-heading-checks-the-sibling-at-its-position`],
+  `MTL702/pass-section-scope-exist-heading-without-same-text-skips-content`
+  [now `pass-section-scope-pattern-heading-without-sibling-skips-content`] (the `exist`
+  position read the sibling it took; the pattern position does the same), the `fail-*-in-other-section` cases of `MTL702` to
+  `MTL704` and the `fail-first-repeated-heading-*` cases of `MTL701` to `MTL705` (to re-check:
+  a duplicate is now in the tail), and the `tests/target/heading/*.test.ts` and
+  `tests/target/content/*.test.ts` that pin them; the worked examples of 2.6 (unchanged
+  results, re-derived in A72k) become regression fixtures. The dogfood run (`templates/`,
+  `docs/adr/`) is re-checked and any drift is listed. Owner examples B, C and E (exact-text
+  parts only) become fixtures here. Major release (C10 note).
+- P1 grammar and tags (no rule). Lexer `grammar/MdTemplateLexer.g4`: `TAG_STRICT` keywords
+  `PATTERN` (`pattern`), `REPEAT_RULES` (`repeat-rules`), `SAME_LEVEL` (`same-level`),
+  `DESCENDING` (`descending`), `NO_EXTRA` (`no-extra`); a pattern mode entered after
+  `pattern:"` (as `CONSTANT_ARG` enters `TAG_FREE`) with tokens for `{{`, `}}`, a
+  placeholder candidate `{...}` (name, the `:format:fmt` option and its optional `:arg`,
+  A72n; the parts are split and checked when the AST pieces are built, 2.10 placeholder
+  shape), a lone `{` or `}`, an
+  escape pair `\` plus one character, literal text (a negated set: add a `TOKEN_SAMPLES`
+  entry in `tests/consistency/consistency.ts`) and the closing unescaped `"`. Stage 1
+  (`TAG_TEXT`, parser `tagCandidate`) must accept a `]` and an escaped `\"` inside the quotes
+  and the dashed family `repeat-rules`. Parser `grammar/MdTemplateParser.g4`: `tagFamily`
+  gains `PATTERN` and `REPEAT_RULES`; `bodyTagBody` gains `bodyPatternTag`, `bodyRepeatTag`
+  (`REPEAT_RULES COLON SAME_LEVEL (COLON fmBound COLON NUMBER)?`, a `0` is malformed) and
+  `bodyOrderTag` (A72m, A72n: `ORDER COLON (FIRST COLON (<number keyword> | DATE | SEMVER)
+  COLON)? (ASCENDING | DESCENDING)`, with new `TAG_STRICT` keywords for `first` and for the
+  word `number`, whose token name the P1 author picks because `NUMBER` is the digits token;
+  `DATE` and `SEMVER` are the keywords of F1); `bodyContentTag` gains
+  `SUBHEADINGS COLON NO_EXTRA`; `fmOrderTag` is unchanged. No `exist` handling is added
+  anywhere (A72m); the `EXIST` keyword itself stayed until phase Pc (done, removed). The placeholder names
+  (`{char}` included) and format names (2.10 table) are checked against the fixed table
+  when the AST pieces are built, not by lexer keywords. Pins of
+  `tests/consistency/rules.test.ts`: `tagFamily` 9 to 11, `bodyTagBody` 2 to 5; `tagWord` 10
+  and `fmTagBody` 8 stay; the `TAG_TEXT` keyword list stays unless stage 1 needs a keyword
+  (then P1 records why). AST `src/tags/ast.ts`: body kinds, suggested `pattern` (the raw
+  text and the pieces: literal, placeholder name, format and argument, or an invalid piece
+  with its reason and column), `repeat` (`bound: "none" | "min" | "max"`, `n`) and `order`
+  (`direction`, and `by`: whole text, first number, first date or first semver), in `BODY_KIND_SET`, and the `content` kind gains a `check` value for
+  `no-extra` (the P1 author picks the names and keeps the AST kind check green). Visitors:
+  new `src/tags/visitors/pattern.ts` and `src/tags/visitors/repeat.ts` (registered in
+  `visitors/index.ts`), body order in `src/tags/visitors/order.ts`, `no-extra` in the content
+  visitor. `pnpm run gen:parser` then `pnpm run check:parser`. Tests by another agent
+  (`tests/unit/visitors.test.ts`, `tests/unit/tags.test.ts`, `tests/unit/document.test.ts`):
+  the tags parse at every level, case-insensitive, with a `]` and a `\"` inside the quotes;
+  the eight order forms parse; `[pattern:x]`, an unclosed quote, `min:0`, `[order:sideways]`,
+  the malformed order forms of 2.10 and
+  `[content:subheadings:no-extras]` are `MTL012`; the four tags and every `first:` order
+  form in frontmatter are `MTL013`;
+  `[order:ascending]` on a heading is no longer `MTL013` (the `"on a heading"` case of
+  `tests/unit/visitors.test.ts` flips).
+- P2 `MTL014` heading-pattern-invalid: rule in `src/rules/syntax.ts`, phase `template`,
+  position and the reasons of 2.10 (including the format argument reasons since A72n; header
+  comment updated); `--verify` section
+  `Invalid patterns:` between `Misplaced tags:` and `Conflicting tags:` in
+  `src/cli/verify-report.ts` (header lines 6 to 13 and the section list near line 214); the
+  heading rule tokens of 8.3 in `src/runner/schema.ts`; "not checked, not a position" for a
+  heading with an invalid pattern in `matchHeadings` (`src/engine/model.ts`). Fixtures
+  `tests/fixtures/templates/MTL014/` (fail: unknown placeholder, `{}`, malformed placeholder,
+  unknown format (`{text:format:full}`, `{char:format:upper}`, `{digits:format:decimal}`),
+  `{int}` as an unknown placeholder (A72n), the three argument reasons
+  (`{digits:format:padding}`, `{digits:format:padding:0}`, `{date:format:year:2}`),
+  unmatched `{` and `}`, adjacent placeholders (`{char}{text}`), invalid escape, empty
+  pattern, first problem only; pass: `{{semver}}` literal, `{SemVer}`, every placeholder
+  (`{char}` included) and every format of the table (A72m, A72n), `padding:3` and
+  `precision:2`, `\"` and `\\`), test
+  `tests/syntax/syntax/MTL014-heading-pattern-invalid.test.ts`; CLI fixture for worked
+  example 2 of 2.10.
+- P3 `MTL605` heading-pattern-missing: the pattern matcher (new `src/engine/pattern.ts`:
+  match of 2.10 on the parsed pieces, shortest-first cuts, values, the failing piece;
+  the DEFAULT format of every placeholder only (`{semver}` and `{date}` `full` through
+  `isSemver` and `isIsoDate` of `src/engine/values.ts`, `{digits}`, `{number}` `decimal`
+  (leading zeros allowed, A72n),
+  `{text}` `human` with the NUMERIC TEXT test, `{char}`, added there as value patterns; the
+  other formats are phase Pf); placeholder and literal
+  pattern positions (steps 3b, 3c without the mismatch) in `matchHeadings`
+  (`src/engine/model.ts`); the rule in `src/rules/heading.ts` (phase `target`, step
+  `headings`, no anchor, emission order of 4.3); `MTL601`, `MTL602` (until Pc, since removed) and `MTL610` skip pattern
+  headings; content rules read the pattern match; `MTL015` reason `the heading is
+  [presence:template-only]` for the pattern tag
+  (`src/rules/syntax.ts`; P4 and P7 extend it). Fixtures `tests/fixtures/pairs/MTL605/`
+  (file and section scope, optional absent passes, owner example D, a literal pattern whose
+  next sibling differs, `disable-file MTL605`), test
+  `tests/target/heading/MTL605-heading-pattern-missing.test.ts`; `MTL015` cases in
+  `tests/fixtures/templates/MTL015/`.
+- P4 `MTL606` heading-pattern-mismatch: the mismatch of steps 3c and 3d1 (a required
+  placeholder position takes a non-matching sibling), the message with `{piece}`; repeat
+  runs and instances (step 3d2): `HeadingMatch` gains one entry per instance so
+  section-scope descendants, content tags and `[content:subheadings:disallow]` run per
+  instance (`src/engine/model.ts`, `src/rules/heading.ts`, `src/rules/content.ts`); a
+  mismatch is not a match and not also `MTL612`; `MTL015` reason `the heading has no
+  [pattern:...]` for a repeat tag. Fixtures `tests/fixtures/pairs/MTL606/` (owner examples A,
+  E second target, F with a full SemVer, the bracketed `Unreleased` variant of worked example
+  1, an optional placeholder position takes nothing, no sibling left gives no `MTL606`,
+  `disable-line MTL606`), test `tests/target/heading/MTL606-heading-pattern-mismatch.test.ts`;
+  regression fixtures for `MTL610`, `MTL703` and `MTL612` per instance and for owner examples
+  B, C, G and H (a matching sibling is always taken).
+- Pf placeholder formats (no new code; A72m owner decision 4, A72n owner decision 4): the
+  non-default formats of the 2.10 table in `src/engine/values.ts` and
+  `src/engine/pattern.ts`: `{text}` `snakecase`, `camelcase`, `screamcase`, `kebabcase` on
+  the LETTER classes of 2.10 (Unicode general categories, at least one letter; NOT the
+  ASCII 2.3 case predicates, which stay for fields), `lowercase` and `uppercase`;
+  `{number}` `scientific` and `precision:N`; `{digits}` `signed`, `hex`, `uid` and
+  `padding:N` (the argument read from the AST piece of P1); `{semver}` `core` and
+  `major-minor`, `{date}` `year-month` and `year`; default names written explicitly
+  (`{text:format:human}`) equal no format. Fixtures in `tests/fixtures/pairs/MTL606/` and
+  `tests/fixtures/positional/` (each format: one accepted and one rejected value of the
+  2.10 list, owner example F, `## 007` under `{digits:format:padding:3}` and under
+  `{number}`, `## 2026` refused by `{text:format:snakecase}`), unit tests of the
+  predicates in `tests/unit/values.test.ts`.
+- Pl content label (no new code; A72m owner decision 3): `src/rules/content.ts` prints
+  `Section '{text}' (pattern "{pattern}")` (and the section-scope form) for a pattern
+  heading, 2.6 "Content tags"; exact-text labels unchanged. Fixtures: worked example 7 J of
+  2.10 and the content variant of worked example 1, in `tests/fixtures/pairs/MTL701/` and
+  `MTL702/`; the existing pattern-heading content expectations, if any, are updated.
+- P5 `MTL607` heading-repeat-min: count per repeat set, explicit `min` only, also at zero
+  (then no anchor and no `MTL605`), anchor on the first instance otherwise. Fixtures
+  `tests/fixtures/pairs/MTL607/` (below `min`, zero with `min` required and optional,
+  default minimum gives no `MTL607`), test
+  `tests/target/heading/MTL607-heading-repeat-min.test.ts`.
+- P6 `MTL608` heading-repeat-max: anchor on the instance `max + 1`; the bound does not stop
+  the run. Fixtures `tests/fixtures/pairs/MTL608/`, test
+  `tests/target/heading/MTL608-heading-repeat-max.test.ts`.
+- P7 `MTL609` heading-pattern-order (revised by A72m, owner decision 5): the order keys of
+  2.10 "Order" in `src/engine/pattern.ts`: the whole text in code-unit order, the FIRST
+  NUMBER scan, the FIRST DATE scan and the FIRST SEMVER scan with SemVer precedence (A72n)
+  of the `first:` forms (instances without key skipped in the pairs; reporting them is
+  P7h); one finding per repeat set on the first pair out of order with the count, message
+  ending in `{tag}`; `MTL015` reason `the heading has no [pattern:...]` (order tag; the
+  order tag on a pattern heading without repeat tag is `MTL030`, phase P7j); `--verify`
+  order tokens of 8.3. Fixtures `tests/fixtures/pairs/MTL609/` (worked example 1 of 2.10
+  and its date and version variants, two pairs out of order give one finding with
+  `2 pair(s)`, equal keys pass, owner example K and its string-order variant, `Epic A` /
+  `Epic B` of example J, a negative and a scientific first number, a skipped invalid date,
+  `1.10.0` against `1.9.0` under `[order:descending]`, `[order:first:date:descending]` and
+  `[order:first:semver:descending]`, a pre-release below its release, build metadata
+  ignored, `v2.0.0` read as 2.0.0), test
+  `tests/target/heading/MTL609-heading-pattern-order.test.ts`.
+- P7h `MTL617` heading-order-key-missing (A72m): the rule in `src/rules/heading.ts` (phase
+  `target`, step `headings`), one per repeat set, anchor on the first instance without key,
+  `{kind}`, `{placeholder}` and `{tag}` of 4.3, emission order with `MTL609` by code.
+  Fixtures `tests/fixtures/pairs/MTL617/` (owner example K and its `semver` variant, a set
+  of one instance without number, a date form without date, a `semver` form on `Release
+  1.2` (two parts, no key), every instance keyed passes, the whole-text forms never
+  give it, `disable-line MTL617` on the anchor), test
+  `tests/target/heading/MTL617-heading-order-key-missing.test.ts`.
+- P7a `MTL614` heading-repeat-miss: the tail (step 4) in `matchHeadings`, the listing rule
+  (first repeat heading whose pattern matches), the rule in `src/rules/heading.ts`, anchor on
+  the first listed heading. Fixtures `tests/fixtures/pairs/MTL614/` (worked example 1 of 2.10,
+  owner example G second target, a tail heading matching two repeat patterns is listed once,
+  a non-matching tail heading gets no `MTL614` (it is listed by `MTL616`, P7f), zero instances with a matching tail heading,
+  `disable-line MTL614`), test `tests/target/heading/MTL614-heading-repeat-miss.test.ts`.
+- P7b `MTL615` heading-subheadings-only-declared: the region (direct target children of each
+  match or instance of D) and the declared test (taken by a position of D's children, match
+  or mismatch) in `src/rules/heading.ts` on the data of `matchHeadings`; skip a heading that
+  gets `MTL603`, `MTL612` or `MTL614`; `MTL015` reason `the heading is
+  [presence:template-only]` for the tag; `--verify` rule token `content:subheadings:no-extra`
+  in `src/runner/schema.ts`. Fixtures `tests/fixtures/pairs/MTL615/` (the no-extra variants
+  of worked example 2 of 2.6, a direct child at an undeclared level, a deeper heading is not
+  reported, both tags on one heading, per instance of a repeat heading, `disable-line
+  MTL615`), test `tests/target/heading/MTL615-heading-subheadings-only-declared.test.ts`;
+  `MTL015` case in `tests/fixtures/templates/MTL015/`.
+- P7c `MTL017` heading-pattern-duplicate: rule in `src/rules/syntax.ts`, phase `template`,
+  severity `error` (the first template-phase error: the registry, `src/runner/verify.ts` and
+  `src/runner/types.ts` must count template errors apart from warnings), the template
+  sequence and the same-pattern test of 2.10 (on the parsed pieces of P1; exact-text
+  headings compared as the literal pattern of their text, both
+  message forms and both columns, A72l; default format names equal no format, A72m). `--verify`
+  (`src/cli/verify-report.ts`): section `Duplicate patterns:` (its place in the section order is fixed in 8.3; P7e, P7i and P7j append the later ones), the fail header line, the
+  `Errors:` summary line, no `All templates passed!` with errors, `--quiet` behaviour, exit 1
+  (`src/cli/` exit code path); JSON verify `status: "fail"` and `summary.errors` after
+  `broken` (8.5; update the summary key-order list of `tests/unit/reporters/json.test.ts` and
+  the verify `expected.json` fixtures). Fixtures `tests/fixtures/templates/MTL017/` (fail:
+  worked example 3 of 2.10, three in a row give two findings, case-insensitive placeholder
+  and `full` format equal, `{text}` next to `{text:format:human}`, `## Notes` twice in a row, `## Notes` next to
+  `## [pattern:"Notes"]` in both orders; pass: patterns differ, a different exact-text
+  heading between them, `## Notes` next to
+  `## notes`, two patterns at different levels or under different parents, an invalid
+  pattern next to a valid one), test
+  `tests/syntax/syntax/MTL017-heading-pattern-duplicate.test.ts`; CLI fixture for worked
+  example 3 (exit 1, text and JSON). The lint-run behaviour is phase P7d.
+- P7d template errors in a lint run (no new code; owner decision 2 of A72l; after P7c, before
+  P7e). The runner (`src/runner/`) keeps the template-phase errors of each parsed template;
+  the text reporter prints the template entry of 8.2 (`✗ <template> (template)` / `FAIL`,
+  the error lines with template-line excerpts and carets, `Failed templates:`, no `All files
+  passed!`, `--quiet` keeps it); the JSON reporter gives `template.status` `fail` with
+  `diagnostics` (8.5); the exit code path gives 1 (7.5); the targets are still linted. The
+  template excerpts are built at parse time (EX8). Fixtures: CLI fixture for the `MTL017`
+  part of worked example 5 of 2.10 (text `pretty` and `plain`, JSON, exit 1, the target
+  passes), a template used by two pairs (entry in both blocks, listed once), the variant
+  with a failing target (`Failed files:` after `Failed templates:`), a template with only
+  template warnings (nothing printed, exit by targets only). Test
+  `tests/unit/reporters/*.test.ts` and a runner test. Docs: `docs/architecture.md` exit
+  list.
+- P7e `MTL018` heading-optional-min-conflict: rule in `src/rules/syntax.ts`, phase
+  `template`, severity `error`, the trigger of 2.10 "Repeat rules" (effective pattern,
+  effective repeat tag, presence optional by precedence, effective explicit `min`), position
+  at the `[` of the `min` tag; `--verify` section `Optional headings with a minimum:` after
+  `Duplicate patterns:` in `src/cli/verify-report.ts`; it reuses the template-error paths of P7c (verify) and P7d
+  (lint). Fixtures `tests/fixtures/templates/MTL018/` (fail: optional with `min:1`, with
+  `min:3`, presence tag before or after the `min` tag; pass: required with `min`, optional
+  with `max` only, optional with `[repeat-rules:same-level]` only, conditional with `min`,
+  `min` on a heading without pattern (`MTL015` instead), invalid pattern (`MTL014`
+  instead)), test `tests/syntax/syntax/MTL018-heading-optional-min-conflict.test.ts`; CLI
+  fixture for worked example 5 of 2.10 (both errors).
+- P7i `MTL019` heading-child-order-conflict (A72m, owner decision 2; after P7e): rule in
+  `src/rules/syntax.ts`, phase `template`, severity `error`, the child list and the trigger
+  of 2.7 (one per parent, first offending child, column 1; a parent with an invalid
+  pattern is checked too, A72n); `--verify` section `Child headings out of level order:`
+  after `Optional headings with a minimum:` in `src/cli/verify-report.ts` (P7j appends its
+  section after it), the `--quiet` list of
+  8.3; it reuses the template-error paths of P7c (verify) and P7d (lint: printed on the
+  template file, exit 1, targets still linted, `Failed templates:`). `MTL611` is unchanged
+  (target finding). Fixtures `tests/fixtures/templates/MTL019/` (fail: worked example 3 of
+  2.6, an H5 before an H4 under an H3, two offending children under one parent give one
+  finding, two parents give two, a parent whose own pattern is invalid with a deeper child
+  first gives both `MTL014` and `MTL019` (A72n, owner decision 1); pass: shallower before deeper (a grandchild), same-level
+  children, a deeper template-only child first, a deeper child with an invalid pattern
+  first, children of a template-only parent, an H3 before an H2 under an H1 (the H2 is file
+  scope, not in the child list)), test
+  `tests/syntax/syntax/MTL019-heading-child-order-conflict.test.ts`; CLI fixture for worked
+  example 3 of 2.6 (lint `plain`, `--verify`, JSON); the `MTL611` fixtures whose template has
+  this shape now also show the template error in CLI and runner expectations (another agent
+  lists them).
+- P7j `MTL030` heading-order-without-repeat (A72n, owner decision 3; after P7i): rule in
+  `src/rules/syntax.ts`, phase `template`, severity `error`, the trigger of 2.7 (effective
+  order tag on a pattern heading with no repeat tag of any kind; none for a heading without
+  pattern, a template-only heading or an invalid pattern), position at the `[` of the order
+  tag; remove the `MTL015` reason `the heading has no [repeat-rules:...]` from
+  `src/rules/syntax.ts` if P7 shipped it; `--verify` section `Order tags without repeat:`
+  last in `src/cli/verify-report.ts`, the `--quiet` list of 8.3; it reuses the
+  template-error paths of P7c (verify) and P7d (lint). In a lint run the order tag of such
+  a heading has no effect (single position). Fixtures `tests/fixtures/templates/MTL030/`
+  (fail: the `MTL030` variant of worked example 7 J of 2.10, each order form, the order tag
+  before the pattern tag; pass: with `[repeat-rules:same-level]`, with only the `min` or
+  only the `max` form, an order tag without pattern (`MTL015` instead), on a template-only
+  heading (`MTL015` instead), with an invalid pattern (`MTL014` instead); a pattern heading
+  with an order tag and no repeat tag gives no `MTL015`), test
+  `tests/syntax/syntax/MTL030-heading-order-without-repeat.test.ts`; CLI fixture for the
+  J variant (lint `plain`, `--verify`, JSON); `tests/fixtures/templates/MTL015/` cases that
+  expected the removed reason move here (another agent lists them).
+- P7f `MTL616` heading-extra: the tail list of 2.10 step 4 per run in `matchHeadings`
+  (`src/engine/model.ts`), the rule in `src/rules/heading.ts` (phase `target`, step
+  `headings`, severity `warning`), the exclusions (`MTL612` with its topmost-block cover,
+  `MTL614`, `MTL615`, decided before suppression), anchor on the first listed heading,
+  emission order by the last position of the sequence. Fixtures
+  `tests/fixtures/pairs/MTL616/` (worked example 6 of 2.10 and its variants, worked examples
+  1 and 2 of 2.6, the level without template heading gives nothing, section scope per
+  parent instance, `disable-line MTL616` on the anchor and on a later listed line,
+  `disable-file MTL616`), test `tests/target/heading/MTL616-heading-extra.test.ts`.
+  Expectations that gain a `MTL616` warning (another agent lists every change the full
+  suite shows): every pair fixture and runner fixture whose target has extras after the
+  last template heading of a run (exit codes and errors unchanged).
+- P7g `MTL601` hint (no new code; owner decision 6 of A72l; after Pm): the "found later"
+  search of 2.10 step 3b in `matchHeadings` and the second message form in
+  `src/rules/heading.ts`. Fixtures in `tests/fixtures/pairs/MTL601/` (owner example I, a
+  same-text heading at another level gives no hint, a same-text heading before the cursor,
+  owner example B, gives no hint, a later sibling taken by a later pattern position still
+  gives the hint), and the Pm fixtures of swapped same-level pairs whose `MTL601` message
+  gains the hint.
+- P8 docs, templates and the `exist` migration (templates and fixtures migrated; docs updated by later commits; A72m: patterns work since P3, P4 and Pf;
+  `exist` worked until Pc removed it, so every migrated file was checked against both): README rule syntax
+  (patterns, placeholders and formats, `{char}`, `{digits}` (the `{int}` rename, A72n),
+  format arguments, escapes, repeat, the eight order forms,
+  no-extra, positional matching, the dropped `exist` tag; its tag table row and the
+  `MTL602` and `MTL610` rows near lines 458 to 470, the example at line 258 and the anchor
+  table at line 632) and the stale `[format:date]` mention at
+  `README.md:253`; `docs/architecture.md` (free code ranges, the heading model now
+  positional (line 942 still describes the first match and `exist`), and every
+  template-diagnostic list: code table row, verify and lint exit
+  lists (add `MTL017`, `MTL018`, `MTL019` and `MTL030`, exit 1), verify section list (add `Invalid patterns:`,
+  `Duplicate patterns:`, `Optional headings with a minimum:`, `Child headings out of
+  level order:` and `Order tags without repeat:`), the anchor table near line 1033 (`MTL602`), test layout row);
+  `docs/migration.md`: a section "Headings are matched by position" (breaking, C10 note:
+  extras only after the last declared heading and reported by the `MTL616` warning, a
+  swapped pair is a missing heading with the "found later" hint, template errors now fail
+  lint runs; fix: reorder the document or mark headings optional), a section "The `exist`
+  presence tag is removed" (the 2.6 "Dropped tag" table, the `{text}` purely-numeric
+  difference, `MTL602` retired, the `MTL610` row near line 257), the order tags now compare
+  the heading text (use `first:number`, `first:date` or `first:semver`), an order tag
+  without repeat tag now fails (`MTL030`), `{int}` renamed `{digits}` and the `{text}` case
+  formats no longer accepting digits only (A72n), and the C10 rows, `MTL016`
+  included; `docs/guides/adding-a-tag.md` (the list near
+  line 184) and the other guides that describe matching; the ten shipped templates that use
+  the dropped tag, each H1 or H2 migrated to a pattern (2.6 table): `templates/adr.template.md`,
+  `templates/architecture.template.md`, `templates/bug.template.md`,
+  `templates/README.template.md`, `templates/spec-product.template.md`,
+  `templates/spec-technical.template.md`, `templates/ai/SKILL.template.md`,
+  `templates/ai/command.template.md`, `templates/ai/agent.template.md`,
+  `templates/TODO.template.md` (its epic heading becomes a repeat pattern with `{char}` and
+  `[order:ascending]`, worked example 7 J of 2.10); `templates/CHANGELOG.template.md`:
+  line 36 becomes a pattern heading in the style of worked example 1 (`## Release
+  [pattern:"[{semver}] - {date}"] [presence:optional] [repeat-rules:same-level]
+  [order:first:date:descending] [content:subheadings:disallow]`, by date, not by string;
+  `[order:first:semver:descending]` is equally valid, 2.10 "Order") with the six optional
+  H3 groups, and
+  the checklist notes on the plain release form and the "known engine gap" (lines 46 to 54,
+  61 to 63) are rewritten. Fixtures that use the dropped tag, migrated by a different agent
+  than the template author, each keeping what it tests (a fixed text becomes a plain
+  heading, any text becomes `[pattern:"{text}"]`): `tests/fixtures/integration/*` (four
+  templates with `## Changes`), `tests/fixtures/positional/*` (five templates),
+  `tests/fixtures/cli/schema-pass-several-types-rules-headings` (template and both expected
+  outputs), `tests/fixtures/templates/MTL015/fail-exist-template-only-with-disallow.md` [now
+  `fail-required-template-only-with-disallow.md`] and
+  the cases of `tests/fixtures/pairs/MTL603/`, `MTL604/`, `MTL610/`, `MTL611/`, `MTL612/`,
+  `MTL701/` and `MTL702/` whose templates use it, with the unit and target tests that pin
+  them (`tests/unit/sections.test.ts`, `heading-run.test.ts`, `pipeline.test.ts`,
+  `anchors.test.ts`, `subheadings-tag.test.ts`, `document.test.ts`, `regions.test.ts`,
+  `tags.test.ts`, `visitors.test.ts`, `cli/schema.test.ts`, `tests/integration/*.test.ts`,
+  `tests/target/heading/*.test.ts`, `tests/target/content/*.test.ts`, `tests/syntax/syntax/MTL015-heading-tag-conflict.test.ts`); the `exist`-specific cases
+  whose subject disappears are deleted in Pc instead (the whole `tests/fixtures/pairs/MTL602/`,
+  the second form of `MTL610`). Dogfood run. Release: major (positional matching and the
+  dropped tag are breaking, C10 notes); a template without the new tags otherwise gives the same errors as after Pm,
+  plus the `MTL616` warnings and the `MTL601` hint.
+- Pc cleanup (DONE; A72m, owner decision 1 and 7; LAST, after P8; breaking, no new code): remove
+  the `exist` handling: lexer keyword `EXIST` (`grammar/MdTemplateLexer.g4`; `EXISTS` of
+  `[io:exists]` stays) and its `bodyPresenceTag` alternative, regenerate and check the
+  parser; the `exist` mode of the AST presence tag (`src/tags/ast.ts`), the presence visitor
+  (`src/tags/visitors/presence.ts`), `HeadingPresence` and the precedence list
+  (`src/engine/model.ts`, `src/runner/schema.ts`), the `exist` branch of the run in
+  `matchHeadings`, the `MTL602` rule and the second `MTL610` form and the `exist` listing
+  branch of `MTL612` (`src/rules/heading.ts`), the comment of `src/rules/content.ts`; the
+  dead `HeadingMatch.textMatch` field (`src/engine/model.ts`, kept since Pm, no reader).
+  Spec: the `MTL602` row leaves 4.3 (it stays reserved in the 4.2 prose) and
+  the pin of `tests/consistency/rules.test.ts` goes from 84 to 83 (83 to 82 before A72n
+  added `MTL030`). Tests and fixtures by
+  another agent: delete `tests/fixtures/pairs/MTL602/` and
+  `tests/target/heading/MTL602-heading-level-missing.test.ts` (the tool cannot delete: list
+  them per the `files-to-delete` skill if needed), the `exist` form cases of `MTL610`; add
+  tests that `[presence:exist]` on a heading is `MTL012` and stays in the heading text (the heading is
+  then missing, `MTL601`), and in frontmatter is `MTL012` (was `MTL013`); `tests/unit/visitors.test.ts`
+  and `tests/unit/tags.test.ts` cases that expect `wrong-region` for it flip to malformed.
+
+Later epics (owner decision 5 of A72n; design only, NOT specified, no code allocated): a
+new epic AFTER Epic P (its id is given in `tmp/PLAN.md`) holds two document tags: a
+table-of-contents tag (a table of the levels and titles of the headings below the tag)
+and a heading-numbering tag (`## Title` written as `## 1. Title`, `### 1.1 Title`). The
+owner reviews a design document first; until then neither tag is in the grammar, no rule
+or code exists for it, and no pin changes.
+
+Unique heading names (2.11, ADR 0013, owner decisions of 2026-11-04; the epic id is given in
+`tmp/PLAN.md`), split by phase, one rule per phase (owner rule, as Epic F and Epic P; tests
+and fixtures by a different agent than the rule author, committed with their rule;
+`check:rules` needs a pass and a fail fixture per registered code). A80a (this spec and ADR
+0013, docs only) specifies the tag and the code `MTL613` heading-unique-names, writes its 4.3
+row under "Specified rules not yet registered" (a sub-section A80b later removed) and changes no file under `tests/`, so the
+spec-code pin of `tests/consistency/rules.test.ts` stays 83 and
+`tests/consistency/pending-rules.json` stays `{}` until A80b. Phase order: A80b, then A80c
+and A80d (committed together). Handoff:
+
+- A80b grammar and tags (no rule). Lexer `grammar/MdTemplateLexer.g4`, mode `TAG_STRICT`:
+  the keyword `UNIQUE_HEADINGS_NAMES` (`unique-headings-names`). Stage 1 makes the colon-less
+  bracket `[unique-headings-names]` (any case) a known tag instead of a bare bracket (2.11
+  "Grammar at spec level"; no `TAG_TEXT` keyword unless stage 1 needs one, then A80b records
+  why). Parser `grammar/MdTemplateParser.g4`: `tagFamily` gains `UNIQUE_HEADINGS_NAMES`,
+  `bodyTagBody` gains `bodyUniqueNamesTag`, the frontmatter gains the template-wide line
+  (suggested `fmUniqueNamesLine`, an `fmLine` alternative) and, if needed for the inert
+  key-line case, `fmUniqueNamesTag` in `fmTagBody`. Pins of
+  `tests/consistency/rules.test.ts`: `tagFamily` 11 to 12, `bodyTagBody` 5 to 6, `fmTagBody`
+  8 (or 9 with `fmUniqueNamesTag`), `tagWord` 10 stays; and, in the same change, the spec
+  bookkeeping: the `MTL613` row moves from "Specified rules not yet registered" into the
+  `heading` table of 4.3 (that sub-section then holds no row and is removed), `MTL613` is
+  added to `tests/consistency/pending-rules.json` (`"MTL613": "heading-unique-names"`) and
+  the spec-code pin goes from 83 to 84. AST `src/tags/ast.ts`: a body kind, suggested
+  `unique-names`, in `BODY_KIND_SET`, and the template-wide switch on the parsed template
+  (suggested `uniqueHeadingNames: boolean` on the document model); visitor in
+  `src/tags/visitors/` (new family file, registered in `visitors/index.ts`). The placement
+  table of 2.11: key line inert, mixed comment line inert, an argument `MTL012`, a typo
+  `MTL011` / `MTL010`. `pnpm run gen:parser` then `pnpm run check:parser`. Tests by another
+  agent (`tests/unit/visitors.test.ts`, `tests/unit/tags.test.ts`,
+  `tests/unit/document.test.ts`, committed with A80b): the tag parses at every level,
+  case-insensitive, is peeled from the heading text; the frontmatter line sets the switch;
+  every row of the placement table. Done in A80b (grammar, tags, pins, spec bookkeeping); the
+  tests were committed with it.
+- A80c `MTL613` heading-unique-names: the rule in `src/rules/heading.ts` (phase `target`, step
+  `headings`, severity `error`) on the extracted target headings and the regions of 2.11 (each
+  match or instance of an effective tagged heading, the whole file for the template-wide
+  switch); FOLDING with `toLowerCase()`; one finding per later duplicate, at most one per
+  heading, `{line}` the earliest same-text heading of the scopes that contain it; emission
+  after every other step 5 finding; remove `MTL613` from `pending-rules.json` (the pin stays
+  84). `MTL015` reason `the heading is [presence:template-only]` for the tag
+  (`src/rules/syntax.ts`). `--verify`: the rule token `unique-headings-names` (last in the
+  heading rules list) and the `Unique heading names: [unique-headings-names]` line in
+  `src/runner/schema.ts` and `src/cli/verify-report.ts`; JSON verify key `uniqueHeadingNames`
+  after `filenameCase` (update the verify `expected.json` fixtures and the key-order list of
+  `tests/unit/reporters/json.test.ts`). Spec text that gains `MTL613` when the rule lands
+  (same change): 4.1 step 5, the 4.3 `heading` bullets (emission order), DIR5 anchor table,
+  DIR6 list, 8.1 `heading` member list, 8.3 and 8.5 (as in 2.11), the 2.7 `MTL015` reason
+  list, the section 9 file table row of `src/rules/heading.ts`; `docs/architecture.md` (the
+  `heading` row and the set-aside note), README rule syntax. Minor release: no target
+  changes its findings without the new tag. Done in A80c (rule, `MTL015` reason, `--verify`
+  token, line and JSON key, `pending-rules.json` back to `{}`, the spec text above, the
+  architecture and README text). The rule's own minimal tests came with it: worked examples 1
+  to 3 and two pass cases in `tests/fixtures/pairs/MTL613/`, the `MTL015` template fixture
+  `fail-template-only-with-unique-headings-names.md` and the CLI schema fixture
+  `schema-pass-unique-headings-names-switches`; A80d completes the fixture list of 2.11.
+- A80d tests and fixtures for A80c (another agent than the A80c author, committed with
+  A80c): the fixture list of 2.11, the worked examples 1 to 3 of 2.11 and their variants as
+  pair fixtures, test
+  `tests/target/heading/MTL613-heading-unique-names.test.ts`, the `MTL015` template fixture;
+  CLI fixtures for worked example 1 (`plain`, JSON) and for `--verify` of both switches.
+
 Coverage check (for the A9 consistency check): every code of 4.3 appears in exactly one
 category row, except the `MTL9xx` run diagnostics, which belong to the engine and have no
 rule file. Tags map to the categories by the codes they emit: presence tags emit codes in
@@ -1903,7 +5302,10 @@ their effect shows through `type.ts` codes.
 ## 10. Assumptions
 
 These choices go beyond the frozen sources. Review them before phases A6 and A9 (AS9 to
-AS13: before A58 and A60; AS14: before A65). Ids are `AS1` to `AS14` (they are not plan phases).
+AS13: before A58 and A60; AS14: before A65; AS15: before A72c; AS16: before the grammar
+phase F1 of section 9; AS17: before the grammar phase P1 of section 9, its A72l part before
+phase P7c, its A72m and A72n parts before P1). Ids are `AS1` to
+`AS17` (they are not plan phases).
 
 - AS1: `approvedPaths` is an addition. Legacy only had alias approvals; absolute values were
   never probed. The new key lets a project opt in per folder. Default (empty) keeps the legacy
@@ -1935,8 +5337,10 @@ AS13: before A58 and A60; AS14: before A65). Ids are `AS1` to `AS14` (they are n
   one without anchor ONLY by `disable-file` (never by a range, closed or not).
   Rationale: a finding about the whole file has no line, so it needs an explicit whole-file
   directive; any line or range rule would be arbitrary.
-- AS12: Suppressible set (DIR6): `MTL101` to `MTL899` only. `MTL001` to `MTL004`, `MTL010` to
-  `MTL013`, `MTL020` to `MTL025` and `MTL9xx` are not (`MTL022` when named). Rationale: only
+- AS12: Suppressible set (DIR6): `MTL101` to `MTL899` only, the heading warning `MTL616`
+  (since A72l) and `MTL617` (since A72m) included. `MTL001` to `MTL004`, `MTL010` to
+  `MTL013`, `MTL014` (since C12), `MTL015` (since C10), `MTL016` (since C11), `MTL017` (since A72k), `MTL018` (since A72l), `MTL019` (since A72m), `MTL020` to `MTL025`, `MTL030` (since A72n) and `MTL9xx` are not (`MTL022` when
+  named). Rationale: only
   findings about one parsed target's content are local to that file.
 - AS13: Reporting (DIR9): suppressed findings are dropped before counting and the exit code;
   only a count is shown (text `Suppressed:` when greater than 0, JSON `summary.suppressed`
@@ -1949,8 +5353,325 @@ AS13: before A58 and A60; AS14: before A65). Ids are `AS1` to `AS14` (they are n
   exists only for a diagnostic with a column; (c) JSON `sourceLine` exists only next to a
   `line` (an anchor-only excerpt is text-only, so JSON never carries a quoted line without
   its number and DIR5 stays true); (d) the line is cut at 100 characters, with `...`;
-  (e) `--verify` quotes the template line of `MTL010` to `MTL013`. Rationale: see 8.1 and
+  (e) `--verify` quotes the template line of `MTL010` to `MTL013` (and `MTL015` since C10, `MTL016` since C11, `MTL014` since C12, `MTL017` since A72k, `MTL018` since A72l, `MTL019` since A72m, `MTL030` since A72n), and a lint run quotes the template line of the template errors `MTL017`, `MTL018` (since A72l), `MTL019` (since A72m) and `MTL030` (since A72n). Rationale: see 8.1 and
   8.2.
+- AS15: All heading levels (2.6, change C10, ADR 0009; plan A72 Epic L). Owner decisions of
+  2026-10-30, with the choices this spec adds:
+  (a) every level H1 to H6 is read and checked, no compatibility flag, released as a major
+  version with a migration note (owner decision 1; owner decisions are numbered as in ADR 0009,
+  not to be confused with the kept quirks Q01 to Q08);
+  (b) every level matches exactly, the legacy H1/H2 cross match by text is removed; `MTL602`
+  stays the `exist` check and no "wrong level" code is added (owner decision 2(b); `MTL602`
+  and the `exist` tag are retired by A72m, AS17);
+  (c) extra headings stay allowed by default; `[content:subheadings:disallow]` opts out for the
+  whole subtree, `MTL612` on the topmost unlisted heading, no `allow` tag (owner decision 3(a));
+  (d) an untagged H3 to H6 template heading is required;
+  (e) spec choices: H1 and H2 keep file scope, H3 to H6 with a template parent match inside
+  the parent's target section; such a heading under a missing, optional-absent or
+  template-only parent is not checked; listing compares level and text (duplicates listed); one `MTL612` per
+  heading, `{parent}` of the innermost tag; `MTL015` for the tag on a template-only heading;
+  `MTL610` and `MTL612` messages name the level (`H{n}`) because exact levels make a level-only
+  difference possible; `MTL611` checks the order of the DIRECT children of each matched parent
+  while `MTL604` keeps file scope; `--verify` has a new section `Conflicting tags:` (`MTL015`
+  is its only reason so far); the fixture `MTL603/fail-template-only-heading-at-other-level`
+  flips to a pass case. Rationale: in 2.6 next to each rule.
+  (f) Amended by A72k (ADR 0012, AS17): the first-match rule of (e) ("the first target
+  heading in scope with the same level and text") is replaced by the positional run of 2.10
+  for every heading; scopes, "checked", listing for `MTL612` and the codes of (b) to (e) are
+  kept, their trigger is the position.
+- AS16: Field formats (2.9, change C11, ADR 0010; plan A72 Epic F). Owner decisions of
+  2026-10-30: (a) tags `[format:semver]` and `[format:date]` on frontmatter keys, and
+  `[format:elements:semver]` / `[format:elements:date]` for list items; (b) a new field step
+  `shape`, after the existing steps; (c) the field format decides how a date is PARSED,
+  `YYYY-MM-DD` with a real calendar date; (d) `MTL307` is silent when the field type already
+  rejects the value (`MTL504`); (e) a template-side `--verify` warning `MTL016` when a date
+  field has no format, not suppressible; (f) codes `MTL306` to `MTL309` (format,
+  suppressible) and `MTL016` (syntax, warning). Choices this spec adds: SemVer 2.0.0 without
+  a `v` prefix; `[format:date]` on a non-date type always checks (no type rule covers it);
+  `MTL309` leaves out the items `MTL513` lists, by the same "one problem, one error" logic;
+  values are NOT trimmed (owner decision: exact text, so ` 1.2.0 ` gives `MTL306`);
+  `MTL016` checks the inferred type (3.2), so `type=date` and a date-like value both count, and a scalar tag on a `list-of-date` field
+  (or the reverse) does not satisfy it; `MTL016` sits at column 1 of the key line, in a new
+  last `--verify` section `Date fields without format:`; first tag of each kind wins (2.1);
+  `[order:ascending]` and the type rules keep the default date parsing. Rationale: in 2.9.
+- AS17: Heading patterns, repeat rules and order (2.10, change C12, ADR 0011; plan A72 Epic
+  P) and positional matching (2.6, 2.10, ADR 0012, phase A72k).
+  Owner decisions of phase A72j (ADR 0011): (1) the pattern lives in a tag with a quoted
+  argument, `{{` and `}}` literal braces, other text literal, no `v` implied; (2) a pattern
+  heading needs a heading at its position, else `MTL605`; (3) separate repeat tags
+  `[repeat-rules:same-level]`, `...:min:N`, `...:max:N`, scope the same section parent;
+  (4) order opt-in, `[order:ascending]` / `[order:descending]`, `{text}` not orderable;
+  (5) every level checked, extra headings allowed unless a sub-heading tag, untagged H3
+  required; (6) no trimming, first tag of a kind wins; (7) codes `MTL014` (syntax, warning,
+  not suppressible, `--verify` only) and `MTL605` to `MTL609` (heading, suppressible),
+  `MTL605` without anchor, `MTL613` kept reserved.
+  Owner decisions of phase A72k (2026-11-03, ADR 0012), numbered as there: (1) positional
+  matching for every heading, exact text and pattern alike, breaking; (2) strict adjacency,
+  extras only after the last match, greedy first-fit without backtracking, optional takes
+  only a match, repeat takes every consecutive match; (3) `MTL606` for a sibling that fails
+  at a required position (naming the failing piece: a placeholder, or a literal piece of the pattern as in owner example F), `MTL605` when no sibling is left,
+  `MTL607` with an explicit `min` also at zero (replacing `MTL605`), `MTL608`, one `MTL609`
+  per repeat set, a new code for repeat siblings out of the run (`MTL614`), default minimum
+  from presence; (4) owner examples A to H (2.10 worked example 4), a matching heading is
+  always taken by the current position; (5) placeholders `{int}` (renamed `{digits}` by
+  A72n), `{number}`, `{text}` (not
+  purely numeric), `{semver}`, `{date}`, a fixed format table, whole-text match, `\"`
+  escape, `MTL014` for unknown placeholders and formats; (6) `[content:subheadings:no-extra]`
+  with its own code (`MTL615`) next to `[content:subheadings:disallow]`; (7) template error
+  `MTL017` heading-pattern-duplicate, `--verify` exit 1, not suppressible; (8) `MTL606` only
+  with a sibling at the position; (9) `MTL613` stays reserved, no reuse of a 4.3 code.
+  Choices this spec adds (rationale next to each rule in 2.6, 2.7 and 2.10):
+  - (a) the heading text of a pattern heading is a label, never compared; a heading whose
+    pattern tag is ignored by `MTL015` is an exact-text heading;
+  - (b) only a REQUIRED PLACEHOLDER position takes a sibling it does not match (`MTL606`);
+    a literal position (exact text, or a pattern without placeholder) takes nothing and is
+    missing (`MTL601`, `MTL610`, `MTL605`); this split is what makes owner examples A and E
+    both hold;
+  - (c) exact-text headings keep their legacy codes and messages (`MTL601`, `MTL602`,
+    `MTL610`; `MTL601` gains the A72l "found later" hint, decision 6; `MTL602` retired by
+    A72m); pattern headings use `MTL605` to `MTL609`;
+  - (d) `[presence:template-only]` headings are not positions; their siblings are set aside
+    before the run (the only gap), `MTL603` on the first, so one stray guidance heading does
+    not shift the run;
+  - (e) a required repeat heading whose first sibling fails takes it as a mismatch and then
+    continues its run; the `max` bound never stops a run;
+  - (f) the failing piece of `MTL606` is the first piece whose prefix cannot be satisfied,
+    printed as written (placeholder) or quoted (literal);
+  - (g) `MTL609` anchors on the later instance of the first pair out of order and counts the
+    pairs; `MTL614` lists the tail siblings matching a repeat pattern (each under the first
+    matching repeat heading) and anchors on the first;
+  - (h) formats: `{semver}` `full`, `core`, `major-minor`; `{date}` `full`, `year-month`,
+    `year`; none for `{int}`, `{number}`, `{text}`; names case-insensitive; `full` equals no
+    option; `{number}` has no sign and no exponent; "purely numeric" is ASCII digits with at
+    most one inner `.` (the `{text}` and `{number}` parts are revised by A72m, (bb) below,
+    and the formats again by A72n, (hh) below);
+  - (i) escapes `\"` and `\\` only, any other backslash pair is `MTL014` `invalid escape`;
+    new `MTL014` reasons `malformed placeholder` and `unknown format`;
+  - (j) `[content:subheadings:no-extra]` reads the DIRECT target children of the match,
+    declared means taken by a position of the template children (match or mismatch); a
+    heading that gets `MTL603`, `MTL612` or `MTL614` does not also get `MTL615`; new
+    keyword `NO_EXTRA`; `MTL015` for it on a template-only heading;
+  - (k) `MTL017`: adjacent members of a template sequence (2.10; template-only and invalid
+    headings left out), same pieces with case-insensitive placeholders and `full` equal to
+    no format, reported on the later heading at the `[` of its pattern tag; a template with
+    it FAILS (`FAIL` header, `Errors:` summary line, JSON `status: "fail"` and
+    `summary.errors`) but is not broken; `--quiet` still shows it (widened by A72l below:
+    exact-text headings, lint runs);
+  - (l) the content of an `exist` heading is read from the sibling its position took
+    (before: only from a heading with the template text); void since A72m (tag dropped);
+  - (m) code allocation: `MTL017` (next free syntax code after `MTL016`), `MTL614` and
+    `MTL615` (next free heading codes after the reserved `MTL613`); names
+    `heading-pattern-duplicate`, `heading-repeat-miss`, `heading-subheadings-only-declared`;
+  - (n) kept from A72j: bounds need `N` of 1 or more; `min` above `max` has no template
+    warning; adjacent placeholders and an empty pattern are invalid; placeholder names are
+    case-insensitive; the five pattern `MTL015` reasons (three since A72m, two since A72n);
+    `--verify` section
+    `Invalid patterns:` before `Conflicting tags:`; dropped from A72j: CLAIM (a heading named
+    by text never matched a pattern), the "repeat set is every unclaimed heading at the
+    level" rule, one `MTL609` per pair, and the limitation "a pattern cannot contain `"`".
+  Owner decisions of phase A72l (2026-11-03; they answer the six open questions A72k left,
+  in the same order; recorded in ADR 0011 and ADR 0012):
+  1. keep BOTH `[content:subheadings:disallow]` (`MTL612`) and
+     `[content:subheadings:no-extra]` (`MTL615`), no merged tag (2.6 "How the two tags
+     differ");
+  2. `MTL017` acts in a normal lint run too: printed as an ERROR on the template file, exit
+     1, the targets still linted; `--verify` FAIL as before; not suppressible (2.7
+     "TEMPLATE ERRORS", 7.5, 8.2);
+  3. `[presence:optional]` with an explicit `[repeat-rules:same-level:min:N]` is a
+     contradictory combination: the new template error `MTL018`, same behaviour as `MTL017`
+     (2.10 "Repeat rules");
+  4. every extra heading is reported: ONE suppressible WARNING per run, `MTL616`, listing the
+     tail headings, anchored on the first; where `MTL612` or `MTL615` raises an error for a
+     heading, that error replaces the warning for it; `MTL614` stays an error for the tail
+     siblings that match a repeat pattern, and the warning lists only the others (2.6
+     "Extra", 2.10 step 4 and "Interplay");
+  5. `MTL017` also compares exact-text headings and literal patterns (`## Notes` twice in a
+     row, or `## Notes` next to `## [pattern:"Notes"]`) (2.10 "Duplicate pattern");
+  6. the `MTL601` message hints when the missing heading exists later in the run: `(found
+     later at line N, out of order)` (2.10 step 3b, owner example I).
+  Choices this spec adds for A72l (rationale next to each rule):
+  - (o) code allocation: `MTL018` (next free syntax code after `MTL017`, inside the template
+    tag sub-range `MTL010`-`019`), `MTL616` (next free heading code after `MTL615`, inside
+    the suppressible `MTL101`-`899`); `MTL613` stays reserved; names
+    `heading-optional-min-conflict` and `heading-extra`;
+  - (p) `MTL616` is per RUN (one sequence in one scope: once per level in file scope, once
+    per level and parent match or instance in section scope); a level and scope without a
+    position has no run and no tail, so headings at a level the template does not describe
+    there are free detail (no warning; else every H3 of a document whose template stops at
+    H2 would warn);
+  - (q) the `MTL616` anchor is the first LISTED heading (the first tail heading that no
+    error names), so a line directive always targets a heading the warning shows;
+  - (r) a tail heading inside a stray block whose topmost unlisted heading gets `MTL612`
+    is covered by that error and is not listed (one cause, one finding); which code reports
+    a tail heading is decided before suppression;
+  - (s) a heading named by a `MTL601` hint that stays in the tail is still listed by
+    `MTL616` (decision 4 says every extra; `MTL601` has no anchor, the warning gives a line
+    to act on); the hint is message text only, `MTL601` stays anchorless; `MTL610` and
+    `MTL605` keep their messages (decision 6 names `MTL601`); the hint looks only from the
+    cursor onward ("later"), so a same-text heading an earlier position took gives none;
+  - (t) `MTL017` on an exact-text later heading has its own message form (`matches the same
+    headings as the previous heading`, no fake `[pattern:...]`) and sits at the first
+    character of its text; `exist` headings were never compared and broke adjacency (void
+    since A72m);
+  - (u) `MTL018` needs an effective repeat heading and an effective `min` (no `MTL018` next
+    to `MTL014` or a `MTL015` for the same tags); `[presence:conditional:...]` with a `min`
+    is not `MTL018` (documentation only, "when the condition holds, at least N"); in a lint
+    run the tags apply as written (the `min` decides, `MTL607`);
+  - (v) template errors in a lint run: one `✗ <template> (template)` entry per pair block,
+    before the files, with template-line excerpts; listed once under `Failed templates:`;
+    not counted as files; no `All files passed!`; kept by `--quiet`; JSON
+    `template.status` `fail` with `diagnostics`, no new summary key; the template warnings
+    `MTL010` to `MTL016` stay `--verify` output;
+  - (w) phases (section 9): P7c widened, then P7d (template errors in lint), P7e (`MTL018`),
+    P7f (`MTL616`), P7g (`MTL601` hint), one rule or behaviour per phase.
+  Owner decisions of phase A72m (2026-11-03; recorded in the "Revision 2026-11-03" sections
+  of ADR 0011 and ADR 0012):
+  1. the `exist` presence tag is dropped (breaking, pre-release): it becomes a malformed tag
+     (`MTL012`, `--verify`) and the heading is treated as required; `MTL602` is retired,
+     reserved, never reused; "any heading at this level" is written
+     `[pattern:"{text}"]`, the text before the tag being an author hint (2.6 "Dropped tag");
+  2. a new template error `MTL019` heading-child-order-conflict (syntax, not suppressible,
+     printed in a lint run with exit 1 and targets still linted, `--verify` FAIL) for a
+     deeper direct child before a shallower one under one parent, the only shape where
+     `MTL611` occurs; `MTL611` stays a target finding (2.7);
+  3. the content label of a pattern heading is the matched target text plus the pattern,
+     an exact-text heading keeps its template text (2.6 "Content tags");
+  4. placeholders: fixed vocabulary with `{name:format:<fmt>}`; `{text}` `human` (default),
+     `snakecase`, `camelcase`, `screamcase`, `kebabcase`; `{number}` `decimal` (default,
+     signed) and `scientific`; `{int}` (renamed `{digits}` by A72n); `{semver}` and `{date}`
+     as before; new `{char}`;
+     whole-text match; `MTL014` for an unknown placeholder or format (2.10 PLACEHOLDERS);
+  5. `[order:ascending|descending]` compares the whole heading text as a string; new
+     `[order:first:number:...]` and `[order:first:date:...]` order by the first number or
+     ISO date in the text; a heading without one in an ordered repeat set is an error that
+     recommends a pattern (2.10 "Order");
+  6. a regexp pattern tag and its limits are an idea only, no `{regexp}` placeholder (ADR
+     0011 revision);
+  7. phases: a cleanup phase, P1 with the new tag forms, one phase per rule, placeholder
+     formats, the content label, P8 with the template and fixture migration (section 9);
+  8. ADR 0011 and ADR 0012 stay accepted, with a revision section each.
+  Choices this spec adds for A72m (rationale next to each rule):
+  - (x) the dropped tag follows the general malformed rule: `MTL012`, peeling stops, the
+    bracket stays in the heading text, so the heading is a required exact-text heading that
+    no target matches (`MTL601` / `MTL610` quote the bracket); in frontmatter it is `MTL012`
+    (no region accepts it). Reading of decision 1 "treated as required": required with the
+    text as written, not "any text" (an "any text" fallback would keep the dropped
+    behaviour alive under a warning);
+  - (y) the `MTL602` row stayed in 4.3, marked retired, while the shipped rule was registered
+    (`pnpm run check:rules` needs every registered code in 4.3); phase Pc removed rule and
+    row together and moved the pin from 83 to 82 (84 to 83 since A72n added `MTL030`); this
+    is DONE: `MTL602` is in no 4.3 table and no rule, only reserved in 4.2;
+    during the interim it was not in `pending-rules.json` (it was implemented);
+  - (z) `MTL019`: the child list is the `MTL611` list (section-scope direct children), so an
+    H3 before an H2 under an H1 is not reported (the H2 is file scope and `MTL611` cannot
+    fire there); template-only children, children with an invalid pattern and the children
+    of a template-only parent are left out; ONE finding per parent, on the first offending
+    child, naming the first earlier deeper child; column 1; next free syntax code
+    (`MTL019`, which fills the template tag sub-range); `--verify` section `Child headings
+    out of level order:` last (since A72n followed by `Order tags without repeat:`; a
+    parent with an invalid pattern is reported too, A72n decision 1);
+  - (aa) order keys: the whole-text form compares UTF-16 code units (the order of 8.4); the
+    FIRST NUMBER is the longest NUMERIC TEXT from the first ASCII digit, a `-` joining it
+    only at the start or after a character that is not a letter or digit; the FIRST DATE is
+    the leftmost real ISO date not glued to other digits, invalid calendar shapes skipped;
+    instances without key are left out of the pairs; the "heading without number or date"
+    error is a NEW code `MTL617` heading-order-key-missing (heading, error, suppressible,
+    next free heading code after `MTL616`; `MTL613` stays reserved) and not a second form
+    of `MTL609` (one cause per code, own suppression, and `MTL609` stays "one per set, pairs
+    only"); one per repeat set, at any `n` of 1 or more, anchored on the first keyless
+    instance, listing them; its message recommends a pattern with `{number}` or `{date}`;
+    `MTL609` prints the order tag as `{tag}`;
+  - (bb) formats: `{int}` keeps no sign; `{number}` `decimal` gains the `-` sign (decision 4
+    example `-1.5`); PURELY NUMERIC widens to the NUMERIC TEXT shape (sign, exponent,
+    leading zeros); the case formats reuse the 2.3 value patterns (ASCII), so they may be
+    digits only (except `camelcase`); `screamcase` is `^[A-Z0-9]+(_[A-Z0-9]+)*$`; `{char}`
+    is one code point of the Unicode category Letter; the default names `human` and
+    `decimal` may be written and equal no format (also for `MTL017`); `full` stays the
+    default name of `{semver}` and `{date}` only (revised by A72n, (hh) below: `{int}`
+    renamed `{digits}`, `{number}` leading zeros allowed, the case formats Unicode and
+    never digits only);
+  - (cc) versions (superseded by A72n decision 2, (gg) below, which adds
+    `[order:first:semver:...]`; changelogs may order by version or by date): string order
+    and the first number both mis-sort `1.10.0`; the owner example `## Epic A - Title
+    [pattern:"Epic {char} - {text}"] [order:ascending]` gets `[repeat-rules:same-level]` in
+    this spec, since an order tag without it has no effect (`MTL015` in A72m, the template
+    error `MTL030` since A72n decision 3);
+  - (dd) content label: `Section '{text}' (pattern "{pattern}")`, and
+    `Section '{parent} > {text}' (pattern "{pattern}")` in section scope, the pattern as
+    written in the tag;
+  - (ee) `MTL015` loses the reason for pattern tags on an `exist` heading and `the pattern
+    has no orderable placeholder` (three pattern reasons remained; two since A72n, whose
+    decision 3 turns the order-without-repeat reason into `MTL030`);
+  - (ff) phases: Pf (formats) and Pl (label) after P4, P7h (`MTL617`) after P7, P7i
+    (`MTL019`) after P7e, and the cleanup Pc LAST, after P8 (not first): removing `exist`
+    before patterns match would leave ten templates and about sixty fixtures without a
+    replacement; Pc also removes the dead `HeadingMatch.textMatch` field (Pc is DONE).
+  Open question of A72m (a version-value order form, choice (cc)): CLOSED by owner decision
+  2 of A72n (yes, `[order:first:semver:...]`).
+  Owner decisions of phase A72n (2026-11-03; recorded in the "Revision 2026-11-03" sections
+  of ADR 0011 and ADR 0012, under their "Notes"):
+  1. `MTL019` also fires for a parent whose own pattern is invalid; such a template reports
+     both `MTL014` and `MTL019` (2.7);
+  2. a new order form `[order:first:semver:ascending|descending]`: the FIRST SemVer 2.0.0
+     value of the heading text, compared by SemVer precedence; an instance without one is
+     `MTL617`, as for `number` and `date`; a changelog may order by version or by date
+     (2.10 "Order");
+  3. an order tag without `[repeat-rules:same-level]` is a NEW TEMPLATE ERROR, same
+     behaviour as `MTL017` to `MTL019` (lint exit 1 with targets still linted, `--verify`
+     FAIL with its own section, not suppressible), no longer a `MTL015` reason (2.7);
+  4. placeholders: `{digits}` replaces `{int}` (breaking, pre-release) with the formats
+     `signed`, `hex`, `uid` and `padding:N`; `{number}` (decimal and scientific) allows
+     leading zeros and gains `precision:N`; the `{text}` case formats accept Unicode letters
+     and never a digits-only text, and `lowercase` and `uppercase` are added; `human` stays
+     the default (2.10 PLACEHOLDERS);
+  5. a later epic, after Epic P, for a table-of-contents tag and a heading-numbering tag:
+     design only, not specified, no code (section 9 "Later epics").
+  Choices this spec adds for A72n (rationale next to each rule):
+  - (gg) the FIRST SEMVER is the longest SEMVER prefix at the leftmost start (an ASCII
+    digit with no digit or `.` before it) that no ASCII digit follows; a `v` before it is
+    allowed (`v2.0.0` gives 2.0.0); build metadata is ignored by precedence, so two
+    instances that differ only by build are equal keys and pass; `{kind}` of `MTL617` is
+    the keyword `semver` and `{placeholder}` the text `{semver}`; `semver` was already the
+    lexer keyword of F1, so P1 adds no keyword for it; `[order:first:version:...]` stays
+    malformed;
+  - (hh) placeholder formats: the argument grammar is one more `:` part,
+    `{name:format:<fmt>:<arg>}`, `arg` a number of 1 or more without leading zero; only
+    `padding` and `precision` take one and both need it; three new `MTL014` reasons
+    (`needs an argument`, `bad argument`, `takes no argument`), checked after the name, the
+    shape and the format; `{date:format:year:month}`, a malformed placeholder before, is now
+    the reason `takes no argument`; the default of `{digits}` has no name (as `{char}`, it
+    cannot be written), so `{digits:format:decimal}` is an unknown format; `signed` keeps
+    the no-leading-zero rule and accepts `+` and `-`; `hex` is case-insensitive, no `0x`,
+    leading zeros allowed; `uid` is ASCII letters and digits with at least one of each (a
+    letter-only word is `{text}`, a digits-only one `{digits}`); `padding:N` is exactly `N`
+    ASCII digits, no sign; `precision:N` is a signed decimal with exactly `N` decimals and no
+    exponent; the case formats use Unicode general categories (word sets `Ll`, `Lm`, `Lo`
+    and ASCII digits for the lower styles, `Lu`, `Lm`, `Lo` and ASCII digits for
+    `screamcase`; caseless letters fit every style), need at least one letter, and exclude
+    titlecase `Lt`; `lowercase` and `uppercase` allow any non-letter character (spaces,
+    digits, punctuation) and need one letter; the field case styles of 2.3 stay ASCII;
+    `MTL017` compares the argument as written;
+  - (ii) code allocation: `MTL030` heading-order-without-repeat. The template tag sub-range
+    `MTL010`-`019` is full and `MTL020`-`029` belongs to the directive warnings (`MTL026` to
+    `029` kept free for them), so the next free code of the `syntax` category is `MTL030`,
+    which opens a second template tag sub-range `MTL030`-`039` (4.2). Not a heading code
+    (`MTL6xx`): every template-phase diagnostic is `syntax` (category, rule file
+    `src/rules/syntax.ts`) and every `MTL101`-`899` code is suppressible (DIR6), which a
+    template error must not be. `MTL613` stays reserved and `MTL602` retired. Trigger: an
+    effective order tag on a pattern heading (valid pattern, not template-only) without a
+    repeat tag of any of the three kinds (the `min` and `max` forms make a repeat heading
+    too, 2.10); a heading without pattern keeps the `MTL015` reason `the heading has no
+    [pattern:...]`, a template-only heading its `MTL015`, an invalid pattern its `MTL014`
+    (one cause, one finding, as `MTL018` (u)); position at the `[` of the order tag;
+    `--verify` section `Order tags without repeat:` last; in a lint run the order tag has
+    no effect (one position takes one heading);
+  - (jj) `MTL019` for an invalid-pattern parent reads the same child list as for any parent
+    (a child with an invalid pattern stays out of it, it is not a position);
+  - (kk) phases: P7j (`MTL030`) after P7i; the A72n parts of P1 (the `semver` order keyword
+    and the placeholder argument), P2 (argument reasons, `{int}` unknown), P3 (`{digits}`,
+    `{number}` leading zeros), Pf (the new formats), P7 and P7h (the `semver` key) and P8
+    (migration notes) are folded into those phases, which are not started; the pin moves
+    from 83 to 84; the later epic of decision 5 gets no phase, no code and no pin change.
 
 ## 11. Legacy quirks and other changes
 
@@ -1968,11 +5689,13 @@ Kept on purpose for parity (change only with a new decision):
   an empty list is "empty" (skipped), so lists behave the same. A mapping could match in
   legacy only when the constant is its Python text (an empty mapping `{}` equals a constant
   `{}`); the port reports it as a mismatch. This case is accepted as not worth reproducing.
-- Q03: `[presence:exist]` is undocumented in the legacy docstring (which says "substring");
-  the code matches by heading LEVEL. The code is the contract.
+- Q03: retired by A72m. It kept the legacy `exist` presence mode (undocumented in the
+  legacy docstring, which says "substring"; the code matched by heading LEVEL). The mode is
+  dropped and `MTL602` retired (2.6 "Dropped tag", C10 note of A72m).
 - Q04: `[format:constant:...]` and `[presence:conditional:...]` text cannot contain `]`.
-- Q05: heading order uses the first matching target heading; headings inside multi-line HTML
-  comments count.
+- Q05: headings inside multi-line HTML comments count. (Until A72k this entry also kept the
+  legacy "heading order uses the first matching target heading"; the positional match of
+  2.10, ADR 0012, replaced it.)
 - Q06: a duplicate frontmatter key silently keeps the last value.
 - Q07: unknown and malformed template tags show in `--verify` only.
 - Q08: a tag in a comment on a list item is read but not used.
@@ -2010,7 +5733,8 @@ Behaviour that differs from legacy and is not one of the numbered defects.
   - Digits: JS `\d` and the lexer `T_NUMBER` match ASCII digits only. Python `\d` matches every
     Unicode decimal digit (class Nd). Affects int, float, date patterns, range/count/min-lines
     numbers.
-  - Whitespace: type checks, io paths and the frontmatter loader strip with JS `trim()`. The
+  - Whitespace: type checks, io paths and the frontmatter loader strip with JS `trim()`, except
+    the type `date`, which uses the Python set. The shape predicates of 2.9 do not strip. The
     range, order, url, path-alias and content rules strip with the Python `str.isspace` set.
     Python `strip()` is the contract; the two sets differ for U+001C to U+001F, U+0085 and
     U+FEFF.
@@ -2041,3 +5765,98 @@ Behaviour that differs from legacy and is not one of the numbered defects.
   rows (a normalizer that drops the excerpt rows compares equal to the legacy layout, rows
   start with a line number and ` | `). Rationale: the user finds the line without opening
   the file.
+- C10: all heading levels (2.6, 2.7, 4.3, DIR5, DIR6, AS15, ADR 0009; plan A72 Epic L,
+  phases A72b to A72g in section 9). BREAKING, released as a major version, no compatibility
+  flag. Legacy read only H1 and H2 as sections, matched a template heading by text at either
+  of those two levels (only `exist` compared the level) and ignored H3 to H6 (old behaviour,
+  removed). The port reads and checks every level: an untagged H3 to H6 template heading is
+  required; every level matches exactly (same level and text); H3 to H6 headings with a
+  template parent match inside the parent's target section (`MTL610`, `MTL611`); the opt-in
+  `[content:subheadings:disallow]` forbids unlisted headings in a subtree (`MTL612`); tags on
+  H3 to H6 template lines give `MTL011` to `MTL013`; a tag without effect gives `MTL015`.
+  Parity: a template with only H1 and H2 headings and no new tag gives the legacy findings,
+  except where a target relied on the H1/H2 cross match (then `MTL601` or no `MTL603`, 2.6)
+  and except the positional changes and A72l warnings of the note below.
+  Migration: `docs/migration.md` (phase A72g). Rationale: the owner asked for headings
+  "always on, in all levels"; a changelog needs H3 groups inside each release.
+  BREAKING-CHANGE NOTE (A72k, ADR 0012, owner decision 1 of A72k; phases Pm and P8 of
+  section 9): the C10 match "the first target heading in scope with the same level and text"
+  is replaced by the positional run of 2.10 for every heading, exact text included. Effects
+  on targets that passed before: an extra heading BEFORE or BETWEEN template headings of one
+  level and scope now shifts the run (the next template heading is missing, `MTL601` /
+  `MTL610`); a swapped same-level pair gives `MTL601` instead of `MTL604` / `MTL611`; a
+  duplicate of a template heading is an extra (no longer the first one wins wherever it
+  is); the content of an `exist` heading is read from the heading at its position (until
+  A72m drops the tag, note below).
+  Extras after the last template heading of a level stay allowed. Codes and messages are
+  unchanged, except the A72l additions (owner decisions of AS17): every extra in the tail of
+  a run gives the WARNING `MTL616` (exit code unchanged, suppressible), and the `MTL601`
+  message of a swapped pair gains `(found later at line N, out of order)`. Migration: `docs/migration.md` section "Headings are matched by position"
+  (phase P8), released with the next major version.
+  BREAKING-CHANGE NOTE (A72m, owner decision 1 of A72m, AS17; phases P8 and Pc of section
+  9, both done; pre-release, same major version as the notes above): `[presence:exist]` is
+  REMOVED.
+  It is now a malformed tag (`MTL012` in `--verify`); the bracket stays in the heading
+  text, so the heading is an ordinary required heading that no target matches and every
+  lint run reports it missing (`MTL601` / `MTL610`). `MTL602` heading-level-missing is
+  RETIRED: reserved, never reused, its behaviour removed; the second message form of
+  `MTL610` is gone. Migration: `## Context [presence:exist]` becomes
+  `## Context [pattern:"{text}"]` (any non-numeric text at that level; the text before the
+  tag is an author hint), or a tighter pattern (`# ADR - Title [pattern:"ADR - {text}"]`,
+  `### 0.0.0 [pattern:"{semver}"]`), or a plain heading when the text is fixed
+  (`## Changes [content:table]`); a purely numeric heading needs `{digits}` (or one of its
+  formats, `padding:N` for `007`), `{number}` or a `{date}` format. `docs/migration.md` section "The `exist` presence tag is removed"
+  (phase P8).
+- C11: field formats (2.3, 2.7, 2.9, 3.4, 4.1, 4.3, DIR5, DIR6, 8.3, AS16, ADR 0010; plan A72
+  Epic F, phases A72h and F1 to F7 in section 9). Not breaking, minor release. Legacy had one
+  project-wide date parsing (the four shapes of 3.3) and no version check. The port adds
+  `[format:semver]`, `[format:date]` and their `elements:` forms (`MTL306` to `MTL309`, field
+  step `shape`, last) and the template warning `MTL016` for a date field without format.
+  Parity: a template without the new tags gives the legacy findings on every target; only
+  `--verify` of a template with a `date` or `list-of-date` field gains `MTL016` warnings
+  (exit code unchanged). Rationale: changelogs and dated documents need one exact shape
+  (`YYYY-MM-DD`) and real versions, and the template should state which date shape it means.
+- C12: heading patterns, repeat rules and order (2, 2.6, 2.7, 2.10, 4.1, 4.2, 4.3, DIR5,
+  DIR6, DIR7, 7.3, 7.5, 8.1, 8.2, 8.3, 8.4, 8.5, AS17, ADR 0011, ADR 0012; plan A72 Epic P,
+  phases A72j, A72k, A72l, A72m, A72n, Pm, P1 to P8 and Pc in section 9). The tags themselves are additive; the
+  positional match that A72k puts under them is breaking (C10 note), so Epic P ships in a
+  major release. Legacy had no way to match a heading whose text varies:
+  a release heading had to be written with its exact text or left unchecked. The port adds
+  `[pattern:"..."]`, `[repeat-rules:same-level]` (with `min` and `max` forms),
+  `[order:ascending]` / `[order:descending]` and `[content:subheadings:no-extra]` on
+  headings (`MTL605` to `MTL609`, `MTL614`, `MTL615`), the extra warning `MTL616` (A72l),
+  the template warning `MTL014` and the template errors `MTL017` (A72k, widened by A72l to
+  exact-text headings) and `MTL018` (A72l); both template errors fail `--verify` and, since
+  A72l, a lint run (printed on the template file, exit 1, targets still linted);
+  `[order:ascending]` on a heading, a misplaced tag (`MTL013`) before, becomes the order tag.
+  Parity: after the positional change (C10 note), a template without the new tags gives the
+  same errors on every target, plus `MTL616` warnings for extras and the `MTL601` hint; a
+  template with two adjacent identical exact-text headings now fails with `MTL017`. Rationale: a changelog repeats one heading shape per
+  release, newest first, and the template should say so.
+  Revised by A72m (owner decisions of AS17, ADR 0011 and 0012 revisions): placeholder
+  formats (`{text}` case formats, `{number}` `scientific` and a signed `decimal`) and the
+  new placeholder `{char}`; `[order:ascending]` / `[order:descending]` compare the whole
+  heading text, and `[order:first:number:...]` / `[order:first:date:...]` order by the
+  first number or date of the text (`MTL617` heading-order-key-missing for an instance
+  without one); the content label of a pattern heading names the pattern; the template
+  error `MTL019` heading-child-order-conflict; the `exist` presence tag dropped and `MTL602`
+  retired (C10 note). A template with a deeper child before a shallower one under one
+  parent, valid before, now fails with `MTL019`.
+  Revised by A72n (owner decisions of AS17, ADR 0011 and 0012 revisions; pre-release, same
+  major version): `MTL019` also for a parent with an invalid pattern; the order forms
+  `[order:first:semver:...]`; an order tag on a pattern heading without repeat tag is the
+  template error `MTL030` heading-order-without-repeat (it was a `MTL015` warning), so such
+  a template, which passed lint runs before, now fails them; `{int}` is renamed `{digits}`
+  (BREAKING: `{int}` is now an unknown placeholder, `MTL014`, and the heading is no longer
+  checked until the template is migrated) with the formats `signed`, `hex`, `uid` and
+  `padding:N`; `{number}` accepts leading zeros and gains `precision:N`; the `{text}` case
+  formats accept Unicode letters and reject digits-only values (a template that relied on
+  `2026` being `snakecase` must use `{digits}`), and `lowercase` and `uppercase` are new.
+- C13: unique heading names (2.11, 4.2, 4.3, ADR 0013; phases A80a to A80d in section 9).
+  Implemented since A80c. Legacy had no name check: two headings with one text were
+  allowed everywhere. The port adds the opt-in tag `[unique-headings-names]`, template-wide
+  (a frontmatter comment line) or per heading (its subtree), and the error `MTL613`
+  heading-unique-names on each later duplicate (case-insensitive, any level). Since A80b the
+  bracket is a known tag (grammar and tag parsing); the rule came with A80c. Parity: a
+  template without the tag gives the same findings on every target. Not breaking, minor
+  release.

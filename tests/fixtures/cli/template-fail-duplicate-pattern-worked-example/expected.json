@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "tool": "md-template-lint",
+  "version": "9.9.9",
+  "mode": "lint",
+  "config": "md-template-lint.yml",
+  "results": [
+    {
+      "root": "project",
+      "pair": "versions",
+      "template": {
+        "path": "templates/versions.template.md",
+        "status": "fail",
+        "diagnostics": [
+          {
+            "code": "MTL017",
+            "severity": "error",
+            "message": "Heading 'Notes': matches the same headings as the previous heading 'Notes' (line 5)",
+            "line": 7,
+            "column": 4,
+            "sourceLine": "## Notes [presence:optional]"
+          }
+        ]
+      },
+      "files": [{ "path": "notes/a.md", "status": "pass", "errors": [], "warnings": [] }]
+    }
+  ],
+  "runErrors": [],
+  "runWarnings": [],
+  "unmatched": [],
+  "summary": {
+    "files": 1,
+    "passed": 1,
+    "failed": 0,
+    "warnings": 0,
+    "filesWithWarnings": 0,
+    "suppressed": 0,
+    "templatesChecked": 1,
+    "templatesBroken": 0,
+    "runErrors": 0,
+    "runWarnings": 0,
+    "exitCode": 1
+  }
+}

@@ -35,6 +35,20 @@ const CASES: readonly VerifyCase[] = [
       warning("Heading 'Notes [beta:z]': unknown tag [beta:z]", 6, 10, "## Notes [beta:z]"),
     ],
   },
+  // Spec 2.11: a typo of `[unique-headings-names]` (singular `heading`) is an unknown tag.
+  {
+    name: "fail-unique-headings-names-typo",
+    exitCode: 0,
+    status: "ok",
+    diagnostics: [
+      warning(
+        "Heading 'Notes [unique-heading-names]': unknown tag [unique-heading-names]",
+        4,
+        10,
+        "## Notes [unique-heading-names]",
+      ),
+    ],
+  },
 ];
 
 describe("MTL011 unknown-heading-tag (--verify)", () => {

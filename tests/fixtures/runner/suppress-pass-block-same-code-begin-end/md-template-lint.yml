@@ -1,0 +1,5 @@
+# Baseline A with begin/end blocks: each block covers two findings of the SAME code (4 in total).
+pairs:
+  - name: notes
+    template: templates/notes.template.md
+    include: notes/*.md

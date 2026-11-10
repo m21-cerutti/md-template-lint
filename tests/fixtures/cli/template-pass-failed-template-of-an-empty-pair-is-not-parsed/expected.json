@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "tool": "md-template-lint",
+  "version": "9.9.9",
+  "mode": "lint",
+  "config": "md-template-lint.yml",
+  "results": [],
+  "runErrors": [],
+  "runWarnings": [
+    {
+      "code": "MTL913",
+      "severity": "warning",
+      "message": "no files matched pair 'versions' in root 'project'",
+      "pair": "versions",
+      "root": "project"
+    }
+  ],
+  "unmatched": [],
+  "summary": {
+    "files": 0,
+    "passed": 0,
+    "failed": 0,
+    "warnings": 0,
+    "filesWithWarnings": 0,
+    "suppressed": 0,
+    "templatesChecked": 0,
+    "templatesBroken": 0,
+    "runErrors": 0,
+    "runWarnings": 1,
+    "exitCode": 0
+  }
+}

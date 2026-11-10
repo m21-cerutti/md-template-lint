@@ -25,7 +25,7 @@ Headings:
   ## Context (presence:required, content:non-empty)
   ## Options (presence:required, content:table, content:list, content:min-lines:2, content:max-lines:10)
   ## Notes (presence:optional)
-  ## Review (presence:exist)
+  ## Review (presence:required, pattern:"{text}")
   ## Authoring checklist (presence:template-only)
   ## Gate (presence:conditional:when ready)
   ## Review gate (presence:conditional:only when risky)
@@ -33,11 +33,16 @@ Headings:
   ## Mixed (presence:optional)
   ## Free text (presence:required)
 
+Date fields without format:
+  - Field 'milestones' (type=list-of-date): no [format:elements:date], default date formats apply (line 9, column 1)
+      9 | milestones: ["2026-01", "2026-06"] # [order:ascending]
+        | ^
+
 ========================
 Summary
 ========================
 Templates:    1 checked, 0 broken
-Warnings:     0
+Warnings:     1
 
 All templates passed!
 ========================

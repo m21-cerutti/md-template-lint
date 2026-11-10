@@ -27,10 +27,14 @@ export interface VerifyDiagnostic {
 
 /** What one `--verify` run of one template gives. */
 export interface VerifyOutcome {
-  /** Process exit code: 0 ok (warnings do not fail), 1 broken template. */
+  /** Process exit code: 0 ok (warnings do not fail), 1 broken or failed template. */
   readonly exitCode: number;
-  readonly status: "ok" | "broken";
-  /** The parse error of a broken template, else the tag warnings in source order. */
+  /** `fail`: the template parses and has a template error (spec 8.5, `MTL017`). */
+  readonly status: "ok" | "broken" | "fail";
+  /**
+   * The parse error of a broken template, else its template diagnostics: the template
+   * errors, then the tag warnings, each in source order.
+   */
   readonly diagnostics: readonly VerifyDiagnostic[];
 }
 
@@ -41,7 +45,7 @@ export interface VerifyCase extends VerifyOutcome {
 
 interface VerifyJson {
   readonly templates: readonly {
-    readonly status: "ok" | "broken";
+    readonly status: "ok" | "broken" | "fail";
     readonly error?: VerifyDiagnostic;
     readonly diagnostics: readonly VerifyDiagnostic[];
   }[];

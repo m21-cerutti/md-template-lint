@@ -1,10 +1,20 @@
 /**
  * Category `format` (docs/spec.md 4.3, codes MTL300-MTL399): value shape
- * rules from tags. All codes of the category are ported.
+ * rules from tags. The legacy codes MTL301 to MTL305 are ported; of the field
+ * format codes (spec 2.9, change C11) MTL306 to MTL309 are implemented.
  */
 import { defineRule, report, type AnyRule, type FieldContext } from "../engine/rule.js";
 import { isList, type Diagnostic } from "../engine/model.js";
-import { isValidUrlValue, matchesCaseStyle, pyRepr, valueText } from "../engine/values.js";
+import {
+  isIsoDate,
+  isSemver,
+  isValidDateValue,
+  isValidUrlValue,
+  matchesCaseStyle,
+  pyRepr,
+  valueText,
+} from "../engine/values.js";
+import type { ValueShape } from "../tags/ast.js";
 
 /**
  * `[format:constant:<v>]` (spec 2.3): a scalar value must equal the constant
@@ -173,11 +183,160 @@ const schemeDisallowedItem = defineRule({
   },
 });
 
+/**
+ * The scalar shape of a template field (spec 2.9): `[format:semver]` and
+ * `[format:date]` are one kind, so the first of them wins (spec 2.1). Null
+ * when the field has neither.
+ */
+function scalarShape(context: FieldContext): ValueShape | null {
+  const tag = (context.templateField.comment?.tags ?? []).find(
+    (candidate) => candidate.kind === "format-shape",
+  );
+  return tag === undefined ? null : tag.shape;
+}
+
+/**
+ * `[format:semver]` (spec 2.9): a scalar string value that is not a SEMVER
+ * (`isSemver`, exact text, no trimming). A list or mapping is skipped (the
+ * type rule reports the shape). Silent when `[format:date]` is the first
+ * scalar shape tag. The pipeline runs step `shape` only for a present,
+ * non-empty value (spec 4.1 step 3) and anchors on the key line (DIR5).
+ */
+const semverMismatch = defineRule({
+  code: "MTL306",
+  name: "semver-mismatch",
+  severity: "error",
+  category: "format",
+  phase: "field",
+  step: "shape",
+  check: (context: FieldContext): Diagnostic[] => {
+    const { value } = context;
+    if (scalarShape(context) !== "semver" || typeof value !== "string") return [];
+    if (isSemver(value)) return [];
+    return [
+      report(
+        semverMismatch,
+        `Field '${context.key}': value '${value}' is not a semantic version [format:semver]`,
+      ),
+    ];
+  },
+});
+
+/**
+ * `[format:date]` (spec 2.9): a scalar string value that is not an ISO DATE
+ * (`isIsoDate`, exact text, no trimming). On a field of type `date` a value
+ * that fails the default date parsing (`isValidDateValue`) is silent here:
+ * the type rule reports it (`MTL504`, one problem one error). On any other
+ * field type every non ISO DATE value fires. A list or mapping is skipped.
+ * Silent when `[format:semver]` is the first scalar shape tag. Step `shape`,
+ * present non-empty value only (spec 4.1 step 3), key line anchor (DIR5).
+ */
+const dateFormatMismatch = defineRule({
+  code: "MTL307",
+  name: "date-format-mismatch",
+  severity: "error",
+  category: "format",
+  phase: "field",
+  step: "shape",
+  check: (context: FieldContext): Diagnostic[] => {
+    const { value } = context;
+    if (scalarShape(context) !== "date" || typeof value !== "string") return [];
+    if (isIsoDate(value)) return [];
+    if (context.templateField.type === "date" && !isValidDateValue(value)) return [];
+    return [
+      report(
+        dateFormatMismatch,
+        `Field '${context.key}': value '${value}' is not a YYYY-MM-DD date [format:date]`,
+      ),
+    ];
+  },
+});
+
+/**
+ * The elements shape of a template field (spec 2.9): `[format:elements:semver]`
+ * and `[format:elements:date]` are one kind, so the first of them wins (spec
+ * 2.1). Null when the field has neither.
+ */
+function elementsShape(context: FieldContext): ValueShape | null {
+  const tag = (context.templateField.comment?.tags ?? []).find(
+    (candidate) => candidate.kind === "format-elements-shape",
+  );
+  return tag === undefined ? null : tag.shape;
+}
+
+/**
+ * `[format:elements:semver]` (spec 2.9): on a list value, one error listing
+ * every item that is not a SEMVER, as a Python list of strings. Items are
+ * tested as their text (`valueText`, as MTL303), exact, no trimming, so a
+ * nested list or mapping is listed. Skipped when the value is not a list.
+ * Silent when `[format:elements:date]` is the first elements shape tag. Step
+ * `shape`, present non-empty value only (spec 4.1 step 3), key line anchor.
+ */
+const elementsSemverMismatch = defineRule({
+  code: "MTL308",
+  name: "elements-semver-mismatch",
+  severity: "error",
+  category: "format",
+  phase: "field",
+  step: "shape",
+  check: (context: FieldContext): Diagnostic[] => {
+    const { value } = context;
+    if (elementsShape(context) !== "semver" || value === null || !isList(value)) return [];
+    const bad = value.map(valueText).filter((item) => !isSemver(item));
+    if (bad.length === 0) return [];
+    return [
+      report(
+        elementsSemverMismatch,
+        `Field '${context.key}': list contains entries not matching [format:elements:semver]: ${pyRepr(bad)}`,
+      ),
+    ];
+  },
+});
+
+/**
+ * `[format:elements:date]` (spec 2.9): on a list value, one error listing
+ * every item that is not an ISO DATE, as a Python list of strings. Items are
+ * tested as their text (`valueText`), exact, no trimming. On a field of type
+ * `list-of-date` an item that fails the default date parsing
+ * (`isValidDateValue`) is not listed: the type rule lists it (`MTL513`, one
+ * problem one error). Skipped when the value is not a list. Silent when
+ * `[format:elements:semver]` is the first elements shape tag. Step `shape`,
+ * present non-empty value only (spec 4.1 step 3), key line anchor.
+ */
+const elementsDateMismatch = defineRule({
+  code: "MTL309",
+  name: "elements-date-mismatch",
+  severity: "error",
+  category: "format",
+  phase: "field",
+  step: "shape",
+  check: (context: FieldContext): Diagnostic[] => {
+    const { value } = context;
+    if (elementsShape(context) !== "date" || value === null || !isList(value)) return [];
+    const deferToType = context.templateField.type === "list-of-date";
+    const bad = value
+      .filter((item) => !deferToType || isValidDateValue(item))
+      .map(valueText)
+      .filter((item) => !isIsoDate(item));
+    if (bad.length === 0) return [];
+    return [
+      report(
+        elementsDateMismatch,
+        `Field '${context.key}': list contains entries not matching [format:elements:date]: ${pyRepr(bad)}`,
+      ),
+    ];
+  },
+});
+
 export const rules: readonly AnyRule[] = [
   constantMismatch,
   caseMismatch,
   elementsCaseMismatch,
   schemeDisallowed,
   schemeDisallowedItem,
+  semverMismatch,
+  dateFormatMismatch,
+  elementsSemverMismatch,
+  elementsDateMismatch,
   // new:rule inserts above this line
 ];

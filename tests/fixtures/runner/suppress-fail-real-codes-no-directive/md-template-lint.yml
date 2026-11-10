@@ -1,0 +1,7 @@
+# Baseline of the real-code suppression group: the template makes 10 real findings (nine
+# errors, one warning) and the target holds no directive, so every code is reported (exit 1).
+# The pass-real-* fixtures are this same project with directives.
+pairs:
+  - name: notes
+    template: templates/notes.template.md
+    include: notes/*.md

@@ -37,14 +37,14 @@ describe("check:rules", () => {
   });
 
   it("reads non-empty inputs (a style change cannot make a check pass on nothing)", () => {
-    expect(specCodes()).toHaveLength(61);
+    expect(specCodes()).toHaveLength(84);
     expect(specTypeNames()).toHaveLength(17);
     expect(specRanges().size).toBe(9);
     const atn = MdTemplateParser._ATN;
-    expect(firstSymbols(atn, MdTemplateParser.RULE_tagFamily).tokens.size).toBe(9);
+    expect(firstSymbols(atn, MdTemplateParser.RULE_tagFamily).tokens.size).toBe(12);
     expect(firstSymbols(atn, MdTemplateParser.RULE_tagWord).tokens.size).toBe(10);
-    expect(firstSymbols(atn, MdTemplateParser.RULE_fmTagBody).rules.size).toBe(8);
-    expect(firstSymbols(atn, MdTemplateParser.RULE_bodyTagBody).rules.size).toBe(2);
+    expect(firstSymbols(atn, MdTemplateParser.RULE_fmTagBody).rules.size).toBe(9);
+    expect(firstSymbols(atn, MdTemplateParser.RULE_bodyTagBody).rules.size).toBe(6);
     expect(sentences(atn, MdTemplateParser.RULE_fmCountTag)).toHaveLength(2);
     expect(modeKeywords(MdTemplateLexer.TAG_TEXT)).toEqual([
       "ISO",

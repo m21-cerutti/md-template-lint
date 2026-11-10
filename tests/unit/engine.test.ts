@@ -113,7 +113,7 @@ describe("loadDocument: values and binding", () => {
 });
 
 describe("loadDocument: sections", () => {
-  it("builds sections from H1/H2 only; an H1 body keeps its H2 sections", () => {
+  it("builds sections from every level with parents; a body keeps its deeper headings", () => {
     const model = load(
       "---",
       "a: b",
@@ -129,14 +129,17 @@ describe("loadDocument: sections", () => {
       "## Two",
       "last",
     );
-    expect(model.sections.map((s) => [s.level, s.text, s.line])).toEqual([
-      [1, "Title", 4],
-      [2, "One", 6],
-      [2, "Two", 12],
+    // Spec 2.6, change C10: H3 to H6 are sections too; parent = nearest lower-level heading.
+    expect(model.sections.map((s) => [s.level, s.text, s.line, s.parent])).toEqual([
+      [1, "Title", 4, null],
+      [2, "One", 6, 0],
+      [3, "Deep", 7, 1],
+      [2, "Two", 12, 0],
     ]);
     expect(model.sections[1]?.body).toBe("### Deep\ntext\n```\n## not a heading\n```");
+    expect(model.sections[2]?.body).toBe("text\n```\n## not a heading\n```");
     expect(model.sections[0]?.body.split("\n")).toHaveLength(9);
-    expect(model.sections[2]?.body).toBe("last");
+    expect(model.sections[3]?.body).toBe("last");
   });
 });
 

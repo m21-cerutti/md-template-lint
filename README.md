@@ -6,7 +6,7 @@ syntax is defined by an ANTLR grammar; rules are grouped by category; each
 project configures its template/target pairs in `md-template-lint.yml`.
 
 A template is a Markdown file and it is the schema: the frontmatter keys, their
-inline `#` comments and the H1/H2 heading suffixes carry the rules. There is no
+inline `#` comments and the heading suffixes (H1 to H6) carry the rules. There is no
 separate schema file.
 
 Status: the port matches the legacy Python linter and the PowerShell wrappers, apart
@@ -159,8 +159,8 @@ The full layout and the JSON schema are in [docs/spec.md](docs/spec.md) section 
 
 `text` and `plain` print the line that causes a finding under it: the line number, a bar and the
 line text (see the `status:` and `authors: bob` lines above). A finding with a column (the
-directive warnings `MTL020` to `MTL025`, and in `--verify` the template tag warnings `MTL010`
-to `MTL013`) adds a row with `^` under the offending character. A finding about one key or
+directive warnings `MTL020` to `MTL025`, and the template tag diagnostics `MTL010` to
+`MTL019` and `MTL030`) adds a row with `^` under the offending character. A finding about one key or
 heading but with no column (for example `MTL201` on an empty key, `MTL202`, `MTL701`) quotes the
 key or heading line, without a caret. A finding about the whole file (a missing key, a missing
 heading, the file name, a file that does not parse) has no line and prints no extra row.
@@ -205,10 +205,16 @@ heading, the file name, a file that does not parse) has no line and prints no ex
   is `MTL912` (the other files are still linted). Output order does not follow the
   argument order.
 - **`--verify`**: parse each template and print its schema (field, inferred type,
-  rules, headings, unknown, malformed and misplaced tags). No target is read and no
+  rules, headings of every level H1 to H6 with their rules, and the sections for unknown,
+  malformed, misplaced and conflicting tags (`Conflicting tags:`, `MTL015`), the invalid
+  patterns (`Invalid patterns:`, `MTL014`), the date fields without a format tag (`Date fields
+  without format:`, `MTL016`) and the template errors (`Duplicate patterns:`, `Optional headings
+  with a minimum:`, `Child headings out of level order:` and `Order tags without repeat:`,
+  `MTL017`, `MTL018`, `MTL019` and `MTL030`)). No target is read and no
   network is used. `md-template-lint --verify` checks every distinct template of the
   config; `md-template-lint --verify path/to/a.md` checks those files and needs no
-  config. A broken template exits 1; a missing template path exits 2. With neither
+  config. A broken template exits 1, and so does a template with a template error
+  (`MTL017`, `MTL018`, `MTL019`, `MTL030`); a missing template path exits 2. With neither
   a config nor a template path the run fails with `MTL923`.
 
 Examples:
@@ -240,20 +246,20 @@ the part below the root stays case-sensitive, because globs are case-sensitive o
 
 A template starts with a YAML frontmatter block. Each top-level key is a field. A
 trailing `#` comment on the key line holds bracket tags (`[family:argument]`). The
-H1 and H2 headings of the body can carry bracket tags after their text. A field
-without a presence tag is required.
+headings of the body, at every level (H1 to H6), can carry bracket tags after their
+text. A field or a heading without a presence tag is required.
 
 ```markdown
 ---
 # [filename:case:kebab-case]
 id: 0000-record-template # [presence:required] [value:filename] [format:kebab-case]
 status: proposed | accepted # [presence:required]
-date: 2026-10-29 # [presence:required] type=date
+date: 2026-10-29 # [presence:required] [format:date] type=date
 deciders: [Name] # [presence:required] [count:min:1]
 supersedes: 0000-other-record # [presence:optional]
 ---
 
-# ADR [presence:exist]
+# ADR - Title [pattern:"ADR - {text}"]
 
 ## Context [content:non-empty]
 
@@ -262,13 +268,14 @@ supersedes: 0000-other-record # [presence:optional]
 ## Authoring checklist [presence:template-only]
 ```
 
-Three places carry tags:
+Four places carry tags:
 
 | Place            | Where                                                      | Bound to     |
 | ---------------- | ---------------------------------------------------------- | ------------ |
 | Inline comment   | trailing `#` comment on a top-level frontmatter key        | that key     |
 | Filename comment | a standalone `# [filename:case:<convention>]` comment line | the template |
-| Heading suffix   | bracket tags after the text of an H1 or H2 heading         | that heading |
+| Unique names comment | a standalone `# [unique-headings-names]` comment line  | the template |
+| Heading suffix   | bracket tags after the text of a heading (H1 to H6)        | that heading |
 
 Tag names and keywords are case-insensitive, except `[filename:case:<convention>]`,
 which is case-sensitive. Tags in a target file are inert (only trailing heading tags
@@ -303,16 +310,31 @@ Parsing, template tag and target directive diagnostics. No tag of its own.
 | `MTL011` | unknown-heading-tag     | warning  | A leftover trailing bracket on a heading looks like an unknown tag.           |
 | `MTL012` | malformed-tag           | warning  | A known tag family with a bad argument, for example `[count:min:abc]`.        |
 | `MTL013` | misplaced-tag           | warning  | A valid tag in the wrong region (heading tag in frontmatter, or the reverse). |
+| `MTL014` | heading-pattern-invalid | warning  | A `[pattern:"..."]` tag cannot be read: `Heading '{text}': invalid pattern [pattern:"{pattern}"] ({reason})`. Reasons: unknown or malformed placeholder, unknown format, bad format argument, unmatched brace, adjacent placeholders, invalid escape, empty pattern. |
+| `MTL015` | heading-tag-conflict    | warning  | A heading tag has no effect, for example `[content:subheadings:disallow]` on a `[presence:template-only]` heading. |
+| `MTL016` | date-format-missing     | warning  | A template field of type `date` has no `[format:date]`, or a `list-of-date` field has no `[format:elements:date]`; the default date formats apply. |
+| `MTL017` | heading-pattern-duplicate | error  | Two adjacent template headings of one level and scope have the same pattern (an exact-text heading counts as its literal pattern): `Heading '{text}': same pattern [pattern:"{pattern}"] as the previous heading '{prev}' (line {prevLine})`, or `Heading '{text}': matches the same headings as the previous heading '{prev}' (line {prevLine})` for an exact-text heading. Template error. |
+| `MTL018` | heading-optional-min-conflict | error | A repeat heading is `[presence:optional]` and has an explicit `[repeat-rules:same-level:min:N]`: `Heading '{text}': tag {tag} contradicts [presence:optional] (a minimum of {min} requires the heading)`. Template error. |
+| `MTL019` | heading-child-order-conflict | error | A template heading lists a child after a deeper child: `Heading '{text}' (H{n}): comes after the deeper child '{prev}' (H{m}, line {prevLine}) under '{parent}'`. Template error. |
 | `MTL020` | directive-malformed | warning | A disable directive in a target has an unknown verb or no rule code. |
 | `MTL021` | directive-unknown-code | warning | A disable directive names an item that is not a rule code. |
 | `MTL022` | directive-code-not-suppressible | warning | A disable directive names a code that cannot be disabled. |
 | `MTL023` | directive-end-without-begin | warning | `end disable` closes a code that is not open. |
 | `MTL024` | directive-begin-unclosed | warning | `begin disable` is never closed; it runs to the end of the file. |
 | `MTL025` | directive-already-disabled | warning | A code is disabled while it is already disabled. |
+| `MTL030` | heading-order-without-repeat | error | An `[order:...]` tag sits on a pattern heading without any `[repeat-rules:...]` tag: `Heading '{text}': tag {tag} needs [repeat-rules:same-level] (an order compares the repeats of one heading)`. Template error. |
 
 `MTL001` to `MTL004` on a target print `Parse error: <message>` and the file is not
 checked further. On a template they make it "broken": `TEMPLATE ERROR: <template> -
-<message>`, exit 1. `MTL010` to `MTL013` are shown by `--verify` only. `MTL020` to
+<message>`, exit 1. The template warnings `MTL010` to `MTL016` are shown by `--verify` only
+(`MTL014` in `Invalid patterns:`, `MTL015` in `Conflicting tags:`, `MTL016` in
+`Date fields without format:`, all with line and column); they never change the exit code.
+The four **template errors** `MTL017`, `MTL018`, `MTL019` and `MTL030` do not make the
+template broken, but they act in both modes: a lint run prints each one as an error on the
+template file, before its targets (the targets are still linted), and exits 1; `--verify`
+marks the template as failed (sections `Duplicate patterns:`, `Optional headings with a
+minimum:`, `Child headings out of level order:` and `Order tags without repeat:`) and exits 1.
+No template diagnostic can be suppressed (a template carries no directives). `MTL020` to
 `MTL025` are target warnings about disable directives, never suppressible; see
 [Disabling rules in a file](#disabling-rules-in-a-file).
 
@@ -353,6 +375,10 @@ Precedence: conditional, then optional, then required.
 | `[format:elements:snake_case]`  | list                          | Every item must match snake case.                              |
 | `[format:elements:kebab-case]`  | list                          | Every item must match kebab case.                              |
 | `[format:scheme:<s1>,<s2>,...]` | `url`, items of `list-of-url` | Allow-list of URL schemes (comma separated, case-insensitive). |
+| `[format:semver]`               | scalar string                 | Must be a semantic version (SemVer 2.0.0, no `v` prefix).      |
+| `[format:date]`                 | scalar string                 | Must be a real `YYYY-MM-DD` date.                              |
+| `[format:elements:semver]`      | list                          | Every item must be a semantic version.                         |
+| `[format:elements:date]`        | list                          | Every item must be a real `YYYY-MM-DD` date.                   |
 
 | Code     | Name                   | Severity | When                                                                     |
 | -------- | ---------------------- | -------- | ------------------------------------------------------------------------ |
@@ -361,6 +387,21 @@ Precedence: conditional, then optional, then required.
 | `MTL303` | elements-case-mismatch | error    | A list item does not match `[format:elements:...]`.                      |
 | `MTL304` | scheme-disallowed      | error    | A valid URL has a scheme outside `[format:scheme:...]`.                  |
 | `MTL305` | scheme-disallowed-item | error    | A list contains URLs with a disallowed scheme.                           |
+| `MTL306` | semver-mismatch        | error    | The value is not a semantic version (`[format:semver]`).                 |
+| `MTL307` | date-format-mismatch   | error    | The value is not a `YYYY-MM-DD` date (`[format:date]`).                  |
+| `MTL308` | elements-semver-mismatch | error  | A list contains items that are not semantic versions (`[format:elements:semver]`). |
+| `MTL309` | elements-date-mismatch | error    | A list contains items that are not `YYYY-MM-DD` dates (`[format:elements:date]`). |
+
+The shape tags run in a last field step, `shape`, after the type checks, so a type error prints
+before a shape error. The tag checks the exact text of the value: values are not trimmed, so
+` 1.2.0 ` gives `MTL306`. Of `[format:semver]` and `[format:date]` on one field the first wins;
+the two `elements:` shape tags are one kind too, and the shape tags and the case tags
+(`[format:snake_case]`) are separate kinds that both run. A value of the wrong kind (a list for a
+scalar tag, a scalar for an `elements:` tag) is skipped. One problem, one error: on a `date`
+field `MTL307` stays silent when the type check already gave `MTL504`, and `MTL309` does not list
+the items that `MTL513` (`list-of-date`) already reports. Without a format tag a `date` field keeps
+the default date parsing, and `--verify` warns about it (`MTL016`). A bad argument
+(`[format:dates]`) is `MTL012`; a shape tag on a heading is `MTL013`.
 
 ### bounds (`MTL400`-`MTL499`)
 
@@ -416,29 +457,241 @@ All messages are `Field '<key>' (type=<type>): <detail>`.
 
 ### heading (`MTL600`-`MTL699`)
 
-Tags go after the text of an H1 or H2 heading. Headings inside fenced code are
-ignored. Heading text comparison is exact and case-sensitive.
+Tags go after the text of a heading of any level (H1 to H6). Headings inside fenced
+code are ignored. Heading text comparison is exact and case-sensitive, and the level
+must be the same: a template `## Context` is not satisfied by a target `# Context`.
+A heading with no tag at all is required. See [docs/migration.md](docs/migration.md) for
+the upgrade from H1/H2-only checking and to positional matching.
 
-| Tag                             | Meaning                                                                    |
-| ------------------------------- | -------------------------------------------------------------------------- |
-| `[presence:required]`           | A heading with this exact text must exist. Same as no tag.                 |
-| `[presence:exist]`              | A heading at the same level must exist, any text.                          |
-| `[presence:optional]`           | The target may omit it.                                                    |
-| `[presence:conditional:<text>]` | Documentation only, never enforced.                                        |
-| `[presence:template-only]`      | Guidance for the template author; the heading must not appear in a target. |
+#### Positional matching
 
-| Code     | Name                  | Severity | When                                                        |
-| -------- | --------------------- | -------- | ----------------------------------------------------------- |
-| `MTL601` | heading-missing       | error    | A required heading is missing.                              |
-| `MTL602` | heading-level-missing | error    | No heading at the level of a `[presence:exist]` heading.    |
-| `MTL603` | heading-template-only | error    | A `[presence:template-only]` heading appears in the target. |
-| `MTL604` | heading-order         | error    | Template headings appear in a different relative order.     |
+Template headings are matched **by position**, not by a search. Source of truth:
+[docs/spec.md](docs/spec.md) sections 2.6 and 2.10.
+
+- **Scope.** H1 and H2 template headings, and a deeper heading that has no template parent,
+  have *file scope*: their candidates (the siblings) are all the target headings of that
+  level in the file. A template heading of level 3 to 6 with a template parent (the nearest
+  template heading above it with a lower level) has *section scope*: its siblings are the
+  target headings of that level inside the section of the target heading that matches the
+  parent. A missing, optional-and-absent or template-only parent means its children are not
+  checked.
+- **Sequence.** The template headings of one level and scope, in template order (without the
+  `[presence:template-only]` ones), are the *positions* of a sequence. They take the target
+  siblings of that level and scope in order, as one adjacent run: each position takes zero
+  or more siblings from the current point onward, never skips a sibling and never goes back
+  (greedy first-fit, no backtracking). An exact-text heading takes the next sibling when
+  its text is equal; a pattern heading takes it when the pattern matches; a repeat heading
+  takes every following sibling that matches.
+- **Swapped headings.** A pair in the wrong order is a missing heading, not an order error:
+  `MTL601` says `Missing required heading: 'Alpha' (found later at line 7, out of order)`.
+  The fix is to reorder the document or to mark the heading `[presence:optional]`.
+- **Extras.** Target siblings left after the last position of a sequence are *extra*
+  headings. They are allowed and never fail the file by themselves, but each run with extras
+  gives ONE warning `MTL616` that lists them. An extra before or between template headings
+  shifts the run and shows as a missing heading. `[content:subheadings:disallow]`
+  (`MTL612`) and `[content:subheadings:no-extra]` (`MTL615`) turn extras into errors. A
+  level and scope with no template heading has no run: its target headings are free detail,
+  not extras.
+- **Template-only.** A sibling with the text of a `[presence:template-only]` heading is
+  `MTL603` and is set aside from the run.
+
+| Tag                              | Meaning                                                                                                                                                  |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `[presence:required]`            | The sibling at the position must have this exact text. Same as no tag, at every level.                                                                   |
+| `[presence:optional]`            | The target may omit it: the position takes the next sibling only when it matches.                                                                        |
+| `[presence:conditional:<text>]`  | Documentation only, never enforced. Matches like optional.                                                                                               |
+| `[presence:template-only]`       | Guidance for the template author; the heading must not appear in a target.                                                                               |
+| `[pattern:"<pattern>"]`          | The heading text is a pattern with placeholders (see below). The text before the tag is only a label.                                                    |
+| `[repeat-rules:same-level]`      | A pattern heading stands for a run of one or more consecutive matching headings. Also `:min:N` and `:max:N` (`N` is 1 or more).                          |
+| `[order:...]`                    | Eight forms; order the repeats of a repeat heading (see below). Needs a repeat tag.                                                                      |
+| `[content:subheadings:disallow]` | No heading below the matched target heading may be one the template does not list (whole subtree), see `MTL612`.                                         |
+| `[content:subheadings:no-extra]` | Every direct child of the matched target heading must be taken by a position of the template children, see `MTL615`.                                      |
+| `[unique-headings-names]`        | No two target headings in the section of the matched heading (each instance of a repeat heading) may share a name, see `MTL613` and [Unique heading names](#unique-heading-names). |
+
+Precedence of the presence tags: conditional, template-only, optional, then required.
+
+#### Heading patterns
+
+`## Release [pattern:"[{semver}] - {date}"]` matches target headings such as
+`## [1.2.0] - 2026-03-01`. The text written before the tag (`Release`) is only a label: it names
+the heading in `--verify` and in messages and is never compared (it may be empty). The pattern
+matches the WHOLE stored heading text; nothing is trimmed. Literal text is case-sensitive; tag
+keywords, placeholder names and format names are not (`{SemVer}` is `{semver}`). No `v` prefix is
+implied: write `v{semver}` for `v1.2.0`.
+
+- **Placeholders.** `{name}`, `{name:format:<fmt>}` or `{name:format:<fmt>:<arg>}`. `{{` is a
+  literal `{` and `}}` a literal `}` (`{{semver}}` is the text `{semver}`). Two placeholders with
+  no literal text between them (`{digits}{text}`) are refused (`MTL014`). There is no
+  regular-expression placeholder.
+- **Escapes.** Inside the quotes, `\"` is a literal `"` and `\\` a literal `\`. Any other
+  backslash pair (`\n`, `\{`) is an invalid escape (`MTL014`).
+- **Format arguments.** Two formats take an argument and need it: `padding:N` of `{digits}` and
+  `precision:N` of `{number}`. `N` is ASCII digits, 1 or more, no leading zero
+  (`{digits:format:padding:3}`). Every other format takes none.
+
+| Placeholder | Default format                                   | Other formats                                                                  |
+| ----------- | ------------------------------------------------ | ------------------------------------------------------------------------------ |
+| `{text}`    | `human`: any text except a purely numeric one    | `snakecase`, `camelcase`, `screamcase`, `kebabcase`, `lowercase`, `uppercase`  |
+| `{number}`  | `decimal`: `-1.5`, `007` (leading zeros allowed) | `scientific`, `precision:N`                                                    |
+| `{digits}`  | digits only, no sign, no leading zero            | `signed`, `hex`, `uid`, `padding:N`                                            |
+| `{semver}`  | `full`: SemVer 2.0.0, no `v` prefix              | `core`, `major-minor`                                                          |
+| `{date}`    | `full`: a real `YYYY-MM-DD` date                 | `year-month`, `year`                                                           |
+| `{char}`    | exactly one Unicode letter (`A`, `É`, `ж`)       | none                                                                           |
+
+- `{digits}` is the former `{int}` (renamed; `{int}` is now an unknown placeholder, `MTL014`). It
+  accepts `0`, `7`, `2026` and refuses `07` and `-1`. `signed` adds an optional `+` or `-`; `hex`
+  is hexadecimal digits of either case; `uid` is letters and digits with at least one of each
+  (`U42`); `padding:3` is exactly three digits (`007`).
+- `{text}` refuses a PURELY NUMERIC text (`2026`, `1.5`, `007`); a numbered heading needs
+  `{digits}`, `{number}` or `{date:format:year}`. `1.2.0` is not purely numeric, so it is a
+  `{text}` value. The `{text}` case formats accept every Unicode letter, need at least one
+  letter and never accept digits only (`2026` is no `snakecase` value).
+- `{number}`: `scientific` adds an exponent (`1.5E-3`); `precision:2` is exactly two decimals
+  (`1.50`).
+- `{char}` covers one-letter ids: `Epic {char} - {text}`.
+
+An invalid pattern (unknown placeholder or format, bad argument, unmatched brace, adjacent
+placeholders, invalid escape, empty pattern) is the template warning `MTL014`, shown by
+`--verify`. The heading is then not checked and is not a position. A required pattern heading
+with no sibling left is `MTL605`; a sibling that does not match it is `MTL606`, which names the
+failing piece (`heading '[Unreleased]' does not match [pattern:"[{semver}] - {date}"] at
+{semver}`). Pattern and repeat tags on a `[presence:template-only]` heading, or repeat and order
+tags on a heading without pattern, have no effect (`MTL015`).
+
+`[pattern:"{text}"]` is the "any heading here" form.
+
+#### Repeat rules
+
+`[repeat-rules:same-level]` makes a pattern heading take every consecutive sibling that matches
+(the *instances*). `[repeat-rules:same-level:min:N]` and `[repeat-rules:same-level:max:N]` bound
+the number of instances; `N` is 1 or more. The default minimum is 1 for a required heading and 0
+for an optional or conditional one; there is no default maximum, and the `max` bound never stops
+the run. Each instance is checked for the content tags, the sub-heading tags and its own children.
+
+- Too few instances: `MTL607` (also at zero, then it replaces `MTL605`). Too many: `MTL608`.
+- A heading with the right shape after the run ended (a stray heading broke the run) is
+  `MTL614`. A tail heading that matches no pattern is an allowed extra (`MTL616`).
+- `[presence:optional]` with an explicit `min` contradicts itself: `MTL018`, a template error.
+
+Example, a changelog:
+
+```markdown
+## Unreleased [presence:optional]
+
+## Release [pattern:"[{semver}] - {date}"] [repeat-rules:same-level] [order:first:semver:descending]
+
+### Added [presence:optional] [content:list]
+```
+
+#### Order
+
+An order tag compares the instances of ONE repeat heading, so it needs a pattern and a repeat tag
+(without the repeat tag it is the template error `MTL030`). The eight forms:
+
+| Form                                                          | Order key of an instance                                         |
+| ------------------------------------------------------------- | ---------------------------------------------------------------- |
+| `[order:ascending]`, `[order:descending]`                     | The whole heading text, as strings (UTF-16 order, case-sensitive) |
+| `[order:first:number:ascending]`, `[order:first:number:descending]` | The first number in the text, compared numerically          |
+| `[order:first:date:ascending]`, `[order:first:date:descending]`     | The first ISO date in the text, compared chronologically    |
+| `[order:first:semver:ascending]`, `[order:first:semver:descending]` | The first SemVer in the text, by SemVer 2.0.0 precedence    |
+
+Equal keys pass. ONE `MTL609` per repeat set reports the first adjacent pair out of order and
+counts the pairs. For the `first:` forms, an instance with no such value in its text is `MTL617`
+(one per set); use a pattern that requires it (`{number}`, `{date}`, `{semver}`). String order
+puts `Step 10` below `Step 9` and `1.10.0` below `1.9.0`; use `first:number` or `first:semver`
+for those. On a frontmatter key line `[order:ascending]` keeps its other meaning (dates of a
+`list-of-date`, `MTL407`); `[order:descending]` and the `first:` forms there are misplaced
+(`MTL013`).
+
+Example, one heading per epic, in letter order:
+
+```markdown
+## Epic A - Title [pattern:"Epic {char} - {text}"] [repeat-rules:same-level] [order:ascending]
+```
+
+#### Sub-heading tags
+
+| Tag                              | Region                                        | A heading passes when                                                   | Code     |
+| -------------------------------- | --------------------------------------------- | ----------------------------------------------------------------------- | -------- |
+| `[content:subheadings:disallow]` | the whole subtree of the matched heading      | some template heading below lists its level and text (or pattern)       | `MTL612` |
+| `[content:subheadings:no-extra]` | the direct children of the matched heading    | a position of the template children took it                             | `MTL615` |
+
+`disallow` reports the topmost unlisted heading of each stray block. `no-extra` reports each direct
+child that no position took, a second `### Added` included. Both may sit on one heading. Neither
+has an effect on a `[presence:template-only]` heading (`MTL015`). A bare `[content:subheadings]`
+or `no-extras` is malformed (`MTL012`).
+
+#### Unique heading names
+
+`[unique-headings-names]` is opt-in, in two places (no argument; `[unique-headings-names:x]` is
+malformed, `MTL012`):
+
+- **Template-wide.** A standalone frontmatter comment line holding only the tag, like the
+  filename comment: `# [unique-headings-names]`. Scope: every target heading of the file.
+- **Per heading.** A heading suffix tag, `## Usage [unique-headings-names]`. Scope: the matched
+  target heading and every heading inside its section, per instance for a repeat heading. No
+  effect on a `[presence:template-only]` heading (`MTL015`) or when the heading has no match.
+
+Two headings of one scope are duplicates when their texts are equal after lowercasing
+(`toLowerCase()`), at any level: `## Notes` and `### NOTES` clash, `Straße` and `STRASSE` do not.
+The first heading of a name passes; each later one is the error `MTL613`, anchored on its own
+line: `duplicate heading name 'NOTES' (first at line 13)`. The tag only adds findings: a
+duplicate extra keeps its `MTL616` warning, and `MTL612` or `MTL615` may fire on it too. For a
+changelog whose groups repeat under every release, put the tag on the repeat heading, not in the
+frontmatter:
+
+```markdown
+## Release [pattern:"[{semver}] - {date}"] [repeat-rules:same-level] [unique-headings-names]
+```
+
+`--verify` prints the per-heading token `unique-headings-names` last in the heading's rules, and
+the template-wide switch as the line `Unique heading names: [unique-headings-names]` right after
+`Filename:` (JSON: `uniqueHeadingNames`, after `filenameCase`).
+
+#### The `exist` tag is removed
+
+`[presence:exist]` (a heading at the same level, any text) no longer exists. It is now a
+malformed tag (`MTL012` in `--verify`): the bracket stays in the heading text, the heading is an
+ordinary required exact-text heading, and a lint run reports it missing (for example
+`Missing required heading: 'Context [presence:exist]'`). `MTL602` is retired and reserved. Write a
+plain heading when the text is fixed, or `[pattern:"{text}"]` for any text; the migration steps,
+with a before/after table, are in [docs/migration.md](docs/migration.md).
+
+| Before                                  | After                                                                              |
+| --------------------------------------- | ---------------------------------------------------------------------------------- |
+| `# ADR [presence:exist]`                | `# ADR - Title [pattern:"ADR - {text}"]`, or `# Title [pattern:"{text}"]` for any H1 |
+| `### Version [presence:exist]`          | `### 0.0.0 [pattern:"{semver}"]`                                                   |
+
+| Code     | Name                       | Severity | When                                                                                    |
+| -------- | -------------------------- | -------- | --------------------------------------------------------------------------------------- |
+| `MTL601` | heading-missing            | error    | A required file-scope heading has no match at its position: `Missing required heading: '{text}'`, with the hint `(found later at line {line}, out of order)` when a sibling with that text comes later. |
+| `MTL602` | heading-level-missing      | —        | Retired: it was the check of the removed `exist` tag. Reserved, never reused.           |
+| `MTL603` | heading-template-only      | error    | A `[presence:template-only]` heading appears in the target.                             |
+| `MTL604` | heading-order              | error    | Template headings appear in a different relative order.                                 |
+| `MTL605` | heading-pattern-missing    | error    | A required pattern heading has no sibling left at its position: `missing required heading matching [pattern:"{pattern}"] (H{n})`. |
+| `MTL606` | heading-pattern-mismatch   | error    | A required pattern heading took a sibling that does not match: `heading '{text}' does not match [pattern:"{pattern}"] at {piece}`. |
+| `MTL607` | heading-repeat-min         | error    | A repeat heading has fewer instances than its `min`: `{count} heading(s) match [pattern:"{pattern}"], minimum is {min}`. |
+| `MTL608` | heading-repeat-max         | error    | A repeat heading has more instances than its `max`: `{count} heading(s) match [pattern:"{pattern}"], maximum is {max}`. |
+| `MTL609` | heading-pattern-order      | error    | Repeat instances are out of order: `heading '{text}' is not in {direction} order after '{prev}', {count} pair(s) out of order {tag}`. |
+| `MTL610` | heading-missing-in-section | error    | A required H3 to H6 heading is missing in the section of its parent: `Section '{parent}': missing required heading '{text}' (H{n})`. |
+| `MTL611` | heading-order-in-section   | error    | The headings of one parent appear in a different order inside its section.              |
+| `MTL612` | heading-unlisted           | error    | A heading the template does not list sits under a `[content:subheadings:disallow]` heading. |
+| `MTL613` | heading-unique-names       | error    | A later heading repeats a name of its `[unique-headings-names]` scope (case-insensitive, any level): `duplicate heading name '{text}' (first at line {line})`. Emitted after the other heading findings. |
+| `MTL614` | heading-repeat-miss        | error    | Headings that match a repeat pattern come after the end of its run: `{count} heading(s) match [pattern:"{pattern}"] after the end of its run [repeat-rules:same-level]: {pylist}`. |
+| `MTL615` | heading-subheadings-only-declared | error | A direct child sits under a `[content:subheadings:no-extra]` heading and no position took it: `Section '{parent}': heading '{text}' at level H{n} is not declared at this position [content:subheadings:no-extra]`. |
+| `MTL616` | heading-extra              | warning  | Extra headings after the last template heading of a run: `{count} extra heading(s) at level H{n} after the template headings: {pylist}`. One per run. |
+| `MTL617` | heading-order-key-missing  | error    | Instances have no number, date or SemVer to order by: `{count} heading(s) have no {kind} to order by {tag}, use a [pattern:...] with {placeholder}: {pylist}`. |
+
+`MTL605` to `MTL609`, `MTL614` and `MTL617` are about one pattern heading; in section scope their
+message starts with `Section '{parent}': `. The retired `MTL602` is never reused.
 
 ### content (`MTL700`-`MTL799`)
 
-Section body rules on a heading. Skipped when the target lacks the heading (it is
-reported once, by `MTL601`). If the target repeats the heading, the first one is
-checked.
+Section body rules on a heading. Skipped when the template heading has no match at its
+position (it is reported once, by `MTL601`, `MTL605`, `MTL606`, `MTL607` or `MTL610`). The
+section checked is the heading the position took; a repeat heading checks each instance. The
+message label of a pattern heading gains the pattern:
+`Section 'Epic B - Release' (pattern "Epic {char} - {text}")`.
 
 | Tag                     | Meaning                                               | Code     | Name              |
 | ----------------------- | ----------------------------------------------------- | -------- | ----------------- |
@@ -574,7 +827,8 @@ gives `MTL022` (DIR6). An item that is not a known code (`MTL050`, `201`, `MTL2O
 gives `MTL021` (DIR2). The codes that give `MTL022`:
 
 - `MTL001` to `MTL004`: a file that does not parse is not linted;
-- `MTL010` to `MTL013`: template tag warnings;
+- `MTL010` to `MTL019` and `MTL030`: template tag diagnostics (warnings, and the template
+  errors `MTL017`, `MTL018`, `MTL019` and `MTL030`);
 - `MTL020` to `MTL025`: directive warnings, a directive cannot silence its own warnings;
 - `MTL900` to `MTL999`: run diagnostics (config, CLI, missing inputs).
 
@@ -587,10 +841,17 @@ A line directive or a range covers a diagnostic by its anchor line, matched by c
 | ---------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
 | `MTL202`                                                                                       | the target key line                                                                     |
 | `MTL201`                                                                                       | the key line when the key is present with an empty value; none when the key is missing  |
-| `MTL102`, `MTL301`-`MTL305`, `MTL401`-`MTL407`, `MTL501`-`MTL517`, `MTL801`-`MTL805`          | the target key line of that field                                                       |
-| `MTL603`                                                                                       | the line of the first target heading with that text                                     |
+| `MTL102`, `MTL301`-`MTL309`, `MTL401`-`MTL407`, `MTL501`-`MTL517`, `MTL801`-`MTL805`          | the target key line of that field                                                       |
+| `MTL603`                                                                                       | the line of the first target heading in scope with that level and text                  |
+| `MTL606`, `MTL609`                                                                             | the line of the reported target heading (for `MTL609` the later heading of the first pair out of order) |
+| `MTL607`                                                                                       | the line of the first instance; none when there is no instance                          |
+| `MTL608`                                                                                       | the line of the instance number `max + 1`                                               |
+| `MTL610`, `MTL611`                                                                             | the line of the target parent heading                                                   |
+| `MTL612`, `MTL615`                                                                             | the line of the unlisted (or undeclared) target heading that is reported                |
+| `MTL613`                                                                                       | the line of the later duplicate heading that is reported                                |
+| `MTL614`, `MTL616`, `MTL617`                                                                   | the line of the first heading the finding lists (a directive on another listed line removes nothing) |
 | `MTL701`-`MTL705`                                                                              | the line of the target heading whose section was checked                                |
-| `MTL101`, `MTL201` (missing key), `MTL601`, `MTL602`, `MTL604`                                 | none                                                                                    |
+| `MTL101`, `MTL201` (missing key), `MTL601`, `MTL604`, `MTL605`                                 | none                                                                                    |
 
 A diagnostic without anchor (the file name, a missing key, a missing heading, the heading
 order) is covered only by `disable-file`. `disable`, `begin disable`, `disable-line`

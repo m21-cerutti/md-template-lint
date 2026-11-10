@@ -1,0 +1,18 @@
+[
+  {
+    "path": "template.md",
+    "status": "ok",
+    "filenameCase": null,
+    "uniqueHeadingNames": true,
+    "fields": [{ "name": "title", "type": "string", "rules": ["presence:required"] }],
+    "headings": [
+      { "level": 1, "text": "Guide", "rules": ["presence:required"] },
+      {
+        "level": 2,
+        "text": "Usage",
+        "rules": ["presence:required", "unique-headings-names"]
+      }
+    ],
+    "diagnostics": []
+  }
+]

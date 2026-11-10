@@ -1,0 +1,5 @@
+# Baseline C with a block that lists MTL202 only: both MTL202 are suppressed, the MTL508 between them is not.
+pairs:
+  - name: notes
+    template: templates/notes.template.md
+    include: notes/*.md

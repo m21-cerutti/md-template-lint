@@ -1,0 +1,41 @@
+[
+  {
+    "path": "template.md",
+    "status": "ok",
+    "filenameCase": null,
+    "uniqueHeadingNames": false,
+    "fields": [{ "name": "version", "type": "string", "rules": ["presence:required"] }],
+    "headings": [
+      { "level": 1, "text": "Changelog", "rules": ["presence:required"] },
+      { "level": 2, "text": "Unreleased", "rules": ["presence:optional", "order:ascending"] },
+      {
+        "level": 2,
+        "text": "Release",
+        "rules": [
+          "presence:required",
+          "pattern:\"[{version}] - {date}\"",
+          "repeat-rules:same-level"
+        ]
+      },
+      { "level": 3, "text": "Added", "rules": ["presence:optional", "content:list"] }
+    ],
+    "diagnostics": [
+      {
+        "code": "MTL015",
+        "severity": "warning",
+        "message": "Heading 'Unreleased': tag [order:ascending] has no effect (the heading has no [pattern:...])",
+        "line": 7,
+        "column": 35,
+        "sourceLine": "## Unreleased [presence:optional] [order:ascending]"
+      },
+      {
+        "code": "MTL014",
+        "severity": "warning",
+        "message": "Heading 'Release': invalid pattern [pattern:\"[{version}] - {date}\"] (unknown placeholder {version})",
+        "line": 9,
+        "column": 23,
+        "sourceLine": "## Release [pattern:\"[{version}] - {date}\"] [repeat-rules:same-level]"
+      }
+    ]
+  }
+]

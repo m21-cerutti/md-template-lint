@@ -3,7 +3,7 @@
 
 # TODO
 
-## Epic A — Title (prio MEDIUM) [presence:exist]
+## Epic A — Title (prio MEDIUM) [pattern:"Epic {char} — {text}"] [repeat-rules:same-level] [order:ascending]
 
 One short paragraph: the goal of this epic and what "done" means.
 
@@ -16,8 +16,9 @@ One short paragraph: the goal of this epic and what "done" means.
 
 - Save as `TODO.md` at the repository root. Keep the empty frontmatter block
   (`---` then `---`) so the linter accepts the file.
-- One H2 per epic: `## Epic X — Title (prio HIGH|MEDIUM|LOW)`, then one
-  description paragraph, then one table with the columns above.
+- One H2 per epic, in letter order (A, B, C ...): `## Epic X — Title (prio
+  HIGH|MEDIUM|LOW)`, then one description paragraph, then one table with the
+  columns above. Repeat the epic block for every epic.
 - Prio: `HIGH`, `MEDIUM` or `LOW`. Status: `todo`, `in-progress` or `done`.
 - Subagent and Tier are optional agent-workflow columns. Subagent names the
   agent role that runs the phase; Tier is the capability level it needs (1 is

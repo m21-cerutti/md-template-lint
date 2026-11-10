@@ -1,0 +1,34 @@
+md-template-lint 9.9.9
+Config: md-template-lint.yml
+========================
+
+Template: templates/versions.template.md
+Target:   notes/*.md (1 file(s))
+
+  ✗ templates/versions.template.md (template)
+      error MTL017 Heading 'Notes': matches the same headings as the previous heading 'Notes' (line 5)
+        7 | ## Notes [presence:optional]
+          |    ^
+  ✓ notes/a.md
+
+Template: templates/broken.template.md
+Target:   more/*.md (1 file(s))
+
+  TEMPLATE ERROR: templates/broken.template.md - File must have YAML frontmatter (---...---)
+
+========================
+Summary
+========================
+Total files:  1
+Passed:       1
+Failed:       0
+Warnings:     0 (in 0 file(s))
+Templates:    2 checked, 1 broken
+
+Broken templates:
+  - templates/broken.template.md - File must have YAML frontmatter (---...---)
+
+Failed templates:
+  - templates/versions.template.md
+
+========================

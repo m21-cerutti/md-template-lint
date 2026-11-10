@@ -1,0 +1,31 @@
+md-template-lint 9.9.9
+Config: md-template-lint.yml
+========================
+
+Template: templates/guide.template.md
+Target:   notes/*.md (1 file(s))
+
+  ✗ templates/guide.template.md (template)
+      error MTL019 Heading 'Steps' (H3): comes after the deeper child 'Details' (H4, line 9) under 'Setup'
+        11 | ### Steps
+           | ^
+  ✗ notes/guide.md
+      error MTL611 Heading: Section 'Setup': heading order mismatch: template order ['Details', 'Steps'] vs target order ['Steps', 'Details']
+        7 | ## Setup
+
+========================
+Summary
+========================
+Total files:  1
+Passed:       0
+Failed:       1
+Warnings:     0 (in 0 file(s))
+Templates:    1 checked, 0 broken
+
+Failed templates:
+  - templates/guide.template.md
+
+Failed files:
+  - notes/guide.md
+
+========================

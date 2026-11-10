@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { checkTarget, checkTemplate } from "../../../src/engine/pipeline.js";
 import { createRegistry } from "../../../src/engine/registry.js";
-import { createEnv } from "../../../src/engine/rule.js";
+import { anchorLineOf, createEnv } from "../../../src/engine/rule.js";
 
 const registry = createRegistry();
 const CODE = "MTL701";
@@ -59,7 +59,47 @@ const CASES = [
     expected: [message("Overview")],
     warnings: [],
   },
+  {
+    // Spec 4.3: a section-scope heading is labelled `Section '{parent} > {text}'`.
+    name: "fail-section-scope-label-names-the-parent",
+    expected: [message("Context > Decision")],
+    warnings: [],
+  },
+  {
+    // `{parent}` is the matched TARGET parent: `## Hub [pattern:"{text}"]` matched `Actual parent`.
+    name: "fail-section-scope-label-uses-target-parent-text",
+    expected: [message("Actual parent > Decision")],
+    warnings: [],
+  },
+  {
+    // Spec 2.10 worked example 1, variant "content on the release heading": instance line 21
+    // (`[1.1.0] - 2026-02-01`, section lines 21 to 22) has an empty body; instances 9 and 15
+    // have text. A pattern heading is labelled with the TARGET text and the pattern as written
+    // (spec 2.6 "Content tags").
+    name: "fail-pattern-heading-label-worked-example-1-content-variant",
+    expected: [
+      `Section '[1.1.0] - 2026-02-01' (pattern "[{semver}] - {date}"): [content:non-empty] section body is empty`,
+    ],
+    warnings: [],
+  },
+  {
+    // Spec 2.6: `{pattern}` is the text between the quotes of the tag, escapes as written
+    // (`\"` and `{{` / `}}` stay escaped); `{text}` is the target heading text.
+    name: "fail-pattern-heading-label-shows-escapes-as-written",
+    expected: [
+      `Section 'Say "hi" {x}' (pattern "Say \\"{text}\\" {{x}}"): [content:non-empty] section body is empty`,
+    ],
+    warnings: [],
+  },
 ] as const;
+
+/** Spec 4.4 DIR5: the target line of the checked heading (the sibling its position took, spec 2.10). */
+const ANCHORS: readonly { readonly dir: string; readonly anchor: number }[] = [
+  { dir: "fail-section-scope-label-names-the-parent", anchor: 7 },
+  { dir: "fail-section-scope-label-uses-target-parent-text", anchor: 7 },
+  { dir: "fail-pattern-heading-label-worked-example-1-content-variant", anchor: 21 },
+  { dir: "fail-pattern-heading-label-shows-escapes-as-written", anchor: 5 },
+];
 
 const read = (path: string): string =>
   readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
@@ -138,6 +178,13 @@ describe("MTL701 content-non-empty", () => {
       `MTL701 ${message("Overview")}`,
     ]);
   });
+
+  for (const { dir, anchor } of ANCHORS) {
+    it(`${dir}: anchored on target line ${anchor}`, async () => {
+      const { found } = await lint({ name: dir });
+      expect(found.map((diagnostic) => anchorLineOf(diagnostic))).toEqual([anchor]);
+    });
+  }
 
   for (const testCase of CASES) {
     it(`${testCase.name}: ${DIR}/${testCase.name}`, async () => {

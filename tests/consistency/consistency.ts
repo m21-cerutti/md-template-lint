@@ -280,6 +280,12 @@ export function checkTypeNames(known: ReadonlySet<string> = KNOWN_TYPE_NAMES): s
 /** Text for tokens whose lexer rule is a negated set (no first character to pick). */
 const TOKEN_SAMPLES: Readonly<Record<string, string>> = {
   FREE_TEXT: "x",
+  // Negated-set tokens of mode TAG_PATTERN: literal text, an escape pair, a placeholder.
+  PAT_TEXT: "x",
+  PAT_ESCAPE: "\\\\",
+  PAT_PLACEHOLDER: "{text}",
+  // The count of `repeat-rules` is 1 or more: the first digit of the set (`0`) is refused.
+  NUMBER: "1",
 };
 
 /**
@@ -358,6 +364,7 @@ const STAGE_TWO_MODES = [
   MdTemplateLexer.TAG_STRICT,
   MdTemplateLexer.TAG_FREE,
   MdTemplateLexer.TAG_SCHEME,
+  MdTemplateLexer.TAG_PATTERN,
 ];
 
 /** Sample text of a stage-2 token: an override, else the text its lexer rule matches. */

@@ -1,6 +1,6 @@
 ---
 title: Documentation index
-last_updated: 2026-10-30
+last_updated: 2026-11-04
 ---
 
 # Documentation index
@@ -27,7 +27,7 @@ Start with the [architecture](architecture.md) and the [glossary](glossary.md).
 | [guides/testing.md](guides/testing.md)                    | Syntax, target, unit, integration and consistency tests, fixtures, helpers, the gate order, scripts. |
 | [../tests/README.md](../tests/README.md)                  | The map of the test suite: families, folders, fixtures, the `pass-` / `fail-` rule, how to run them. |
 | [adding-a-rule.md](adding-a-rule.md)                      | The earlier single-file guide (scaffold flags in detail); the new home of the steps is the guide above. |
-| [migration.md](migration.md)                              | Replace the legacy wrappers and `approved_path.yml` with one `md-template-lint.yml`. |
+| [migration.md](migration.md)                              | Replace the legacy wrappers and `approved_path.yml` with one `md-template-lint.yml`; the breaking changes "H3 and deeper headings are checked", "Headings are matched by position" and "The `exist` presence tag is removed" (how to fix a template). |
 
 ## Decisions (ADRs)
 
@@ -43,6 +43,11 @@ Process: [../CONTRIBUTING.md](../CONTRIBUTING.md#decisions-adr-process).
 | [adr/0006-parity-reached.md](adr/0006-parity-reached.md)          | Parity with the legacy linter is reached; the comparison tooling is removed. |
 | [adr/0007-tsx-script-runner.md](adr/0007-tsx-script-runner.md)    | Run the TypeScript scripts through `tsx`.                     |
 | [adr/0008-generated-parser-licence.md](adr/0008-generated-parser-licence.md) | The generated parser shipped in `dist` is released under MIT. |
+| [adr/0009-all-heading-levels.md](adr/0009-all-heading-levels.md)  | Every heading level is checked, levels match exactly, `[content:subheadings:disallow]` opt-out. |
+| [adr/0010-field-formats.md](adr/0010-field-formats.md)            | `[format:semver]` and `[format:date]` on frontmatter fields; `--verify` warns on a date field without format. |
+| [adr/0011-heading-patterns.md](adr/0011-heading-patterns.md)      | `[pattern:"..."]`, `[repeat-rules:same-level]` and `[order:...]` on headings (`MTL014`, `MTL605` to `MTL609`, `MTL614`, `MTL617`, `MTL017`, `MTL018`); placeholder formats and `{char}` (A72m); `{digits}`, first-semver order, order without repeat `MTL030` (A72n). |
+| [adr/0012-positional-heading-matching.md](adr/0012-positional-heading-matching.md) | Headings match by position, as one adjacent run; `[content:subheadings:no-extra]` (`MTL615`); extra-heading warning (`MTL616`); `[presence:exist]` removed (now `MTL012`), `MTL602` retired and reserved, child order error `MTL019` (A72m), also for a parent with an invalid pattern (A72n). |
+| [adr/0013-unique-headings-names.md](adr/0013-unique-headings-names.md) | Opt-in `[unique-headings-names]`, template-wide or per heading: each later duplicate heading name is `MTL613` (implemented in A80b and A80c). |
 
 ## Research notes (history)
 

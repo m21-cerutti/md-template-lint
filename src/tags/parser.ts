@@ -23,6 +23,7 @@ import {
   FmCommentLineContext,
   FmFilenameLineContext,
   FmKeyLineContext,
+  FmUniqueNamesLineContext,
   type BodyBlockContext,
   type FrontmatterContext,
   type MdTemplateParser,
@@ -36,8 +37,10 @@ import type {
   FrontmatterComment,
   FrontmatterFieldTag,
   FrontmatterFilenameTag,
+  FrontmatterInertTag,
   FrontmatterLine,
   FrontmatterTag,
+  FrontmatterUniqueNamesTag,
   HeadingSuffix,
   MarkdownDocument,
   Region,
@@ -158,11 +161,22 @@ class ParseSession {
   }
 
   /** Family of a `[word:` candidate, or null when the family is unknown. */
-  family(bracket: ParserRuleContext): "filename" | "other" | null {
+  family(bracket: ParserRuleContext): "filename" | "unique-names" | "other" | null {
     const { parser, log } = this.strict(bracket);
     const probe = parser.tagFamilyEntry();
     if (!log.isEmpty) return null;
-    return probe.tagFamily().FILENAME_CS() !== null ? "filename" : "other";
+    const family = probe.tagFamily();
+    if (family.FILENAME_CS() !== null) return "filename";
+    return family.UNIQUE_HEADINGS_NAMES() !== null ? "unique-names" : "other";
+  }
+
+  /**
+   * Template-wide switch of a standalone `# [word]` line (spec 2.11): the tag when stage 2
+   * knows the bare bracket, else null (a plain comment line, nothing to report).
+   */
+  uniqueNamesTag(bracket: ParserRuleContext): FrontmatterUniqueNamesTag | null {
+    const result = this.frontmatterTag(bracket);
+    return "tag" in result && result.tag.kind === "unique-names" ? result.tag : null;
   }
 
   frontmatterTag(bracket: ParserRuleContext): Resolved<FrontmatterTag> {
@@ -242,6 +256,11 @@ class ParseSession {
     const shape = bracketShapes.visit(item);
     if (shape === null || shape.kind === "inert") return null;
     if (shape.kind === "unknown") return { finding: this.unknown("frontmatter", shape.ctx) };
+    if (shape.kind === "bare") {
+      // Colon-less tag (spec 2.11) when stage 2 knows the name, else an unknown bracket.
+      const result = this.frontmatterTag(shape.ctx);
+      return "tag" in result ? result : { finding: this.unknown("frontmatter", shape.ctx) };
+    }
     if (this.family(shape.ctx) === null) {
       return shape.shaped ? { finding: this.unknown("frontmatter", shape.ctx) } : null;
     }
@@ -252,6 +271,10 @@ class ParseSession {
     const shape = bracketShapes.visit(item);
     if (shape === null || shape.kind === "inert") return null;
     if (shape.kind === "unknown") return { finding: this.unknown("body", shape.ctx) };
+    if (shape.kind === "bare") {
+      const result = this.bodyTag(shape.ctx);
+      return "tag" in result ? result : { finding: this.unknown("body", shape.ctx) };
+    }
     if (this.family(shape.ctx) === null) {
       return shape.shaped ? { finding: this.unknown("body", shape.ctx) } : null;
     }
@@ -354,15 +377,16 @@ function buildComment(
   subject: TagSubject | null,
 ): FrontmatterComment {
   const tags: FrontmatterFieldTag[] = [];
-  const inertTags: FrontmatterFilenameTag[] = [];
+  const inertTags: FrontmatterInertTag[] = [];
   const findings: Finding[] = [];
   const hints = new TypeHintListener(session.tokenPosition);
   for (const item of items) {
     const result = session.classifyFrontmatter(item);
     if (result !== null) {
       if ("finding" in result) findings.push(result.finding);
-      else if (result.tag.kind === "filename-case") inertTags.push(result.tag);
-      else tags.push(result.tag);
+      else if (result.tag.kind === "filename-case" || result.tag.kind === "unique-names") {
+        inertTags.push(result.tag);
+      } else tags.push(result.tag);
     }
     ParseTreeWalker.DEFAULT.walk(hints, item);
   }
@@ -437,6 +461,7 @@ function buildFrontmatter(
 ): Frontmatter {
   const lines: FrontmatterLine[] = [];
   let filename: FrontmatterFilenameTag | null = null;
+  let uniqueHeadingNames = false;
   const collect = (directive: Directive | null) => {
     if (directive !== null) directives.push(directive);
   };
@@ -448,7 +473,15 @@ function buildFrontmatter(
       const hash = body.FM_LINE_HASH().symbol;
       collect(frontmatterDirective(session, hash, raw.slice((hash.text ?? "#").length), true));
     }
-    if (body instanceof FmFilenameLineContext) {
+    if (
+      body instanceof FmFilenameLineContext &&
+      session.family(body.tagCandidate()) === "unique-names"
+    ) {
+      // `# [unique-headings-names:x]` alone: the template-wide switch with an argument (MTL012).
+      const result = session.frontmatterTag(body.tagCandidate());
+      session.collector.report("finding" in result ? withSubject([result.finding], null) : []);
+      lines.push({ kind: "unique-names", line, raw, tag: null });
+    } else if (body instanceof FmFilenameLineContext) {
       const result = buildFilename(session, body.tagCandidate());
       session.collector.report(result.findings);
       if (result.isDirective) {
@@ -457,6 +490,14 @@ function buildFrontmatter(
       } else {
         lines.push({ kind: "comment", line, raw });
       }
+    } else if (body instanceof FmUniqueNamesLineContext) {
+      // `# [word]` alone: the template-wide switch when the word is `unique-headings-names`
+      // (spec 2.11), else a plain comment line.
+      const tag = session.uniqueNamesTag(body.tagBareBracket());
+      uniqueHeadingNames ||= tag !== null;
+      lines.push(
+        tag === null ? { kind: "comment", line, raw } : { kind: "unique-names", line, raw, tag },
+      );
     } else if (body instanceof FmKeyLineContext) {
       const keyToken = body.FM_KEY() ?? body.FM_KEY_BARE();
       const key = keyText(keyToken?.getText() ?? "");
@@ -493,6 +534,7 @@ function buildFrontmatter(
       .join(""),
     lines,
     filename,
+    uniqueHeadingNames,
   };
 }
 
@@ -535,7 +577,6 @@ function buildBodyBlock(session: ParseSession, block: BodyBlockContext): BodyBlo
       .trim();
     // Legacy `#{1,2}\s+(.+?)`: a heading needs text.
     if (content === "") return { kind: "text", line, raw };
-    if (level > 2) return { kind: "heading", line, raw, level, text: content, tags: [] };
     const heading = buildHeadingText(session, items);
     session.collector.report(heading.findings);
     return { kind: "heading", line, raw, level, text: heading.text, tags: heading.tags };
@@ -572,7 +613,9 @@ function buildBodyBlock(session: ParseSession, block: BodyBlockContext): BodyBlo
  * Result of one document parse with every collected error. `document` is
  * null when stage 1 failed: `grammarErrors` then holds the grammar bug (an
  * internal error, never a user diagnostic). Otherwise `findings` holds the
- * tag findings (src/rules/syntax.ts maps them to MTL010 to MTL013).
+ * tag findings (src/rules/syntax.ts maps them to MTL010 to MTL013; MTL015 and
+ * MTL016 are not findings, those rules read the parsed template headings and
+ * fields).
  */
 export interface DocumentAnalysis {
   readonly document: MarkdownDocument | null;
@@ -647,8 +690,8 @@ export function parseInlineComment(
 }
 
 /**
- * Region helper (not exported by the package): parse the text of an H1 or H2
- * heading (after the `#` marks). Body tags are peeled from the right; only the
+ * Region helper (not exported by the package): parse the text of a heading of
+ * any level, H1 to H6 (after the `#` marks). Body tags are peeled from the right; only the
  * leftover trailing bracket can give a finding.
  */
 export function parseHeadingSuffix(text: string, origin: Origin = DEFAULT_ORIGIN): HeadingSuffix {

@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { checkTarget, checkTemplate } from "../../../src/engine/pipeline.js";
 import { createRegistry } from "../../../src/engine/registry.js";
-import { createEnv } from "../../../src/engine/rule.js";
+import { anchorLineOf, createEnv } from "../../../src/engine/rule.js";
 
 const registry = createRegistry();
 const CODE = "MTL703";
@@ -61,6 +61,23 @@ const CASES = [
     // section tagged [content:non-empty] only (prose body, no list).
     name: "fail-only-tagged-section-without-list-reported",
     expected: [MESSAGE],
+    warnings: [],
+  },
+  {
+    // Spec 4.3: a section-scope heading is labelled `Section '{parent} > {text}'`; the finding
+    // is anchored on the target heading line 7 (DIR5, asserted below).
+    name: "fail-section-scope-label-names-the-parent",
+    expected: ["Section 'Context > Steps': [content:list] no markdown list item found"],
+    warnings: [],
+  },
+  {
+    // Spec 2.10 worked example 1: `### Added` is exact text (its label has no pattern suffix,
+    // spec 2.6), checked once per instance of the repeat parent; `{parent}` is the instance
+    // text `[1.0.0] - 2026-01-10` (line 15), whose `### Added` (line 17) has no list item.
+    name: "fail-exact-heading-under-pattern-parent-worked-example-1-changelog",
+    expected: [
+      "Section '[1.0.0] - 2026-01-10 > Added': [content:list] no markdown list item found",
+    ],
     warnings: [],
   },
 ] as const;
@@ -123,6 +140,15 @@ describe("MTL703 content-list", () => {
     expect(tree.files).toEqual(
       names.flatMap((name) => [`${name}/target.md`, `${name}/template.md`]).sort(),
     );
+  });
+
+  it("anchors a section-scope finding on the target heading line (DIR5)", async () => {
+    const { found } = await lint({ name: "fail-section-scope-label-names-the-parent" });
+    expect(found.map((diagnostic) => anchorLineOf(diagnostic))).toEqual([7]);
+    const added = await lint({
+      name: "fail-exact-heading-under-pattern-parent-worked-example-1-changelog",
+    });
+    expect(added.found.map((diagnostic) => anchorLineOf(diagnostic))).toEqual([17]);
   });
 
   for (const testCase of CASES) {

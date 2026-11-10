@@ -44,6 +44,62 @@ const CASES: readonly VerifyCase[] = [
       ),
     ],
   },
+  // Field shape tags on headings (spec 2.9).
+  {
+    name: "fail-format-shape-in-heading",
+    exitCode: 0,
+    status: "ok",
+    diagnostics: [
+      warning(
+        "Heading 'Notes [format:semver]': tag [format:semver] is not valid in a heading",
+        4,
+        10,
+        "## Notes [format:semver]",
+      ),
+      warning(
+        "Heading 'Dates [format:elements:date]': tag [format:elements:date] is not valid in a heading",
+        5,
+        11,
+        "### Dates [format:elements:date]",
+      ),
+    ],
+  },
+  // `[order:ascending]` keeps its field meaning on a key line; the spec 2.10 tags on headings.
+  {
+    name: "pass-order-ascending-field-and-heading-tags",
+    exitCode: 0,
+    status: "ok",
+    diagnostics: [],
+  },
+  // The spec 2.10 heading tags, every `first:` order form and `[content:subheadings:no-extra]`
+  // in frontmatter comments, column of the `[` (spec 2.7, 2.10).
+  {
+    name: "fail-heading-pattern-repeat-order-tags-in-frontmatter",
+    exitCode: 0,
+    status: "ok",
+    diagnostics: [
+      ["a", '[pattern:"{semver}"]'],
+      ["b", "[repeat-rules:same-level]"],
+      ["c", "[repeat-rules:same-level:min:2]"],
+      ["d", "[repeat-rules:same-level:max:3]"],
+      ["e", "[order:descending]"],
+      ["f", "[order:first:number:ascending]"],
+      ["g", "[order:first:number:descending]"],
+      ["h", "[order:first:date:ascending]"],
+      ["i", "[order:first:date:descending]"],
+      ["j", "[order:first:semver:ascending]"],
+      ["k", "[ORDER:First:Semver:Descending]"],
+      ["l", "[content:subheadings:no-extra]"],
+      ["m", '[pattern:"a]b \\"c\\""]'],
+    ].map(([key = "", tag = ""], index) =>
+      warning(
+        `Field '${key}': tag ${tag} is not valid in frontmatter`,
+        index + 2,
+        8,
+        `${key}: x # ${tag}`,
+      ),
+    ),
+  },
 ];
 
 describe("MTL013 misplaced-tag (--verify)", () => {

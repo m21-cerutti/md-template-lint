@@ -3,7 +3,7 @@
 id: short_bug_title  # [presence:required] [value:filename] [format:snake_case]
 title: Short description of the bug  # [presence:required]
 status: draft | reported | fixed | wontfix  # [presence:required]
-date: 2026-10-29  # [presence:required] type=date
+date: 2026-10-29  # [presence:required] [format:date] type=date
 component: module, script or tool name  # [presence:required]
 severity: low | medium | high | critical  # [presence:optional]
 upstream: https://example.org/project  # [presence:required] type=url [format:scheme:https]
@@ -14,7 +14,7 @@ environment:  # [presence:optional]
 tags: [tag-one, tag-two]  # [presence:optional] [count:max:6] [format:elements:kebab-case]
 ---
 
-# Bug [presence:exist]
+# Bug title [pattern:"{text}"]
 
 ## Description [content:non-empty]
 

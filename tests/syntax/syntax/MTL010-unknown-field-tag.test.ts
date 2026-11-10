@@ -47,6 +47,21 @@ const CASES: readonly VerifyCase[] = [
       warning("Field 'second': unknown tag [beta:z]", 3, 13, "second: y # [beta:z]"),
     ],
   },
+  // Spec 2.11: a typo of `[unique-headings-names]` (singular `heading`) after a key is an
+  // unknown tag.
+  {
+    name: "fail-unique-headings-names-typo",
+    exitCode: 0,
+    status: "ok",
+    diagnostics: [
+      warning(
+        "Field 'title': unknown tag [unique-heading-names]",
+        2,
+        14,
+        'title: "x" # [unique-heading-names]',
+      ),
+    ],
+  },
 ];
 
 describe("MTL010 unknown-field-tag (--verify)", () => {

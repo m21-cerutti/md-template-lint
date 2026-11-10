@@ -9,7 +9,7 @@ permissions:  # [presence:optional]
   - { action: shell, resource: 'git push*', effect: deny }
 ---
 
-# Agent title [presence:exist]
+# Agent title [pattern:"{text}"]
 
 One sentence: the agent in plain words.
 

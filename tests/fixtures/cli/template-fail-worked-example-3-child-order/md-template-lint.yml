@@ -1,0 +1,4 @@
+pairs:
+  - name: guide
+    template: templates/guide.template.md
+    include: notes/*.md

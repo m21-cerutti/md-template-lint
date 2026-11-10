@@ -1,0 +1,23 @@
+md-template-lint 1.0.0
+Config: md-template-lint.yml
+========================
+
+Template: templates/notes.template.md
+Target:   notes/*.md (1 file(s))
+
+  ✓ notes/Bad_Name.md
+      warn  MTL616 Heading: 1 extra heading(s) at level H2 after the template headings: ['Overview']
+        11 | ## Overview
+
+========================
+Summary
+========================
+Total files:  1
+Passed:       1
+Failed:       0
+Warnings:     1 (in 1 file(s))
+Suppressed:   5
+Templates:    1 checked, 0 broken
+
+All files passed!
+========================

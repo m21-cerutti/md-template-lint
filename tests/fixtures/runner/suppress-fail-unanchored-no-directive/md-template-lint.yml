@@ -1,0 +1,7 @@
+# Baseline of the unanchored codes: file name (MTL101), missing key (MTL201) and missing heading
+# (MTL601, twice: 'Overview' and 'Context', positional match) have no anchor line; the
+# template-only heading (MTL603) has one. Three codes without anchor (four findings), one anchored.
+pairs:
+  - name: notes
+    template: templates/notes.template.md
+    include: notes/*.md

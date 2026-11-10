@@ -1,0 +1,8 @@
+# fail-: worked example 1 of spec 2.11. The template-wide switch `# [unique-headings-names]`
+# gives two MTL613 errors, each anchored on its own (later) heading: the plain text quotes that
+# line with no caret (anchor only), the JSON has the `heading` member and no `sourceLine`
+# (spec 8.1, 8.5).
+pairs:
+  - name: notes
+    template: templates/guide.template.md
+    include: notes/*.md

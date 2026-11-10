@@ -1,0 +1,4 @@
+pairs:
+  - name: versions
+    template: templates/versions.template.md
+    include: notes/*.md

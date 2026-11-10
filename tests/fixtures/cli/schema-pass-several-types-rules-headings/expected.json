@@ -3,6 +3,7 @@
     "path": "template.md",
     "status": "ok",
     "filenameCase": "snake_case",
+    "uniqueHeadingNames": false,
     "fields": [
       {
         "name": "id",
@@ -78,7 +79,7 @@
         ]
       },
       { "level": 2, "text": "Notes", "rules": ["presence:optional"] },
-      { "level": 2, "text": "Review", "rules": ["presence:exist"] },
+      { "level": 2, "text": "Review", "rules": ["presence:required", "pattern:\"{text}\""] },
       { "level": 2, "text": "Authoring checklist", "rules": ["presence:template-only"] },
       { "level": 2, "text": "Gate", "rules": ["presence:conditional:when ready"] },
       {
@@ -90,6 +91,15 @@
       { "level": 2, "text": "Mixed", "rules": ["presence:optional"] },
       { "level": 2, "text": "Free text", "rules": ["presence:required"] }
     ],
-    "diagnostics": []
+    "diagnostics": [
+      {
+        "code": "MTL016",
+        "severity": "warning",
+        "message": "Field 'milestones' (type=list-of-date): no [format:elements:date], default date formats apply",
+        "line": 9,
+        "column": 1,
+        "sourceLine": "milestones: [\"2026-01\", \"2026-06\"] # [order:ascending]"
+      }
+    ]
   }
 ]

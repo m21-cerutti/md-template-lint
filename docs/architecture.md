@@ -1,6 +1,6 @@
 ---
 title: Architecture
-last_updated: 2026-10-30
+last_updated: 2026-11-04
 ---
 
 # Architecture
@@ -10,7 +10,7 @@ How the code is organised and why. The contract is [spec.md](spec.md); the gramm
 
 ## Overview
 
-`md-template-lint` checks Markdown files (frontmatter and H1/H2 headings) against Markdown
+`md-template-lint` checks Markdown files (frontmatter and headings of every level, H1 to H6) against Markdown
 templates. A template is the schema: its inline comments and heading suffixes carry bracket
 tags. The tags are specified once, in the two ANTLR grammars in `grammar/`. A run goes in four
 steps: the config loader reads `md-template-lint.yml` (pairs of template and glob), the runner
@@ -52,6 +52,21 @@ The sequence, `--verify`, state and class diagrams use the standard Mermaid mean
 | ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Solid arrow  | Value import in the main direction of the flow.                                                                                                                                                    |
 | Dotted arrow | Import of a contract by a layer that sits on the other side of the flow. `rules` import values from `engine` (`defineRule` and the `report` helper of `engine/rule.ts`); `reporters` import the value `EXCERPT_WIDTH` from `runner`; `config` and `realio` import types only. Also the generator step (`pnpm run gen:parser`). |
+
+## Discrepancies
+
+Places where the diagrams and the code differ.
+
+The layers flowchart draws the main edges only. These imports exist in `src/` and are not drawn:
+
+| Area                  | Diagram says | Code does                                                                              | Action                              |
+| --------------------- | ------------ | -------------------------------------------------------------------------------------- | ----------------------------------- |
+| `runner` to `rules`   | no edge      | `src/runner/schema.ts` imports the value `enumOptions`                                 | Accepted: schema check shares enums |
+| `runner` to `tags`    | no edge      | `src/runner/excerpt.ts` imports the value `normalizeLineEnds`                          | Accepted                            |
+| `runner` to `engine`  | no edge      | `src/runner/excerpt.ts` imports the value `anchorLineOf`                               | Accepted                            |
+| `cli` to `engine`     | no edge      | `src/cli/run.ts` imports the value `createMemoryIo`                                    | Accepted                            |
+| `rules` to `tags`     | no edge      | `src/rules/*.ts` (for example `syntax.ts`, `bounds.ts`, `heading.ts`) import types     | Accepted (type only)                |
+| `reporters` to others | no edge      | `src/reporters/text.ts` imports types from `config` and `engine`                       | Accepted (type only)                |
 
 ## Modules
 
@@ -174,19 +189,26 @@ below (`RULE_FILES`) and rejects a code outside the range of the file.
 | Codes                 | Category (file)         | Phase and step of its rules                          | Tests                                  |
 | --------------------- | ----------------------- | ---------------------------------------------------- | -------------------------------------- |
 | `MTL001`-`MTL004`     | `syntax` (`syntax.ts`)  | `parse`: a file that does not parse                  | `tests/syntax/syntax/`                 |
-| `MTL010`-`MTL013`     | `syntax` (`syntax.ts`)  | `template`: tag warnings from `TagFinding`           | `tests/syntax/syntax/`                 |
+| `MTL010`-`MTL016`     | `syntax` (`syntax.ts`) | `template`, warnings: `MTL010`-`MTL013` from `TagFinding`; `MTL014`: an invalid `[pattern:"..."]`, read from the template headings; `MTL015`: a heading tag with no effect, read from the template headings; `MTL016`: a `date` or `list-of-date` field without `[format:date]` or `[format:elements:date]`, read from the template fields | `tests/syntax/syntax/` |
+| `MTL017`-`MTL019`, `MTL030` | `syntax` (`syntax.ts`) | `template`, ERRORS read from the template headings (spec 2.7): `MTL017` duplicate pattern or exact text, `MTL018` `min` tag on an optional heading, `MTL019` child heading out of level order, `MTL030` order tag without repeat tag. The template stays usable (not broken) but fails: exit 1 in `--verify` and in a lint run, the targets are still linted | `tests/syntax/syntax/` |
 | `MTL020`-`MTL025`     | `syntax` (`syntax.ts`)  | `target`, step `directives`: disable directive warnings | `tests/target/syntax/`              |
 | `MTL100`-`MTL199`     | `filename` (`filename.ts`) | `target` step `filename`; `field` step `value-filename` | `tests/target/filename/`           |
 | `MTL200`-`MTL299`     | `presence` (`presence.ts`) | `field` step `presence`; `target` step `unknown-keys` | `tests/target/presence/`           |
-| `MTL300`-`MTL399`     | `format` (`format.ts`)  | `field` steps `constant`, `case`, `elements`, `scheme` | `tests/target/format/`              |
+| `MTL300`-`MTL399`     | `format` (`format.ts`)  | `field` steps `constant`, `case`, `elements`, `scheme`, `shape` (`MTL306`-`MTL309`, last step, after `type`) | `tests/target/format/` |
 | `MTL400`-`MTL499`     | `bounds` (`bounds.ts`)  | `field` steps `count`, `range`, `order`              | `tests/target/bounds/`                 |
 | `MTL500`-`MTL599`     | `type` (`type.ts`)      | `field` step `type`                                  | `tests/target/type/`                   |
-| `MTL600`-`MTL699`     | `heading` (`heading.ts`) | `target` step `headings`                            | `tests/target/heading/`                |
+| `MTL600`-`MTL699`     | `heading` (`heading.ts`) | `target` step `headings`: `MTL601`, `MTL604` (file scope), `MTL603` (both scopes; `MTL602` is retired and has no rule), `MTL605`-`MTL609`, `MTL614`, `MTL617` (pattern headings, repeat sets, order), `MTL610`-`MTL612` (section scope and the sub-heading opt-out), `MTL615` (`no-extra`), `MTL616` (extra headings, the only warning), `MTL613` (`[unique-headings-names]`, no template anchor, emitted last) | `tests/target/heading/` |
 | `MTL700`-`MTL799`     | `content` (`content.ts`) | `target` step `content`                             | `tests/target/content/`                |
 | `MTL800`-`MTL899`     | `io` (`io.ts`)          | `field` step `io`                                    | `tests/target/io/`                     |
 | `MTL900`-`MTL999`     | none: run diagnostics   | Built by `src/config/load.ts`, `src/runner/` and `src/cli/` as `RunDiagnostic` | `tests/unit/config/`, `tests/unit/runner/`, `tests/unit/cli/` |
 
-`MTL014`-`MTL019` and `MTL026`-`MTL029` are free. A code is never renumbered or reused. The
+Free ranges (no rule in `src/rules/` uses them yet): in `syntax`, `MTL005`-`MTL009` (parse sub-range),
+`MTL026`-`MTL029` (kept for directives) and `MTL031`-`MTL099` (`MTL030` is the last template tag code
+used); in `format`, `MTL310`-`MTL399`; in `heading`, `MTL618`-`MTL699`. One heading code is set
+aside: `MTL602` is retired (the removed `[presence:exist]` tag; the rule is gone and the code
+stays reserved). `MTL613`, once reserved, is the rule heading-unique-names since phase A80c (tag
+`[unique-headings-names]`, spec 2.11, ADR 0013).
+A code is never renumbered or reused. The
 `MTL9xx` codes are not rules: they have no registry entry (a directive that names one gets
 `MTL022`, see `RUN_CODES` in `src/engine/directives.ts`).
 
@@ -221,19 +243,22 @@ md-template-lint.yml
        per pair-root: template stat (MTL910 / MTL911, once per pair, pair skipped);
          targets (walk, include minus exclude, sorted, template itself skipped);
          none -> MTL913 per onEmpty; template read + checkTemplate ONCE per resolved
-         path (cache); broken -> TEMPLATE ERROR block, files not linted, other pairs go on
+         path (cache); broken -> TEMPLATE ERROR block, files not linted, other pairs go on;
+          template errors (MTL017, MTL018, MTL019, MTL030) -> status `fail` entry on the
+          template, files still linted, listed once under `Failed templates:`, exit 1
        each file: strict UTF-8 read, lintTarget(registry, template, text, rootRelativePath, env)
          env = { aliases, approvedPaths, pairRoot = root dir (D11), io }
          -> { diagnostics, suppressed }: suppressed ones are already removed (4.4 DIR9),
             their count adds up in `summary.suppressed`
          target parse failures (MTL001 to MTL004) get the `Parse error: ` prefix (4.1)
-       -> RunResult { blocks, brokenTemplates, runErrors, runWarnings, unmatched, summary }
+       -> RunResult { blocks, brokenTemplates, failedTemplates, runErrors, runWarnings, unmatched, summary }
   -> report(result, { format: "pretty" | "plain" | "json", version, color?, quiet? })
        -> { stdout, stderr }; run errors go to stderr as `error MTLnnn: message (file:line:col)`
 ```
 
-- Exit code (spec 7.5) is `summary.exitCode`: 2 with any run error, else 1 with a failed file or
-  a broken template, else 0. `MTL913` with `warn` is a run warning (exit 0), with `error` a run
+- Exit code (spec 7.5) is `summary.exitCode`: 2 with any run error, else 1 with a failed file,
+  a broken template or a template with a template error (`MTL017`, `MTL018`, `MTL019` or `MTL030`;
+  the targets are still linted), else 0. The `MTL616` warning never changes the exit code. `MTL913` with `warn` is a run warning (exit 0), with `error` a run
   error (exit 2), with `ignore` nothing. Suppressed diagnostics (spec 4.4) are out of the file
   results before anything counts, so a file whose only errors are suppressed passes.
 - `summary.suppressed` counts them per pair-file lint. The text formats print
@@ -243,8 +268,11 @@ md-template-lint.yml
 - `pretty` is the wrapper layout of spec 8.2 with Unicode glyphs, ANSI color only when the caller
   passes `color: true` (the CLI decides from the terminal and `NO_COLOR`). `plain` is the same
   layout with ASCII words (`PASS`, `FAIL`, `INFO`) and never colored. `json` is spec 8.5.
-- `Diagnostic.heading` (spec 8.1) is set by the pipeline for `MTL601` to `MTL603` (from the
-  template heading anchor line) and `MTL701` to `MTL705` (from the section index, only when
+- `Diagnostic.heading` (spec 8.1) is set by the pipeline for `MTL601`, `MTL603`, `MTL605`, `MTL607`, `MTL608` and
+  `MTL610` (from the template heading anchor line: the template heading text, or the label of a pattern
+  heading); the other heading rules set it themselves (`MTL611`: the target parent text; `MTL612`, `MTL606`,
+  `MTL609`, `MTL613`, `MTL614`, `MTL615`, `MTL616`, `MTL617`: the text of the reported target heading, the first listed
+  one for a finding that lists several) and `MTL701` to `MTL705` (from the section index, only when
   `reportSection` recorded one: an untagged finding gets no heading). Both anchors
   stay transient: the anchor line and the `WeakMap` indices remain the sort keys, `heading` is
   only added after the sort. `field` is not emitted (spec change C07).
@@ -256,7 +284,9 @@ md-template-lint.yml
   `src/runner/types.ts`) from its `position.line`, else its anchor line
   (`anchorLineOf`), else none; a line outside the file gives none. Target diagnostics use the
   target text (`lintFile`); `--verify` uses the template text kept by `loadTemplate`
-  (`LoadedTemplate.text`, dropped by `withoutText` in lint mode) for `MTL010` to `MTL013`. The lines are numbered after
+  (`LoadedTemplate.text`) for the template diagnostics `MTL010` to `MTL019` and `MTL030`. A lint run keeps
+  that text only long enough to give the template errors (`MTL017`, `MTL018`, `MTL019`, `MTL030`, the only
+  template lines a lint run quotes) their excerpts, then `withoutText` drops it. The lines are numbered after
   `normalizeLineEnds` (spec 1.1), the numbering of every `line`. No file is read twice.
   `RunResult` stays plain data (no side table crosses into the reporters).
 
@@ -342,8 +372,8 @@ runCli(argv, env)
 - `--format text` is the `pretty` reporter, `plain` and `json` are the same names. Color only when
   `format` is `text`, stdout is a terminal and `NO_COLOR` is unset or empty. `--quiet` shrinks the text
   formats only (spec 7.1).
-- Exit codes are spec 7.5 and come from the result, not from the CLI: 0 clean, 1 failed file or broken
-  template, 2 run, config or usage error (a run error outranks a failed file). `--help` and `--version` are 0.
+- Exit codes are spec 7.5 and come from the result, not from the CLI: 0 clean, 1 failed file, broken
+  template or template error (also in a lint run), 2 run, config or usage error (a run error outranks a failed file). `--help` and `--version` are 0.
 
 ### File-list mode (lint-staged)
 
@@ -402,7 +432,7 @@ flowchart TD
   cfg2 --> vc["verifyConfig: distinct templates of the pairs"]
   vp --> tpl["loadTemplate: checkTemplate, once per distinct template"]
   vc --> tpl
-  tpl --> schema["describeTemplate, withExcerpts on the tag warnings"]
+  tpl --> schema["describeTemplate, withExcerpts on the tag warnings and template errors"]
   schema --> rv["reportVerify (src/cli/verify-report.ts)"]
   rep --> code["exit code from summary.exitCode"]
   rv --> code
@@ -412,48 +442,66 @@ flowchart TD
 `loadTemplate` (the same function the lint run uses) and returns a `VerifyResult` (`mode: "verify"`).
 No target is read, no io exists, no URL is probed. Broken (`MTL001` to `MTL004`, also a file that is not
 UTF-8) is `TEMPLATE ERROR` and exit 1; a missing template is `MTL910` and a directory `MTL911` (exit 2,
-no `(pair '...')` suffix when the path came from the command line); tag warnings `MTL010` to `MTL013`
-do not fail. A run error outranks a broken template: one missing and one broken template is exit 2
-(spec 7.5), and both are still reported.
+no `(pair '...')` suffix when the path came from the command line); tag warnings `MTL010` to `MTL016`
+do not fail. The template errors `MTL017`, `MTL018`, `MTL019` and `MTL030` (`VerifyTemplate.errors`,
+counted in `summary.errors`) make an ok template FAIL (exit 1) without making it broken: its schema is
+still printed. A run error outranks a broken or failed template: one missing and one broken template is
+exit 2 (spec 7.5), and both are still reported.
 
 The schema of an ok template (`src/runner/schema.ts`, `describeTemplate`) is plain data read from the
-`DocumentModel` the engine built (inferred field types, parsed tags, H1/H2 sections); there is no
-second parser. It has `filenameCase` (the `[filename:case:...]` convention or null), `fields`
+`DocumentModel` the engine built (inferred field types, parsed tags, sections of every level H1 to H6); there is no
+second parser. It has `filenameCase` (the `[filename:case:...]` convention or null), `uniqueHeadingNames`
+(true when the template-wide `# [unique-headings-names]` line is written, spec 2.11), `fields`
 (`name`, `type`, `rules[]`) and `headings` (`level`, `text`, `rules[]`).
 
-Rule tokens spell the tag without brackets: `presence:required|optional|exist|template-only` or
-`presence:conditional:<text>`, `format:constant:<v>`, `format:snake_case|kebab-case`, `format:elements:<style>`, `value:filename`,
+Rule tokens spell the tag without brackets: `presence:required|optional|template-only` or
+`presence:conditional:<text>`, `format:constant:<v>`, `format:snake_case|kebab-case`, `format:elements:<style>`, `format:semver`, `format:date`,
+`format:elements:semver`, `format:elements:date`, `value:filename`,
 `count:min:N`, `count:max:N`, `range:min:<n>`, `range:max:<n>`, `order:ascending`,
 `format:scheme:<a,b>` (sorted, unique), `io:exists`, `enum:<a|b>` (field type `enum`, options from the
 value split on ` | `, the one `enumOptions` of `src/rules/type.ts`, shown for fields whose type is `enum`
-only). Field order is the spec 8.3 order: presence, constant, case, elements case,
+only). Field order is the spec 8.3 order: presence, constant, case, elements case, shape
+(`format:semver`, `format:date`), elements shape (`format:elements:semver`, `format:elements:date`),
 value-filename, count min and max, range min and max, order, scheme, io, enum. When a tag kind that
 can appear once is written twice the first one counts (spec 2.1). Presence is ALWAYS the first rule, as
 in the legacy `describe()`: the effective mode (conditional, then optional, then required; `required`
 when no presence tag is written), and a conditional one carries the text of its first tag
-(`presence:conditional:only when risky`). Headings: presence first (conditional, template-only, exist,
-optional, required, always printed), then `content:non-empty`, `content:table`, `content:list`,
-`content:min-lines:N`, `content:max-lines:N`.
+(`presence:conditional:only when risky`). Headings: presence first (conditional, template-only,
+optional, required, always printed), then the pattern tags right after it (`pattern:"<pattern>"`,
+`repeat-rules:same-level`, `repeat-rules:same-level:min:N`, `repeat-rules:same-level:max:N`, the order
+tag such as `order:ascending` or `order:first:date:descending`; each kind once, the first tag counts,
+printed as written even when `MTL014` or `MTL015` says it has no effect), then `content:non-empty`,
+`content:table`, `content:list`, `content:min-lines:N`, `content:max-lines:N`,
+`content:subheadings:disallow`, `content:subheadings:no-extra`, `unique-headings-names` (last). Every heading level is
+listed, in template order, with `#` repeated `level` times (spec 8.3, change C10).
 
 Text (`src/cli/verify-report.ts`), per ok template: `  ✓ <path>` (`PASS` in plain), the
-`Filename: [filename:case:<c>]` line only when declared, the `Field  Type  Rules` table (name and type
+`Filename: [filename:case:<c>]` line only when declared, the `Unique heading names: [unique-headings-names]` line
+only when the template-wide switch is written (right after `Filename:`, spec 8.3), the `Field  Type  Rules` table (name and type
 columns padded to the widest, two spaces between columns, `-` for no rule, and under the header a run of
 `-` of the HEADER LENGTH as in spec 8.3 and the legacy `describe()`: 20 for `Field  Type    Rules`, 18 for a
 template with no field, where the table is these two lines only), `Headings:` (`  ## Text (rules)`; the
 section and its blank line are left out when the template has no heading), then
 the sections `Unknown tags found (typo or unimplemented feature):` (fields first, then headings),
-`Malformed tags:` and `Misplaced tags:` (the last two with line and column), always in this order whatever
-the order in the template. They come from the template warnings, so a template with no tag problem has
-none of them. A malformed or misplaced heading tag stays in the heading text (the heading extraction keeps a
+`Malformed tags:` (`MTL012`), `Misplaced tags:` (`MTL013`), `Invalid patterns:` (`MTL014`),
+`Conflicting tags:` (`MTL015`), `Date fields without format:` (`MTL016`), then the template error sections
+`Duplicate patterns:` (`MTL017`), `Optional headings with a minimum:` (`MTL018`),
+`Child headings out of level order:` (`MTL019`) and `Order tags without repeat:` (`MTL030`), always in this
+order whatever the order in the template (every section but the first lists `(line L, column C)` and the
+excerpt of its template line). The first six come from the template warnings, the last four from the template errors, so a
+template with no tag problem has none of them. A template with at least one template error prints `✗ <path>`
+(`FAIL` in plain) instead of the pass header, the summary gains `Errors: <n>` and `All templates passed!` is
+not printed. A malformed or misplaced heading tag stays in the heading text (the heading extraction keeps a
 bracket it does not recognise, spec 2.6); that is implementation-defined, spec 8.3 covers unknown heading
 tags only. Every echoed string (field names, types, rules, heading texts) goes through `cleanText`. A broken template is
 `  TEMPLATE ERROR: <path> - <message>` instead. `--quiet` hides the schema and shows only broken
-templates and run errors.
+templates, templates with a template error (fail header and error sections) and run errors.
 
-JSON is `mode: "verify"` with `templates[]` of `{ path, status, error?, filenameCase, fields, headings,
-diagnostics }` (a broken template has `error`, `filenameCase: null` and empty `fields`, `headings`,
-`diagnostics`; `diagnostics` of an ok one are its tag warnings, each with `line`, `column` and `sourceLine`,
-the template line), `runErrors`, `runWarnings`, `summary`.
+JSON is `mode: "verify"` with `templates[]` of `{ path, status, error?, filenameCase, uniqueHeadingNames, fields,
+headings, diagnostics }` (`status` is `ok`, `broken` or `fail`; a broken template has `error`, `filenameCase: null`,
+`uniqueHeadingNames: false` and empty `fields`, `headings`, `diagnostics`; `diagnostics` of an ok or failed one are its template errors,
+then its tag warnings, each with `line`, `column` and `sourceLine`, the template line), `runErrors`,
+`runWarnings`, `summary` (with `errors`, the number of template errors, right after `broken`).
 
 ## Reporter sanitizing and UNC paths
 
@@ -575,7 +623,7 @@ text -> analyzeDocument (src/tags/parser.ts)
           findings kept only on YAML key lines, filename lines and the body
           directives kept in the body, on YAML key lines and on column-1 comment lines
             outside a multi-line value (DIR3)
-          H1/H2 headings -> sections; inferType -> field type
+          headings H1..H6 -> sections (level, text, tags, body, parent); inferType -> field type
      -> DocumentModel { fields, sections, filename, findings, directives }
      -> pipeline (async): parse | template | target + field rules, in order
           target: steps 2 to 7 of spec 4.1, then suppression (step 8) by the TARGET
@@ -686,7 +734,9 @@ a `B_*` rule of `BODY`; `pnpm run check:rules` checks that mirror
   their events are grammar bugs (`GrammarError`) like stage 1.
 - Findings (`unknown`, `malformed`, `wrong-region`) go to the collector in source order.
   `loadDocument` filters them (spec 2.1) into `DocumentModel.findings`; the `template` phase
-  rules of `src/rules/syntax.ts` turn them into `MTL010` to `MTL013`. Parse failures run the
+  rules of `src/rules/syntax.ts` turn them into `MTL010` to `MTL013` (`MTL014` and `MTL015` and the template
+  errors `MTL017`, `MTL018`, `MTL019` and `MTL030` are read from the template headings, `MTL016` from the
+  template fields, not from a finding). Parse failures run the
   `parse` phase rules (`MTL001` to `MTL004`).
 - Reporters print the `Diagnostic` list: target diagnostics with the `Parse error: ` or
   `TEMPLATE ERROR` forms of spec 4.3 (template warnings in `--verify` are printed by
@@ -701,7 +751,7 @@ are plain data except `DiagnosticCollector` and `SyntaxEventLog`, which are clas
 | ------------------------------------------------- | -------------------------- | ---------------------------------------------------------------------- |
 | `MarkdownDocument`, `Directive`, `TagFinding`     | `src/tags/ast.ts`          | Typed AST of one file: frontmatter, body blocks, directives, tag problems. |
 | `DiagnosticCollector`, `SyntaxEventLog`           | `src/tags/listeners.ts`    | Sink of one document parse (grammar errors and findings), and the event list of one lexer and parser pair. |
-| `DocumentModel`, `Field`, `Section`, `Diagnostic` | `src/engine/model.ts`      | A loaded template or target; one frontmatter key; one H1 or H2 section; one finding. |
+| `DocumentModel`, `Field`, `Section`, `Diagnostic` | `src/engine/model.ts`      | A loaded template or target; one frontmatter key; one heading section of any level (H1 to H6, with its parent); one finding. |
 | `AnyRule`, `FieldContext`, `TargetContext`, `RuleEnv`, `RuleIo` | `src/engine/rule.ts` | The rule contract: what a check receives and what it may call. |
 | `RuleRegistry`                                    | `src/engine/registry.ts`   | Every rule, by code and by category.                                   |
 | `SuppressionPlan`, `DirectiveAnalysis`            | `src/engine/directives.ts` | What the valid directives of one target cover; the problems behind `MTL020` to `MTL025`. |
@@ -781,6 +831,8 @@ classDiagram
     +line
     +tags
     +body
+    +endLine
+    +parent
   }
   class MarkdownDocument {
     <<interface>>
@@ -919,6 +971,65 @@ tests: no network.
 The registry throws `RegistryError` on a duplicate code, a category that does not match its
 file, a code outside the range, or a missing, unknown or unexpected `step`.
 
+### Heading and section model (spec 2.6, change C10)
+
+Matching is positional since change C12 (spec 2.10, ADR 0012). Every heading level is a `Section` (`src/engine/model.ts`): `level` 1 to 6, `text` (tags removed), `line`,
+`tags`, `body`, `endLine` and `parent`. The parent is the index, in `DocumentModel.sections`, of the nearest
+preceding heading with a lower level (null when none).
+
+Headings are matched by POSITION, not by search. The template headings of one level and one scope form a
+SEQUENCE of positions, in template order. The sequence takes the target headings of the same level and scope
+(the SIBLINGS, in file order) as ONE ADJACENT RUN, greedy first-fit, with no gaps and no backtracking
+(`positionalRun` in `src/engine/model.ts`). A scope is the whole file (H1, H2, and a heading without a
+template parent: one run per level) or, for H3 to H6 with a template parent, the target section of one match
+(or instance) of that parent (one run per level and per parent match). The siblings are walked with a cursor
+that only moves forward:
+
+1. Set aside: every sibling whose text equals a checked `[presence:template-only]` heading of the sequence
+   leaves the run (`HeadingRun.setAside`); the first one is reported once (`MTL603`).
+2. Positions, in template order. An exact-text position (or a pattern without placeholder) takes the next
+   sibling when its text matches, else nothing. A pattern position with placeholders takes the next sibling
+   when the pattern matches; when it does not and the position is required, the sibling is taken as a
+   MISMATCH (`MTL606`); an optional or conditional position takes nothing. A repeat position
+   (`[repeat-rules:same-level...]`) then takes every next sibling that matches: the INSTANCES, the repeat
+   set of the heading in that scope.
+3. Tail: the siblings left after the last position are the extra headings (`HeadingRun.tail`). They are
+   allowed. A tail sibling that matches a repeat pattern is reported by `MTL614`, one under `[content:subheadings:no-extra]`
+   by `MTL615`, one under `[content:subheadings:disallow]` by `MTL612`, and the others are listed in one
+   `MTL616` warning per run. A run without position has no tail.
+
+`matchHeadings(template, target)` gives, for each template heading in template order (one entry per instance of
+a repeat heading, and one per parent match or instance in section scope), a `HeadingMatch`:
+
+- `scope`: `file` or `section`, as above; `parentMatch` is the target match of the template parent (section scope).
+- `match`: the sibling its position took (the instance of this entry for a repeat heading), null when it took
+  nothing, took only a mismatch (`mismatch`), is not checked or is `[presence:template-only]`. `instance` is
+  the rank of the entry (0 for the first instance, the one the order lists `MTL604` and `MTL611` read).
+  The old `textMatch` field is removed; `match` is the only matched-sibling field.
+- `run`: the `HeadingRun` of its level and scope, with its `positions` (each with `next`, `mismatch`,
+  `instances`, `foundLater` and `repeatMisses`), the `setAside` siblings and the `tail`.
+- `foundLater`: for an exact-text position that took nothing, the first sibling from the cursor onward with the
+  same text; it only adds the "found later at line N, out of order" hint to `MTL601` (a swapped pair is a
+  missing heading) and changes no match.
+- `checked`: false for a heading with an invalid pattern (`MTL014`, it is no position); true for every other
+  file-scope heading; for a section-scope heading only when its parent is checked, matched and not
+  `[presence:template-only]`. A heading that is not checked gives no finding of any code, so a missing parent
+  is reported once.
+
+The rules of `src/rules/heading.ts` all read `matchHeadings`: `MTL601` (exact-text heading without match, file
+scope), `MTL604` (order of the file-scope matches across levels) and `MTL610` (section scope), `MTL605`
+to `MTL609` (pattern headings: missing, mismatch, repeat minimum and maximum, order), `MTL614` (repeat match in the
+tail), `MTL617` (order key missing), `MTL611` (order of the direct children of one parent, anchored on the
+target parent heading), `MTL612` and `MTL615` (the `[content:subheadings:disallow]` and
+`[content:subheadings:no-extra]` opt-outs), `MTL616` (extra headings, the only warning, exit code
+unchanged) and `MTL613` (duplicate names in the `[unique-headings-names]` scopes: the whole file, or
+the region of each match of a tagged heading). `MTL015` (template phase, in `src/rules/syntax.ts`) warns when a heading tag has no effect, for
+example on a `[presence:template-only]` heading; the template errors `MTL017` (duplicate pattern or exact text),
+`MTL018` (`min` on an optional heading), `MTL019` (child out of level order) and `MTL030` (order tag without
+repeat tag) are read from the template headings in the same phase. The content rules (`MTL701` to `MTL705`)
+check the section of every `match` (every instance of a repeat heading), and label it
+`Section '{parent} > {text}'` for a section-scope heading.
+
 ### Emission order (spec 4.1, 8.4)
 
 `lintTarget` (and `checkTarget`, the same without the suppressed count) is async and awaits
@@ -929,7 +1040,8 @@ each check before the next, so io timing never changes the order:
 3. for each TEMPLATE field in template order: if the target value is missing or empty (blank
    string or empty list), only the `field` rules of step `presence` (the single guard);
    otherwise the `field` rules of the steps `constant`, `count`, `range`, `order`, `scheme`,
-   `io`, `value-filename`, `case`, `elements`, `type`, in that order;
+   `io`, `value-filename`, `case`, `elements`, `type`, `shape` (`MTL306` to `MTL309`, spec 2.9),
+   in that order;
 4. `target` rules of steps `unknown-keys`, `headings`, `content`;
 5. `target` rules of step `directives` (`MTL020` to `MTL025`, spec 4.1 step 7);
 6. suppression (spec 4.1 step 8): the TARGET directives (`DocumentModel.directives` of the
@@ -941,13 +1053,16 @@ each check before the next, so io timing never changes the order:
 Inside one step: registry order (category file order, then file order). The result lists
 errors first, then warnings, each in emission order.
 
-One exception, the `headings` step (kept from the legacy linter): the presence findings `MTL601` to `MTL603`
-come in TEMPLATE HEADING order, interleaved across the three rules, not grouped by rule. Each
+One exception, the `headings` step (kept from the legacy linter): the findings about one template
+heading (`MTL601`, `MTL603`, `MTL605` to `MTL609`, `MTL610`, `MTL614`, `MTL617`; `MTL611` on its parent;
+`MTL612`, `MTL615` on the tagged heading; `MTL616` on the last position of its run, spec 4.1
+step 5) come in TEMPLATE HEADING order, interleaved across the rules, not grouped by rule. Each
 of these rules anchors its finding on the line of the template heading it is about (the
 diagnostic `position`). After the step ran, the pipeline stable-sorts the anchored findings by
 that line (one heading keeps registry order), clears the anchor (it is a template line, not a
-target location) and appends the findings without an anchor, such as `MTL604`, which concerns
-the whole heading list, last.
+target location) and appends the findings without an anchor last, in registry order: `MTL604`,
+which concerns the whole heading list, then `MTL613` (unique heading names, spec 2.11), which
+concerns target text, not one template heading, in target line order.
 
 Second exception, the `io` step (legacy `_check_io_exists`): the findings `MTL801` to `MTL805`
 of one field come in ITEM order, interleaved across the five rules, not grouped by rule (a list
@@ -986,18 +1101,27 @@ the `Parse error: ` ones, which have no anchor, and the diagnostics it adds an e
 
 | Diagnostics                                    | Anchor, recorded by                                              |
 | ---------------------------------------------- | ---------------------------------------------------------------- |
-| field steps (`MTL102`, `MTL201`, `MTL301` to `MTL517`, `MTL801` to `MTL805`) | target key line of the field, none when the key is missing; the pipeline (`setAnchorLine`) |
+| field steps (`MTL102`, `MTL201`, `MTL301` to `MTL517`, `MTL801` to `MTL805`; this includes `MTL306` to `MTL309` of step `shape`) | target key line of the field, none when the key is missing; the pipeline (`setAnchorLine`) |
 | `MTL202`                                       | target key line (last occurrence of a duplicate key); the rule (`reportOnLine`) |
-| `MTL603`                                       | first target heading with that text; the rule                    |
+| `MTL603`                                       | the first sibling it sets aside (same level and scope, same text); the rule |
+| `MTL606`, `MTL609`                             | the reported target heading (the mismatch; the later heading of the first pair out of order); the rule |
+| `MTL607`, `MTL608`                             | the first instance of the repeat set (none without instance); the instance number `max + 1`; the rule |
+| `MTL614`, `MTL616`, `MTL617`                   | the first heading the finding lists (one diagnostic, so a line directive on that line removes it whole); the rule |
+| `MTL610`, `MTL611`                             | target parent heading (the match of the template parent); the rule |
+| `MTL612`, `MTL613`, `MTL615`                   | the reported target heading (`MTL613`: the later duplicate); the rule |
 | `MTL701` to `MTL705`                           | first target heading of the checked section; the rule            |
 | `MTL020` to `MTL025`                           | the directive line (never suppressible; data for reporters)      |
-| `MTL101`, `MTL601`, `MTL602`, `MTL604`, parse failures, template diagnostics | none                                    |
+| `MTL101`, `MTL601` (also with its "found later" hint, which is message text), `MTL604`, `MTL605`, parse failures, template diagnostics | none |
+
+`MTL602` is retired (the removed `[presence:exist]` tag, now `MTL012`): spec 4.2 keeps the code reserved
+and it has no anchor row.
 
 The heading and content steps copy their diagnostics (to clear the template position or add
 `heading`); the copies keep the anchor.
 
-`checkTemplate` returns its tag warnings (`MTL010` to `MTL013`) sorted by source position
-(line, then column) across rules; equal positions keep registry order.
+`checkTemplate` returns its tag warnings (`MTL010` to `MTL016`) and, apart, its template errors (`MTL017`,
+`MTL018`, `MTL019`, `MTL030`), each list sorted by source position (line, then column) across rules; equal
+positions keep registry order.
 
 ## How to add a tag (5 places)
 
@@ -1036,7 +1160,7 @@ the case name to the fixture and the expected result. No case text is written in
 
 | Family | Test file | Fixtures | Code path |
 | ------ | --------- | -------- | --------- |
-| Template syntax (phase `parse` or `template`: `MTL001`-`MTL004`, `MTL010`-`MTL013`) | `tests/syntax/<category>/<MTLxxx>-<name>.test.ts` | `tests/fixtures/templates/<MTLxxx>/<case>.md`, one template, no target | `md-template-lint --verify --format json <case>.md` through `runCli` (`tests/helpers/verify.ts`); asserts code, severity, message, line and column, template status and exit code (0, or 1 when broken) |
+| Template syntax (phase `parse` or `template`: `MTL001`-`MTL004`, `MTL010`-`MTL019`, `MTL030`) | `tests/syntax/<category>/<MTLxxx>-<name>.test.ts` | `tests/fixtures/templates/<MTLxxx>/<case>.md`, one template, no target | `md-template-lint --verify --format json <case>.md` through `runCli` (`tests/helpers/verify.ts`); asserts code, severity, message, line and column, template status (`ok`, `broken` or `fail`) and exit code (0; 1 when broken or when the template has a template error `MTL017`, `MTL018`, `MTL019` or `MTL030`) |
 | Target (phase `field` or `target`: `MTL020`-`MTL025`, `MTL101`-`MTL805`) | `tests/target/<category>/<MTLxxx>-<name>.test.ts` | `tests/fixtures/pairs/<MTLxxx>/<case>/template.md` + `target.md` | `checkTemplate` then `checkTarget` (or `lintTarget`) of `src/engine/pipeline.ts`; asserts the messages, severity and position of the code |
 
 The run diagnostics `MTL9xx` are not rules (no registry entry, no rule file). They depend on a
@@ -1122,18 +1246,3 @@ through the child process of `tests/unit/cli/spawn.test.ts`, which v8 does not s
 visitors). `pnpm test` is unchanged and does not collect coverage. Defensive branches that real input
 cannot reach (the grammar has a catch-all everywhere) are covered by a hand-built argument in
 `tests/unit/listeners-defensive.test.ts`, or removed when dead; thresholds are never lowered.
-
-## Discrepancies
-
-Places where the diagrams and the code differ.
-
-The layers flowchart draws the main edges only. These imports exist in `src/` and are not drawn:
-
-| Area                  | Diagram says | Code does                                                                              | Action                              |
-| --------------------- | ------------ | -------------------------------------------------------------------------------------- | ----------------------------------- |
-| `runner` to `rules`   | no edge      | `src/runner/schema.ts` imports the value `enumOptions`                                 | Accepted: schema check shares enums |
-| `runner` to `tags`    | no edge      | `src/runner/excerpt.ts` imports the value `normalizeLineEnds`                          | Accepted                            |
-| `runner` to `engine`  | no edge      | `src/runner/excerpt.ts` imports the value `anchorLineOf`                               | Accepted                            |
-| `cli` to `engine`     | no edge      | `src/cli/run.ts` imports the value `createMemoryIo`                                    | Accepted                            |
-| `rules` to `tags`     | no edge      | `src/rules/*.ts` (for example `syntax.ts`, `bounds.ts`, `heading.ts`) import types     | Accepted (type only)                |
-| `reporters` to others | no edge      | `src/reporters/text.ts` imports types from `config` and `engine`                       | Accepted (type only)                |

@@ -68,7 +68,7 @@ describe("region separation", () => {
       "---",
       "a: b # [presence:optional] [count:max:2] [format:kebab-case]",
       "---",
-      "## H [presence:exist] [content:non-empty] [content:max-lines:3]",
+      "## H [presence:required] [content:non-empty] [content:max-lines:3]",
     );
     const key = result.frontmatter?.lines[0];
     expect(key?.kind === "key" ? key.comment?.tags.length : 0).toBe(3);
@@ -76,8 +76,25 @@ describe("region separation", () => {
     expect(result.body[0]?.kind === "heading" ? result.body[0].tags.length : 0).toBe(3);
   });
 
-  it("ignores tags on H3 to H6 headings", () => {
-    expect(reasons("### A [presence:bogus]\n###### B [count:min:1]\n")).toEqual([]);
+  it("reads tags on H3 to H6 headings exactly like on H1 and H2", () => {
+    const deep = "### A [presence:bogus]\n#### C [nope:x]\n###### B [count:min:1]\n";
+    const shallow = "# A [presence:bogus]\n## C [nope:x]\n# B [count:min:1]\n";
+    const expected = ["body:malformed", "body:unknown", "body:wrong-region"];
+    expect(reasons(deep)).toEqual(expected);
+    expect(reasons(shallow)).toEqual(expected);
+    expect(parseDocument(deep).findings).toMatchObject([
+      {
+        tag: "[presence:bogus]",
+        position: { line: 1 },
+        subject: { heading: "A [presence:bogus]" },
+      },
+      { tag: "[nope:x]", position: { line: 2, column: 8 }, subject: { heading: "C [nope:x]" } },
+      {
+        tag: "[count:min:1]",
+        position: { line: 3, column: 10 },
+        subject: { heading: "B [count:min:1]" },
+      },
+    ]);
   });
 
   it("treats tags in inline code like legacy: found in a comment, not trailing a heading", () => {

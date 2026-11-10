@@ -3,13 +3,19 @@
  * reporters: `pretty` and `plain` text, `json`, run errors on stderr in text,
  * every echoed string through `cleanText`.
  *
- * Text, per template: a header line (`✓ <path>`, `PASS` in plain), then the spec 8.3
- * schema: the `Filename:` line when declared, the `Field  Type  Rules` table, the
- * `Headings:` list and the sections `Unknown tags found`, `Malformed tags:` and
- * `Misplaced tags:` (from the template warnings `MTL010` to `MTL013`, each item followed
- * by the excerpt of its template line, spec 8.3). A broken
- * template prints `TEMPLATE ERROR: <path> - <message>` instead. `--quiet` hides the
- * schema and shows only broken templates and run errors.
+ * Text, per template: a header line (`✓ <path>`, `PASS` in plain), then the spec 8.3 schema:
+ * the `Filename:` line when declared, the `Unique heading names:` line under the template-wide
+ * switch (spec 2.11), the `Field  Type  Rules` table, the `Headings:` list and
+ * the sections `Unknown tags found`, `Malformed tags:`, `Misplaced tags:`, `Invalid
+ * patterns:`, `Conflicting tags:` and, last, `Date fields without format:` (from the template
+ * warnings `MTL010` to `MTL016`, each item followed by the excerpt of its template line, spec
+ * 8.3), then the template error sections `Duplicate patterns:` (`MTL017`), `Optional headings
+ * with a minimum:` (`MTL018`), `Child headings out of level order:` (`MTL019`) and `Order tags
+ * without repeat:` (`MTL030`). A template with a template error has the fail header
+ * (`✗ <path>`, `FAIL` in plain), the summary gains `Errors:` and loses `All templates
+ * passed!`. A broken template prints `TEMPLATE ERROR: <path> - <message>` instead. `--quiet`
+ * hides the schema and shows only broken templates, the fail header and error sections of a
+ * template with template errors, and run errors.
  */
 import type { RunDiagnostic } from "../config/types.js";
 import type { Diagnostic } from "../engine/model.js";
@@ -95,11 +101,14 @@ function runDiagnosticJson(diagnostic: RunDiagnostic): Record<string, unknown> {
 function templateJson(item: VerifyTemplate): Record<string, unknown> {
   const out: Record<string, unknown> = {
     path: cleanText(item.template.path),
-    status: item.template.status,
+    // Spec 8.5 (A72k): a template that parses and has a template error is `fail`.
+    status: item.errors.length > 0 ? "fail" : item.template.status,
   };
   if (item.template.status === "broken") out["error"] = diagnosticJson(item.template.error);
   const schema = item.schema;
   out["filenameCase"] = schema?.filenameCase ?? null;
+  // Spec 2.11, 8.5 (A80c): always present, right after `filenameCase`.
+  out["uniqueHeadingNames"] = schema?.uniqueHeadingNames ?? false;
   out["fields"] = (schema?.fields ?? []).map((field) => ({
     name: cleanText(field.name),
     type: cleanText(field.type),
@@ -110,7 +119,8 @@ function templateJson(item: VerifyTemplate): Record<string, unknown> {
     text: cleanText(heading.text),
     rules: heading.rules.map(cleanText),
   }));
-  out["diagnostics"] = item.warnings.map(diagnosticJson);
+  // Errors first, then warnings, each in source order (as a file, spec 8.4 item 4).
+  out["diagnostics"] = [...item.errors, ...item.warnings].map(diagnosticJson);
   return out;
 }
 
@@ -128,6 +138,8 @@ function reportVerifyJson(result: VerifyResult, version: string): ReportOutput {
     summary: {
       templates: result.summary.templates,
       broken: result.summary.broken,
+      // Spec 8.5 (A72k): always present, right after `broken`.
+      errors: result.summary.errors,
       warnings: result.summary.warnings,
       suppressed: 0,
       runErrors: result.summary.runErrors,
@@ -169,6 +181,47 @@ interface Item {
   readonly rows: readonly string[];
 }
 
+/** One item per diagnostic of `code`: its text (with line and column) and its excerpt rows. */
+function itemsOf(
+  diagnostics: readonly ReportedDiagnostic[],
+  code: string,
+  withPosition: boolean,
+): Item[] {
+  // Spec 8.3, C09: each item is followed by the excerpt of its template line.
+  return diagnostics
+    .filter((diagnostic) => diagnostic.code === code)
+    .map((diagnostic) => ({
+      text: cleanText(diagnostic.message) + (withPosition ? located(diagnostic) : ""),
+      rows: diagnostic.excerpt === undefined ? [] : excerptRows(diagnostic.excerpt, EXCERPT_INDENT),
+    }));
+}
+
+/**
+ * The sections of the template errors (spec 8.3), after the warning sections:
+ * `Duplicate patterns:` (`MTL017`), then `Optional headings with a minimum:` (`MTL018`), then
+ * `Child headings out of level order:` (`MTL019`), last `Order tags without repeat:`
+ * (`MTL030`). Items red, excerpts gray; each section ends with a blank line. Also printed
+ * under `--quiet` (an error is never hidden).
+ */
+function errorLines(errors: readonly ReportedDiagnostic[]): Entry[] {
+  const out: Entry[] = [];
+  const section = (title: string, code: string): void => {
+    const items = itemsOf(errors, code, true);
+    if (items.length === 0) return;
+    out.push(["red", title]);
+    for (const item of items) {
+      out.push(["red", `  - ${item.text}`]);
+      for (const row of item.rows) out.push(["gray", row]);
+    }
+    out.push(["none", ""]);
+  };
+  section("Duplicate patterns:", "MTL017");
+  section("Optional headings with a minimum:", "MTL018");
+  section("Child headings out of level order:", "MTL019");
+  section("Order tags without repeat:", "MTL030");
+  return out;
+}
+
 /** Schema block of one ok template; each paragraph is followed by one blank line. */
 function schemaLines(
   schema: TemplateSchema,
@@ -176,8 +229,11 @@ function schemaLines(
 ): { readonly text: readonly string[]; readonly warn: readonly Entry[] } {
   const text: string[] = [];
   if (schema.filenameCase !== null) {
-    text.push(`Filename: [filename:case:${cleanText(schema.filenameCase)}]`, "");
+    text.push(`Filename: [filename:case:${cleanText(schema.filenameCase)}]`);
   }
+  // Spec 2.11, 8.3: right after `Filename:` (or in its place), then the blank line.
+  if (schema.uniqueHeadingNames) text.push("Unique heading names: [unique-headings-names]");
+  if (schema.filenameCase !== null || schema.uniqueHeadingNames) text.push("");
   text.push(...tableLines(schema), "");
   if (schema.headings.length > 0) {
     text.push("Headings:");
@@ -188,8 +244,9 @@ function schemaLines(
     }
     text.push("");
   }
-  // The sections come from the template warnings: unknown (fields, then headings),
-  // malformed and misplaced (with line and column).
+  // The sections come from the template warnings, in code order: unknown (fields, then
+  // headings), malformed, misplaced, invalid patterns, conflicting and, last, date fields
+  // without format (with line and column).
   const warn: Entry[] = [];
   const section = (title: string, items: readonly Item[]): void => {
     if (items.length === 0) return;
@@ -200,21 +257,16 @@ function schemaLines(
     }
     warn.push(["none", ""]);
   };
-  // Spec 8.3, C09: each item is followed by the excerpt of its template line.
-  const of = (code: string, withPosition: boolean): Item[] =>
-    warnings
-      .filter((diagnostic) => diagnostic.code === code)
-      .map((diagnostic) => ({
-        text: cleanText(diagnostic.message) + (withPosition ? located(diagnostic) : ""),
-        rows:
-          diagnostic.excerpt === undefined ? [] : excerptRows(diagnostic.excerpt, EXCERPT_INDENT),
-      }));
+  const of = (code: string, withPosition: boolean): Item[] => itemsOf(warnings, code, withPosition);
   section("Unknown tags found (typo or unimplemented feature):", [
     ...of("MTL010", false),
     ...of("MTL011", false),
   ]);
   section("Malformed tags:", of("MTL012", true));
   section("Misplaced tags:", of("MTL013", true));
+  section("Invalid patterns:", of("MTL014", true));
+  section("Conflicting tags:", of("MTL015", true));
+  section("Date fields without format:", of("MTL016", true));
   return { text, warn };
 }
 
@@ -225,6 +277,7 @@ export function reportVerify(result: VerifyResult, options: VerifyReportOptions)
   const color = pretty && options.color === true;
   const quiet = options.quiet === true;
   const passWord = pretty ? "✓" : "PASS";
+  const failWord = pretty ? "✗" : "FAIL";
   const out: string[] = [];
   const line = (tone: Tone, text: string): void => {
     out.push(paint(tone, text, color));
@@ -243,11 +296,19 @@ export function reportVerify(result: VerifyResult, options: VerifyReportOptions)
       const message = cleanText(item.template.error.message);
       line("magenta", `  TEMPLATE ERROR: ${path} - ${message}`);
       if (!quiet) out.push("");
-    } else if (!quiet && item.schema !== null) {
-      line("green", `  ${passWord} ${path}`);
-      const block = schemaLines(item.schema, item.warnings);
-      out.push(...block.text);
-      for (const [tone, text] of block.warn) line(tone, text);
+    } else if (item.schema !== null) {
+      // Spec 8.3: a template error makes the header the fail word; `--quiet` keeps that
+      // header and the error sections only.
+      const failed = item.errors.length > 0;
+      if (quiet && !failed) continue;
+      if (failed) line("red", `  ${failWord} ${path}`);
+      else line("green", `  ${passWord} ${path}`);
+      if (!quiet) {
+        const block = schemaLines(item.schema, item.warnings);
+        out.push(...block.text);
+        for (const [tone, text] of block.warn) line(tone, text);
+      }
+      for (const [tone, text] of errorLines(item.errors)) line(tone, text);
     }
   }
   if (!quiet) {
@@ -255,10 +316,11 @@ export function reportVerify(result: VerifyResult, options: VerifyReportOptions)
     line("cyan", "Summary");
     line("cyan", RULE);
     out.push(`Templates:    ${summary.templates} checked, ${summary.broken} broken`);
+    if (summary.errors > 0) line("red", `Errors:       ${summary.errors}`);
     line("yellow", `Warnings:     ${summary.warnings}`);
     if (summary.runErrors > 0) line("red", `Run errors:   ${summary.runErrors}`);
     out.push("");
-    const clean = summary.broken === 0 && summary.runErrors === 0;
+    const clean = summary.broken === 0 && summary.errors === 0 && summary.runErrors === 0;
     if (clean && summary.templates > 0) line("green", "All templates passed!");
     else if (clean) line("none", "No templates checked.");
     line("cyan", RULE);

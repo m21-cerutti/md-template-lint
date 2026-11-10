@@ -1,8 +1,8 @@
 ---
-last_updated: 2026-10-30  # [presence:required] type=date
+last_updated: 2026-10-30  # [presence:required] [format:date] type=date
 ---
 
-# Project name [presence:exist]
+# Project name [pattern:"{text}"]
 
 One or two sentences: what the project does, for whom, and why it exists.
 

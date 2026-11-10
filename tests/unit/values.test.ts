@@ -1,13 +1,32 @@
 /**
- * Case style helpers of src/engine/values.ts (docs/spec.md 2.3). Per
+ * Case style helpers of src/engine/values.ts (docs/spec.md 2.3), the value predicates of
+ * 2.9 and 3.4, and the heading pattern format predicates of 2.10 (phase Pf). Per
  * behaviour: at least 1 passing case and 1 failing case.
  */
 import { describe, expect, it } from "vitest";
 import {
   isCamelCase,
+  isCamelcaseText,
+  isHexDigits,
+  isIsoDate,
   isKebabCase,
+  isKebabcaseText,
+  isLowercaseText,
+  isPaddedDigits,
   isPascalCase,
+  isPrecisionNumber,
+  isScientificNumber,
+  isScreamcaseText,
+  isSemver,
+  isSemverCore,
+  isSemverMajorMinor,
+  isSignedDigits,
   isSnakeCase,
+  isSnakecaseText,
+  isUidDigits,
+  isUppercaseText,
+  isYear,
+  isYearMonth,
   isValidDateValue,
   isValidPathAliasValue,
   isValidUrlValue,
@@ -244,6 +263,93 @@ describe("isValidDateValue: calendar-strict date predicate (spec 3.4)", () => {
   });
 });
 
+describe("isIsoDate: ISO DATE predicate of [format:date] (spec 2.9)", () => {
+  it("passes: YYYY-MM-DD naming a real date, leap day included", () => {
+    expect(isIsoDate("2026-01-01")).toBe(true);
+    expect(isIsoDate("2024-02-29")).toBe(true);
+    expect(isIsoDate("0001-01-01")).toBe(true);
+    expect(isIsoDate("2026-12-31")).toBe(true);
+  });
+
+  it("fails: the other default shapes and the ongoing marker", () => {
+    expect(isIsoDate("2026-01")).toBe(false);
+    expect(isIsoDate("2026")).toBe(false);
+    expect(isIsoDate("31/12/2026")).toBe(false);
+    expect(isIsoDate("present")).toBe(false);
+    expect(isIsoDate("présent")).toBe(false);
+  });
+
+  it("fails: exact text, no trimming and no final newline (owner decision AS16)", () => {
+    expect(isIsoDate(" 2026-01-01")).toBe(false);
+    expect(isIsoDate("2026-01-01 ")).toBe(false);
+    expect(isIsoDate("2026-01-01\n")).toBe(false);
+    expect(isIsoDate("\t2026-01-01")).toBe(false);
+    expect(isIsoDate("2026-01-01\n\n")).toBe(false);
+  });
+
+  it("fails: no zero padding, extra text, empty, non-ASCII digits", () => {
+    expect(isIsoDate("2026-1-5")).toBe(false);
+    expect(isIsoDate("2026-01-5")).toBe(false);
+    expect(isIsoDate("2026-01-01T10:00")).toBe(false);
+    expect(isIsoDate("")).toBe(false);
+    expect(isIsoDate("2026-01-0\u0661")).toBe(false);
+  });
+
+  it("fails: the calendar test of the type date (spec 3.4)", () => {
+    expect(isIsoDate("2026-02-30")).toBe(false);
+    expect(isIsoDate("2025-02-29")).toBe(false);
+    expect(isIsoDate("1900-02-29")).toBe(false);
+    expect(isIsoDate("2026-04-31")).toBe(false);
+    expect(isIsoDate("2026-01-00")).toBe(false);
+    expect(isIsoDate("2026-13-01")).toBe(false);
+    expect(isIsoDate("2026-00-10")).toBe(false);
+    expect(isIsoDate("0000-01-01")).toBe(false);
+  });
+});
+
+describe("isSemver: SEMVER predicate of [format:semver] (spec 2.9)", () => {
+  it("passes: SemVer 2.0.0 versions with pre-release and build parts", () => {
+    expect(isSemver("0.0.0")).toBe(true);
+    expect(isSemver("1.2.3")).toBe(true);
+    expect(isSemver("10.20.30")).toBe(true);
+    expect(isSemver("1.0.0-rc.1")).toBe(true);
+    expect(isSemver("1.0.0-0a")).toBe(true);
+    expect(isSemver("1.0.0-1a")).toBe(true);
+    expect(isSemver("1.0.0-00a")).toBe(true);
+    expect(isSemver("1.0.0--")).toBe(true);
+    expect(isSemver("1.0.0+001")).toBe(true);
+    expect(isSemver("1.0.0-alpha.1+build.5")).toBe(true);
+  });
+
+  it("fails: leading zeros in a number part, numeric pre-release included", () => {
+    expect(isSemver("01.2.3")).toBe(false);
+    expect(isSemver("1.02.3")).toBe(false);
+    expect(isSemver("1.2.03")).toBe(false);
+    expect(isSemver("1.0.0-01")).toBe(false);
+    expect(isSemver("1.0.0-rc.01")).toBe(false);
+  });
+
+  it("fails: v prefix, missing parts, empty identifiers, non-ASCII", () => {
+    expect(isSemver("v1.2.3")).toBe(false);
+    expect(isSemver("1.2")).toBe(false);
+    expect(isSemver("1.2.3.4")).toBe(false);
+    expect(isSemver("1.0.0-")).toBe(false);
+    expect(isSemver("1.0.0+")).toBe(false);
+    expect(isSemver("1.0.0-rc..1")).toBe(false);
+    expect(isSemver("1.0.0-rc.")).toBe(false);
+    expect(isSemver("1.0.0+a..b")).toBe(false);
+    expect(isSemver("1.0.0-\u00e9")).toBe(false);
+    expect(isSemver("1.\u0662.0")).toBe(false);
+    expect(isSemver("")).toBe(false);
+  });
+
+  it("fails: exact text, no trimming and no final newline (owner decision AS16)", () => {
+    expect(isSemver(" 1.2.3")).toBe(false);
+    expect(isSemver("1.2.3 ")).toBe(false);
+    expect(isSemver("1.2.3\n")).toBe(false);
+  });
+});
+
 describe("pyReprString: Python `repr` of a string (Q02)", () => {
   it("passes: plain text in single quotes, printable non-ASCII kept", () => {
     expect(pyReprString("job notes")).toBe("'job notes'");
@@ -300,5 +406,96 @@ describe("matchesCaseStyle: legacy `re.match(...$)` parity", () => {
     expect(matchesCaseStyle("snake_case", " job_notes")).toBe(false);
     expect(matchesCaseStyle("snake_case", "job_notes ")).toBe(false);
     expect(matchesCaseStyle("kebab-case", "job-\nnotes")).toBe(false);
+  });
+});
+
+describe("heading pattern format predicates (spec 2.10 'Each format', phase Pf)", () => {
+  /** Predicate, accepted values, rejected values: from the 2.10 lists, exact text. */
+  const cases: readonly (readonly [string, (value: string) => boolean, string[], string[]])[] = [
+    [
+      "isSnakecaseText",
+      isSnakecaseText,
+      ["my_heading", "step_2", "2_step", "épique_été", "данные_2"],
+      ["2026", "2026_10", "My_heading", "my-heading", "my__heading", "_x", "my heading", ""],
+    ],
+    [
+      "isCamelcaseText",
+      isCamelcaseText,
+      ["myHeading", "heading", "step2", "étéChaud"],
+      ["MyHeading", "my_heading", "2step", "2026", "my heading"],
+    ],
+    [
+      "isScreamcaseText",
+      isScreamcaseText,
+      ["MY_HEADING", "STEP_2", "ÉTÉ_2"],
+      ["2026", "My_Heading", "MY-HEADING", "MY__HEADING", "my_heading"],
+    ],
+    [
+      "isKebabcaseText",
+      isKebabcaseText,
+      ["my-heading", "step-2", "été-chaud"],
+      ["2026", "my_heading", "My-heading", "my--heading", "-x"],
+    ],
+    [
+      "isLowercaseText",
+      isLowercaseText,
+      ["release notes", "étape 2", "v1.2 notes"],
+      ["Release notes", "2026", "-", ""],
+    ],
+    [
+      "isUppercaseText",
+      isUppercaseText,
+      ["RELEASE NOTES", "ÉTAPE 2", "V1.2 NOTES"],
+      ["Release", "2026", ""],
+    ],
+    [
+      "isScientificNumber",
+      isScientificNumber,
+      ["1e5", "01e5", "1.5E-3", "-2e+10", "1.5", "7"],
+      ["1e", "e5", "1.5e-", "1e5.0", "+1e5"],
+    ],
+    ["isSignedDigits", isSignedDigits, ["42", "+42", "-7", "0"], ["+07", "--1", "+", "1.0"]],
+    ["isHexDigits", isHexDigits, ["ff", "0A3F", "007", "7"], ["0x1f", "g1", "-1", ""]],
+    [
+      "isUidDigits",
+      isUidDigits,
+      ["U42", "a1b2", "42U", "user7"],
+      ["42", "abc", "U-42", "U 42", "É1"],
+    ],
+    ["isSemverCore", isSemverCore, ["1.2.0"], ["1.2.0-rc.1", "1.2.0+build", "1.2", "1.02.0"]],
+    ["isSemverMajorMinor", isSemverMajorMinor, ["1.2", "0.10"], ["1.2.0", "01.2", "1"]],
+    ["isYearMonth", isYearMonth, ["2026-10", "0001-12"], ["2026-13", "2026-00", "0000-10", "2026"]],
+    ["isYear", isYear, ["2026", "0001"], ["0000", "26", "20260", "2026\n"]],
+  ];
+  for (const [name, predicate, accepted, rejected] of cases) {
+    it(`${name} passes: ${accepted.join(", ")}`, () => {
+      for (const value of accepted) expect(predicate(value), value).toBe(true);
+    });
+    it(`${name} fails: ${rejected.map((value) => JSON.stringify(value)).join(", ")}`, () => {
+      for (const value of rejected) expect(predicate(value), value).toBe(false);
+    });
+  }
+
+  it("isPrecisionNumber: exactly N decimals, no exponent", () => {
+    for (const value of ["1.50", "01.00", "-0.25"]) expect(isPrecisionNumber(value, 2)).toBe(true);
+    for (const value of ["1.5", "1.500", "1", "1.50e0"])
+      expect(isPrecisionNumber(value, 2), value).toBe(false);
+    expect(isPrecisionNumber("1.5", 1)).toBe(true);
+  });
+
+  it("isPaddedDigits: exactly N ASCII digits, leading zeros allowed, no sign", () => {
+    for (const value of ["007", "042", "123"]) expect(isPaddedDigits(value, 3)).toBe(true);
+    for (const value of ["7", "0007", "-07", "1234"])
+      expect(isPaddedDigits(value, 3), value).toBe(false);
+    expect(isPaddedDigits("0007", 4)).toBe(true);
+  });
+
+  it("the case formats are not the ASCII field case styles of 2.3", () => {
+    // A non-ASCII letter passes the heading format, not the field style.
+    expect(isSnakecaseText("épique_été")).toBe(true);
+    expect(isSnakeCase("épique_été")).toBe(false);
+    // A digits-only value passes the field style, not the heading format.
+    expect(isSnakeCase("2026")).toBe(true);
+    expect(isSnakecaseText("2026")).toBe(false);
   });
 });

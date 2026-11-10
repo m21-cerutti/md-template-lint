@@ -1,0 +1,5 @@
+# Baseline project of suppress-fail-real-codes-no-directive with begin disable / end disable blocks.
+pairs:
+  - name: notes
+    template: templates/notes.template.md
+    include: notes/*.md

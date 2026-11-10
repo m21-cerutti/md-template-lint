@@ -3,6 +3,7 @@
     "path": "template.md",
     "status": "ok",
     "filenameCase": null,
+    "uniqueHeadingNames": false,
     "fields": [
       { "name": "wrong_place", "type": "string", "rules": ["presence:required"] },
       { "name": "bad_count", "type": "list", "rules": ["presence:required"] },

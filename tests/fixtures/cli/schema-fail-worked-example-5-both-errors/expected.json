@@ -1,0 +1,36 @@
+[
+  {
+    "path": "template.md",
+    "status": "fail",
+    "filenameCase": null,
+    "uniqueHeadingNames": false,
+    "fields": [{ "name": "title", "type": "string", "rules": ["presence:required"] }],
+    "headings": [
+      { "level": 2, "text": "Notes", "rules": ["presence:required"] },
+      { "level": 2, "text": "Notes", "rules": ["presence:optional"] },
+      {
+        "level": 2,
+        "text": "Release",
+        "rules": ["presence:optional", "pattern:\"{semver}\"", "repeat-rules:same-level:min:2"]
+      }
+    ],
+    "diagnostics": [
+      {
+        "code": "MTL017",
+        "severity": "error",
+        "message": "Heading 'Notes': matches the same headings as the previous heading 'Notes' (line 5)",
+        "line": 7,
+        "column": 4,
+        "sourceLine": "## Notes [presence:optional]"
+      },
+      {
+        "code": "MTL018",
+        "severity": "error",
+        "message": "Heading 'Release': tag [repeat-rules:same-level:min:2] contradicts [presence:optional] (a minimum of 2 requires the heading)",
+        "line": 9,
+        "column": 33,
+        "sourceLine": "## Release [pattern:\"{semver}\"] [repeat-rules:same-level:min:2] [presence:optional]"
+      }
+    ]
+  }
+]

@@ -1,0 +1,15 @@
+---
+a: x # [pattern:"{semver}"]
+b: x # [repeat-rules:same-level]
+c: x # [repeat-rules:same-level:min:2]
+d: x # [repeat-rules:same-level:max:3]
+e: x # [order:descending]
+f: x # [order:first:number:ascending]
+g: x # [order:first:number:descending]
+h: x # [order:first:date:ascending]
+i: x # [order:first:date:descending]
+j: x # [order:first:semver:ascending]
+k: x # [ORDER:First:Semver:Descending]
+l: x # [content:subheadings:no-extra]
+m: x # [pattern:"a]b \"c\""]
+---

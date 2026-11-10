@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { checkTarget, checkTemplate } from "../../../src/engine/pipeline.js";
 import { createRegistry } from "../../../src/engine/registry.js";
-import { createEnv } from "../../../src/engine/rule.js";
+import { anchorLineOf, createEnv } from "../../../src/engine/rule.js";
 
 const registry = createRegistry();
 const CODE = "MTL705";
@@ -120,6 +120,22 @@ const CASES = [
     expected: [message(3, 4)],
     warnings: ["MTL012"],
   },
+  {
+    // Spec 4.3: label `Section '{parent} > {text}'`. The body of `### Notes` stops at the next
+    // H3: 2 non-blank lines, `### Other` is not added.
+    name: "fail-section-scope-label-names-the-parent",
+    expected: [message(1, 2, "Context > Notes")],
+    warnings: [],
+  },
+  {
+    // Spec 2.6, section scope: a pattern heading under an exact-text parent is labelled
+    // `Section '{parent} > {text}' (pattern "{pattern}")`, `{text}` the target text `Day 3`.
+    name: "fail-section-scope-pattern-heading-label",
+    expected: [
+      `Section 'Log > Day 3' (pattern "Day {number}"): [content:max-lines:1] 2 non-blank line(s)`,
+    ],
+    warnings: [],
+  },
 ] as const;
 
 const read = (path: string): string =>
@@ -180,6 +196,13 @@ describe("MTL705 content-max-lines", () => {
     expect(tree.files).toEqual(
       names.flatMap((name) => [`${name}/target.md`, `${name}/template.md`]).sort(),
     );
+  });
+
+  it("anchors a section-scope finding on the target heading line (DIR5)", async () => {
+    const { found } = await lint({ name: "fail-section-scope-label-names-the-parent" });
+    expect(found.map((diagnostic) => anchorLineOf(diagnostic))).toEqual([7]);
+    const day = await lint({ name: "fail-section-scope-pattern-heading-label" });
+    expect(day.found.map((diagnostic) => anchorLineOf(diagnostic))).toEqual([7]);
   });
 
   for (const testCase of CASES) {

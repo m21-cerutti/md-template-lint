@@ -1,6 +1,6 @@
 ---
 title: "Guide: grammar and listeners"
-last_updated: 2026-10-30
+last_updated: 2026-11-04
 ---
 
 # Guide: grammar and listeners
@@ -156,7 +156,7 @@ flowchart TD
   finding --> coll
   coll --> out["DocumentAnalysis: document, grammarErrors, findings"]
   out -->|"grammarErrors not empty"| boom["parseDocument and loadDocument throw InternalParseError"]
-  out -->|"findings"| rules["template phase rules MTL010 to MTL013"]
+  out -->|"findings"| rules["template phase rules MTL010 to MTL013 (MTL014, MTL015, MTL017, MTL018, MTL019 and MTL030 read the headings, MTL016 the fields)"]
 ```
 
 - `createRecognizers` (`src/tags/listeners.ts`) builds a lexer and a parser over a text, removes the
@@ -175,7 +175,11 @@ flowchart TD
 - `DiagnosticCollector` is the single sink of one document parse: `grammarErrors(...)`, `report(findings)`,
   and the read side `errors` and `findings` (findings sorted by position, stable).
 - Findings are data of the tag layer. `src/rules/syntax.ts` turns them into `MTL010` to `MTL013`; codes,
-  severities and messages are never in `src/tags/`.
+  severities and messages are never in `src/tags/`. The template warnings `MTL014` (an invalid heading
+  pattern), `MTL015` (a heading tag with no effect) and `MTL016` (a date field without a format tag),
+  and the template errors `MTL017`, `MTL018`, `MTL019` and `MTL030` (heading pattern, minimum, child
+  order and order-tag conflicts), are not findings: the same file reads them from the template headings
+  and fields.
 
 Run the whole parser on a small target. Create `tmp/analyze.ts`:
 

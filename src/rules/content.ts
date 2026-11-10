@@ -9,16 +9,48 @@
  * section (spec 4.4 DIR5).
  */
 import { defineRule, reportSection, type AnyRule, type TargetContext } from "../engine/rule.js";
-import type { Diagnostic, Section } from "../engine/model.js";
+import { headingPattern, matchHeadings, type Diagnostic, type Section } from "../engine/model.js";
 import { isPythonSpace, stripPythonSpace } from "../engine/values.js";
 
+/** A checked template section, its target match and the message label. */
+interface CheckedSection {
+  readonly section: Section;
+  readonly index: number;
+  readonly found: Section;
+  readonly label: string;
+}
+
 /**
- * The target section a template section is checked against: the FIRST target
- * section with the same text (spec 2.6). Null when the target lacks it; the
- * missing heading is reported once by the heading rules, not here.
+ * The template sections a content rule checks (spec 2.6): every checked
+ * template heading with a positional match, the sibling its position took
+ * (2.10 "Positional match"), for every presence mode (ADR 0012);
+ * for a pattern heading, the sibling its pattern matched
+ * (2.10 MATCH), and for a repeat heading each instance (one `matchHeadings`
+ * entry per instance, anchored on it). A sibling taken as a mismatch (MTL606)
+ * is no match and is never read. Skipped otherwise: a missing heading is reported once
+ * by the heading rules, not here; a template-only heading is not a position.
+ * The label is `Section '{text}'` in file scope and
+ * `Section '{parent} > {text}'` in section scope ({parent}: the target parent match).
+ * An exact-text heading's `{text}` is its template text (equal to the target text); a
+ * pattern heading's `{text}` is the text of the checked target heading (the match or
+ * instance), followed by ` (pattern "{pattern}")`, the pattern as written in its tag.
  */
-function targetSection(context: TargetContext, section: Section): Section | null {
-  return context.target.sections.find((candidate) => candidate.text === section.text) ?? null;
+function checkedSections(context: TargetContext): CheckedSection[] {
+  return matchHeadings(context.template, context.target).flatMap((item) => {
+    const { section, index, match } = item;
+    if (!item.checked || match === null) return [];
+    const pattern = headingPattern(section) === null ? null : writtenPattern(section);
+    const text = pattern === null ? section.text : match.text;
+    const name = item.parentMatch === null ? text : `${item.parentMatch.text} > ${text}`;
+    const suffix = pattern === null ? "" : ` (pattern "${pattern}")`;
+    return [{ section, index, found: match, label: `Section '${name}'${suffix}` }];
+  });
+}
+
+/** `{pattern}` of spec 2.6: the effective pattern tag's text as written between the quotes. */
+function writtenPattern(section: Section): string {
+  const tag = section.tags.find((entry) => entry.kind === "pattern");
+  return tag?.kind === "pattern" ? tag.text : "";
 }
 
 /**
@@ -92,14 +124,13 @@ const contentNonEmpty = defineRule({
   phase: "target",
   step: "content",
   check: (context: TargetContext): Diagnostic[] =>
-    context.template.sections.flatMap((section, index) => {
+    checkedSections(context).flatMap(({ section, index, found, label }) => {
       if (!hasContentTag(section, "non-empty")) return [];
-      const found = targetSection(context, section);
-      if (found === null || !isBlank(found.body)) return [];
+      if (!isBlank(found.body)) return [];
       return [
         reportSection(
           contentNonEmpty,
-          `Section '${section.text}': [content:non-empty] section body is empty`,
+          `${label}: [content:non-empty] section body is empty`,
           index,
           found.line,
         ),
@@ -115,14 +146,13 @@ const contentTable = defineRule({
   phase: "target",
   step: "content",
   check: (context: TargetContext): Diagnostic[] =>
-    context.template.sections.flatMap((section, index) => {
+    checkedSections(context).flatMap(({ section, index, found, label }) => {
       if (!hasContentTag(section, "table")) return [];
-      const found = targetSection(context, section);
-      if (found === null || found.body.split("\n").some(isTableRow)) return [];
+      if (found.body.split("\n").some(isTableRow)) return [];
       return [
         reportSection(
           contentTable,
-          `Section '${section.text}': [content:table] no markdown table row found`,
+          `${label}: [content:table] no markdown table row found`,
           index,
           found.line,
         ),
@@ -138,14 +168,13 @@ const contentList = defineRule({
   phase: "target",
   step: "content",
   check: (context: TargetContext): Diagnostic[] =>
-    context.template.sections.flatMap((section, index) => {
+    checkedSections(context).flatMap(({ section, index, found, label }) => {
       if (!hasContentTag(section, "list")) return [];
-      const found = targetSection(context, section);
-      if (found === null || found.body.split("\n").some(isListItem)) return [];
+      if (found.body.split("\n").some(isListItem)) return [];
       return [
         reportSection(
           contentList,
-          `Section '${section.text}': [content:list] no markdown list item found`,
+          `${label}: [content:list] no markdown list item found`,
           index,
           found.line,
         ),
@@ -161,17 +190,15 @@ const contentMinLines = defineRule({
   phase: "target",
   step: "content",
   check: (context: TargetContext): Diagnostic[] =>
-    context.template.sections.flatMap((section, index) => {
+    checkedSections(context).flatMap(({ section, index, found, label }) => {
       const minimum = lineBound(section, "min");
       if (minimum === null) return [];
-      const found = targetSection(context, section);
-      if (found === null) return [];
       const count = nonBlankLineCount(found.body);
       if (count >= minimum) return [];
       return [
         reportSection(
           contentMinLines,
-          `Section '${section.text}': [content:min-lines:${minimum}] only ${count} non-blank line(s)`,
+          `${label}: [content:min-lines:${minimum}] only ${count} non-blank line(s)`,
           index,
           found.line,
         ),
@@ -187,17 +214,15 @@ const contentMaxLines = defineRule({
   phase: "target",
   step: "content",
   check: (context: TargetContext): Diagnostic[] =>
-    context.template.sections.flatMap((section, index) => {
+    checkedSections(context).flatMap(({ section, index, found, label }) => {
       const maximum = lineBound(section, "max");
       if (maximum === null) return [];
-      const found = targetSection(context, section);
-      if (found === null) return [];
       const count = nonBlankLineCount(found.body);
       if (count <= maximum) return [];
       return [
         reportSection(
           contentMaxLines,
-          `Section '${section.text}': [content:max-lines:${maximum}] ${count} non-blank line(s)`,
+          `${label}: [content:max-lines:${maximum}] ${count} non-blank line(s)`,
           index,
           found.line,
         ),

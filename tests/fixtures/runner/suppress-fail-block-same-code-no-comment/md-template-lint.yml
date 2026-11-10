@@ -1,0 +1,5 @@
+# Baseline A of the block group: two MTL202 (unknown keys) and two MTL701 (empty sections), no directive.
+pairs:
+  - name: notes
+    template: templates/notes.template.md
+    include: notes/*.md

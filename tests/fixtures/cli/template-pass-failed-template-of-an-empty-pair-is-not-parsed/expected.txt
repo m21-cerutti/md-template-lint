@@ -1,0 +1,18 @@
+md-template-lint 9.9.9
+Config: md-template-lint.yml
+========================
+
+ℹ MTL913 no files matched pair 'versions' in root 'project'
+
+========================
+Summary
+========================
+Total files:  0
+Passed:       0
+Failed:       0
+Warnings:     0 (in 0 file(s))
+Templates:    0 checked, 0 broken
+Run warnings: 1
+
+No files linted.
+========================

@@ -1,0 +1,32 @@
+md-template-lint 9.9.9
+Config: (none)
+========================
+
+  FAIL template.md
+Field  Type    Rules
+--------------------
+title  string  presence:required
+
+Headings:
+  ## Notes (presence:required)
+  ## Notes (presence:optional)
+  ## Release (presence:optional, pattern:"{semver}", repeat-rules:same-level:min:2)
+
+Duplicate patterns:
+  - Heading 'Notes': matches the same headings as the previous heading 'Notes' (line 5) (line 7, column 4)
+      7 | ## Notes [presence:optional]
+        |    ^
+
+Optional headings with a minimum:
+  - Heading 'Release': tag [repeat-rules:same-level:min:2] contradicts [presence:optional] (a minimum of 2 requires the heading) (line 9, column 33)
+      9 | ## Release [pattern:"{semver}"] [repeat-rules:same-level:min:2] [presence:optional]
+        |                                 ^
+
+========================
+Summary
+========================
+Templates:    1 checked, 0 broken
+Errors:       2
+Warnings:     0
+
+========================

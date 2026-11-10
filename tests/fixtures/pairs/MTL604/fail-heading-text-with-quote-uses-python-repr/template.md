@@ -2,6 +2,6 @@
 title: "string"
 ---
 
-## Alpha's notes
+# Alpha's notes
 
 ## Beta

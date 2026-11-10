@@ -1,0 +1,28 @@
+md-template-lint 1.0.0
+Config: md-template-lint.yml
+========================
+
+Template: templates/notes.template.md
+Target:   notes/*.md (1 file(s))
+
+  ✗ notes/block.md
+      error MTL508 Field 'port' (type=int): value is not a valid integer
+        5 | port: abc
+      warn  MTL202 Unknown key 'extra_one' not present in template
+        4 | extra_one: 1
+      warn  MTL202 Unknown key 'extra_two' not present in template
+        6 | extra_two: 2
+
+========================
+Summary
+========================
+Total files:  1
+Passed:       0
+Failed:       1
+Warnings:     2 (in 1 file(s))
+Templates:    1 checked, 0 broken
+
+Failed files:
+  - notes/block.md
+
+========================

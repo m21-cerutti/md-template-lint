@@ -1,9 +1,9 @@
 ---
 title: Product specification  # [presence:required]
-last_updated: 2026-10-29  # [presence:required] type=date
+last_updated: 2026-10-29  # [presence:required] [format:date] type=date
 ---
 
-# Specification [presence:exist]
+# Specification title [pattern:"{text}"]
 
 What the product does and for whom, never how it is built. The how lives in the
 technical spec and the architecture document.

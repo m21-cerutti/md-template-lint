@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
+import { loadDocument } from "../../src/engine/load.js";
+import type { BodyHeading, FrontmatterLine } from "../../src/tags/ast.js";
 import {
   InternalParseError,
+  parseDocument,
   parseFilenameComment,
   parseHeadingSuffix,
   parseInlineComment,
@@ -77,7 +80,13 @@ describe("frontmatter value tags", () => {
         offending: "1e5",
         position: { line: 4, column: 47 },
       },
-      { reason: "malformed", tag: "[order:descending]", offending: "descending" },
+      // Spec 2.10: `[order:descending]` is a heading tag, misplaced in frontmatter (MTL013).
+      {
+        reason: "wrong-region",
+        tag: "[order:descending]",
+        offending: "[order:descending]",
+        position: { line: 4, column: 52 },
+      },
     ]);
   });
 
@@ -92,11 +101,33 @@ describe("frontmatter value tags", () => {
   });
 
   it("reports body-only tags in a comment as wrong region, located", () => {
+    const result = parseInlineComment("[content:table] [presence:template-only]", {
+      line: 2,
+      column: 9,
+    });
+    expect(result.tags).toEqual([]);
+    expect(result.findings).toMatchObject([
+      { reason: "wrong-region", region: "frontmatter", position: { line: 2, column: 9 } },
+      {
+        reason: "wrong-region",
+        tag: "[presence:template-only]",
+        position: { line: 2, column: 25 },
+      },
+    ]);
+  });
+
+  it("reports the dropped exist presence mode in a comment as malformed (MTL012), not wrong region", () => {
     const result = parseInlineComment("[content:table] [presence:exist]", { line: 2, column: 9 });
     expect(result.tags).toEqual([]);
     expect(result.findings).toMatchObject([
       { reason: "wrong-region", region: "frontmatter", position: { line: 2, column: 9 } },
-      { reason: "wrong-region", tag: "[presence:exist]", position: { line: 2, column: 25 } },
+      {
+        reason: "malformed",
+        region: "frontmatter",
+        tag: "[presence:exist]",
+        offending: "exist",
+        position: { line: 2, column: 35 },
+      },
     ]);
   });
 });
@@ -224,12 +255,24 @@ describe("heading suffix", () => {
 
   it("parses every body tag", () => {
     const result = parseHeadingSuffix(
-      "A [presence:required] [presence:exist] [presence:template-only] " +
+      "A [presence:required] [presence:template-only] " +
         "[presence:conditional:x] [content:non-empty] [content:table] [content:list] [content:max-lines:9]",
     );
     expect(result.text).toBe("A");
-    expect(result.tags).toHaveLength(8);
+    expect(result.tags).toHaveLength(7);
     expect(result.findings).toEqual([]);
+  });
+
+  it("keeps the dropped exist presence mode in the heading text as a malformed tag", () => {
+    const result = parseHeadingSuffix("Intro [presence:exist]", { line: 7, column: 4 });
+    expect(result.text).toBe("Intro [presence:exist]");
+    expect(result.tags).toEqual([]);
+    expect(result.findings).toMatchObject([
+      { region: "body", reason: "malformed", tag: "[presence:exist]", offending: "exist" },
+    ]);
+    // Located (spec 2.7): the heading text starts at column 4 of line 7, `Intro ` is 6
+    // characters, `[presence:` 10 more, so `exist` (the argument that does not fit) is at 4 + 16.
+    expect(result.findings[0]?.position).toEqual({ line: 7, column: 20 });
   });
 
   it("keeps an unknown trailing bracket in the text", () => {
@@ -277,6 +320,210 @@ describe("heading suffix", () => {
       text: "Use [a, b] here",
       tags: [],
       findings: [],
+    });
+  });
+});
+
+/**
+ * `[unique-headings-names]` (spec 2.11, ADR 0013): one row of the 2.11 placement table per test,
+ * at tag level. The rule MTL613 that reads the switches is phase A80c, not tested here.
+ */
+describe("unique heading names tag (spec 2.11)", () => {
+  const lines = (...text: string[]) => text.join("\n");
+  const headingsOf = (text: string): BodyHeading[] =>
+    parseDocument(text).body.filter((b): b is BodyHeading => b.kind === "heading");
+  /** The findings a load keeps (spec 2.1: key lines, standalone comment lines, the body). */
+  const loadedFindings = (text: string) => {
+    const result = loadDocument(text);
+    if (!result.ok) throw new Error(`load failed: ${result.failure.reason}`);
+    return result.model.findings;
+  };
+  const kinds = (fmLines: readonly FrontmatterLine[] | undefined) =>
+    (fmLines ?? []).map((l) => l.kind);
+
+  describe("on a heading (per-heading switch)", () => {
+    it("parses at every heading level H1 to H6 and is peeled from the text", () => {
+      const text = lines(
+        "# One [unique-headings-names]",
+        "## Two [unique-headings-names]",
+        "### Three [unique-headings-names]",
+        "#### Four [unique-headings-names]",
+        "##### Five [unique-headings-names]",
+        "###### Six [unique-headings-names]",
+      );
+      const tag = { region: "body", kind: "unique-names", raw: "[unique-headings-names]" };
+      expect(headingsOf(text)).toMatchObject([
+        { level: 1, text: "One", tags: [tag] },
+        { level: 2, text: "Two", tags: [tag] },
+        { level: 3, text: "Three", tags: [tag] },
+        { level: 4, text: "Four", tags: [tag] },
+        { level: 5, text: "Five", tags: [tag] },
+        { level: 6, text: "Six", tags: [tag] },
+      ]);
+      expect(parseDocument(text).findings).toEqual([]);
+    });
+
+    it("is case-insensitive and keeps the tag as written in raw", () => {
+      for (const written of ["[UNIQUE-HEADINGS-NAMES]", "[Unique-Headings-Names]"]) {
+        const result = parseHeadingSuffix(`Notes ${written}`);
+        expect(result).toMatchObject({
+          text: "Notes",
+          tags: [{ region: "body", kind: "unique-names", raw: written }],
+          findings: [],
+        });
+      }
+    });
+
+    it("is peeled together with other trailing tags, in any order", () => {
+      const after = parseHeadingSuffix(
+        'Release [pattern:"[{semver}] - {date}"] [repeat-rules:same-level] [unique-headings-names]',
+      );
+      expect(after.findings).toEqual([]);
+      expect(after.text).toBe("Release");
+      expect(after.tags.map((t) => t.kind)).toEqual(["pattern", "repeat", "unique-names"]);
+      const before = parseHeadingSuffix("Usage [unique-headings-names] [presence:optional]");
+      expect(before.findings).toEqual([]);
+      expect(before.text).toBe("Usage");
+      expect(before.tags.map((t) => t.kind).sort()).toEqual(["presence", "unique-names"]);
+    });
+
+    it("written twice on one heading, both are peeled with no finding", () => {
+      const result = parseHeadingSuffix("Notes [unique-headings-names] [unique-headings-names]");
+      expect(result.findings).toEqual([]);
+      expect(result.text).toBe("Notes");
+      // Spec 2.6 peels every recognized trailing tag: both brackets leave the text.
+      expect(result.tags).toHaveLength(2);
+      expect(result.tags.every((t) => t.kind === "unique-names")).toBe(true);
+    });
+
+    it("is not peeled when it is not trailing", () => {
+      for (const text of ["Notes [unique-headings-names] tail", "[unique-headings-names] Notes"]) {
+        expect(parseHeadingSuffix(text)).toEqual({ text, tags: [], findings: [] });
+      }
+    });
+
+    it("with an argument is malformed (MTL012) and stays in the heading text", () => {
+      for (const written of ["[unique-headings-names:x]", "[unique-headings-names:]"]) {
+        const result = parseHeadingSuffix(`Notes ${written}`);
+        expect(result.text).toBe(`Notes ${written}`);
+        expect(result.tags).toEqual([]);
+        expect(result.findings).toMatchObject([
+          {
+            region: "body",
+            reason: "malformed",
+            tag: written,
+            subject: { heading: `Notes ${written}` },
+          },
+        ]);
+      }
+    });
+
+    it("a typo is an unknown tag (MTL011) and stays in the heading text", () => {
+      const result = parseHeadingSuffix("Notes [unique-heading-names]");
+      expect(result.text).toBe("Notes [unique-heading-names]");
+      expect(result.tags).toEqual([]);
+      expect(result.findings).toMatchObject([
+        { region: "body", reason: "unknown", tag: "[unique-heading-names]" },
+      ]);
+    });
+  });
+
+  describe("in the frontmatter (template-wide switch)", () => {
+    it("a standalone comment line holding only the tag sets the switch", () => {
+      const text = lines("---", "# [unique-headings-names]", 'title: "string"', "---", "# T");
+      const fm = parseDocument(text).frontmatter;
+      expect(fm?.uniqueHeadingNames).toBe(true);
+      expect(fm?.lines[0]).toMatchObject({
+        kind: "unique-names",
+        line: 2,
+        tag: { region: "frontmatter", kind: "unique-names" },
+      });
+      expect(loadedFindings(text)).toEqual([]);
+    });
+
+    it("is case-insensitive and tolerates the spacing of a comment line", () => {
+      for (const written of ["# [UNIQUE-HEADINGS-NAMES]", "#[Unique-Headings-Names]  "]) {
+        const fm = parseDocument(lines("---", written, "a: x", "---")).frontmatter;
+        expect(fm?.uniqueHeadingNames).toBe(true);
+        expect(kinds(fm?.lines)).toEqual(["unique-names", "key"]);
+      }
+    });
+
+    it("written on two lines counts once, with no finding", () => {
+      const text = lines(
+        "---",
+        "# [unique-headings-names]",
+        "a: x",
+        "# [unique-headings-names]",
+        "---",
+      );
+      expect(parseDocument(text).frontmatter?.uniqueHeadingNames).toBe(true);
+      expect(loadedFindings(text)).toEqual([]);
+    });
+
+    it("after a key it is inert: no switch, no field tag, no finding", () => {
+      const text = lines("---", 'title: "x" # [unique-headings-names]', "---");
+      const fm = parseDocument(text).frontmatter;
+      expect(fm?.uniqueHeadingNames).toBe(false);
+      expect(fm?.lines[0]).toMatchObject({
+        kind: "key",
+        comment: { tags: [], inertTags: [{ kind: "unique-names" }], findings: [] },
+      });
+      expect(loadedFindings(text)).toEqual([]);
+    });
+
+    it("on a comment line with other text or tags it is inert and not reported", () => {
+      for (const comment of [
+        "# note [unique-headings-names]",
+        "# [unique-headings-names] note",
+        "# [presence:optional] [unique-headings-names]",
+      ]) {
+        const text = lines("---", comment, "a: x", "---");
+        expect(parseDocument(text).frontmatter?.uniqueHeadingNames).toBe(false);
+        expect(loadedFindings(text)).toEqual([]);
+      }
+    });
+
+    it("a standalone line with an argument is malformed (MTL012) and sets no switch", () => {
+      for (const written of ["[unique-headings-names:x]", "[unique-headings-names:]"]) {
+        const text = lines("---", `# ${written}`, "a: x", "---");
+        expect(parseDocument(text).frontmatter?.uniqueHeadingNames).toBe(false);
+        expect(loadedFindings(text)).toMatchObject([
+          { region: "frontmatter", reason: "malformed", tag: written, position: { line: 2 } },
+        ]);
+      }
+    });
+
+    it("a standalone `# [word]` line of another word is a plain comment: no switch, no finding", () => {
+      // Spec 2.11: only the name `unique-headings-names` makes the line the switch; spec 2.1
+      // reports field-tag findings on key lines only, so a typo here is silent.
+      for (const written of ["# [unique-heading-names]", "# [todo]"]) {
+        const text = lines("---", written, "a: x", "---");
+        const fm = parseDocument(text).frontmatter;
+        expect(fm?.uniqueHeadingNames).toBe(false);
+        expect(fm?.lines[0]).toEqual({ kind: "comment", line: 2, raw: written });
+        expect(loadedFindings(text)).toEqual([]);
+      }
+    });
+
+    it("an argument after a key is malformed (MTL012)", () => {
+      const text = lines("---", "n: x # [unique-headings-names:x]", "---");
+      expect(loadedFindings(text)).toMatchObject([
+        { region: "frontmatter", reason: "malformed", subject: { field: "n" } },
+      ]);
+    });
+
+    it("a typo after a key is an unknown tag (MTL010)", () => {
+      const text = lines("---", 'title: "x" # [unique-heading-names]', "---");
+      expect(parseDocument(text).frontmatter?.uniqueHeadingNames).toBe(false);
+      expect(loadedFindings(text)).toMatchObject([
+        {
+          region: "frontmatter",
+          reason: "unknown",
+          tag: "[unique-heading-names]",
+          subject: { field: "title" },
+        },
+      ]);
     });
   });
 });

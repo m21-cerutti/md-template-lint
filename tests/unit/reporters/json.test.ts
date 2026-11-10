@@ -1,11 +1,14 @@
 /**
- * JSON reporter (docs/spec.md 8.5): valid JSON that parses back, stable keys, the
- * optional `heading` on heading diagnostics, `--quiet` does not shrink it. Expected-output files:
+ * JSON reporter (docs/spec.md 8.5): valid JSON that parses back, stable keys (the lint
+ * summary and the verify summary), the optional `heading` on heading diagnostics, `--quiet`
+ * does not shrink it. Expected-output files:
  * tests/fixtures/runner/report-*\/expected.json (compared as parsed JSON, keys checked
  * apart).
  */
 import { describe, expect, it } from "vitest";
+import { reportVerify } from "../../../src/cli/verify-report.js";
 import { report } from "../../../src/reporters/index.js";
+import type { VerifyResult } from "../../../src/runner/types.js";
 import { readFixture } from "../../helpers/fixtures.js";
 import { runFixture } from "../../helpers/run.js";
 
@@ -84,6 +87,55 @@ describe("json reporter", () => {
       "runWarnings",
       "exitCode",
     ]);
+  });
+
+  it("verify: summary keys in the order of spec 8.5, errors right after broken (A72k)", () => {
+    const result: VerifyResult = {
+      mode: "verify",
+      config: null,
+      templates: [],
+      runErrors: [],
+      summary: { templates: 0, broken: 0, errors: 0, warnings: 0, runErrors: 0, exitCode: 0 },
+    };
+    const document = JSON.parse(
+      reportVerify(result, { format: "json", version: VERSION }).stdout,
+    ) as {
+      summary: object;
+    };
+    expect(Object.keys(document.summary)).toEqual([
+      "templates",
+      "broken",
+      "errors",
+      "warnings",
+      "suppressed",
+      "runErrors",
+      "exitCode",
+    ]);
+  });
+
+  it("verify: template keys in the order of spec 8.5, uniqueHeadingNames after filenameCase", () => {
+    const schema = { filenameCase: null, uniqueHeadingNames: true, fields: [], headings: [] };
+    const result: VerifyResult = {
+      mode: "verify",
+      config: null,
+      templates: [{ template: { path: "t.md", status: "ok" }, warnings: [], errors: [], schema }],
+      runErrors: [],
+      summary: { templates: 1, broken: 0, errors: 0, warnings: 0, runErrors: 0, exitCode: 0 },
+    };
+    const document = JSON.parse(
+      reportVerify(result, { format: "json", version: VERSION }).stdout,
+    ) as { templates: Record<string, unknown>[] };
+    const template = document.templates[0] as Record<string, unknown>;
+    expect(Object.keys(template)).toEqual([
+      "path",
+      "status",
+      "filenameCase",
+      "uniqueHeadingNames",
+      "fields",
+      "headings",
+      "diagnostics",
+    ]);
+    expect(template["uniqueHeadingNames"]).toBe(true);
   });
 
   it("report-multi-root-warnings: warnings count diagnostics, filesWithWarnings counts files", async () => {

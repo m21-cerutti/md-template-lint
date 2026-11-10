@@ -1,5 +1,5 @@
 ---
-status: "présent"
+status: "présent" # [format:date]
 ---
 
 ## Café

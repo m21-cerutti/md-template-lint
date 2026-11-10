@@ -1,0 +1,25 @@
+md-template-lint 9.9.9
+Config: (none)
+========================
+
+  FAIL template.md
+Field  Type    Rules
+--------------------
+title  string  presence:required
+
+Headings:
+  ## Epic A - Title (presence:required, pattern:"Epic {char} - {text}", order:ascending, content:table)
+
+Order tags without repeat:
+  - Heading 'Epic A - Title': tag [order:ascending] needs [repeat-rules:same-level] (an order compares the repeats of one heading) (line 5, column 52)
+      5 | ## Epic A - Title [pattern:"Epic {char} - {text}"] [order:ascending] [content:table]
+        |                                                    ^
+
+========================
+Summary
+========================
+Templates:    1 checked, 0 broken
+Errors:       1
+Warnings:     0
+
+========================

@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { checkTarget, checkTemplate } from "../../../src/engine/pipeline.js";
 import { createRegistry } from "../../../src/engine/registry.js";
-import { createEnv } from "../../../src/engine/rule.js";
+import { anchorLineOf, createEnv } from "../../../src/engine/rule.js";
 
 const registry = createRegistry();
 const CODE = "MTL704";
@@ -81,6 +81,23 @@ const CASES = [
     expected: [message(3, 1)],
     warnings: ["MTL012"],
   },
+  {
+    // Spec 4.3: label `Section '{parent} > {text}'`. The body of `### Notes` stops at the next
+    // H3: 1 non-blank line, the 3 lines of `### Other` are not added.
+    name: "fail-section-scope-label-names-the-parent",
+    expected: ["Section 'Context > Notes': [content:min-lines:2] only 1 non-blank line(s)"],
+    warnings: [],
+  },
+  {
+    // Spec 2.6: each instance of a repeat heading is checked and labelled with its own target
+    // text; `Sprint 3` has 2 lines and passes.
+    name: "fail-repeat-pattern-instances-labelled-by-own-text",
+    expected: [
+      `Section 'Sprint 1' (pattern "Sprint {number}"): [content:min-lines:2] only 1 non-blank line(s)`,
+      `Section 'Sprint 2' (pattern "Sprint {number}"): [content:min-lines:2] only 1 non-blank line(s)`,
+    ],
+    warnings: [],
+  },
 ] as const;
 
 const read = (path: string): string =>
@@ -141,6 +158,17 @@ describe("MTL704 content-min-lines", () => {
     expect(tree.files).toEqual(
       names.flatMap((name) => [`${name}/target.md`, `${name}/template.md`]).sort(),
     );
+  });
+
+  it("anchors a section-scope finding on the target heading line (DIR5)", async () => {
+    const { found } = await lint({ name: "fail-section-scope-label-names-the-parent" });
+    expect(found.map((diagnostic) => anchorLineOf(diagnostic))).toEqual([7]);
+  });
+
+  it("anchors each repeat instance's finding on its own heading line (DIR5)", async () => {
+    // `## Sprint 1` is line 5, `## Sprint 2` line 9.
+    const { found } = await lint({ name: "fail-repeat-pattern-instances-labelled-by-own-text" });
+    expect(found.map((diagnostic) => anchorLineOf(diagnostic))).toEqual([5, 9]);
   });
 
   for (const testCase of CASES) {

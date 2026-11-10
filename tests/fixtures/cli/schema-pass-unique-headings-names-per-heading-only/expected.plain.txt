@@ -1,0 +1,21 @@
+md-template-lint 9.9.9
+Config: (none)
+========================
+
+  PASS template.md
+Field  Type    Rules
+--------------------
+title  string  presence:required
+
+Headings:
+  # Guide (presence:required)
+  ## Usage (presence:required, unique-headings-names)
+
+========================
+Summary
+========================
+Templates:    1 checked, 0 broken
+Warnings:     0
+
+All templates passed!
+========================

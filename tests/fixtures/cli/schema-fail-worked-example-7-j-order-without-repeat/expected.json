@@ -1,0 +1,31 @@
+[
+  {
+    "path": "template.md",
+    "status": "fail",
+    "filenameCase": null,
+    "uniqueHeadingNames": false,
+    "fields": [{ "name": "title", "type": "string", "rules": ["presence:required"] }],
+    "headings": [
+      {
+        "level": 2,
+        "text": "Epic A - Title",
+        "rules": [
+          "presence:required",
+          "pattern:\"Epic {char} - {text}\"",
+          "order:ascending",
+          "content:table"
+        ]
+      }
+    ],
+    "diagnostics": [
+      {
+        "code": "MTL030",
+        "severity": "error",
+        "message": "Heading 'Epic A - Title': tag [order:ascending] needs [repeat-rules:same-level] (an order compares the repeats of one heading)",
+        "line": 5,
+        "column": 52,
+        "sourceLine": "## Epic A - Title [pattern:\"Epic {char} - {text}\"] [order:ascending] [content:table]"
+      }
+    ]
+  }
+]

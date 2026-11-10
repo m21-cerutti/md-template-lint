@@ -1,0 +1,5 @@
+# Baseline B with a block that lists only MTL302: the MTL508 inside the block is still reported.
+pairs:
+  - name: notes
+    template: templates/notes.template.md
+    include: notes/*.md

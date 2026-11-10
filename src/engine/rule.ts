@@ -50,6 +50,8 @@ export const CATEGORY_RANGES: Readonly<Record<Category, readonly number[]>> = ra
  * Field steps in run order (spec 4.1 step 3). `presence` runs ONLY when the
  * target value is missing or empty; every other step runs only when it is
  * present and non-empty. `type` covers enum (MTL517) or the type rule.
+ * `shape` (MTL306 to MTL309, spec 2.9, change C11) is appended last, after
+ * `type`, so every existing code keeps its emission order.
  */
 export const FIELD_STEPS = [
   "presence",
@@ -63,6 +65,7 @@ export const FIELD_STEPS = [
   "case",
   "elements",
   "type",
+  "shape",
 ] as const;
 
 export type FieldStep = (typeof FIELD_STEPS)[number];

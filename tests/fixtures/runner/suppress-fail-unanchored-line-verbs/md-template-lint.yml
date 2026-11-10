@@ -1,0 +1,7 @@
+# Same project as suppress-fail-unanchored-no-directive with every line and range verb: only the
+# anchored MTL603 is suppressed; the four findings without anchor (MTL101, MTL201 and MTL601
+# twice) are still reported.
+pairs:
+  - name: notes
+    template: templates/notes.template.md
+    include: notes/*.md

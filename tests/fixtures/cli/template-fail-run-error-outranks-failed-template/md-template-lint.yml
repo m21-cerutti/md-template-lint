@@ -1,0 +1,7 @@
+pairs:
+  - name: ghost
+    template: templates/missing.template.md
+    include: notes/*.md
+  - name: versions
+    template: templates/versions.template.md
+    include: notes/*.md

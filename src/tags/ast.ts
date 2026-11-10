@@ -25,6 +25,7 @@ export interface Located {
 
 export type Region = "frontmatter" | "body";
 export type CaseStyle = "snake_case" | "kebab-case";
+export type ValueShape = "semver" | "date";
 export type FilenameConvention = "snake_case" | "kebab-case" | "camelCase" | "PascalCase";
 export type Bound = "min" | "max";
 
@@ -44,6 +45,10 @@ export type FrontmatterValueTag =
   | Fm<{ readonly kind: "format-constant"; readonly value: string }>
   | Fm<{ readonly kind: "format-case"; readonly style: CaseStyle }>
   | Fm<{ readonly kind: "format-elements"; readonly style: CaseStyle }>
+  /** spec 2.9: `[format:semver]`, `[format:date]` */
+  | Fm<{ readonly kind: "format-shape"; readonly shape: ValueShape }>
+  /** spec 2.9: `[format:elements:semver]`, `[format:elements:date]` */
+  | Fm<{ readonly kind: "format-elements-shape"; readonly shape: ValueShape }>
   | Fm<{
       readonly kind: "format-scheme";
       /** Raw argument as written, for messages. */
@@ -71,11 +76,20 @@ export type FrontmatterFilenameTag = Fm<{
   readonly convention: FilenameConvention;
 }>;
 
+/**
+ * spec 2.11: `[unique-headings-names]`, no colon and no argument. Effective only on a standalone
+ * comment line (the template-wide switch); inert after a key.
+ */
+export type FrontmatterUniqueNamesTag = Fm<{ readonly kind: "unique-names" }>;
+
 /** Tags that take effect on the field whose key line carries them. */
 export type FrontmatterFieldTag = FrontmatterPresenceTag | FrontmatterValueTag;
 
+/** Tags that are well-formed after a key but take no effect there (spec 2.5, 2.11). */
+export type FrontmatterInertTag = FrontmatterFilenameTag | FrontmatterUniqueNamesTag;
+
 /** Every well-formed frontmatter tag. */
-export type FrontmatterTag = FrontmatterFieldTag | FrontmatterFilenameTag;
+export type FrontmatterTag = FrontmatterFieldTag | FrontmatterInertTag;
 
 /** Type hints, spec 2.4 (frontmatter only). They choose a type and emit no code. */
 export type TypeHint =
@@ -97,16 +111,80 @@ type Body<T> = Located & { readonly region: "body" } & T;
 export type BodyPresenceTag =
   | Body<{
       readonly kind: "presence";
-      readonly mode: "required" | "optional" | "exist" | "template-only";
+      readonly mode: "required" | "optional" | "template-only";
     }>
   | Body<{ readonly kind: "presence"; readonly mode: "conditional"; readonly detail: string }>;
 
 /** spec 2.6 content tags */
 export type BodyContentTag =
-  | Body<{ readonly kind: "content"; readonly check: "non-empty" | "table" | "list" }>
+  | Body<{
+      readonly kind: "content";
+      /**
+       * `subheadings-disallow` is `[content:subheadings:disallow]` (spec 2.6, ADR 0009);
+       * `subheadings-no-extra` is `[content:subheadings:no-extra]` (spec 2.10).
+       */
+      readonly check:
+        "non-empty" | "table" | "list" | "subheadings-disallow" | "subheadings-no-extra";
+    }>
   | Body<{ readonly kind: "content-lines"; readonly bound: Bound; readonly value: number }>;
 
-export type BodyTag = BodyPresenceTag | BodyContentTag;
+/** Placeholder names of a heading pattern (spec 2.10), lowercase. */
+export type PatternPlaceholderName = "text" | "number" | "digits" | "semver" | "date" | "char";
+
+/**
+ * One piece of a heading pattern (spec 2.10 "PATTERN"), left to right. The
+ * list stops at the first invalid piece (the first problem from the left), so
+ * a pattern is valid when no piece is `invalid`.
+ */
+export type PatternPiece =
+  /** A longest run of literal characters, escapes and `{{` `}}` resolved. */
+  | { readonly kind: "literal"; readonly text: string }
+  | {
+      readonly kind: "placeholder";
+      readonly name: PatternPlaceholderName;
+      /** The format written (lowercase), null when the option is absent. */
+      readonly format: string | null;
+      /** The format argument (`padding:3` gives 3), null when none was written. */
+      readonly argument: number | null;
+      /** The placeholder as written, braces included (`{semver:format:core}`). */
+      readonly raw: string;
+    }
+  | {
+      readonly kind: "invalid";
+      /** The `MTL014` reason of spec 2.10, for example `unknown placeholder {version}`. */
+      readonly reason: string;
+      /**
+       * 0-based offset, in characters, of the problem inside the tag `raw`; the
+       * file column is the tag `position.column` plus the offset. 0 is the tag's `[`.
+       */
+      readonly offset: number;
+    };
+
+/** spec 2.10 heading pattern, repeat and order tags */
+export type BodyPatternTag =
+  | Body<{
+      readonly kind: "pattern";
+      /** The text between the quotes as written (escapes unresolved). */
+      readonly text: string;
+      readonly pieces: readonly PatternPiece[];
+    }>
+  | Body<{
+      readonly kind: "repeat";
+      /** `none` is `[repeat-rules:same-level]`, `min` and `max` carry `n` (1 or more). */
+      readonly bound: "none" | "min" | "max";
+      readonly n: number | null;
+    }>
+  | Body<{
+      readonly kind: "order";
+      readonly direction: "ascending" | "descending";
+      /** `text` orders by the whole heading text, the others by the first number, date or semver. */
+      readonly by: "text" | "first-number" | "first-date" | "first-semver";
+    }>;
+
+/** spec 2.11: `[unique-headings-names]`, the per-heading switch. */
+export type BodyUniqueNamesTag = Body<{ readonly kind: "unique-names" }>;
+
+export type BodyTag = BodyPresenceTag | BodyContentTag | BodyPatternTag | BodyUniqueNamesTag;
 
 // ---------------------------------------------------------------------------
 // Tag kinds at run time. `satisfies Record<kind, true>` makes the compiler
@@ -120,6 +198,8 @@ const FRONTMATTER_KIND_SET = {
   "format-constant": true,
   "format-case": true,
   "format-elements": true,
+  "format-shape": true,
+  "format-elements-shape": true,
   "format-scheme": true,
   "value-filename": true,
   count: true,
@@ -127,12 +207,17 @@ const FRONTMATTER_KIND_SET = {
   "order-ascending": true,
   "io-exists": true,
   "filename-case": true,
+  "unique-names": true,
 } satisfies Record<FrontmatterTag["kind"], true>;
 
 const BODY_KIND_SET = {
   presence: true,
   content: true,
   "content-lines": true,
+  pattern: true,
+  repeat: true,
+  order: true,
+  "unique-names": true,
 } satisfies Record<BodyTag["kind"], true>;
 
 export const FRONTMATTER_TAG_KINDS = Object.keys(FRONTMATTER_KIND_SET) as FrontmatterTag["kind"][];
@@ -182,10 +267,11 @@ export interface FrontmatterComment {
   /** Well-formed field tags in source order. */
   readonly tags: readonly FrontmatterFieldTag[];
   /**
-   * Well-formed `[filename:case:...]` tags written after a key. Inert by
-   * spec 2.5 (only a standalone comment line takes effect) and not findings.
+   * Well-formed `[filename:case:...]` and `[unique-headings-names]` tags written after a
+   * key. Inert by spec 2.5 and 2.11 (only a standalone comment line takes effect) and not
+   * findings.
    */
-  readonly inertTags: readonly FrontmatterFilenameTag[];
+  readonly inertTags: readonly FrontmatterInertTag[];
   readonly hints: readonly TypeHint[];
   readonly findings: readonly TagFinding[];
 }
@@ -206,6 +292,13 @@ export type FrontmatterLine =
       /** The directive, or null when its tag is malformed. */
       readonly tag: FrontmatterFilenameTag | null;
     }
+  | {
+      readonly kind: "unique-names";
+      readonly line: number;
+      readonly raw: string;
+      /** The tag, or null when it is malformed (`# [unique-headings-names:x]`, MTL012). */
+      readonly tag: FrontmatterUniqueNamesTag | null;
+    }
   | { readonly kind: "comment" | "blank" | "other"; readonly line: number; readonly raw: string };
 
 export interface Frontmatter {
@@ -218,6 +311,11 @@ export interface Frontmatter {
   readonly lines: readonly FrontmatterLine[];
   /** First well-formed standalone `# [filename:case:...]` (spec 2.5). */
   readonly filename: FrontmatterFilenameTag | null;
+  /**
+   * True when a well-formed standalone `# [unique-headings-names]` line is present (spec 2.11,
+   * the template-wide switch). Written on several lines, it counts once.
+   */
+  readonly uniqueHeadingNames: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -226,9 +324,8 @@ export interface Frontmatter {
 
 /**
  * An ATX heading. CONTRACT: every ATX level 1 to 6 is `kind: "heading"` in the
- * AST, but only levels 1 and 2 are sections and carry tags (spec 2.6).
- * Consumers building sections must filter `level <= 2`; H3 to H6 stay part of
- * the enclosing section body.
+ * AST and every level is a section that carries tags (spec 2.6, ADR 0009).
+ * No consumer filters on `level`.
  */
 export interface BodyHeading {
   readonly kind: "heading";
@@ -238,7 +335,7 @@ export interface BodyHeading {
   readonly level: number;
   /** Heading text, trailing HTML comment dropped, recognized tags removed, trimmed. */
   readonly text: string;
-  /** Peeled tags in source order (levels 1 and 2 only; always empty for H3 to H6). */
+  /** Peeled tags in source order (every level, H1 to H6). */
   readonly tags: readonly BodyTag[];
 }
 

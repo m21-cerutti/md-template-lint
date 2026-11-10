@@ -1,0 +1,30 @@
+md-template-lint 1.0.0
+Config: md-template-lint.yml
+========================
+
+Template: templates/notes.template.md
+Target:   notes/*.md (1 file(s))
+
+  ✗ notes/Bad_Name.md
+      error MTL101 Filename 'Bad_Name' does not match required case [filename:case:kebab-case]
+      error MTL201 Field 'owner': required but empty or missing
+      error MTL601 Heading: Missing required heading: 'Overview' (found later at line 9, out of order)
+      error MTL601 Heading: Missing required heading: 'Context'
+      error MTL603 Heading: Heading 'Guidance' is marked [presence:template-only] and must not appear in the linted file
+        11 | ## Guidance
+      warn  MTL616 Heading: 1 extra heading(s) at level H2 after the template headings: ['Overview']
+        9 | ## Overview
+
+========================
+Summary
+========================
+Total files:  1
+Passed:       0
+Failed:       1
+Warnings:     1 (in 1 file(s))
+Templates:    1 checked, 0 broken
+
+Failed files:
+  - notes/Bad_Name.md
+
+========================

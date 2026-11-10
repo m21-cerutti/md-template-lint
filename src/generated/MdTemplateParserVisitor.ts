@@ -7,6 +7,7 @@ import { FrontmatterContext } from "./MdTemplateParser.js";
 import { FmUnclosedContext } from "./MdTemplateParser.js";
 import { FmLineContext } from "./MdTemplateParser.js";
 import { FmFilenameLineContext } from "./MdTemplateParser.js";
+import { FmUniqueNamesLineContext } from "./MdTemplateParser.js";
 import { FmCommentLineContext } from "./MdTemplateParser.js";
 import { FmKeyLineContext } from "./MdTemplateParser.js";
 import { FmValueContext } from "./MdTemplateParser.js";
@@ -31,6 +32,8 @@ import { BodyHeadingTextEntryContext } from "./MdTemplateParser.js";
 import { TagShapedCandidateContext } from "./MdTemplateParser.js";
 import { TagClosedCandidateContext } from "./MdTemplateParser.js";
 import { TagUnclosedCandidateContext } from "./MdTemplateParser.js";
+import { TagPatternCandidateContext } from "./MdTemplateParser.js";
+import { TagNameContext } from "./MdTemplateParser.js";
 import { TagRuleMarkerContext } from "./MdTemplateParser.js";
 import { TagBareBracketContext } from "./MdTemplateParser.js";
 import { TagShapedBracketContext } from "./MdTemplateParser.js";
@@ -48,6 +51,7 @@ import { FmTagEntryContext } from "./MdTemplateParser.js";
 import { FmTagBodyContext } from "./MdTemplateParser.js";
 import { FmPresenceTagContext } from "./MdTemplateParser.js";
 import { FmFormatTagContext } from "./MdTemplateParser.js";
+import { FmShapeContext } from "./MdTemplateParser.js";
 import { FmCaseStyleContext } from "./MdTemplateParser.js";
 import { FmValueTagContext } from "./MdTemplateParser.js";
 import { FmCountTagContext } from "./MdTemplateParser.js";
@@ -58,10 +62,17 @@ import { FmOrderTagContext } from "./MdTemplateParser.js";
 import { FmIoTagContext } from "./MdTemplateParser.js";
 import { FmFilenameTagContext } from "./MdTemplateParser.js";
 import { FmConventionContext } from "./MdTemplateParser.js";
+import { FmUniqueNamesTagContext } from "./MdTemplateParser.js";
 import { BodyTagEntryContext } from "./MdTemplateParser.js";
 import { BodyTagBodyContext } from "./MdTemplateParser.js";
 import { BodyPresenceTagContext } from "./MdTemplateParser.js";
 import { BodyContentTagContext } from "./MdTemplateParser.js";
+import { BodyPatternTagContext } from "./MdTemplateParser.js";
+import { PatternPieceContext } from "./MdTemplateParser.js";
+import { BodyRepeatTagContext } from "./MdTemplateParser.js";
+import { RepeatCountContext } from "./MdTemplateParser.js";
+import { BodyOrderTagContext } from "./MdTemplateParser.js";
+import { BodyUniqueNamesTagContext } from "./MdTemplateParser.js";
 import { DirectiveScanEntryContext } from "./MdTemplateParser.js";
 import { DirectiveScanLineContext } from "./MdTemplateParser.js";
 import { DirectiveScanItemContext } from "./MdTemplateParser.js";
@@ -116,6 +127,12 @@ export class MdTemplateParserVisitor<Result> extends AbstractParseTreeVisitor<Re
      * @return the visitor result
      */
     visitFmFilenameLine?: (ctx: FmFilenameLineContext) => Result;
+    /**
+     * Visit a parse tree produced by `MdTemplateParser.fmUniqueNamesLine`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitFmUniqueNamesLine?: (ctx: FmUniqueNamesLineContext) => Result;
     /**
      * Visit a parse tree produced by `MdTemplateParser.fmCommentLine`.
      * @param ctx the parse tree
@@ -264,6 +281,19 @@ export class MdTemplateParserVisitor<Result> extends AbstractParseTreeVisitor<Re
      */
     visitTagUnclosedCandidate?: (ctx: TagUnclosedCandidateContext) => Result;
     /**
+     * Visit a parse tree produced by the `tagPatternCandidate`
+     * labeled alternative in `MdTemplateParser.tagCandidate`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitTagPatternCandidate?: (ctx: TagPatternCandidateContext) => Result;
+    /**
+     * Visit a parse tree produced by `MdTemplateParser.tagName`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitTagName?: (ctx: TagNameContext) => Result;
+    /**
      * Visit a parse tree produced by `MdTemplateParser.tagRuleMarker`.
      * @param ctx the parse tree
      * @return the visitor result
@@ -366,6 +396,12 @@ export class MdTemplateParserVisitor<Result> extends AbstractParseTreeVisitor<Re
      */
     visitFmFormatTag?: (ctx: FmFormatTagContext) => Result;
     /**
+     * Visit a parse tree produced by `MdTemplateParser.fmShape`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitFmShape?: (ctx: FmShapeContext) => Result;
+    /**
      * Visit a parse tree produced by `MdTemplateParser.fmCaseStyle`.
      * @param ctx the parse tree
      * @return the visitor result
@@ -426,6 +462,12 @@ export class MdTemplateParserVisitor<Result> extends AbstractParseTreeVisitor<Re
      */
     visitFmConvention?: (ctx: FmConventionContext) => Result;
     /**
+     * Visit a parse tree produced by `MdTemplateParser.fmUniqueNamesTag`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitFmUniqueNamesTag?: (ctx: FmUniqueNamesTagContext) => Result;
+    /**
      * Visit a parse tree produced by `MdTemplateParser.bodyTagEntry`.
      * @param ctx the parse tree
      * @return the visitor result
@@ -449,6 +491,42 @@ export class MdTemplateParserVisitor<Result> extends AbstractParseTreeVisitor<Re
      * @return the visitor result
      */
     visitBodyContentTag?: (ctx: BodyContentTagContext) => Result;
+    /**
+     * Visit a parse tree produced by `MdTemplateParser.bodyPatternTag`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitBodyPatternTag?: (ctx: BodyPatternTagContext) => Result;
+    /**
+     * Visit a parse tree produced by `MdTemplateParser.patternPiece`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitPatternPiece?: (ctx: PatternPieceContext) => Result;
+    /**
+     * Visit a parse tree produced by `MdTemplateParser.bodyRepeatTag`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitBodyRepeatTag?: (ctx: BodyRepeatTagContext) => Result;
+    /**
+     * Visit a parse tree produced by `MdTemplateParser.repeatCount`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitRepeatCount?: (ctx: RepeatCountContext) => Result;
+    /**
+     * Visit a parse tree produced by `MdTemplateParser.bodyOrderTag`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitBodyOrderTag?: (ctx: BodyOrderTagContext) => Result;
+    /**
+     * Visit a parse tree produced by `MdTemplateParser.bodyUniqueNamesTag`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitBodyUniqueNamesTag?: (ctx: BodyUniqueNamesTagContext) => Result;
     /**
      * Visit a parse tree produced by `MdTemplateParser.directiveScanEntry`.
      * @param ctx the parse tree

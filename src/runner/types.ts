@@ -1,9 +1,16 @@
 /**
- * Result of a lint run (docs/spec.md 7, 8). Plain data: reporters render it, the
- * CLI maps `exitCode` to the process exit code. Every path is relative to its
- * root (or to the config directory for templates) and uses `/` (D08, D15).
+ * Result of a lint run and of a `--verify` run (docs/spec.md 7, 8). Plain data:
+ * reporters render it, the CLI maps `exitCode` to the process exit code. Every path
+ * is relative to its root (or to the config directory for templates) and uses `/`
+ * (D08, D15).
+ *
+ * A template is `ok`, `broken` (MTL001 to MTL004: its files are not linted) or, when it
+ * parses but has template errors (MTL017, MTL018, MTL019, MTL030, spec 2.7), failed: not
+ * broken, and the run exits 1. In a lint run its report has status `fail` and its files are
+ * still linted; in `--verify` the errors are in `VerifyTemplate.errors` (JSON status `fail`).
+ * Template warnings (MTL010 to MTL016) never fail and are printed by `--verify` only.
  */
-import type { Diagnostic } from "../engine/model.js";
+import type { Diagnostic, HeadingLevel } from "../engine/model.js";
 import type { RunDiagnostic } from "../config/types.js";
 
 /**
@@ -52,7 +59,18 @@ export interface FileResult {
 
 export type TemplateReport =
   | { readonly path: string; readonly status: "ok" }
-  | { readonly path: string; readonly status: "broken"; readonly error: Diagnostic };
+  | { readonly path: string; readonly status: "broken"; readonly error: Diagnostic }
+  | {
+      readonly path: string;
+      /**
+       * Lint run only (spec 7.5, 8.2, 8.5, owner decision 2 of A72l): the template parses but
+       * has template errors (`MTL017`, `MTL018`, `MTL019`, `MTL030`). Not broken: the files
+       * of the pair are linted.
+       */
+      readonly status: "fail";
+      /** The template errors, by template line then code, each with its template line (EX8). */
+      readonly errors: readonly ReportedDiagnostic[];
+    };
 
 /** One pair on one root that has files to lint (spec 8.2 block). */
 export interface PairBlock {
@@ -96,7 +114,10 @@ export interface RunSummary {
   readonly exitCode: ExitCode;
 }
 
-/** Exit code (spec 7.5): 0 clean, 1 lint failure or broken template, 2 run error. */
+/**
+ * Exit code (spec 7.5): 0 clean, 1 lint failure, broken template or template error, 2 run
+ * error.
+ */
 export type ExitCode = 0 | 1 | 2;
 
 export interface RunResult {
@@ -107,6 +128,11 @@ export interface RunResult {
   readonly blocks: readonly Block[];
   /** Broken templates, once per distinct template, in order of appearance. */
   readonly brokenTemplates: readonly { readonly path: string; readonly message: string }[];
+  /**
+   * Templates with template errors (status `fail`), once per distinct template, by path, in
+   * order of appearance (spec 8.2 `Failed templates:`). Not a summary key (spec 8.5).
+   */
+  readonly failedTemplates: readonly string[];
   /** Error-severity `MTL9xx`. */
   readonly runErrors: readonly RunDiagnostic[];
   /** Warning-severity `MTL9xx` (`MTL913` with `onEmpty: warn`). */
@@ -125,9 +151,9 @@ export interface SchemaField {
   readonly rules: readonly string[];
 }
 
-/** One H1 or H2 section of a template schema. */
+/** One heading (any level, H1 to H6) of a template schema. */
 export interface SchemaHeading {
-  readonly level: 1 | 2;
+  readonly level: HeadingLevel;
   readonly text: string;
   /** Presence first, then content rules. */
   readonly rules: readonly string[];
@@ -137,6 +163,8 @@ export interface SchemaHeading {
 export interface TemplateSchema {
   /** Convention of `# [filename:case:...]`, null when the template declares none. */
   readonly filenameCase: string | null;
+  /** The template-wide `# [unique-headings-names]` switch (spec 2.11); false without it. */
+  readonly uniqueHeadingNames: boolean;
   readonly fields: readonly SchemaField[];
   readonly headings: readonly SchemaHeading[];
 }
@@ -145,10 +173,16 @@ export interface TemplateSchema {
 export interface VerifyTemplate {
   readonly template: TemplateReport;
   /**
-   * Tag warnings `MTL010` to `MTL013` of an ok template, in source order, each with its
+   * Tag warnings `MTL010` to `MTL016` of an ok template, in source order, each with its
    * template line (spec 8.3, C09); empty when broken.
    */
   readonly warnings: readonly ReportedDiagnostic[];
+  /**
+   * Template ERRORS (`MTL017`, `MTL018`, `MTL019`, `MTL030`, spec 2.7) of an ok template, in
+   * source order, each with its template line; empty when broken. At least one makes the
+   * template FAIL (spec 7.3, 8.3, 8.5) without making it broken.
+   */
+  readonly errors: readonly ReportedDiagnostic[];
   /** The schema of an ok template; null when broken. */
   readonly schema: TemplateSchema | null;
 }
@@ -157,6 +191,8 @@ export interface VerifySummary {
   /** Distinct templates read and parsed. */
   readonly templates: number;
   readonly broken: number;
+  /** Template errors of the run (spec 8.3 `Errors:`, 8.5 `summary.errors`), apart from warnings. */
+  readonly errors: number;
   readonly warnings: number;
   readonly runErrors: number;
   readonly exitCode: ExitCode;

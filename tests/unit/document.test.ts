@@ -1,6 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { isMap, isScalar, parseDocument as parseYaml } from "yaml";
-import { parseDocument, type BodyHeading, type FrontmatterLine } from "../../src/index.js";
+import { checkTarget, checkTemplate } from "../../src/engine/pipeline.js";
+import { createRegistry } from "../../src/engine/registry.js";
+import { createEnv, createMemoryIo } from "../../src/engine/rule.js";
+import {
+  loadDocument,
+  parseDocument,
+  type BodyHeading,
+  type DocumentModel,
+  type FrontmatterLine,
+} from "../../src/index.js";
 
 const doc = (...lines: string[]) => parseDocument(lines.join("\n"));
 const headings = (blocks: ReturnType<typeof parseDocument>["body"]): BodyHeading[] =>
@@ -165,10 +174,39 @@ describe("document structure", () => {
     expect(headings(result.body)).toMatchObject([{ text: "T", tags: [{ mode: "optional" }] }]);
   });
 
-  it("only peels tags of H1 and H2; H3 to H6 are headings without tags", () => {
-    const result = doc("### Deep [presence:optional]", "####### seven");
+  it("peels tags of every heading level H1 to H6 (spec 2.6, ADR 0009)", () => {
+    const result = doc(
+      "# One [presence:optional]",
+      "### Deep [presence:optional]",
+      "#### Four [content:list]",
+      "##### Five [presence:required] [content:non-empty]",
+      "###### Six [content:max-lines:3]",
+      "####### seven [presence:optional]",
+    );
     expect(result.body).toMatchObject([
-      { kind: "heading", level: 3, text: "Deep [presence:optional]", tags: [] },
+      { kind: "heading", level: 1, text: "One", tags: [{ kind: "presence", mode: "optional" }] },
+      {
+        kind: "heading",
+        level: 3,
+        text: "Deep",
+        tags: [{ region: "body", kind: "presence", mode: "optional", position: { line: 2 } }],
+      },
+      { kind: "heading", level: 4, text: "Four", tags: [{ kind: "content", check: "list" }] },
+      {
+        kind: "heading",
+        level: 5,
+        text: "Five",
+        tags: [
+          { kind: "presence", mode: "required" },
+          { kind: "content", check: "non-empty" },
+        ],
+      },
+      {
+        kind: "heading",
+        level: 6,
+        text: "Six",
+        tags: [{ kind: "content-lines", bound: "max", value: 3 }],
+      },
       { kind: "text" },
     ]);
     expect(result.findings).toEqual([]);
@@ -273,5 +311,105 @@ describe("document structure", () => {
     const result = doc("---", ...fm, "---", ...body);
     expect(Date.now() - started).toBeLessThan(5000);
     expect(headings(result.body)).toHaveLength(200);
+  });
+});
+
+/** The template-wide switch on the loaded document model (spec 2.11, ADR 0013). */
+describe("DocumentModel.uniqueHeadingNames (spec 2.11)", () => {
+  const load = (...lines: string[]): DocumentModel => {
+    const result = loadDocument(lines.join("\n"));
+    if (!result.ok) throw new Error(`load failed: ${result.failure.reason}`);
+    return result.model;
+  };
+
+  it("is true with a standalone `# [unique-headings-names]` frontmatter line", () => {
+    const model = load("---", "# [unique-headings-names]", 'title: "string"', "---", "# Guide");
+    expect(model.uniqueHeadingNames).toBe(true);
+    expect(model.findings).toEqual([]);
+  });
+
+  it("is true once when the line is written twice", () => {
+    const model = load(
+      "---",
+      "# [unique-headings-names]",
+      "a: x",
+      "# [UNIQUE-HEADINGS-NAMES]",
+      "---",
+    );
+    expect(model.uniqueHeadingNames).toBe(true);
+    expect(model.findings).toEqual([]);
+  });
+
+  it.each([
+    ["no tag at all", ["---", "a: x", "---", "# Guide"]],
+    ["the tag after a key", ["---", 'title: "x" # [unique-headings-names]', "---"]],
+    ["the tag on a mixed comment line", ["---", "# note [unique-headings-names]", "a: x", "---"]],
+    ["an argument on the line", ["---", "# [unique-headings-names:x]", "a: x", "---"]],
+    ["only per-heading tags", ["---", "a: x", "---", "## Usage [unique-headings-names]"]],
+  ])("is false with %s", (_label, lines) => {
+    expect(load(...lines).uniqueHeadingNames).toBe(false);
+  });
+
+  it.each([
+    ["a typo of the name", "# [unique-heading-names]"],
+    ["another word", "# [todo]"],
+  ])("is false, with no finding, for a standalone line holding %s", (_label, written) => {
+    const model = load("---", written, "a: x", "---");
+    expect(model.uniqueHeadingNames).toBe(false);
+    expect(model.findings).toEqual([]);
+    expect(model.document.frontmatter?.lines[0]).toEqual({
+      kind: "comment",
+      line: 2,
+      raw: written,
+    });
+  });
+
+  it("is true with a valid line next to a malformed one, which gives one MTL012 finding", () => {
+    const model = load(
+      "---",
+      "# [unique-headings-names:x]",
+      "# [unique-headings-names]",
+      "a: x",
+      "---",
+    );
+    expect(model.uniqueHeadingNames).toBe(true);
+    expect(model.findings).toMatchObject([
+      { reason: "malformed", tag: "[unique-headings-names:x]", position: { line: 2 } },
+    ]);
+    expect(model.findings).toHaveLength(1);
+  });
+
+  it("a TARGET heading carrying the tag has it peeled, so it matches the template heading", async () => {
+    // Spec 2.11 placement table, last row: tags in a target are inert; on a target heading the
+    // recognized tag is peeled from the text (2.6).
+    const registry = createRegistry();
+    const status = await checkTemplate(registry, ["---", "a: x", "---", "# Guide"].join("\n"));
+    if (status.status !== "ok") throw new Error("template broken");
+    const target = ["---", "a: x", "---", "# Guide [unique-headings-names]"].join("\n");
+    expect(load(...target.split("\n")).sections).toMatchObject([{ text: "Guide" }]);
+    const env = createEnv({ io: createMemoryIo([]) });
+    expect(await checkTarget(registry, status.model, target, "t.md", env)).toEqual([]);
+  });
+
+  it("`# [unique-headings-names]` in the template BODY is an empty-text H1, not the switch", async () => {
+    // Spec 2.11 placement table: an H1 with EMPTY text carrying the per-heading tag; a required
+    // exact-text heading no normal target has, so each lint run reports MTL601 for ''.
+    const template = ["---", "a: x", "---", "# [unique-headings-names]"].join("\n");
+    const model = load(...template.split("\n"));
+    expect(model.uniqueHeadingNames).toBe(false);
+    expect(model.findings).toEqual([]);
+    expect(model.sections).toMatchObject([
+      { level: 1, text: "", line: 4, tags: [{ region: "body", kind: "unique-names" }] },
+    ]);
+
+    const registry = createRegistry();
+    const status = await checkTemplate(registry, template);
+    if (status.status !== "ok") throw new Error("template broken");
+    const env = createEnv({ io: createMemoryIo([]) });
+    const target = ["---", "a: x", "---", "# Guide", "", "Text."].join("\n");
+    const found = await checkTarget(registry, status.model, target, "t.md", env);
+    expect(found.filter((d) => d.code === "MTL601").map((d) => d.message)).toEqual([
+      "Heading: Missing required heading: ''",
+    ]);
   });
 });

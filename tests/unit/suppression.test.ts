@@ -26,6 +26,8 @@ const registry = createRegistry();
 const missing = (key: string) => `MTL201 Field '${key}': required but empty or missing`;
 const unknown = (key: string) => `MTL202 Unknown key '${key}' not present in template`;
 const EMPTY = "MTL701 Section 'Overview': [content:non-empty] section body is empty";
+const PATH_MISSING =
+  "MTL804 Field 'logo': path 'docs/missing.png' does not exist (resolved: docs/missing.png)";
 const directive = (code: string, line: number, column: number, text: string) =>
   `${code} Directive on line ${line}: ${text} @${line}:${column}`;
 
@@ -90,8 +92,9 @@ const CASES: readonly Case[] = [
     ],
     suppressed: 0,
   },
-  // disable-file: anywhere, with or without anchor, by code only.
-  { name: "pass-disable-file-anywhere", reported: [], suppressed: 3 },
+  // disable-file: anywhere, with or without anchor, by code only. `## Appendix` is in the tail
+  // of the level-2 run: the warning MTL616 (spec 2.6 "Extra"), silenced too.
+  { name: "pass-disable-file-anywhere", reported: [], suppressed: 4 },
   {
     name: "fail-disable-file-matches-code-only",
     reported: [missing("status"), EMPTY],
@@ -190,6 +193,18 @@ const CASES: readonly Case[] = [
     ],
     suppressed: 1,
   },
+  // MTL804 is a warning from the io rule: the memory io of the tests has no file, so it fires.
+  {
+    name: "fail-io-path-missing-warning-reported",
+    reported: [PATH_MISSING],
+    suppressed: 0,
+  },
+  { name: "pass-io-path-missing-disable-line", reported: [], suppressed: 1 },
+  // DIR4: a directive comment stays part of the section body text. A body that holds only a
+  // directive comment is therefore NOT blank for MTL701: the comment is the whole body here,
+  // so `## Overview [content:non-empty]` passes although no prose follows the heading. The
+  // suppression-real-codes test strips the comment and sees MTL701 come back.
+  { name: "pass-directive-comment-only-body-counts-as-content", reported: [], suppressed: 1 },
   {
     // DIR4: after a target parse failure no directive is read (no warning, nothing covered).
     name: "fail-parse-failure-reads-no-directive",
@@ -258,7 +273,12 @@ describe("suppression by target directives (spec 4.4)", () => {
     const lines = read("pass-disable-file-anywhere", "target.md").split("\n");
     const bare = [...lines.slice(0, -2), ""].join("\n");
     const plain = await lintTarget(registry, status.model, bare, "t.md", createEnv());
-    expect(plain.diagnostics.map(shown)).toEqual([missing("status"), EMPTY, unknown("extra")]);
+    expect(plain.diagnostics.map(shown)).toEqual([
+      missing("status"),
+      EMPTY,
+      unknown("extra"),
+      "MTL616 Heading: 1 extra heading(s) at level H2 after the template headings: ['Appendix']",
+    ]);
     expect(plain.suppressed).toBe(0);
     expect(result.suppressed).toBe(plain.diagnostics.length);
   });

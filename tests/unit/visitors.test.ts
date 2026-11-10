@@ -54,7 +54,9 @@ family(
   [["body template-only", body, "[presence:template-only]", { mode: "template-only" }]],
   [
     ["bad argument", fm, "[presence:maybe]", "malformed"],
-    ["body-only mode in frontmatter", fm, "[presence:exist]", "wrong-region"],
+    ["body-only mode in frontmatter", fm, "[presence:template-only]", "wrong-region"],
+    ["dropped exist mode in frontmatter", fm, "[presence:exist]", "malformed"],
+    ["dropped exist mode on a heading", body, "[presence:exist]", "malformed"],
     ["empty argument", body, "[presence:]", "malformed"],
     ["unterminated", fm, "[presence:", "malformed"],
     ["space inside", fm, "[presence: optional]", "malformed"],
@@ -133,14 +135,70 @@ family(
 
 family(
   "order.ts (OrderVisitor)",
-  [["mixed case", fm, "[ORDER:Ascending]", { kind: "order-ascending" }]],
   [
-    ["descending", fm, "[order:descending]", "malformed"],
+    ["mixed case", fm, "[ORDER:Ascending]", { kind: "order-ascending" }],
+    // Spec 2.10: on a heading `[order:ascending]` is the body order tag (no longer MTL013).
+    [
+      "on a heading",
+      body,
+      "[order:ascending]",
+      { region: "body", kind: "order", direction: "ascending", by: "text" },
+    ],
+    [
+      "body first date, mixed case",
+      body,
+      "[Order:First:Date:Descending]",
+      { kind: "order", direction: "descending", by: "first-date" },
+    ],
+  ],
+  [
+    // Spec 2.10: `[order:descending]` in a frontmatter comment is misplaced (MTL013).
+    ["descending", fm, "[order:descending]", "wrong-region"],
+    ["first form in frontmatter", fm, "[order:first:number:ascending]", "wrong-region"],
     ["empty argument", fm, "[order:]", "malformed"],
     ["extra argument", fm, "[order:ascending:x]", "malformed"],
-    ["on a heading", body, "[order:ascending]", "wrong-region"],
     ["bare family word", fm, "[order]", "unknown"],
     ["unterminated", fm, "[order:ascending", "malformed"],
+    ["body unknown direction", body, "[order:sideways]", "malformed"],
+    ["body first without key", body, "[order:first:number]", "malformed"],
+  ],
+);
+
+family(
+  "pattern.ts (PatternVisitor)",
+  [
+    [
+      "placeholders and literals",
+      body,
+      '[pattern:"{semver} - {date}"]',
+      { region: "body", kind: "pattern", text: "{semver} - {date}" },
+    ],
+  ],
+  [
+    ["no quotes", body, "[pattern:Release]", "malformed"],
+    ["unclosed quote", body, '[pattern:"x]', "malformed"],
+    ["only quote escaped", body, '[pattern:"x\\"]', "malformed"],
+    ["text after the closing quote", body, '[pattern:"x"y]', "malformed"],
+    ["in frontmatter", fm, '[pattern:"{semver}"]', "wrong-region"],
+  ],
+);
+
+family(
+  "repeat.ts (RepeatVisitor)",
+  [
+    [
+      "minimum",
+      body,
+      "[repeat-rules:same-level:min:2]",
+      { region: "body", kind: "repeat", bound: "min", n: 2 },
+    ],
+  ],
+  [
+    ["zero minimum", body, "[repeat-rules:same-level:min:0]", "malformed"],
+    ["leading zero", body, "[repeat-rules:same-level:min:02]", "malformed"],
+    ["max without count", body, "[repeat-rules:same-level:max]", "malformed"],
+    ["other level", body, "[repeat-rules:other-level]", "malformed"],
+    ["in frontmatter", fm, "[repeat-rules:same-level]", "wrong-region"],
   ],
 );
 
@@ -179,14 +237,52 @@ family(
 
 family(
   "content.ts (ContentVisitor)",
-  [["max-lines", body, "[content:max-lines:2]", { kind: "content-lines", bound: "max", value: 2 }]],
   [
+    ["max-lines", body, "[content:max-lines:2]", { kind: "content-lines", bound: "max", value: 2 }],
+    [
+      "subheadings no-extra",
+      body,
+      "[content:subheadings:no-extra]",
+      { kind: "content", check: "subheadings-no-extra" },
+    ],
+  ],
+  [
+    ["no-extra plural", body, "[content:subheadings:no-extras]", "malformed"],
+    ["no-extra in frontmatter", fm, "[content:subheadings:no-extra]", "wrong-region"],
     ["non-numeric", body, "[content:max-lines:x]", "malformed"],
     ["plural", body, "[content:tables]", "malformed"],
     ["in frontmatter", fm, "[content:list]", "wrong-region"],
     ["empty number", body, "[content:min-lines:]", "malformed"],
     ["negative", body, "[content:min-lines:-1]", "malformed"],
     ["unterminated", body, "[content:non-empty", "malformed"],
+  ],
+);
+
+family(
+  "unique-names.ts (FrontmatterUniqueNamesVisitor, BodyUniqueNamesVisitor)",
+  [
+    ["on a heading", body, "[unique-headings-names]", { region: "body", kind: "unique-names" }],
+    ["upper case on a heading", body, "[UNIQUE-HEADINGS-NAMES]", { kind: "unique-names" }],
+    // Spec 2.11: after a key the tag is well-formed and inert (an inert tag, no finding).
+    [
+      "after a key, inert",
+      fm,
+      "[Unique-Headings-Names]",
+      { region: "frontmatter", kind: "unique-names" },
+    ],
+  ],
+  [
+    ["argument on a heading", body, "[unique-headings-names:x]", "malformed"],
+    ["empty argument on a heading", body, "[unique-headings-names:]", "malformed"],
+    ["argument after a key", fm, "[unique-headings-names:x]", "malformed"],
+    ["singular typo on a heading", body, "[unique-heading-names]", "unknown"],
+    ["singular typo after a key", fm, "[unique-heading-names]", "unknown"],
+    [
+      "tag not trailing",
+      (text) => parseHeadingSuffix(`H ${text} tail`),
+      "[unique-headings-names]",
+      "none",
+    ],
   ],
 );
 

@@ -1,0 +1,33 @@
+md-template-lint 9.9.9
+Config: (none)
+========================
+
+  PASS template.md
+Field    Type    Rules
+----------------------
+version  string  presence:required
+
+Headings:
+  # Changelog (presence:required)
+  ## Unreleased (presence:optional, order:ascending)
+  ## Release (presence:required, pattern:"[{version}] - {date}", repeat-rules:same-level)
+  ### Added (presence:optional, content:list)
+
+Invalid patterns:
+  - Heading 'Release': invalid pattern [pattern:"[{version}] - {date}"] (unknown placeholder {version}) (line 9, column 23)
+      9 | ## Release [pattern:"[{version}] - {date}"] [repeat-rules:same-level]
+        |                       ^
+
+Conflicting tags:
+  - Heading 'Unreleased': tag [order:ascending] has no effect (the heading has no [pattern:...]) (line 7, column 35)
+      7 | ## Unreleased [presence:optional] [order:ascending]
+        |                                   ^
+
+========================
+Summary
+========================
+Templates:    1 checked, 0 broken
+Warnings:     2
+
+All templates passed!
+========================

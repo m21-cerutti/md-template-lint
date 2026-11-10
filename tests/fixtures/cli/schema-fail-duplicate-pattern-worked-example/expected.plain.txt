@@ -1,0 +1,26 @@
+md-template-lint 9.9.9
+Config: (none)
+========================
+
+  FAIL template.md
+Field  Type    Rules
+--------------------
+title  string  presence:required
+
+Headings:
+  ##  (presence:required, pattern:"{semver}", repeat-rules:same-level)
+  ## Hotfix (presence:optional, pattern:"{semver}")
+
+Duplicate patterns:
+  - Heading 'Hotfix': same pattern [pattern:"{semver}"] as the previous heading '' (line 5) (line 7, column 11)
+      7 | ## Hotfix [pattern:"{semver}"] [presence:optional]
+        |           ^
+
+========================
+Summary
+========================
+Templates:    1 checked, 0 broken
+Errors:       1
+Warnings:     0
+
+========================

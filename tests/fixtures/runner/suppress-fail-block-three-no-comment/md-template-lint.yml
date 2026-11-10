@@ -1,0 +1,5 @@
+# Baseline C of the block group: MTL202, MTL508, MTL202 on three consecutive key lines, no directive.
+pairs:
+  - name: notes
+    template: templates/notes.template.md
+    include: notes/*.md

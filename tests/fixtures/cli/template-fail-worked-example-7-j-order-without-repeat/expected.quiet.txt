@@ -1,0 +1,4 @@
+  ✗ templates/epics.template.md (template)
+      error MTL030 Heading 'Epic A - Title': tag [order:ascending] needs [repeat-rules:same-level] (an order compares the repeats of one heading)
+        5 | ## Epic A - Title [pattern:"Epic {char} - {text}"] [order:ascending] [content:table]
+          |                                                    ^

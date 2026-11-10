@@ -48,6 +48,10 @@ function pairJson(block: PairBlock): Record<string, unknown> {
     status: block.template.status,
   };
   if (block.template.status === "broken") template["error"] = diagnosticJson(block.template.error);
+  // Spec 8.5 (A72l): a lint template with template errors carries them, with `sourceLine`.
+  if (block.template.status === "fail") {
+    template["diagnostics"] = block.template.errors.map(diagnosticJson);
+  }
   return {
     root: cleanText(block.root),
     pair: cleanText(block.pair),

@@ -114,7 +114,8 @@ const CASES: readonly TestCase[] = [
       message("date_list", "['4']", "5"),
       message("string_typed_scalar_field", "['2']", "5"),
     ],
-    warnings: [],
+    // Spec 2.9: `date_list` is a list-of-date field without [format:elements:date].
+    warnings: ["MTL016"],
   },
   // Legacy takes the leftmost tag: [min:5] wins over a later [min:1] and
   // [min:1] wins over a later [min:5].

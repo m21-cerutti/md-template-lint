@@ -1,0 +1,5 @@
+# Baseline B of the block group: two different error codes (MTL302, MTL508) side by side, no directive.
+pairs:
+  - name: notes
+    template: templates/notes.template.md
+    include: notes/*.md

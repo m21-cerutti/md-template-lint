@@ -1,0 +1,25 @@
+[
+  {
+    "path": "template.md",
+    "status": "fail",
+    "filenameCase": null,
+    "uniqueHeadingNames": false,
+    "fields": [{ "name": "title", "type": "string", "rules": ["presence:required"] }],
+    "headings": [
+      { "level": 1, "text": "Guide", "rules": ["presence:required"] },
+      { "level": 2, "text": "Setup", "rules": ["presence:required"] },
+      { "level": 4, "text": "Details", "rules": ["presence:required"] },
+      { "level": 3, "text": "Steps", "rules": ["presence:required"] }
+    ],
+    "diagnostics": [
+      {
+        "code": "MTL019",
+        "severity": "error",
+        "message": "Heading 'Steps' (H3): comes after the deeper child 'Details' (H4, line 9) under 'Setup'",
+        "line": 11,
+        "column": 1,
+        "sourceLine": "### Steps"
+      }
+    ]
+  }
+]

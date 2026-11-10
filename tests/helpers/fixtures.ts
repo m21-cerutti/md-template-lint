@@ -31,7 +31,18 @@ export const readFixture = (area: FixtureArea, name: string, file: string): stri
  * and never noticed). `config` and `runner` keep their open list.
  */
 export const KNOWN_PREFIXES: Partial<Record<FixtureArea, readonly string[]>> = {
-  cli: ["exit-", "list-", "large-", "verify-", "schema-", "format-", "wiring-", "usage-"],
+  cli: [
+    "exit-",
+    "list-",
+    "large-",
+    "verify-",
+    "schema-",
+    "format-",
+    "wiring-",
+    "usage-",
+    "suppress-",
+    "template-",
+  ],
 };
 
 /** The names that start with none of `prefixes`, sorted. */

@@ -1,6 +1,6 @@
 ---
 title: AI Capabilities  # [presence:required]
-last_updated: 2026-09-06  # [presence:required] type=date
+last_updated: 2026-09-06  # [presence:required] [format:date] type=date
 ---
 
 # AI Capabilities

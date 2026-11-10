@@ -21,8 +21,11 @@
  *   FENCE_TILDE     inside a ~~~ fence (no heading, no tag)
  *   TAG_TEXT        text of an inline comment or of a heading (stage 1)
  *   TAG_STRICT      one known-family bracket, re-lexed strictly (stage 2)
+ *   TAG_QUOTED      stage 1, inside the quotes of `[pattern:"..."` (a `]` or an
+ *                   escaped quote does not end the bracket)
  *   TAG_FREE        free text argument (`constant:`, `conditional:`)
  *   TAG_SCHEME      scheme list argument (`scheme:`)
+ *   TAG_PATTERN     stage 2, the text of a heading pattern after `pattern:"`
  *   DIRECTIVE_SCAN  one target line: comment markers, backtick runs (spec 4.4)
  *   DIRECTIVE       content of one comment: disable directive words (spec 4.4)
  *
@@ -56,7 +59,8 @@ tokens {
     H_OPEN, FENCE_OPEN, FENCE_NL, FENCE_LINE, FENCE_CLOSE,
     BODY_TABLE_ROW, BODY_LIST_ITEM, BODY_HTML_COMMENT, BODY_BLANK,
     BODY_TEXT_START, BODY_TEXT_REST,
-    FM_QUOTED, FM_PLAIN_TEXT, FM_FLOW_OPEN, FM_FLOW_CLOSE, FM_COMMENT_HASH
+    FM_QUOTED, FM_PLAIN_TEXT, FM_FLOW_OPEN, FM_FLOW_CLOSE, FM_COMMENT_HASH,
+    QUOTED, QUOTED_END
 }
 
 @members {
@@ -211,6 +215,10 @@ FTL_LINE : ~'\n'+ -> type(FENCE_LINE) ;
 mode TAG_TEXT;
 
 T_NL : '\n' -> type(NL), popMode ;
+// `[pattern:"` opens a quoted argument (spec 2.10): the longer match wins over
+// T_LBRACK, and the quoted text is lexed in TAG_QUOTED so that a `]` or an
+// escaped `\"` inside the quotes does not end the bracket.
+PATTERN_OPEN : '[' 'pattern' ':' '"' -> pushMode(TAG_QUOTED) ;
 T_LBRACK : '[' -> type(LBRACK) ;
 T_RBRACK : ']' -> type(RBRACK) ;
 T_COLON : ':' -> type(COLON) ;
@@ -237,6 +245,17 @@ WORD : [a-z0-9_]* '_' [a-z0-9_]* ;
 UWORD : F_WORD_CHAR+ ;
 T_WS : [ \t\f\u000B]+ -> type(WS) ;
 T_OTHER : . -> type(OTHER) ;
+
+// Stage 1, quoted argument of `[pattern:"`: runs to the first unescaped `"`.
+// A backslash pairs with the next character, so `\"` never closes the quote.
+// An unclosed quote ends at the line end (the bracket is then malformed in
+// stage 2); the line end pops both this mode and TAG_TEXT, as T_NL does.
+mode TAG_QUOTED;
+
+Q_TEXT : (~["\\\n] | '\\' ~'\n')+ -> type(QUOTED) ;
+Q_STRAY : '\\' -> type(QUOTED) ;
+Q_CLOSE : '"' -> type(QUOTED_END), popMode ;
+Q_NL : '\n' -> type(NL), popMode, popMode ;
 
 // ===========================================================================
 // Stage 2: one bracket of a known family, lexed strictly. Tag keywords live
@@ -270,16 +289,22 @@ RANGE    : 'range' ;
 ORDER    : 'order' ;
 IO       : 'io' ;
 CONTENT  : 'content' ;
+PATTERN      : 'pattern' ;
+REPEAT_RULES : 'repeat-rules' ;
+// Colon-less, argument-less tag `[unique-headings-names]` (spec 2.11). Stage 1 reads it as a bare
+// bracket; the stage-2 parse of that bracket (bodyTagEntry / fmTagEntry) makes it a known tag.
+UNIQUE_HEADINGS_NAMES : 'unique-headings-names' ;
 
 // Arguments.
 REQUIRED      : 'required' ;
 OPTIONAL      : 'optional' ;
-EXIST         : 'exist' ;
 TEMPLATE_ONLY : 'template-only' ;
 ELEMENTS      : 'elements' ;
 SNAKE_CASE    : 'snake_case' ;
 KEBAB_CASE    : 'kebab-case' ;
 FILENAME      : 'filename' ;
+SEMVER        : 'semver' ;
+DATE          : 'date' ;
 MIN           : 'min' ;
 MAX           : 'max' ;
 ASCENDING     : 'ascending' ;
@@ -289,11 +314,24 @@ TABLE         : 'table' ;
 LIST          : 'list' ;
 MIN_LINES     : 'min-lines' ;
 MAX_LINES     : 'max-lines' ;
+SUBHEADINGS   : 'subheadings' ;
+DISALLOW      : 'disallow' ;
+NO_EXTRA      : 'no-extra' ;
+SAME_LEVEL    : 'same-level' ;
+DESCENDING    : 'descending' ;
+FIRST         : 'first' ;
+// The word `number` of `[order:first:number:...]` (NUMBER is the digits token).
+NUMBER_WORD   : 'number' ;
 
 // Keywords followed by a free argument switch mode on their colon.
 CONDITIONAL_ARG : 'conditional:' -> pushMode(TAG_FREE) ;
 CONSTANT_ARG    : 'constant:' -> pushMode(TAG_FREE) ;
 SCHEME_ARG      : 'scheme:' -> pushMode(TAG_SCHEME) ;
+
+// The opening quote of a heading pattern (`pattern:"`): the quoted text is lexed
+// in TAG_PATTERN up to the closing quote. A quote anywhere else is a plain
+// stray character in the parser, so only `pattern:` can use it.
+PATTERN_QUOTE : '"' -> pushMode(TAG_PATTERN) ;
 
 S_NUMBER : [0-9]+ -> type(NUMBER) ;
 S_WORD : [a-z0-9_]+ -> type(ALNUM) ;
@@ -312,6 +350,25 @@ mode TAG_SCHEME;
 SCHEME_TEXT : [a-z0-9+.,-]+ ;
 SCHEME_END : ']' -> type(RBRACK), popMode ;
 SCHEME_OTHER : . -> type(OTHER) ;
+
+// Text of a heading pattern (spec 2.10), after `pattern:"` up to the first
+// unescaped `"`. The lexer only cuts the text; the pieces are checked when the
+// AST is built (src/tags/visitors/pattern.ts). Left to right, longest match:
+// `{{` and `}}` are literal braces, `{...}` is a placeholder candidate (no
+// brace inside, an escape pair allowed), a lone brace is kept for the
+// unmatched-brace reason, a backslash pairs with the next character.
+mode TAG_PATTERN;
+
+PAT_LBRACE2 : '{{' ;
+PAT_RBRACE2 : '}}' ;
+PAT_PLACEHOLDER : '{' (~[{}"\\\n] | '\\' ~'\n')* '}' ;
+PAT_LBRACE : '{' ;
+PAT_RBRACE : '}' ;
+PAT_ESCAPE : '\\' ~'\n' ;
+PAT_TEXT : ~["\\{}\n]+ ;
+PAT_END : '"' -> popMode ;
+// A lone backslash or a line end: no parser rule accepts it (malformed tag).
+PAT_STRAY : . ;
 
 // ===========================================================================
 // Disable directives of a target (spec 4.4, DIR2 to DIR4). Two stage-2 modes,

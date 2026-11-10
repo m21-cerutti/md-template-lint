@@ -1,9 +1,9 @@
 ---
 title: Technical specification  # [presence:required]
-last_updated: 2026-10-29  # [presence:required] type=date
+last_updated: 2026-10-29  # [presence:required] [format:date] type=date
 ---
 
-# Specification [presence:exist]
+# Specification title [pattern:"{text}"]
 
 The contract of the system: what it must do, exactly. When this file and the code
 disagree, one of them is a bug.

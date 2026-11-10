@@ -31,7 +31,7 @@ interface Case {
 
 /** Spec 4.4 worked examples 1 to 5; at least 1 passing case and 1 failing case. */
 const CASES: readonly Case[] = [
-  { name: "fail-line-directives", target: "notes/notes.md", suppressed: 3, exitCode: 1 },
+  { name: "fail-line-directives", target: "notes/notes.md", suppressed: 4, exitCode: 1 },
   { name: "fail-begin-end-block", target: "notes/legacy.md", suppressed: 3, exitCode: 1 },
   {
     name: "pass-document-covers-unanchored",
@@ -53,6 +53,75 @@ const CASES: readonly Case[] = [
   },
   // DIR9: the sum over pair-file lints: a.md (1) in two pairs plus b.md (2).
   { name: "pass-sum-over-pair-file-lints", target: "notes/a.md", suppressed: 4, exitCode: 0 },
+  // Real codes (see tests/unit/suppression-real-codes.test.ts): the template makes 10 findings.
+  // One baseline without directive (exit 1), then one passing case per suppression type.
+  { name: "fail-real-codes-no-directive", target: "notes/real.md", suppressed: 0, exitCode: 1 },
+  { name: "pass-real-disable-line", target: "notes/real.md", suppressed: 10, exitCode: 0 },
+  { name: "pass-real-disable-next-line", target: "notes/real.md", suppressed: 10, exitCode: 0 },
+  { name: "pass-real-disable-open", target: "notes/real.md", suppressed: 10, exitCode: 0 },
+  { name: "pass-real-begin-end-block", target: "notes/real.md", suppressed: 10, exitCode: 0 },
+  { name: "pass-real-disable-file-html", target: "notes/real.md", suppressed: 10, exitCode: 0 },
+  {
+    name: "pass-real-disable-file-frontmatter",
+    target: "notes/real.md",
+    suppressed: 10,
+    exitCode: 0,
+  },
+  // Codes without anchor: line and range verbs do not cover them, disable-file does (DIR7).
+  {
+    name: "fail-unanchored-no-directive",
+    target: "notes/Bad_Name.md",
+    suppressed: 0,
+    exitCode: 1,
+  },
+  {
+    name: "fail-unanchored-line-verbs",
+    target: "notes/Bad_Name.md",
+    suppressed: 1,
+    exitCode: 1,
+  },
+  {
+    name: "pass-unanchored-disable-file",
+    target: "notes/Bad_Name.md",
+    suppressed: 5,
+    exitCode: 0,
+  },
+  // Blocks over several findings. A: two MTL202 + two MTL701 (same codes, repeated).
+  {
+    name: "fail-block-same-code-no-comment",
+    target: "notes/block.md",
+    suppressed: 0,
+    exitCode: 1,
+  },
+  {
+    name: "pass-block-same-code-begin-end",
+    target: "notes/block.md",
+    suppressed: 4,
+    exitCode: 0,
+  },
+  {
+    name: "pass-block-same-code-open-disable",
+    target: "notes/block.md",
+    suppressed: 4,
+    exitCode: 0,
+  },
+  // B: MTL302 + MTL508 side by side: one block for both codes; a block for one code only.
+  { name: "fail-block-two-codes-no-comment", target: "notes/block.md", suppressed: 0, exitCode: 1 },
+  { name: "pass-block-two-codes-begin-end", target: "notes/block.md", suppressed: 2, exitCode: 0 },
+  {
+    name: "fail-block-one-of-two-codes-suppressed",
+    target: "notes/block.md",
+    suppressed: 1,
+    exitCode: 1,
+  },
+  // C: MTL202, MTL508, MTL202 on consecutive lines; the block lists MTL202 only.
+  { name: "fail-block-three-no-comment", target: "notes/block.md", suppressed: 0, exitCode: 1 },
+  {
+    name: "fail-block-lists-one-code-of-two",
+    target: "notes/block.md",
+    suppressed: 2,
+    exitCode: 1,
+  },
 ];
 
 const textOf = (name: string, file: string): string =>
@@ -146,9 +215,11 @@ describe("runner with disable directives: variants of the worked examples (engin
       "# md-template-lint disable-line MTL202",
     );
     const result = await variant("fail-line-directives", text);
+    // `reviewer` is a template field here: its two real findings come back, as errors.
     expect(result.diagnostics.map(shown)).toEqual([
+      "MTL301 Field 'reviewer': expected constant value 'alice', got 'Bob'",
+      "MTL302 Field 'reviewer': value 'Bob' does not match required format [snake_case]",
       DETAILS_EMPTY,
-      unknown("reviewer"),
       unknown("draft"),
     ]);
     expect(result.suppressed).toBe(2);

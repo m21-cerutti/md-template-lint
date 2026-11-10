@@ -1,0 +1,5 @@
+# Baseline project of suppress-fail-real-codes-no-directive with one disable-file HTML comment.
+pairs:
+  - name: notes
+    template: templates/notes.template.md
+    include: notes/*.md

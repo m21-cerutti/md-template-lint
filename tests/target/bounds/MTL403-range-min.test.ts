@@ -118,7 +118,8 @@ const CASES: readonly TestCase[] = [
       message("float_typed", "3.5", "5"),
       message("date_typed", "4", "5"),
     ],
-    warnings: [],
+    // Spec 2.9: `date_typed` is a date field without [format:date].
+    warnings: ["MTL016"],
   },
   // Legacy takes the leftmost tag: [min:5] wins over a later [min:1] and
   // [min:1] wins over a later [min:5].

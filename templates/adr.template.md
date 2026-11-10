@@ -3,12 +3,12 @@
 id: 0000-record-template  # [presence:required] [value:filename] [format:kebab-case]
 title: Short imperative statement of the decision  # [presence:required]
 status: proposed | accepted | rejected | superseded | deprecated  # [presence:required]
-date: 2026-10-29  # [presence:required] type=date
+date: 2026-10-29  # [presence:required] [format:date] type=date
 deciders: [Name]  # [presence:optional]
 supersedes: 0000-other-record  # [presence:optional]
 ---
 
-# ADR [presence:exist]
+# ADR title [pattern:"{text}"]
 
 One-sentence restatement of the decision, readable on its own.
 

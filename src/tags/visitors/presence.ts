@@ -20,7 +20,7 @@ export class FrontmatterPresenceVisitor extends FamilyVisitor<FrontmatterTagData
   };
 }
 
-/** `[presence:required|optional|exist|template-only|conditional:<text>]` on a heading. */
+/** `[presence:required|optional|template-only|conditional:<text>]` on a heading. */
 export class BodyPresenceVisitor extends FamilyVisitor<BodyTagData> {
   override visitBodyPresenceTag = (ctx: BodyPresenceTagContext): BodyTagData => {
     const free = ctx.tagFreeText();
@@ -29,7 +29,6 @@ export class BodyPresenceVisitor extends FamilyVisitor<BodyTagData> {
     }
     if (ctx.REQUIRED() !== null) return { kind: "presence", mode: "required" };
     if (ctx.OPTIONAL() !== null) return { kind: "presence", mode: "optional" };
-    if (ctx.EXIST() !== null) return { kind: "presence", mode: "exist" };
     return { kind: "presence", mode: "template-only" };
   };
 }

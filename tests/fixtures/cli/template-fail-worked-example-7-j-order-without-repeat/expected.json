@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "tool": "md-template-lint",
+  "version": "9.9.9",
+  "mode": "lint",
+  "config": "md-template-lint.yml",
+  "results": [
+    {
+      "root": "project",
+      "pair": "epics",
+      "template": {
+        "path": "templates/epics.template.md",
+        "status": "fail",
+        "diagnostics": [
+          {
+            "code": "MTL030",
+            "severity": "error",
+            "message": "Heading 'Epic A - Title': tag [order:ascending] needs [repeat-rules:same-level] (an order compares the repeats of one heading)",
+            "line": 5,
+            "column": 52,
+            "sourceLine": "## Epic A - Title [pattern:\"Epic {char} - {text}\"] [order:ascending] [content:table]"
+          }
+        ]
+      },
+      "files": [
+        {
+          "path": "notes/a.md",
+          "status": "pass",
+          "errors": [],
+          "warnings": [
+            {
+              "code": "MTL616",
+              "severity": "warning",
+              "message": "Heading: 1 extra heading(s) at level H2 after the template headings: ['Epic B - Release']",
+              "heading": "Epic B - Release"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "runErrors": [],
+  "runWarnings": [],
+  "unmatched": [],
+  "summary": {
+    "files": 1,
+    "passed": 1,
+    "failed": 0,
+    "warnings": 1,
+    "filesWithWarnings": 1,
+    "suppressed": 0,
+    "templatesChecked": 1,
+    "templatesBroken": 0,
+    "runErrors": 0,
+    "runWarnings": 0,
+    "exitCode": 1
+  }
+}

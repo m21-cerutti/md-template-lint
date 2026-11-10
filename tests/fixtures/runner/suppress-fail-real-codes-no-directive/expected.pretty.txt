@@ -1,0 +1,42 @@
+md-template-lint 1.0.0
+Config: md-template-lint.yml
+========================
+
+Template: templates/notes.template.md
+Target:   notes/*.md (1 file(s))
+
+  ✗ notes/real.md
+      error MTL201 Field 'title': required but empty or missing
+        2 | title:
+      error MTL302 Field 'slug': value 'Not_Kebab' does not match required format [kebab-case]
+        3 | slug: Not_Kebab
+      error MTL508 Field 'port' (type=int): value is not a valid integer
+        4 | port: abc
+      error MTL517 Field 'status' (type=enum): value 'other' is not one of the allowed options ['draft', 'done']
+        5 | status: other
+      error MTL401 Field 'tags': list has 1 item(s), minimum is 2
+        6 | tags: [a]
+      error MTL404 Field 'level': value 50 is above range:max 10
+        7 | level: 50
+      error MTL407 Field 'dates': dates are not in ascending order ('2026-02-01' comes before '2026-01-01') [order:ascending]
+        8 | dates: ["2026-02-01", "2026-01-01"]
+      error MTL301 Field 'kind': expected constant value 'fixed', got 'other'
+        9 | kind: other
+      error MTL701 Section 'Overview': [content:non-empty] section body is empty
+        15 | ## Overview
+      warn  MTL202 Unknown key 'extra' not present in template
+        10 | extra: x
+
+========================
+Summary
+========================
+Total files:  1
+Passed:       0
+Failed:       1
+Warnings:     1 (in 1 file(s))
+Templates:    1 checked, 0 broken
+
+Failed files:
+  - notes/real.md
+
+========================

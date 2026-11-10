@@ -1,0 +1,7 @@
+# Same project as suppress-fail-unanchored-no-directive with disable-file: the three codes without
+# anchor (four findings, MTL601 twice) and the anchored MTL603 are all suppressed, in both
+# carriers (five suppressed).
+pairs:
+  - name: notes
+    template: templates/notes.template.md
+    include: notes/*.md

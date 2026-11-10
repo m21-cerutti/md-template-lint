@@ -1,0 +1,27 @@
+[
+  {
+    "path": "template.md",
+    "status": "fail",
+    "filenameCase": null,
+    "uniqueHeadingNames": false,
+    "fields": [{ "name": "title", "type": "string", "rules": ["presence:required"] }],
+    "headings": [
+      {
+        "level": 2,
+        "text": "",
+        "rules": ["presence:required", "pattern:\"{semver}\"", "repeat-rules:same-level"]
+      },
+      { "level": 2, "text": "Hotfix", "rules": ["presence:optional", "pattern:\"{semver}\""] }
+    ],
+    "diagnostics": [
+      {
+        "code": "MTL017",
+        "severity": "error",
+        "message": "Heading 'Hotfix': same pattern [pattern:\"{semver}\"] as the previous heading '' (line 5)",
+        "line": 7,
+        "column": 11,
+        "sourceLine": "## Hotfix [pattern:\"{semver}\"] [presence:optional]"
+      }
+    ]
+  }
+]

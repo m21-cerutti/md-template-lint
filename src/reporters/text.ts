@@ -7,7 +7,13 @@
  */
 import type { Diagnostic } from "../engine/model.js";
 import type { RunDiagnostic } from "../config/types.js";
-import type { FileResult, PairBlock, RunResult } from "../runner/types.js";
+import type {
+  FileResult,
+  PairBlock,
+  ReportedDiagnostic,
+  RunResult,
+  TemplateReport,
+} from "../runner/types.js";
 import { excerptRows } from "./excerpt.js";
 import { cleanText } from "./sanitize.js";
 
@@ -24,7 +30,7 @@ export interface TextOptions {
   readonly version: string;
   /** ANSI color (`pretty` only; the caller decides from the terminal and `NO_COLOR`). */
   readonly color?: boolean;
-  /** Only failing files, broken templates and run errors (spec 8.2). */
+  /** Only failing files, template entries, broken templates and run errors (spec 8.2). */
   readonly quiet?: boolean;
 }
 
@@ -49,6 +55,8 @@ const ANSI = {
 type Tone = keyof typeof ANSI | "none";
 
 const RULE = "========================";
+
+type FailedTemplate = Extract<TemplateReport, { status: "fail" }>;
 
 function paint(tone: Tone, text: string, color: boolean): string {
   return color && tone !== "none" ? `${ESC}[${ANSI[tone]}m${text}${ESC}[0m` : text;
@@ -82,19 +90,28 @@ function render(
   };
   const { summary } = result;
 
+  const diagnosticLines = (diagnostics: readonly ReportedDiagnostic[]): void => {
+    for (const diagnostic of diagnostics) {
+      line(diagnostic.severity === "error" ? "red" : "yellow", diagnosticLine(diagnostic));
+      // Spec 8.2 EX1 to EX7: the source line under the diagnostic that has one.
+      if (diagnostic.excerpt === undefined) continue;
+      for (const row of excerptRows(diagnostic.excerpt, EXCERPT_INDENT)) line("gray", row);
+    }
+  };
+
   const fileLines = (file: FileResult): void => {
     if (quiet && file.status === "pass") return;
     line(
       file.status === "pass" ? "green" : "red",
       `  ${file.status === "pass" ? glyphs.pass : glyphs.fail} ${cleanText(file.path)}`,
     );
-    const shown = quiet ? file.errors : [...file.errors, ...file.warnings];
-    for (const diagnostic of shown) {
-      line(diagnostic.severity === "error" ? "red" : "yellow", diagnosticLine(diagnostic));
-      // Spec 8.2 EX1 to EX7: the source line under the diagnostic that has one.
-      if (diagnostic.excerpt === undefined) continue;
-      for (const row of excerptRows(diagnostic.excerpt, EXCERPT_INDENT)) line("gray", row);
-    }
+    diagnosticLines(quiet ? file.errors : [...file.errors, ...file.warnings]);
+  };
+
+  /** The template entry of a template with template errors (spec 8.2, A72l). */
+  const templateLines = (template: FailedTemplate): void => {
+    line("red", `  ${glyphs.fail} ${cleanText(template.path)} (template)`);
+    diagnosticLines(template.errors);
   };
 
   const pairLines = (block: PairBlock): void => {
@@ -109,7 +126,11 @@ function render(
     if (block.template.status === "broken") {
       const message = cleanText(block.template.error.message);
       line("magenta", `  TEMPLATE ERROR: ${cleanText(block.template.path)} - ${message}`);
-    } else for (const file of block.files) fileLines(file);
+    } else {
+      // Spec 8.2: a template with template errors, before the files, also with --quiet.
+      if (block.template.status === "fail") templateLines(block.template);
+      for (const file of block.files) fileLines(file);
+    }
     if (!quiet) out.push("");
   };
 
@@ -153,6 +174,12 @@ function render(
       }
       out.push("");
     }
+    // Spec 8.2 (A72l): after `Broken templates:`, before `Failed files:`.
+    if (result.failedTemplates.length > 0) {
+      line("red", "Failed templates:");
+      for (const path of result.failedTemplates) line("red", `  - ${cleanText(path)}`);
+      out.push("");
+    }
     const failed = result.blocks.flatMap((block) =>
       block.kind === "pair"
         ? block.files
@@ -167,7 +194,11 @@ function render(
       for (const path of failed) line("red", `  - ${cleanText(path)}`);
       out.push("");
     }
-    const clean = summary.failed === 0 && summary.templatesBroken === 0 && summary.runErrors === 0;
+    const clean =
+      summary.failed === 0 &&
+      summary.templatesBroken === 0 &&
+      result.failedTemplates.length === 0 &&
+      summary.runErrors === 0;
     if (clean && summary.files > 0) line("green", "All files passed!");
     else if (clean) line("gray", "No files linted.");
     line("cyan", RULE);

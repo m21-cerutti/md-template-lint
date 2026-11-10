@@ -24,7 +24,7 @@ const TEMPLATE = [
   "",
   "## Overview [content:non-empty]",
   "",
-  "## Details [presence:exist]",
+  '## Details [pattern:"{text}"]',
   "",
   "## Draft [presence:template-only]",
   "",
@@ -80,27 +80,29 @@ describe("anchor lines of target diagnostics (spec 4.4 DIR5)", () => {
     ]);
   });
 
-  it("MTL601, MTL602 and MTL604 have none; MTL603 the first target heading with its text", async () => {
-    const target = [
-      "---",
-      "title: Notes",
-      "status: draft",
-      "owner: a",
-      "---",
-      "",
-      "# Context",
-      "",
-      "# Notes",
-      "",
-      "# Draft",
-      "",
-      "# Draft",
-      "",
-    ].join("\n");
+  it("MTL601, MTL605 and MTL604 have none; MTL603 the first target heading with its level and text", async () => {
+    // Levels match exactly (spec 2.6, change C10): a target without H2 gives MTL605 for the
+    // required `{text}` pattern heading (spec 2.10 step 3c), while MTL603 needs an H2 `Draft`,
+    // so the codes come from two targets.
+    const head = ["---", "title: Notes", "status: draft", "owner: a", "---", ""];
+    const noH2 = [...head, "# Notes", ""].join("\n");
+    expect(await anchors(noH2)).toEqual([
+      ["MTL601", null],
+      ["MTL605", null],
+      ["MTL601", null],
+    ]);
+    // Positional run (spec 2.10), level 2: both `## Draft` are set aside (step 1, MTL603 on the
+    // first, line 11); the free sibling is `Context` (line 7). `Overview` looks at it: missing
+    // (MTL601). `Details` (`{text}` pattern) takes it. `Context` has no sibling left: missing
+    // (MTL601). `Details` (an H2) is then matched before `# Notes` (line 9) which precedes it
+    // in the template: an order across levels, MTL604, listed after the heading findings.
+    const target = [...head, "## Context", "", "# Notes", "", "## Draft", "", "## Draft", ""].join(
+      "\n",
+    );
     expect(await anchors(target)).toEqual([
       ["MTL601", null],
-      ["MTL602", null],
       ["MTL603", 11],
+      ["MTL601", null],
       ["MTL604", null],
     ]);
   });
@@ -119,14 +121,20 @@ describe("anchor lines of target diagnostics (spec 4.4 DIR5)", () => {
       "",
       "## Details",
       "",
+      "## Context",
+      "",
       "## Overview",
       "",
       "Text.",
       "",
-      "## Context",
-      "",
     ].join("\n");
-    expect(await anchors(target)).toEqual([["MTL701", 9]]);
+    // The run takes line 9 (`Overview`, empty body), 11 (`Details`), 13 (`Context`); the second
+    // `## Overview` (line 15, with text) is in the tail: not the match, so line 9 is checked.
+    // The tail heading is the warning MTL616, anchored on it (spec 2.6 "Extra", DIR5).
+    expect(await anchors(target)).toEqual([
+      ["MTL701", 9],
+      ["MTL616", 15],
+    ]);
   });
 
   it("directive warnings anchor on their directive line", async () => {
@@ -143,13 +151,15 @@ describe("anchor lines of target diagnostics (spec 4.4 DIR5)", () => {
       "",
       "Text.",
       "",
+      "## Details",
+      "",
       "## Context",
       "<!-- md-template-lint end disable MTL202 -->",
       "",
     ].join("\n");
     expect(await anchors(target)).toEqual([
       ["MTL021", 3],
-      ["MTL023", 14],
+      ["MTL023", 16],
     ]);
   });
 

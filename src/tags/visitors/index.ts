@@ -10,9 +10,12 @@ import { CountVisitor } from "./count.js";
 import { FilenameVisitor } from "./filename.js";
 import { FormatVisitor } from "./format.js";
 import { IoVisitor } from "./io.js";
-import { OrderVisitor } from "./order.js";
+import { BodyOrderVisitor, OrderVisitor } from "./order.js";
+import { PatternVisitor } from "./pattern.js";
 import { BodyPresenceVisitor, FrontmatterPresenceVisitor } from "./presence.js";
 import { RangeVisitor } from "./range.js";
+import { RepeatVisitor } from "./repeat.js";
+import { BodyUniqueNamesVisitor, FrontmatterUniqueNamesVisitor } from "./unique-names.js";
 import { ValueVisitor } from "./value.js";
 
 export const FRONTMATTER_TAG_VISITORS: readonly FamilyVisitor<FrontmatterTagData>[] = [
@@ -24,9 +27,14 @@ export const FRONTMATTER_TAG_VISITORS: readonly FamilyVisitor<FrontmatterTagData
   new OrderVisitor(),
   new IoVisitor(),
   new FilenameVisitor(),
+  new FrontmatterUniqueNamesVisitor(),
 ];
 
 export const BODY_TAG_VISITORS: readonly FamilyVisitor<BodyTagData>[] = [
   new BodyPresenceVisitor(),
   new ContentVisitor(),
+  new PatternVisitor(),
+  new RepeatVisitor(),
+  new BodyOrderVisitor(),
+  new BodyUniqueNamesVisitor(),
 ];

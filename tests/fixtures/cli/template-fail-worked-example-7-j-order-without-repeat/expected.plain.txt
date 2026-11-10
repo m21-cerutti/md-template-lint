@@ -1,0 +1,28 @@
+md-template-lint 9.9.9
+Config: md-template-lint.yml
+========================
+
+Template: templates/epics.template.md
+Target:   notes/*.md (1 file(s))
+
+  FAIL templates/epics.template.md (template)
+      error MTL030 Heading 'Epic A - Title': tag [order:ascending] needs [repeat-rules:same-level] (an order compares the repeats of one heading)
+        5 | ## Epic A - Title [pattern:"Epic {char} - {text}"] [order:ascending] [content:table]
+          |                                                    ^
+  PASS notes/a.md
+      warn  MTL616 Heading: 1 extra heading(s) at level H2 after the template headings: ['Epic B - Release']
+        9 | ## Epic B - Release
+
+========================
+Summary
+========================
+Total files:  1
+Passed:       1
+Failed:       0
+Warnings:     1 (in 1 file(s))
+Templates:    1 checked, 0 broken
+
+Failed templates:
+  - templates/epics.template.md
+
+========================

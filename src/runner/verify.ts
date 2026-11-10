@@ -6,9 +6,11 @@
  * - From paths: those files are the templates, no config needed.
  * - A template that does not parse or is not UTF-8 is broken (exit 1); one that does
  *   not exist is `MTL910` and one that is not a regular file `MTL911` (exit 2).
- *   Tag warnings (`MTL010` to `MTL013`) do not fail and carry their template line
- *   (spec 8.3, C09). A run error outranks a broken template: one missing template and
- *   one broken template is exit 2.
+ *   Tag warnings (`MTL010` to `MTL016`) do not fail and carry their template line
+ *   (spec 8.3, C09). Template errors (`MTL017`, `MTL018`, `MTL019` and `MTL030`, spec 2.7)
+ *   are counted apart (`summary.errors`): the template FAILS (exit 1) without being
+ *   broken, and its schema is still described. A run error outranks a broken or failed
+ *   template: one missing template and one broken template is exit 2.
  * - An ok template carries its schema (`schema.ts`): filename convention, fields with
  *   type and rules, headings with rules (spec 8.3).
  */
@@ -72,18 +74,25 @@ async function verifyRefs(
     const status = await loadTemplate(registry, ref.path);
     templates.push(
       status.status === "broken"
-        ? { template: brokenReport(ref.shown, status.diagnostics), warnings: [], schema: null }
+        ? {
+            template: brokenReport(ref.shown, status.diagnostics),
+            warnings: [],
+            errors: [],
+            schema: null,
+          }
         : {
             template: { path: ref.shown, status: "ok" },
             warnings: withExcerpts(status.warnings, status.text),
+            errors: withExcerpts(status.errors, status.text),
             schema: describeTemplate(status.model),
           },
     );
   }
   const broken = templates.filter((item) => item.template.status === "broken").length;
+  const errors = templates.reduce((count, item) => count + item.errors.length, 0);
   let exitCode: ExitCode = 0;
   if (runErrors.length > 0) exitCode = 2;
-  else if (broken > 0) exitCode = 1;
+  else if (broken > 0 || errors > 0) exitCode = 1;
   return {
     mode: "verify",
     config,
@@ -92,6 +101,7 @@ async function verifyRefs(
     summary: {
       templates: templates.length,
       broken,
+      errors,
       warnings: templates.reduce((count, item) => count + item.warnings.length, 0),
       runErrors: runErrors.length,
       exitCode,
@@ -113,6 +123,7 @@ export async function verifyConfig(
       summary: {
         templates: 0,
         broken: 0,
+        errors: 0,
         warnings: 0,
         runErrors: loaded.errors.length,
         exitCode: 2,

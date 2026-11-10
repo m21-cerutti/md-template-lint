@@ -1,0 +1,28 @@
+md-template-lint 9.9.9
+Config: (none)
+========================
+
+  FAIL template.md
+Field  Type    Rules
+--------------------
+title  string  presence:required
+
+Headings:
+  # Guide (presence:required)
+  ## Setup (presence:required)
+  #### Details (presence:required)
+  ### Steps (presence:required)
+
+Child headings out of level order:
+  - Heading 'Steps' (H3): comes after the deeper child 'Details' (H4, line 9) under 'Setup' (line 11, column 1)
+      11 | ### Steps
+         | ^
+
+========================
+Summary
+========================
+Templates:    1 checked, 0 broken
+Errors:       1
+Warnings:     0
+
+========================

@@ -3,6 +3,7 @@
     "path": "template.md",
     "status": "ok",
     "filenameCase": "kebab-case",
+    "uniqueHeadingNames": false,
     "fields": [],
     "headings": [
       {

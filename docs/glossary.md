@@ -1,6 +1,6 @@
 ---
 title: Glossary
-last_updated: 2026-10-30
+last_updated: 2026-11-04
 ---
 
 # Glossary
@@ -23,6 +23,14 @@ so. Back to the [docs index](README.md).
   `src/engine/rule.ts`): `syntax`, `filename`, `presence`, `format`, `bounds`, `type`, `heading`,
   `content`, `io`. Each has one file `src/rules/<category>.ts` and one code range. See
   [where the codes live](architecture.md#where-the-codes-live).
+- **conflicting tag (`MTL015`)**: a well-formed heading tag that can have no effect, for example
+  `[content:subheadings:disallow]` on a `[presence:template-only]` heading. A template warning shown by
+  `--verify` in the section `Conflicting tags:`. See
+  [spec 2.7](spec.md#27-inert-unknown-and-malformed-tags).
+- **date format missing (`MTL016`)**: a template field of type `date` without `[format:date]`, or of
+  type `list-of-date` without `[format:elements:date]`. A template warning shown by `--verify` in the
+  section `Date fields without format:`; never suppressible. See
+  [spec 2.9](spec.md#29-field-formats-formatsemver-formatdate).
 - **DiagnosticCollector**: the class (`src/tags/listeners.ts`) that is the single sink of one document
   parse: it holds the `GrammarError` list and the `TagFinding` list. See
   [listeners and error flow](architecture.md#listeners-and-error-flow).
@@ -56,9 +64,30 @@ so. Back to the [docs index](README.md).
 - **pair**: one entry of `pairs` in `md-template-lint.yml` (`PairConfig`): a template, include and
   exclude globs and the roots it runs on. In the tests a "pair fixture" is a folder with one
   `template.md` and one `target.md`. See [spec 6.3](spec.md#63-schema).
+- **pattern**: the whole expected text of a template heading, written in the tag
+  `[pattern:"..."]`. It must match the entire heading text of a target heading, not a part of it. Text
+  outside placeholders is literal, so `## Changes` and `## [pattern:"Changes"]` are the same, and
+  `## [pattern:"{semver} - {date}"]` matches `## 1.2.0 - 2026-10-01`. A pattern is made of literal text
+  and placeholders. The text written before the tag in a template heading (`## Release [pattern:...]`)
+  is a hint for authors only; the pattern decides what matches. Escapes: `\"` for a double quote,
+  `\\` for a backslash, `{{` and `}}` for literal braces. Not a regular expression (a regexp pattern is
+  only an idea). See [spec 2.10](spec.md#210-heading-patterns-repeat-rules-and-order).
 - **phase**: when the pipeline runs a rule (the type `Phase` in `src/engine/rule.ts`): `parse`,
   `template`, `field` or `target`. `field` and `target` rules also have a step. Not the "phase A9"
   of code comments, which names a step of the project plan. See [rule contract](architecture.md#rule-contract).
+- **placeholder**: a variable slot inside a pattern, written `{name}` or `{name:format:<fmt>}`. The
+  vocabulary is fixed: `{semver}`, `{date}`, `{digits}`, `{number}`, `{text}` and `{char}` (one letter).
+  A placeholder stands for one value of its kind (`{digits}` matches `7`, `{text}` matches `Release
+  notes` but not `2026`); the optional `format` narrows it (`{semver:format:major-minor}` matches
+  `1.2`, `{text:format:snakecase}` matches `my_heading`). A format may take an argument,
+  `{name:format:<fmt>:<arg>}` (`{digits:format:padding:3}` matches `007`, `{number:format:precision:2}`
+  matches `1.50`). Formats: `{digits}` default, `signed`, `hex`, `uid`, `padding:N`; `{number}`
+  `decimal` (default), `scientific`, `precision:N`; `{text}` `human` (default), `snakecase`,
+  `camelcase`, `screamcase`, `kebabcase`, `lowercase`, `uppercase`; `{semver}` `full`, `core`,
+  `major-minor`; `{date}` `full`, `year-month`, `year`. Everything in a pattern outside
+  placeholders is literal. A placeholder is not a pattern: `{text}` alone is the pattern "any
+  non-numeric text", and `Epic {char} - {text}` is a pattern with two placeholders. An unknown name,
+  format or a wrong argument is `MTL014`. An order tag on a repeat-less heading is `MTL030`. See [spec 2.10](spec.md#210-heading-patterns-repeat-rules-and-order).
 - **region**: the part of a document a tag is written in (the type `Region`, `"frontmatter"` or
   `"body"`, in `src/tags/ast.ts`). The lexer has region modes too (`FM*`, `BODY*`). See
   [lexer modes](architecture.md#lexer-modes).
@@ -70,8 +99,23 @@ so. Back to the [docs index](README.md).
   A run warning is one of them with severity `warning` (`RunResult.runWarnings`; only `MTL913` with
   `onEmpty: warn`): it never changes the exit code, while a run error (`runErrors`) gives exit 2. There
   is no type named "run warning". See [spec 4.3](spec.md#run-errors-engine-no-rule-file).
+- **scope (of a template heading)**: which target headings are the siblings its position can take
+  (`HeadingMatch.scope` in `src/engine/model.ts`). `file` for H1, H2 and a heading with no template
+  parent: the siblings are the target headings of that level in the whole file. `section` for H3 to
+  H6 with a template parent: the siblings are the target headings of that level inside the matched
+  section of that parent. A heading is matched by position, not searched by text: the positions of one
+  level and scope take the siblings in file order, as one adjacent run (spec 2.6 "Sequence", 2.10
+  "Positional match"). See
+  [heading and section model](architecture.md#heading-and-section-model-spec-26-change-c10).
+- **section**: a heading of any level (H1 to H6) with its text, tags, body and parent (`Section` in
+  `src/engine/model.ts`). The parent is the nearest preceding heading with a lower level. Levels match
+  exactly. See [spec 2.6](spec.md#26-heading-suffix-tags-body-sections).
 - **severity**: `error` (the file fails, exit 1) or `warning` (printed, never changes the exit code); the
   type `Severity` in `src/engine/model.ts`. See [spec 1.3](spec.md#13-severity).
+- **shape (field step)**: the last `field` step (`"shape"` in `FIELD_STEPS`, `src/engine/rule.ts`),
+  run after `type`. It holds the format shape checks `MTL306` to `MTL309` (`[format:semver]`,
+  `[format:date]` and their `elements:` forms). Not the value shape in the type rules. See
+  [spec 2.9](spec.md#29-field-formats-formatsemver-formatdate).
 - **source excerpt**: the bounded window of the source line a diagnostic is about, printed under it
   with a caret (`SourceExcerpt` in `src/runner/types.ts`, `withExcerpts` in `src/runner/excerpt.ts`,
   `excerptRows` in `src/reporters/excerpt.ts`; JSON `sourceLine`). See

@@ -39,17 +39,31 @@ describe("rule registry", () => {
       "MTL011",
       "MTL012",
       "MTL013",
+      "MTL014",
+      "MTL015",
+      "MTL016",
+      "MTL017",
+      "MTL018",
+      "MTL019",
       "MTL020",
       "MTL021",
       "MTL022",
       "MTL023",
       "MTL024",
       "MTL025",
+      "MTL030",
     ]);
     expect(registry.byCode.get("MTL012")).toMatchObject({
       name: "malformed-tag",
       category: "syntax",
       severity: "warning",
+      phase: "template",
+    });
+    // The first template-phase ERROR (spec 2.7, phase P7c).
+    expect(registry.byCode.get("MTL017")).toMatchObject({
+      name: "heading-pattern-duplicate",
+      category: "syntax",
+      severity: "error",
       phase: "template",
     });
     expect(rulesOf(registry, "parse").map((rule) => rule.code)).toEqual([

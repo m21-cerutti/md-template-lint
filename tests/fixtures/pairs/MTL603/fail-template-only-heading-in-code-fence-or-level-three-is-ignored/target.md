@@ -12,4 +12,4 @@ A real heading, reported.
 
 ### Review log
 
-Level 3 headings are not sections.
+A level 3 heading does not match a level 2 template heading.

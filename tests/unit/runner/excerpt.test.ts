@@ -45,6 +45,8 @@ const CASES: readonly Case[] = [
   { name: "pass-warning-quotes-key-line", exitCode: 0 },
   { name: "fail-whole-file-findings", exitCode: 1 },
   { name: "fail-anchor-and-position", exitCode: 1, quiet: true },
+  // Worked example 1 of spec 2.11: two MTL613 anchored on their own heading lines.
+  { name: "fail-unique-heading-names-worked-example", exitCode: 1 },
 ];
 
 describe("excerpt: layout of the fixtures", () => {
@@ -118,6 +120,27 @@ describe("excerpt: expected outputs of the fixtures", () => {
       ["code", "severity", "message"],
       ["code", "severity", "message", "line", "column", "sourceLine"],
     ]);
+  });
+
+  it("fail-unique-heading-names-worked-example: MTL613 quotes its heading line, JSON has no sourceLine (2.11)", async () => {
+    const result = await runFixture(`${GROUP}fail-unique-heading-names-worked-example`);
+    expect(result.summary.exitCode).toBe(1);
+    const plain = report(result, { format: "plain", version: VERSION }).stdout;
+    // The anchor line is quoted, with no caret row (no position, spec 8.1).
+    expect(plain).toContain("        13 | ### Steps\n");
+    expect(plain).toContain("        15 | ### setup\n");
+    expect(plain).not.toMatch(/^ +\| /m);
+    const json = report(result, { format: "json", version: VERSION }).stdout;
+    expect(json).not.toContain("sourceLine");
+    const document = JSON.parse(json) as {
+      results: { files: { errors: Record<string, unknown>[] }[] }[];
+    };
+    const errors = document.results[0]?.files[0]?.errors ?? [];
+    expect(errors.map((item) => Object.keys(item))).toEqual([
+      ["code", "severity", "message", "heading"],
+      ["code", "severity", "message", "heading"],
+    ]);
+    expect(errors.map((item) => item["heading"])).toEqual(["Steps", "setup"]);
   });
 
   it("fail-anchor-and-position: a target diagnostic quotes the target line, not the template line", async () => {
@@ -481,11 +504,12 @@ describe("excerpt: --verify quotes the template line", () => {
         {
           template: { path: "t.md", status: "ok" },
           warnings: withExcerpts([tag], "---\nn: x\n---\n"),
-          schema: { filenameCase: null, fields: [], headings: [] },
+          errors: [],
+          schema: { filenameCase: null, uniqueHeadingNames: false, fields: [], headings: [] },
         },
       ],
       runErrors: [],
-      summary: { templates: 1, broken: 0, warnings: 1, runErrors: 0, exitCode: 0 },
+      summary: { templates: 1, broken: 0, errors: 0, warnings: 1, runErrors: 0, exitCode: 0 },
     };
     const text = reportVerify(result, { format: "plain", version: VERSION }).stdout;
     expect(text).toContain(

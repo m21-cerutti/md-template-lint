@@ -1,7 +1,10 @@
 /**
  * Loose VALUE predicates used by type inference (docs/spec.md 3.3). These are
  * value patterns, not tag patterns: tags are parsed by grammar/*.g4 only.
- * `isPathLike` is shared with validation on purpose (spec 3.4).
+ * `isPathLike` is shared with validation on purpose (spec 3.4). `isSemver` is
+ * the SEMVER value pattern of `[format:semver]` (spec 2.9, SemVer 2.0.0, exact
+ * text, no trimming). `isIsoDate` is the ISO DATE of `[format:date]` (spec 2.9,
+ * exact text, the calendar test of `isValidDateValue`).
  *
  * Python `re.match(...$)` also matches before one final newline; `pyMatch`
  * keeps that behaviour for parity with the legacy predicates.
@@ -34,6 +37,24 @@ const CASE_STYLE_PATTERNS: Readonly<Record<FilenameConvention, RegExp>> = {
   camelCase: /^[a-z][a-zA-Z0-9]*$/,
   PascalCase: /^[A-Z][a-zA-Z0-9]*$/,
 };
+
+/**
+ * SEMVER of spec 2.9 (SemVer 2.0.0): `num.num.num`, optional `-pre(.pre)*`,
+ * optional `+build(.build)*`. `num` has no leading zero; a `pre` part is a
+ * `num` or holds at least one ASCII letter or `-`; `build` is any run of ASCII
+ * letters, digits and `-`. No `v` prefix. Non-capturing groups only.
+ */
+const SEMVER_PATTERN =
+  /^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-(?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*)(?:\.(?:0|[1-9]\d*|\d*[A-Za-z-][0-9A-Za-z-]*))*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/;
+
+/**
+ * True when `value` is a SEMVER (spec 2.9). The EXACT text is tested: no
+ * trimming and, unlike the case styles, no final newline allowed (owner
+ * decision AS16), so ` 1.2.0 ` and a block scalar `1.2.0\n` fail.
+ */
+export function isSemver(value: string): boolean {
+  return SEMVER_PATTERN.test(value);
+}
 
 /** `re.match` with Python `$` semantics (also matches before one final `\n`). */
 function pyMatch(pattern: RegExp, value: string): boolean {
@@ -177,10 +198,24 @@ function isLeapYear(year: number): boolean {
 }
 
 /**
+ * The calendar test of spec 3.4: the parts of a `DATE_PARTS` match name a real
+ * date. A missing month or day counts as valid; year 0000 does not exist
+ * (Python `datetime`, MINYEAR 1).
+ */
+function namesRealDate(match: RegExpExecArray, pick: readonly number[]): boolean {
+  const [yearIndex = 0, monthIndex = 0, dayIndex = 0] = pick;
+  const year = Number(match[yearIndex]);
+  const month = monthIndex === 0 ? 1 : Number(match[monthIndex]);
+  const day = dayIndex === 0 ? 1 : Number(match[dayIndex]);
+  if (year < 1 || month < 1 || month > 12 || day < 1) return false;
+  const monthLengths = [31, isLeapYear(year) ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+  return day <= (monthLengths[month - 1] ?? 0);
+}
+
+/**
  * Calendar-strict date predicate (spec 3.4 `date`, legacy `is_valid_date_value`):
  * the trimmed value is the ongoing marker, or one of the four fixed shapes
- * (no lenient zero padding) naming a real date. A missing month or day counts
- * as valid; year 0000 does not exist (Python `datetime`, MINYEAR 1).
+ * (no lenient zero padding) naming a real date (`namesRealDate`).
  */
 export function isValidDateValue(value: YamlValue): boolean {
   if (typeof value !== "string") return false;
@@ -188,16 +223,132 @@ export function isValidDateValue(value: YamlValue): boolean {
   if (ONGOING_MARKER.test(candidate)) return true;
   for (const { shape, pick } of DATE_PARTS) {
     const match = shape.exec(candidate);
-    if (match === null) continue;
-    const [yearIndex = 0, monthIndex = 0, dayIndex = 0] = pick;
-    const year = Number(match[yearIndex]);
-    const month = monthIndex === 0 ? 1 : Number(match[monthIndex]);
-    const day = dayIndex === 0 ? 1 : Number(match[dayIndex]);
-    if (year < 1 || month < 1 || month > 12 || day < 1) return false;
-    const monthLengths = [31, isLeapYear(year) ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-    return day <= (monthLengths[month - 1] ?? 0);
+    if (match !== null) return namesRealDate(match, pick);
   }
   return false;
+}
+
+/**
+ * True when `value` is an ISO DATE (spec 2.9): the `YYYY-MM-DD` shape of
+ * `DATE_PARTS` naming a real date with the calendar test of the type `date`.
+ * The EXACT text is tested: no trimming and no final newline (owner decision
+ * AS16), so ` 2026-01-01 ` fails. The ongoing marker is not an ISO DATE.
+ */
+export function isIsoDate(value: string): boolean {
+  const iso = DATE_PARTS[0];
+  if (iso === undefined) return false;
+  const match = iso.shape.exec(value);
+  return match !== null && namesRealDate(match, iso.pick);
+}
+
+/*
+ * Placeholder FORMAT predicates of the heading patterns (spec 2.10 "Each
+ * format", A72n). VALUE patterns on the exact text (never trimmed, no final
+ * newline), not tag patterns. The `{text}` case formats use the LETTER classes
+ * of 2.10 (Unicode general categories) and need at least one letter; they are
+ * NOT the ASCII field case styles of 2.3 above. `D` is an ASCII digit (C06).
+ */
+const HAS_LETTER = /\p{L}/u;
+const SNAKE_TEXT = /^[\p{Ll}\p{Lm}\p{Lo}0-9]+(?:_[\p{Ll}\p{Lm}\p{Lo}0-9]+)*$/u;
+const KEBAB_TEXT = /^[\p{Ll}\p{Lm}\p{Lo}0-9]+(?:-[\p{Ll}\p{Lm}\p{Lo}0-9]+)*$/u;
+const SCREAM_TEXT = /^[\p{Lu}\p{Lm}\p{Lo}0-9]+(?:_[\p{Lu}\p{Lm}\p{Lo}0-9]+)*$/u;
+const CAMEL_TEXT = /^[\p{Ll}\p{Lm}\p{Lo}][\p{Ll}\p{Lu}\p{Lm}\p{Lo}0-9]*$/u;
+const UPPER_OR_TITLE = /[\p{Lu}\p{Lt}]/u;
+const LOWER_OR_TITLE = /[\p{Ll}\p{Lt}]/u;
+const SCIENTIFIC = /^-?[0-9]+(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?$/;
+const PRECISION = /^-?[0-9]+\.([0-9]+)$/;
+const SIGNED_DIGITS = /^[+-]?(?:0|[1-9][0-9]*)$/;
+const HEX_DIGITS = /^[0-9A-Fa-f]+$/;
+const UID = /^[A-Za-z0-9]+$/;
+const ASCII_LETTER = /[A-Za-z]/;
+const ASCII_DIGIT = /[0-9]/;
+const ASCII_DIGITS = /^[0-9]+$/;
+const SEMVER_CORE = /^(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)$/;
+const SEMVER_MAJOR_MINOR = /^(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)$/;
+
+/** `{text:format:snakecase}`: words of `Ll`, `Lm`, `Lo`, `D` joined by single `_`, a letter. */
+export function isSnakecaseText(value: string): boolean {
+  return SNAKE_TEXT.test(value) && HAS_LETTER.test(value);
+}
+
+/** `{text:format:camelcase}`: first `Ll`, `Lm` or `Lo`, then `Ll`, `Lu`, `Lm`, `Lo` or `D`. */
+export function isCamelcaseText(value: string): boolean {
+  return CAMEL_TEXT.test(value);
+}
+
+/** `{text:format:screamcase}`: words of `Lu`, `Lm`, `Lo`, `D` joined by single `_`, a letter. */
+export function isScreamcaseText(value: string): boolean {
+  return SCREAM_TEXT.test(value) && HAS_LETTER.test(value);
+}
+
+/** `{text:format:kebabcase}`: words of `Ll`, `Lm`, `Lo`, `D` joined by single `-`, a letter. */
+export function isKebabcaseText(value: string): boolean {
+  return KEBAB_TEXT.test(value) && HAS_LETTER.test(value);
+}
+
+/** `{text:format:lowercase}`: at least one letter and no `Lu` or `Lt` letter. */
+export function isLowercaseText(value: string): boolean {
+  return HAS_LETTER.test(value) && !UPPER_OR_TITLE.test(value);
+}
+
+/** `{text:format:uppercase}`: at least one letter and no `Ll` or `Lt` letter. */
+export function isUppercaseText(value: string): boolean {
+  return HAS_LETTER.test(value) && !LOWER_OR_TITLE.test(value);
+}
+
+/** `{number:format:scientific}`: a `decimal` mantissa, then an optional `[eE][+-]?D+`. */
+export function isScientificNumber(value: string): boolean {
+  return SCIENTIFIC.test(value);
+}
+
+/** `{number:format:precision:N}`: `-?D+\.D{N}`, exactly `decimals` decimals, no exponent. */
+export function isPrecisionNumber(value: string, decimals: number): boolean {
+  const match = PRECISION.exec(value);
+  return match?.[1]?.length === decimals;
+}
+
+/** `{digits:format:signed}`: `[+-]?(0|[1-9]D*)`. */
+export function isSignedDigits(value: string): boolean {
+  return SIGNED_DIGITS.test(value);
+}
+
+/** `{digits:format:hex}`: `[0-9A-Fa-f]+`, no `0x` prefix, no sign. */
+export function isHexDigits(value: string): boolean {
+  return HEX_DIGITS.test(value);
+}
+
+/** `{digits:format:uid}`: `[A-Za-z0-9]+` with at least one ASCII letter and one ASCII digit. */
+export function isUidDigits(value: string): boolean {
+  return UID.test(value) && ASCII_LETTER.test(value) && ASCII_DIGIT.test(value);
+}
+
+/** `{digits:format:padding:N}`: exactly `width` ASCII digits, leading zeros allowed, no sign. */
+export function isPaddedDigits(value: string, width: number): boolean {
+  return ASCII_DIGITS.test(value) && value.length === width;
+}
+
+/** `{semver:format:core}`: `num.num.num` without pre-release or build (`num` as in 2.9). */
+export function isSemverCore(value: string): boolean {
+  return SEMVER_CORE.test(value);
+}
+
+/** `{semver:format:major-minor}`: `num.num` (`num` as in 2.9, no leading zero). */
+export function isSemverMajorMinor(value: string): boolean {
+  return SEMVER_MAJOR_MINOR.test(value);
+}
+
+/** `{date:format:year-month}`: `YYYY-MM`, month `01` to `12`, year `0001` or later. */
+export function isYearMonth(value: string): boolean {
+  const shape = DATE_PARTS[1];
+  const match = shape?.shape.exec(value) ?? null;
+  return shape !== undefined && match !== null && namesRealDate(match, shape.pick);
+}
+
+/** `{date:format:year}`: `YYYY`, year `0001` or later. */
+export function isYear(value: string): boolean {
+  const shape = DATE_PARTS[2];
+  const match = shape?.shape.exec(value) ?? null;
+  return shape !== undefined && match !== null && namesRealDate(match, shape.pick);
 }
 
 /** Characters Python `str.isprintable()` rejects (ASCII space is printable). */

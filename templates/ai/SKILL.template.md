@@ -4,7 +4,7 @@ description: What the skill does and when to load it  # [presence:required]
 compatibility: opencode  # [presence:optional]
 ---
 
-# Skill title [presence:exist]
+# Skill title [pattern:"{text}"]
 
 One sentence: the skill in plain words.
 

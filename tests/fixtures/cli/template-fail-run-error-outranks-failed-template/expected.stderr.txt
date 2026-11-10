@@ -1,0 +1,1 @@
+error MTL910: template not found: templates/missing.template.md (pair 'ghost')

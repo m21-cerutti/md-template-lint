@@ -22,7 +22,7 @@ everything: "red | green" # [io:exists] [order:ascending] [format:scheme:https,h
 
 ## Notes [presence:optional]
 
-## Review [presence:exist] [presence:optional]
+## Review [pattern:"{text}"]
 
 ## Authoring checklist [presence:template-only]
 
@@ -30,7 +30,7 @@ everything: "red | green" # [io:exists] [order:ascending] [format:scheme:https,h
 
 ## Review gate [presence:conditional:only when risky]
 
-## Both [presence:template-only] [presence:exist]
+## Both [presence:template-only] [presence:optional]
 
 ## Mixed [presence:required] [presence:optional]
 

@@ -1,6 +1,6 @@
 ---
 title: "Guide: adding a tag"
-last_updated: 2026-10-30
+last_updated: 2026-11-04
 ---
 
 # Guide: adding a tag
@@ -77,8 +77,8 @@ fmOrderTag
     ;
 ```
 
-For a tag in the heading suffix the rules are `bodyPresenceTag` and `bodyContentTag`, reached from
-`bodyTagBody`. Regenerate and verify the generated parser (never edit `src/generated/` by hand):
+For a tag in the heading suffix the rules are `bodyPresenceTag`, `bodyContentTag`, `bodyPatternTag`,
+`bodyRepeatTag` and `bodyOrderTag`, reached from `bodyTagBody`. Regenerate and verify the generated parser (never edit `src/generated/` by hand):
 
 ```bash
 pnpm run gen:parser
@@ -91,7 +91,7 @@ Java. Commit the output with the grammar.
 ## 3. AST: the type and the kind
 
 In `src/tags/ast.ts` add the member to the union (`FrontmatterValueTag` for a field tag,
-`BodyContentTag` or `BodyPresenceTag` for a heading tag):
+`BodyContentTag`, `BodyPresenceTag` or `BodyPatternTag` for a heading tag):
 
 ```ts
   | Fm<{ readonly kind: "order-ascending" }>
@@ -171,8 +171,8 @@ findings: []
 
 For a new FAMILY (a new alternative of `fmTagBody` or `bodyTagBody`, a new keyword in `tagFamily`)
 `tests/consistency/rules.test.ts` also pins counts in the test "reads non-empty inputs":
-`firstSymbols(atn, MdTemplateParser.RULE_tagFamily).tokens.size` (9),
-`...RULE_fmTagBody).rules.size` (8) and `...RULE_bodyTagBody).rules.size` (2). Raise the one you
+`firstSymbols(atn, MdTemplateParser.RULE_tagFamily).tokens.size` (11),
+`...RULE_fmTagBody).rules.size` (8) and `...RULE_bodyTagBody).rules.size` (5). Raise the one you
 changed by one. A new argument of an existing family, as in the example, changes none of them.
 
 ## 7. Tests and docs
@@ -181,7 +181,8 @@ changed by one. A new argument of an existing family, as in the example, changes
   `[order:ascending]` in "parses format, value, count, range, order and io tags") with
   `parseInlineComment`, and a malformed case; `tests/unit/visitors.test.ts` covers the visitors.
 - Rule level: the fixtures and test file of the new rule ([Testing](testing.md)). A tag problem of a
-  template (`MTL010` to `MTL013`) is tested through `--verify` in `tests/syntax/syntax/`.
+  template (the warnings `MTL010` to `MTL016` and the template errors `MTL017`, `MTL018`, `MTL019` and
+  `MTL030`) is tested through `--verify` in `tests/syntax/syntax/`.
 - Docs: [spec.md](../spec.md) section 2 (the tag tables, and 2.7 for unknown and malformed tags),
   section 9, and the README rule tables.
 - Gates, in this order, one at a time: `pnpm run check:parser`, `pnpm run check:rules`,

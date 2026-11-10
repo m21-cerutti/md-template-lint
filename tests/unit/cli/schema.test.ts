@@ -6,7 +6,8 @@
  * `expected.plain.txt` (the whole plain output) and `expected.json` (the `templates` array),
  * written from the spec rules and the legacy `describe()`, not generated.
  * Fixtures: tests/fixtures/cli/schema-<case>/. "fail-" here means the schema reports tag
- * problems; they are warnings, so every case is exit 0. The templates with no heading or no
+ * problems; they are warnings, so every case is exit 0, except a template ERROR (MTL017,
+ * spec 2.7), which is exit 1 (`exitCode` of the case). The templates with no heading or no
  * field carry such a problem on purpose, so they are fail- cases and the group keeps its
  * split (at least one pass- and one fail- case).
  *
@@ -31,15 +32,17 @@ interface Case {
   readonly shows: readonly string[];
   /** Fragments the text output must not have. */
   readonly lacks: readonly string[];
+  /** Exit code: 0 (tag warnings never fail) unless the template has a template error (1). */
+  readonly exitCode?: 0 | 1;
 }
 
 /** At least 1 passing case and 1 failing case; one fixture directory per case. */
 const CASES: readonly Case[] = [
   {
     // Types: enum, int, url, list-of-date, list, string; every rule kind, the first tag of a
-    // kind wins (count:min:2 over count:min:9), conditional beats optional, exist beats optional.
+    // kind wins (count:min:2 over count:min:9), conditional beats optional.
     // Presence is always the first rule (required when untagged; conditional carries its text).
-    // Headings: conditional beats required, template-only beats exist, optional beats required.
+    // Headings: conditional beats required, template-only beats optional, optional beats required.
     // `piped` has an option list as value but type=string: no enum rule (enum fields only).
     name: "pass-several-types-rules-headings",
     shows: [
@@ -107,6 +110,132 @@ const CASES: readonly Case[] = [
     lacks: ["Filename:"],
   },
   {
+    // Spec 8.3 (change C12): pattern and repeat tokens right after presence, the first tag of
+    // each kind, in the order pattern, same-level, min, max, then the content rules; written
+    // here in the reverse order (max before min, a second min and a second pattern ignored).
+    // `## Release` is the fixed variant of worked example 2 of spec 2.10.
+    name: "pass-pattern-heading-tokens",
+    shows: [
+      '  ## Release (presence:required, pattern:"[{semver}] - {date}", repeat-rules:same-level)',
+      '  ### Step (presence:required, pattern:"Step {digits}", repeat-rules:same-level, ' +
+        "repeat-rules:same-level:min:2, repeat-rules:same-level:max:5, content:non-empty, content:list)",
+    ],
+    lacks: ["Invalid patterns", "min:9", "Other {text}", "Filename:"],
+  },
+  {
+    // Worked example 2 of spec 2.10: the order tag ignored by MTL015 still prints as written
+    // (`order:ascending`), the invalid pattern prints as written in the heading rules (spec 8.3)
+    // and its warning in `Invalid patterns:` (MTL014, column 23), then `Conflicting tags:` with
+    // the MTL015 of line 7, column 35 (the order tag on a heading without pattern, phase P7).
+    name: "fail-invalid-pattern-worked-example",
+    shows: [
+      "  ## Unreleased (presence:optional, order:ascending)",
+      '  ## Release (presence:required, pattern:"[{version}] - {date}", repeat-rules:same-level)',
+      "Invalid patterns:",
+      "  - Heading 'Release': invalid pattern [pattern:\"[{version}] - {date}\"] (unknown placeholder {version}) (line 9, column 23)",
+      "Conflicting tags:",
+      "  - Heading 'Unreleased': tag [order:ascending] has no effect (the heading has no [pattern:...]) (line 7, column 35)",
+    ],
+    lacks: ["Filename:", "Unknown tags", "Malformed tags", "Misplaced tags"],
+  },
+  {
+    // Worked example 3 of spec 2.10: the template error MTL017 (same pattern `{semver}` on
+    // two adjacent H2) makes the template FAIL (fail header, `Duplicate patterns:`, `Errors:`,
+    // no `All templates passed!`), exit 1, JSON status `fail` (spec 8.3, 8.5, phase P7c).
+    name: "fail-duplicate-pattern-worked-example",
+    shows: [
+      "  FAIL template.md",
+      '  ## Hotfix (presence:optional, pattern:"{semver}")',
+      "Duplicate patterns:",
+      "  - Heading 'Hotfix': same pattern [pattern:\"{semver}\"] as the previous heading '' (line 5) (line 7, column 11)",
+      "Templates:    1 checked, 0 broken\nErrors:       1\nWarnings:     0",
+    ],
+    lacks: ["PASS", "All templates passed!", "Invalid patterns", "Conflicting tags"],
+    exitCode: 1,
+  },
+  {
+    // Worked example 5 of spec 2.10: the template errors MTL017 and MTL018, each in its own
+    // section, `Optional headings with a minimum:` right after `Duplicate patterns:` (phase
+    // P7e), `Errors:       2`, exit 1, JSON status `fail`.
+    name: "fail-worked-example-5-both-errors",
+    shows: [
+      "  FAIL template.md",
+      '  ## Release (presence:optional, pattern:"{semver}", repeat-rules:same-level:min:2)',
+      "Duplicate patterns:",
+      "  - Heading 'Notes': matches the same headings as the previous heading 'Notes' (line 5) (line 7, column 4)",
+      "Optional headings with a minimum:",
+      "  - Heading 'Release': tag [repeat-rules:same-level:min:2] contradicts [presence:optional] (a minimum of 2 requires the heading) (line 9, column 33)",
+      "Templates:    1 checked, 0 broken\nErrors:       2\nWarnings:     0",
+    ],
+    lacks: ["PASS", "All templates passed!", "Invalid patterns", "Conflicting tags"],
+    exitCode: 1,
+  },
+  {
+    // Worked example 3 of spec 2.6: the template error MTL019 (`#### Details` before
+    // `### Steps` under `## Setup`) in `Child headings out of level order:` (phase P7i),
+    // `Errors:       1`, exit 1, JSON status `fail`.
+    name: "fail-worked-example-3-child-order",
+    shows: [
+      "  FAIL template.md",
+      "  #### Details (presence:required)\n  ### Steps (presence:required)",
+      "Child headings out of level order:",
+      "  - Heading 'Steps' (H3): comes after the deeper child 'Details' (H4, line 9) under 'Setup' (line 11, column 1)",
+      "Templates:    1 checked, 0 broken\nErrors:       1\nWarnings:     0",
+    ],
+    lacks: ["PASS", "All templates passed!", "Duplicate patterns:", "Optional headings"],
+    exitCode: 1,
+  },
+  {
+    // The MTL030 variant of worked example 7 J of spec 2.10: the order tag on a pattern
+    // heading without repeat tag in `Order tags without repeat:` (phase P7j), no MTL015,
+    // `Errors:       1`, exit 1, JSON status `fail`.
+    name: "fail-worked-example-7-j-order-without-repeat",
+    shows: [
+      "  FAIL template.md",
+      '  ## Epic A - Title (presence:required, pattern:"Epic {char} - {text}", order:ascending, ' +
+        "content:table)",
+      "Order tags without repeat:",
+      "  - Heading 'Epic A - Title': tag [order:ascending] needs [repeat-rules:same-level] (an order compares the repeats of one heading) (line 5, column 52)",
+      "Templates:    1 checked, 0 broken\nErrors:       1\nWarnings:     0",
+    ],
+    lacks: ["PASS", "All templates passed!", "Conflicting tags", "Child headings"],
+    exitCode: 1,
+  },
+  {
+    // Spec 2.11 (A80c): the template-wide switch prints its line right after `Filename:`,
+    // then one blank line; the per-heading token prints last in the heading's rules list,
+    // after `content:subheadings:no-extra` (written here before it).
+    name: "pass-unique-headings-names-switches",
+    shows: [
+      "Filename: [filename:case:kebab-case]\nUnique heading names: [unique-headings-names]\n\n",
+      "  ## Usage (presence:required, content:non-empty, content:subheadings:no-extra, " +
+        "unique-headings-names)",
+    ],
+    lacks: ["Conflicting tags", "Unknown tags", "Malformed tags"],
+  },
+  {
+    // Spec 2.11, 8.3: both switches and no `filename:case`: the `Unique heading names:` line
+    // stands in place of the `Filename:` line (no `Filename:` line) and is followed by one blank
+    // line; JSON `filenameCase` is null and `uniqueHeadingNames` true.
+    name: "pass-unique-headings-names-without-filename",
+    shows: [
+      "PASS template.md\nUnique heading names: [unique-headings-names]\n\nField  Type    Rules",
+      "  ## Usage (presence:required, unique-headings-names)",
+    ],
+    lacks: ["Filename:", "Conflicting tags", "Unknown tags", "Malformed tags"],
+  },
+  {
+    // Spec 2.11, 8.3: the per-heading tag alone prints its token in the heading's rules list and
+    // NO `Unique heading names:` line, no blank line before the table (no `filename:case` either);
+    // JSON `uniqueHeadingNames` false.
+    name: "pass-unique-headings-names-per-heading-only",
+    shows: [
+      "PASS template.md\nField  Type    Rules",
+      "  ## Usage (presence:required, unique-headings-names)",
+    ],
+    lacks: ["Unique heading names:", "Filename:", "Conflicting tags", "Unknown tags"],
+  },
+  {
     // No heading at all: no `Headings:` line and no extra blank line before the next section.
     name: "fail-no-headings-unknown-field-tag",
     shows: ["owner  string  presence:required\n\nUnknown tags found"],
@@ -128,6 +257,9 @@ const dir = (name: string): string => fixturePath("cli", `${GROUP}${name}`);
 const expectedFile = (name: string, file: string): string =>
   readFileSync(join(dir(name), file), "utf8").replaceAll("\r\n", "\n");
 
+/** The separator line of the text reports (spec 8.3). */
+const RULE_LINE = "========================\nSummary";
+
 const plainRun = (fixture: string) =>
   runCliIn(fixture, ["--verify", "--format", "plain", "template.md"]);
 
@@ -141,7 +273,7 @@ describe("cli --verify schema: text (spec 8.3)", () => {
   for (const testCase of CASES) {
     it(`${testCase.name}: plain output is the expected file`, async () => {
       const run = await plainRun(`${GROUP}${testCase.name}`);
-      expect(run.exitCode).toBe(0);
+      expect(run.exitCode).toBe(testCase.exitCode ?? 0);
       expect(run.stderr).toBe("");
       expect(run.stdout).toBe(expectedFile(testCase.name, "expected.plain.txt"));
       let from = 0;
@@ -168,7 +300,7 @@ describe("cli --verify schema: text (spec 8.3)", () => {
         "json",
         "template.md",
       ]);
-      expect(run.exitCode).toBe(0);
+      expect(run.exitCode).toBe(testCase.exitCode ?? 0);
       expect(parseJson(run.stdout).templates).toEqual(
         JSON.parse(expectedFile(testCase.name, "expected.json")) as unknown,
       );
@@ -225,7 +357,7 @@ describe("cli --verify schema: details", () => {
       "presence:required",
       "presence:required",
       "presence:optional",
-      "presence:exist",
+      "presence:required",
       "presence:template-only",
       "presence:conditional:when ready",
       "presence:conditional:only when risky",
@@ -235,16 +367,68 @@ describe("cli --verify schema: details", () => {
     ]);
   });
 
+  it("--quiet keeps the fail header and both error sections of worked example 5", async () => {
+    const fixture = `${GROUP}fail-worked-example-5-both-errors`;
+    const run = await runCliIn(fixture, [
+      "--verify",
+      "--format",
+      "plain",
+      "--quiet",
+      "template.md",
+    ]);
+    expect(run.exitCode).toBe(1);
+    const full = expectedFile("fail-worked-example-5-both-errors", "expected.plain.txt");
+    const sections = full.slice(full.indexOf("Duplicate patterns:"), full.indexOf(RULE_LINE));
+    expect(run.stdout).toBe(`  FAIL template.md\n${sections}`);
+  });
+
+  it("--quiet keeps the fail header and the child order section of worked example 3", async () => {
+    const name = "fail-worked-example-3-child-order";
+    const run = await runCliIn(`${GROUP}${name}`, [
+      "--verify",
+      "--format",
+      "plain",
+      "--quiet",
+      "template.md",
+    ]);
+    expect(run.exitCode).toBe(1);
+    const full = expectedFile(name, "expected.plain.txt");
+    const sections = full.slice(
+      full.indexOf("Child headings out of level order:"),
+      full.indexOf(RULE_LINE),
+    );
+    expect(run.stdout).toBe(`  FAIL template.md\n${sections}`);
+  });
+
+  it("--quiet keeps the fail header and the order section of worked example 7 J", async () => {
+    const name = "fail-worked-example-7-j-order-without-repeat";
+    const run = await runCliIn(`${GROUP}${name}`, [
+      "--verify",
+      "--format",
+      "plain",
+      "--quiet",
+      "template.md",
+    ]);
+    expect(run.exitCode).toBe(1);
+    const full = expectedFile(name, "expected.plain.txt");
+    const sections = full.slice(
+      full.indexOf("Order tags without repeat:"),
+      full.indexOf(RULE_LINE),
+    );
+    expect(run.stdout).toBe(`  FAIL template.md\n${sections}`);
+  });
+
   it("--quiet hides the schema", async () => {
     const run = await runCliIn(PASS, ["--verify", "--quiet", "template.md"]);
     expect(run).toMatchObject({ stdout: "", stderr: "", exitCode: 0 });
   });
 
-  it("a template with no tag problem has no problem section and no warnings", async () => {
+  it("a template with no tag problem has no tag warning; its one warning is MTL016", async () => {
+    // Spec 2.9: `milestones` (list-of-date) has no [format:elements:date].
     const run = await runCliIn(PASS, ["--verify", "--format", "json", "template.md"]);
     const [entry] = parseJson(run.stdout).templates ?? [];
-    expect(entry?.diagnostics).toEqual([]);
-    expect(parseJson(run.stdout).summary["warnings"]).toBe(0);
+    expect((entry?.diagnostics ?? []).map((diagnostic) => diagnostic.code)).toEqual(["MTL016"]);
+    expect(parseJson(run.stdout).summary["warnings"]).toBe(1);
   });
 
   it("the filename convention is null in JSON when the template declares none", async () => {
@@ -256,6 +440,31 @@ describe("cli --verify schema: details", () => {
     ]);
     const json = JSON.parse(run.stdout) as { templates: { filenameCase: unknown }[] };
     expect(json.templates[0]?.filenameCase).toBeNull();
+  });
+
+  it("uniqueHeadingNames is true only for the template-wide switch, never for the heading tag", async () => {
+    // Spec 2.11, 8.5: always present, false without the frontmatter switch.
+    const flags: Record<string, boolean> = {};
+    for (const name of [
+      "pass-unique-headings-names-switches",
+      "pass-unique-headings-names-without-filename",
+      "pass-unique-headings-names-per-heading-only",
+      "fail-unknown-tags",
+    ]) {
+      const run = await runCliIn(`${GROUP}${name}`, [
+        "--verify",
+        "--format",
+        "json",
+        "template.md",
+      ]);
+      flags[name] = parseJson(run.stdout).templates?.[0]?.uniqueHeadingNames ?? false;
+    }
+    expect(flags).toEqual({
+      "pass-unique-headings-names-switches": true,
+      "pass-unique-headings-names-without-filename": true,
+      "pass-unique-headings-names-per-heading-only": false,
+      "fail-unknown-tags": false,
+    });
   });
 });
 
