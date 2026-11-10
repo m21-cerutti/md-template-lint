@@ -1,0 +1,25 @@
+[
+  {
+    "path": "template.md",
+    "status": "ok",
+    "filenameCase": null,
+    "fields": [{ "name": "title", "type": "string", "rules": ["presence:required"] }],
+    "headings": [{ "level": 2, "text": "Body [value:filename]", "rules": ["presence:required"] }],
+    "diagnostics": [
+      {
+        "code": "MTL013",
+        "severity": "warning",
+        "message": "Field 'title': tag [content:non-empty] is not valid in frontmatter",
+        "line": 2,
+        "column": 19
+      },
+      {
+        "code": "MTL013",
+        "severity": "warning",
+        "message": "Heading 'Body [value:filename]': tag [value:filename] is not valid in a heading",
+        "line": 5,
+        "column": 9
+      }
+    ]
+  }
+]

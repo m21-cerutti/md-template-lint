@@ -1,0 +1,10 @@
+roots:
+  "bad name": ../elsewhere
+pairs:
+  - template: a.md
+    roots: "bad name"
+    include: "*.md"
+  - template: b.md
+    templateRoot: "bad name"
+    roots: [project, "bad name"]
+    include: "*.md"

@@ -1,0 +1,3 @@
+---
+title: excluded by folder
+---

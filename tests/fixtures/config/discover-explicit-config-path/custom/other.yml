@@ -1,0 +1,4 @@
+pairs:
+  - name: from-explicit
+    template: a.md
+    include: "*.md"

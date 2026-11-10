@@ -1,0 +1,5 @@
+1: one
+pairs:
+  - template: a.md
+    include: "*.md"
+    2: two

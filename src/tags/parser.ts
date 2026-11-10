@@ -89,7 +89,8 @@ export class InternalParseError extends Error {
 }
 
 type Finding = Omit<TagFinding, "subject">;
-type Classified<T> = { readonly tag: T } | { readonly finding: Finding } | null;
+type Resolved<T> = { readonly tag: T } | { readonly finding: Finding };
+type Classified<T> = Resolved<T> | null;
 
 const bracketShapes = new BracketShapeVisitor();
 const headingParts = new HeadingVisitor();
@@ -129,8 +130,9 @@ class ParseSession {
   readonly tokenPosition = (token: Token): SourcePosition =>
     this.position(token.line, token.column);
 
+  /** File line of a parsed rule: every rule of the document grammar has a first token. */
   lineOf(ctx: ParserRuleContext): number {
-    return ctx.start === null ? this.origin.line : this.tokenPosition(ctx.start).line;
+    return this.tokenPosition(ctx.start as Token).line;
   }
 
   /** Record the stage-1 events as grammar errors of `entry`. */
@@ -160,7 +162,7 @@ class ParseSession {
     return probe.tagFamily().FILENAME_CS() !== null ? "filename" : "other";
   }
 
-  frontmatterTag(bracket: ParserRuleContext): Classified<FrontmatterTag> {
+  frontmatterTag(bracket: ParserRuleContext): Resolved<FrontmatterTag> {
     const { parser, log } = this.strict(bracket);
     const body = parser.fmTagEntry().fmTagBody();
     const issue = log.first;
@@ -172,7 +174,7 @@ class ParseSession {
     throw new Error(`internal: no frontmatter visitor for ${bracket.getText()}`);
   }
 
-  bodyTag(bracket: ParserRuleContext): Classified<BodyTag> {
+  bodyTag(bracket: ParserRuleContext): Resolved<BodyTag> {
     const { parser, log } = this.strict(bracket);
     const body = parser.bodyTagEntry().bodyTagBody();
     const issue = log.first;
@@ -309,7 +311,6 @@ function buildFilename(session: ParseSession, candidate: ParserRuleContext): Fil
     return { isDirective: false, tag: null, findings: [] };
   }
   const result = session.frontmatterTag(candidate);
-  if (result === null) return { isDirective: true, tag: null, findings: [] };
   if ("finding" in result) {
     return { isDirective: true, tag: null, findings: withSubject([result.finding], null) };
   }
@@ -322,10 +323,9 @@ function lineText(ctx: ParserRuleContext): string {
   return text.endsWith("\n") ? text.slice(0, -1) : text;
 }
 
-/** `key: ` or `key:\n` token text -> key as written. */
+/** `key: ` or `key:\n` token text (both end with the colon once trimmed) -> key as written. */
 function keyText(token: string): string {
-  const trimmed = token.trimEnd();
-  return (trimmed.endsWith(":") ? trimmed.slice(0, -1) : trimmed).trimEnd();
+  return token.trimEnd().slice(0, -1).trimEnd();
 }
 
 function buildFrontmatter(session: ParseSession, ctx: FrontmatterContext): Frontmatter {

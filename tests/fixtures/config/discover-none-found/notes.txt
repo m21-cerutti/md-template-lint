@@ -1,0 +1,1 @@
+No md-template-lint.yml in this folder. The test stops the upward search here.

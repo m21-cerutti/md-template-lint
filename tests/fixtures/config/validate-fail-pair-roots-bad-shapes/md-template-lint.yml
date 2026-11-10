@@ -1,0 +1,10 @@
+pairs:
+  - template: a.md
+    roots: []
+    include: "*.md"
+  - template: b.md
+    roots: [5]
+    include: "*.md"
+  - template: c.md
+    roots: 5
+    include: "*.md"

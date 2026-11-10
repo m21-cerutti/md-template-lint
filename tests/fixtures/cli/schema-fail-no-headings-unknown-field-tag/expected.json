@@ -1,0 +1,18 @@
+[
+  {
+    "path": "template.md",
+    "status": "ok",
+    "filenameCase": null,
+    "fields": [{ "name": "owner", "type": "string", "rules": ["presence:required"] }],
+    "headings": [],
+    "diagnostics": [
+      {
+        "code": "MTL010",
+        "severity": "warning",
+        "message": "Field 'owner': unknown tag [optionl]",
+        "line": 2,
+        "column": 19
+      }
+    ]
+  }
+]

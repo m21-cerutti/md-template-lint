@@ -1,0 +1,7 @@
+roots:
+  other: ./other
+pairs:
+  - name: ghost
+    template: templates/missing.template.md
+    roots: [project, other]
+    include: docs/*.md

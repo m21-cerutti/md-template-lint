@@ -1,0 +1,4 @@
+pairs:
+  - name: "bad name!"
+    template: a.md
+    include: "*.md"

@@ -1,0 +1,4 @@
+pairs:
+  - template: a.md
+    roots: "*"
+    include: "*.md"

@@ -1,0 +1,7 @@
+roots:
+  data: data
+pairs:
+  - name: notes
+    template: templates/note.template.md
+    roots: data
+    include: docs/*.md

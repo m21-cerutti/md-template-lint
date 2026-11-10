@@ -1,0 +1,95 @@
+[
+  {
+    "path": "template.md",
+    "status": "ok",
+    "filenameCase": "snake_case",
+    "fields": [
+      {
+        "name": "id",
+        "type": "string",
+        "rules": ["presence:required", "value:filename"]
+      },
+      {
+        "name": "status",
+        "type": "enum",
+        "rules": ["presence:optional", "enum:draft|accepted"]
+      },
+      {
+        "name": "slug",
+        "type": "string",
+        "rules": ["presence:required", "format:constant:fixed", "format:kebab-case"]
+      },
+      {
+        "name": "tags",
+        "type": "list",
+        "rules": ["presence:required", "format:elements:kebab-case", "count:min:1", "count:max:5"]
+      },
+      {
+        "name": "rating",
+        "type": "int",
+        "rules": ["presence:required", "range:min:1", "range:max:5.5"]
+      },
+      {
+        "name": "homepage",
+        "type": "url",
+        "rules": ["presence:required", "format:scheme:http,https", "io:exists"]
+      },
+      {
+        "name": "milestones",
+        "type": "list-of-date",
+        "rules": ["presence:required", "order:ascending"]
+      },
+      { "name": "owner", "type": "string", "rules": ["presence:conditional:only when risky"] },
+      { "name": "note", "type": "string", "rules": ["presence:required", "count:min:2"] },
+      { "name": "plain", "type": "string", "rules": ["presence:required"] },
+      { "name": "piped", "type": "string", "rules": ["presence:required"] },
+      {
+        "name": "everything",
+        "type": "enum",
+        "rules": [
+          "presence:optional",
+          "format:constant:red",
+          "format:snake_case",
+          "format:elements:snake_case",
+          "value:filename",
+          "count:min:2",
+          "count:max:4",
+          "range:min:1",
+          "range:max:9",
+          "order:ascending",
+          "format:scheme:http,https",
+          "io:exists",
+          "enum:red|green"
+        ]
+      }
+    ],
+    "headings": [
+      { "level": 1, "text": "ADR", "rules": ["presence:required"] },
+      { "level": 2, "text": "Context", "rules": ["presence:required", "content:non-empty"] },
+      {
+        "level": 2,
+        "text": "Options",
+        "rules": [
+          "presence:required",
+          "content:table",
+          "content:list",
+          "content:min-lines:2",
+          "content:max-lines:10"
+        ]
+      },
+      { "level": 2, "text": "Notes", "rules": ["presence:optional"] },
+      { "level": 2, "text": "Review", "rules": ["presence:exist"] },
+      { "level": 2, "text": "Authoring checklist", "rules": ["presence:template-only"] },
+      { "level": 2, "text": "Gate", "rules": ["presence:conditional:when ready"] },
+      {
+        "level": 2,
+        "text": "Review gate",
+        "rules": ["presence:conditional:only when risky"]
+      },
+      { "level": 2, "text": "Both", "rules": ["presence:template-only"] },
+      { "level": 2, "text": "Mixed", "rules": ["presence:optional"] },
+      { "level": 2, "text": "Free text", "rules": ["presence:required"] }
+    ],
+    "diagnostics": []
+  }
+]

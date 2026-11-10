@@ -1,0 +1,4 @@
+pairs:
+  - name: parent
+    template: a.md
+    include: "*.md"

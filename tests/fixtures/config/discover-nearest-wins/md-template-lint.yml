@@ -1,0 +1,4 @@
+pairs:
+  - name: outer
+    template: a.md
+    include: "*.md"

@@ -1,0 +1,24 @@
+md-template-lint 9.9.9
+Config: (none)
+========================
+
+  PASS template.md
+Field  Type    Rules
+--------------------
+title  string  presence:required
+
+Headings:
+  ## Body [value:filename] (presence:required)
+
+Misplaced tags:
+  - Field 'title': tag [content:non-empty] is not valid in frontmatter (line 2, column 19)
+  - Heading 'Body [value:filename]': tag [value:filename] is not valid in a heading (line 5, column 9)
+
+========================
+Summary
+========================
+Templates:    1 checked, 0 broken
+Warnings:     2
+
+All templates passed!
+========================

@@ -1,0 +1,4 @@
+approvedPaths: ~/notes
+pairs:
+  - template: a.md
+    include: "*.md"

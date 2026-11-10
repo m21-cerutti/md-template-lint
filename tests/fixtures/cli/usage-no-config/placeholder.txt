@@ -1,0 +1,1 @@
+A directory with no md-template-lint.yml, so config discovery (stopped at this directory) finds nothing.

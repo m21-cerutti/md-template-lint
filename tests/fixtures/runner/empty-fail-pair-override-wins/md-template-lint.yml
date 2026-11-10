@@ -1,0 +1,6 @@
+onEmpty: ignore
+pairs:
+  - name: bugs
+    template: templates/note.template.md
+    include: docs/*.md
+    onEmpty: error

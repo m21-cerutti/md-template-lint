@@ -1,0 +1,13 @@
+# No pass/fail split: one project checks how the runner wires the pair root, aliases and
+# approved paths into the [io:exists] rules (spec 2.8, D11).
+roots:
+  other: ./other
+aliases:
+  assets: ./assets
+approvedPaths:
+  - /srv/approved
+pairs:
+  - name: refs
+    template: templates/refs.template.md
+    roots: [project, other]
+    include: docs/*.md

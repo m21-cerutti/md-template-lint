@@ -1,0 +1,32 @@
+md-template-lint 1.0.0
+Config: md-template-lint.yml
+========================
+
+Template: templates/note.template.md
+Target:   docs/*.md (1 file(s))
+
+  PASS docs/a.md
+      warn  MTL202 Unknown key 'extra1' not present in template
+      warn  MTL202 Unknown key 'extra2' not present in template
+
+Template: templates/note.template.md
+Root:     other
+Target:   docs/*.md (1 file(s))
+
+  FAIL docs/b.md
+      error MTL201 Field 'title': required but empty or missing
+      error MTL701 Section 'Summary': [content:non-empty] section body is empty
+
+========================
+Summary
+========================
+Total files:  2
+Passed:       1
+Failed:       1
+Warnings:     2 (in 1 file(s))
+Templates:    1 checked, 0 broken
+
+Failed files:
+  - docs/b.md (root 'other')
+
+========================

@@ -1,0 +1,69 @@
+[
+  {
+    "path": "template.md",
+    "status": "ok",
+    "filenameCase": null,
+    "fields": [
+      { "name": "wrong_place", "type": "string", "rules": ["presence:required"] },
+      { "name": "bad_count", "type": "list", "rules": ["presence:required"] },
+      { "name": "unknown_field", "type": "string", "rules": ["presence:required"] }
+    ],
+    "headings": [
+      { "level": 2, "text": "Wrong heading [value:filename]", "rules": ["presence:required"] },
+      {
+        "level": 2,
+        "text": "Bad heading [content:min-lines:abc]",
+        "rules": ["presence:required"]
+      },
+      {
+        "level": 2,
+        "text": "Unknown heading [bogus]",
+        "rules": ["presence:required", "content:non-empty"]
+      }
+    ],
+    "diagnostics": [
+      {
+        "code": "MTL013",
+        "severity": "warning",
+        "message": "Field 'wrong_place': tag [content:non-empty] is not valid in frontmatter",
+        "line": 2,
+        "column": 25
+      },
+      {
+        "code": "MTL012",
+        "severity": "warning",
+        "message": "Field 'bad_count': malformed tag [count:min:abc]",
+        "line": 3,
+        "column": 31
+      },
+      {
+        "code": "MTL010",
+        "severity": "warning",
+        "message": "Field 'unknown_field': unknown tag [optionl]",
+        "line": 4,
+        "column": 27
+      },
+      {
+        "code": "MTL013",
+        "severity": "warning",
+        "message": "Heading 'Wrong heading [value:filename]': tag [value:filename] is not valid in a heading",
+        "line": 7,
+        "column": 18
+      },
+      {
+        "code": "MTL012",
+        "severity": "warning",
+        "message": "Heading 'Bad heading [content:min-lines:abc]': malformed tag [content:min-lines:abc]",
+        "line": 9,
+        "column": 35
+      },
+      {
+        "code": "MTL011",
+        "severity": "warning",
+        "message": "Heading 'Unknown heading [bogus]': unknown tag [bogus]",
+        "line": 11,
+        "column": 20
+      }
+    ]
+  }
+]

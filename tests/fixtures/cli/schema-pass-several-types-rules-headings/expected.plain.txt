@@ -1,0 +1,43 @@
+md-template-lint 9.9.9
+Config: (none)
+========================
+
+  PASS template.md
+Filename: [filename:case:snake_case]
+
+Field       Type          Rules
+-------------------------------
+id          string        presence:required, value:filename
+status      enum          presence:optional, enum:draft|accepted
+slug        string        presence:required, format:constant:fixed, format:kebab-case
+tags        list          presence:required, format:elements:kebab-case, count:min:1, count:max:5
+rating      int           presence:required, range:min:1, range:max:5.5
+homepage    url           presence:required, format:scheme:http,https, io:exists
+milestones  list-of-date  presence:required, order:ascending
+owner       string        presence:conditional:only when risky
+note        string        presence:required, count:min:2
+plain       string        presence:required
+piped       string        presence:required
+everything  enum          presence:optional, format:constant:red, format:snake_case, format:elements:snake_case, value:filename, count:min:2, count:max:4, range:min:1, range:max:9, order:ascending, format:scheme:http,https, io:exists, enum:red|green
+
+Headings:
+  # ADR (presence:required)
+  ## Context (presence:required, content:non-empty)
+  ## Options (presence:required, content:table, content:list, content:min-lines:2, content:max-lines:10)
+  ## Notes (presence:optional)
+  ## Review (presence:exist)
+  ## Authoring checklist (presence:template-only)
+  ## Gate (presence:conditional:when ready)
+  ## Review gate (presence:conditional:only when risky)
+  ## Both (presence:template-only)
+  ## Mixed (presence:optional)
+  ## Free text (presence:required)
+
+========================
+Summary
+========================
+Templates:    1 checked, 0 broken
+Warnings:     0
+
+All templates passed!
+========================

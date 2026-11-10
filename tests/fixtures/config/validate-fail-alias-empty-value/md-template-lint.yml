@@ -1,0 +1,6 @@
+aliases:
+  docs: ""
+  blank:
+pairs:
+  - template: a.md
+    include: "*.md"

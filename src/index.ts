@@ -48,6 +48,63 @@ export type {
   Severity,
   YamlValue,
 } from "./engine/model.js";
+export { CONFIG_FILE_NAME, loadConfig } from "./config/load.js";
+export type { LoadConfigOptions } from "./config/load.js";
+export { compileGlob, matchesGlob } from "./config/glob.js";
+export type { CompiledGlob, GlobResult } from "./config/glob.js";
+export {
+  displayPath,
+  foldPath,
+  isAbsolutePath,
+  relativeInside,
+  resolvePath,
+  toSlashes,
+} from "./config/paths.js";
+export { ON_EMPTY_VALUES } from "./config/types.js";
+export type {
+  ConfigResult,
+  LintConfig,
+  OnEmpty,
+  PairConfig,
+  RunDiagnostic,
+} from "./config/types.js";
+export { runLint } from "./runner/run.js";
+export type { RunOptions } from "./runner/run.js";
+export { listedMatches, resolveFileList } from "./runner/list.js";
+export type { FileListInput, ListedFile, ListedMatch } from "./runner/list.js";
+export { verifyConfig, verifyPaths } from "./runner/verify.js";
+export type { VerifyOptions, VerifyPathsInput } from "./runner/verify.js";
+export { listFiles, targetsOf } from "./runner/walk.js";
+export type {
+  Block,
+  ExitCode,
+  FileResult,
+  NoteBlock,
+  PairBlock,
+  RunResult,
+  RunSummary,
+  SchemaField,
+  SchemaHeading,
+  TemplateReport,
+  TemplateSchema,
+  VerifyResult,
+  VerifySummary,
+  VerifyTemplate,
+} from "./runner/types.js";
+export { FORMAT_NAMES, parseArgs, USAGE } from "./cli/args.js";
+export type { CliOptions, FormatName, ParsedArgs, UsageCode } from "./cli/args.js";
+export { runCli } from "./cli/run.js";
+export type { CliEnv, CliResult } from "./cli/run.js";
+export { execute, failureReason } from "./cli/main.js";
+export type { CliRunner } from "./cli/main.js";
+export { readVersion } from "./cli/version.js";
+export { describeTemplate } from "./runner/schema.js";
+export { reportVerify } from "./cli/verify-report.js";
+export type { VerifyReportOptions } from "./cli/verify-report.js";
+export { cleanText, report } from "./reporters/index.js";
+export type { ReportFormat, ReportOptions, ReportOutput, TextOptions } from "./reporters/index.js";
+export { createRealIo, USER_AGENT } from "./io/index.js";
+export type { RealIoOptions } from "./io/index.js";
 export type {
   Bound,
   BodyBlock,

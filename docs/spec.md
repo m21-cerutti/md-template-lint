@@ -327,6 +327,24 @@ Per item (a list contributes one check per non-blank string item):
    2xx or 3xx is reachable and silent. Anything else (other status, timeout, DNS failure,
    refused connection, any exception) is `MTL805` with a reason of at most 60 characters.
    The body is never read. The probe never throws.
+   Network policy (changed, SSRF hardening, C07):
+   - Only `http:` and `https:` are probed. Any other scheme is refused before any I/O
+     (`unsupported scheme`). User info in the URL is stripped and no cookie or auth header is sent.
+   - Redirects are never followed; a 3xx status counts as reachable.
+   - Loopback, 0.0.0.0/8, link-local (169.254.0.0/16, fe80::/10), cloud metadata, multicast and
+     reserved ranges, IPv4-mapped IPv6 and numeric host spellings are refused (`blocked address`).
+     RFC 1918, 100.64.0.0/10 and fc00::/7 are refused unless config `allowPrivateNetworks` is
+     `true` (AS8). The RESOLVED address is checked at connect time (DNS rebinding).
+   - Each URL is probed once per run; a run is capped at 100 distinct URLs (`url budget exceeded`).
+   - Reasons come from a fixed vocabulary: `HTTP <status>`, `timeout`, `DNS failure`,
+     `connection refused`, `blocked address`, `unsupported scheme`, `invalid URL`,
+     `url budget exceeded`, `request failed`. Remote text is never echoed.
+
+   Trust boundary: the config file is trusted. Its `template`, `templateRoot`, `roots`, `aliases`
+   and `approvedPaths` accept `~`, absolute paths and `..`. Document values only feed existence
+   checks (a warning), never reads. Symlinked target files are followed and read; directory
+   symlinks are not traversed. On Windows a UNC path in any config path value triggers SMB/NTLM
+   authentication to that host.
 
 Existence tests swallow every OS error (treated as "does not exist"). No network access
 happens unless a template uses `[io:exists]` on a url type.
@@ -745,6 +763,8 @@ aliases: # optional, alias name -> directory, for @name/ values with [io:exists]
 approvedPaths: # optional, directories where absolute values may be probed
   - ~/notes
 
+allowPrivateNetworks: false # optional, default false; lets [io:exists] URL probes reach private ranges
+
 pairs: # required, at least one
   - name: adr # optional label, unique
     template: docs/templates/adr.template.md # required
@@ -761,13 +781,14 @@ pairs: # required, at least one
 | `version`                 | integer                       | no       | `1`       | Must be `1`, else `MTL908`.                                                                                  |
 | `onEmpty`                 | `warn`, `error`, `ignore`     | no       | `warn`    | Policy when a pair matches no file (7.4).                                                                   |
 | `roots`                   | map name to path              | no       | empty     | Names match `^[A-Za-z0-9_-]+$`. `project` is reserved (`MTL905`). Order is kept (it fixes output order).    |
-| `aliases`                 | map name to path              | no       | empty     | Names as above (a leading `@` is not part of the name). Value is a non-empty string, else `MTL904`.         |
+| `aliases`                 | map name to path              | no       | empty     | Names as above. The name is written WITHOUT `@` (changed: legacy stripped a leading `@`, the port rejects it with `MTL905`). Value is a non-empty string, else `MTL904`.         |
 | `approvedPaths`           | list of path                  | no       | empty     | Non-empty strings. An absolute value in a document is probed only inside one of these folders.             |
+| `allowPrivateNetworks`    | boolean                       | no       | `false`   | When `true`, URL probes of `[io:exists]` may reach RFC 1918, 100.64.0.0/10 and fc00::/7 addresses. Loopback, link-local, cloud metadata and IPv4-mapped IPv6 stay blocked (AS8). Other types are `MTL904`. |
 | `pairs`                   | list of pair                  | yes      | none      | Non-empty list, else `MTL904`.                                                                              |
 | `pairs[].name`            | string                        | no       | generated (below) | Explicit names match `^[A-Za-z0-9_.-]+$` and are unique, else `MTL905`.                              |
 | `pairs[].template`        | path                          | yes      | none      | Resolved by 6.2, but a relative path is relative to `templateRoot`.                                         |
 | `pairs[].templateRoot`    | root name                     | no       | `project` | Must be `project` or a declared root (`MTL906`).                                                            |
-| `pairs[].roots`           | root name, list, or `"*"`     | no       | `project` | Each name is `project` or declared (`MTL906`). `"*"` means every root declared under `roots` (not `project`). A pair runs once per listed root. |
+| `pairs[].roots`           | root name, list, or `"*"`     | no       | `project` | Each name is `project` or declared (`MTL906`). `"*"` means every root declared under `roots` (not `project`); `"*"` with no declared root is `MTL904`. A pair runs once per listed root. |
 | `pairs[].include`         | glob or list of globs         | yes      | none      | Non-empty. Each glob per 6.4, else `MTL907`.                                                                |
 | `pairs[].exclude`         | glob or list of globs         | no       | empty     | Same glob rules. A file is a target when it matches an include and no exclude.                              |
 | `pairs[].description`     | string                        | no       | none      | Shown in the `Target:` line.                                                                                |
@@ -790,7 +811,8 @@ raises `MTL905`; only two explicit names that are equal do. The name appears in 
   `{a,b}` alternation. A leading `.` is matched like any character (dot files and folders are
   included).
 - Invalid globs: empty string, absolute (`/` first or a drive letter), containing `..`,
-  starting with `!` (use `exclude`), unbalanced `[` or `{`. Error `MTL907`.
+  starting with `!` (use `exclude`), unbalanced `[`, `{` or `}`, a character class with a reversed
+  range (`[z-a]`, detail `invalid character class`). Error `MTL907`.
 - Symlinked directories are not traversed. Only files are targets.
 
 ### 6.5 Multi-root, external root and migration
@@ -857,7 +879,7 @@ not a run error: it is a broken template (`MTL001` to `MTL004`, exit 1).
 
 | Case                                             | Code     | Example message                                                       |
 | ------------------------------------------------ | -------- | --------------------------------------------------------------------- |
-| YAML syntax error, empty file, root not a map    | `MTL902` | `cannot parse md-template-lint.yml: <detail>`                         |
+| YAML syntax error, empty file, root not a map, duplicate key, non-UTF-8 input, multi-document file, read failure | `MTL902` | `cannot parse md-template-lint.yml: <detail>` |
 | Unknown key at any level                         | `MTL903` | `pairs[0].inlcude: unknown key 'inlcude'`                             |
 | Wrong type, missing required key, bad enum value | `MTL904` | `pairs[1].include: expected string or list of strings, got number`    |
 | Bad name, reserved `project`, duplicate pair name | `MTL905` | `roots.project: invalid name 'project' (reserved)`                    |
@@ -877,7 +899,7 @@ md-template-lint --verify [options] [templates...]
 | Flag              | Meaning                                                                                                    |
 | ----------------- | ---------------------------------------------------------------------------------------------------------- |
 | `--config <path>` | Config file. Also `--config=<path>`. Default: discovery (6.1).                                              |
-| `--format <name>` | `text` (default) or `json`. Other value: `MTL922`.                                                          |
+| `--format <name>` | `text` (default, same as `pretty`), `plain` or `json` (8.2). Other value: `MTL922`.                                |
 | `--quiet`         | Text only: print only failing files, broken templates and run errors. No headers, no OK lines, no warnings, no summary. JSON is always complete. |
 | `--verify`        | Template-syntax check only. No target is read (7.3).                                                        |
 | `--version`       | Print the package version and exit 0.                                                                       |
@@ -956,8 +978,9 @@ reports exit 2 at the end. A usage or config validation error stops before any l
 
 ### 8.1 Diagnostic
 
-Every finding is `{ code, severity, message }`, plus optional `field`, `heading`, `line`,
-`column` (1-based, only where known, for example tag errors). `message` is the legacy text
+Every finding is `{ code, severity, message }`, plus optional `heading`, `line`, `column`
+(1-based, only where known, for example tag errors). `heading` is set for heading and content
+findings (MTL601-603, MTL701-705; MTL604 has no anchor and gets no heading). A `field` member is NOT emitted (change C07). `message` is the legacy text
 without the code. Parity checks compare `(path, severity, code, message)` after normalizing
 separators (D18).
 
@@ -965,7 +988,16 @@ separators (D18).
 
 Modelled on the wrapper layout. Glyphs are UTF-8: `✓` pass, `✗` fail, `⚠` problem, `ℹ` note.
 Color only on a terminal, disabled by `NO_COLOR`. Run errors go to stderr as
-`error MTLnnn: <message>`; everything else to stdout.
+`error MTLnnn: <message>`, with a ` (file:line:col)` suffix for config errors; everything
+else to stdout.
+
+Two renderings exist (change C07): `pretty` is the layout below with glyphs and optional
+color; `plain` is the same layout with ASCII words `PASS`, `FAIL`, `INFO` instead of glyphs
+and never colored. The CLI format `text` maps to `pretty`. Control characters in echoed
+document values are replaced by visible escapes in every format. `Templates:` counts distinct
+template paths. A failed file of a non-project root is listed as `path (root 'name')`.
+A pair with no files raises `MTL913` before its template is parsed, so a broken template
+of an empty pair is not reported.
 
 ```text
 md-template-lint 1.0.0
@@ -1105,7 +1137,7 @@ it, nothing goes to stderr). Keys are stable, arrays follow 8.4.
           "path": "docs/adr/0002-second.md",
           "status": "fail",
           "errors": [
-            { "code": "MTL201", "severity": "error", "message": "Field 'status': required but empty or missing", "field": "status" },
+            { "code": "MTL201", "severity": "error", "message": "Field 'status': required but empty or missing" },
             { "code": "MTL601", "severity": "error", "message": "Heading: Missing required heading: 'Context'", "heading": "Context" }
           ],
           "warnings": [
@@ -1209,7 +1241,7 @@ their effect shows through `type.ts` codes.
 ## 10. Assumptions
 
 These choices go beyond the frozen sources. Review them before phases A6 and A9. Ids are
-`AS1` to `AS7` (they are not plan phases).
+`AS1` to `AS8` (they are not plan phases).
 
 - AS1: `approvedPaths` is an addition. Legacy only had alias approvals; absolute values were
   never probed. The new key lets a project opt in per folder. Default (empty) keeps the legacy
@@ -1222,6 +1254,9 @@ These choices go beyond the frozen sources. Review them before phases A6 and A9.
   on Windows.
 - AS6: A template file never lints itself (it is skipped when it matches its own pair).
 - AS7: `MTL012` malformed tags are warnings, in line with unknown tags.
+- AS8: `allowPrivateNetworks` is an addition. URL probes of `[io:exists]` refuse private,
+  loopback, link-local and metadata addresses by default (SSRF guard); only private ranges can
+  be opted in, the others are always blocked.
 
 ## 11. Legacy quirks and other changes
 
@@ -1270,6 +1305,12 @@ Behaviour that differs from legacy and is not one of the numbered defects.
 - C05: a known, well-formed tag in the wrong region (a heading-only tag in a frontmatter
   comment, or the reverse). Legacy ignored it silently. The port reports `MTL013`, a warning
   with line and column, shown by `--verify` only (2.7).
+- C07: reporting additions of A14. `pretty` and `plain` text renderings (8.2); the diagnostic
+  `heading` member for heading and content findings, no `field` member (8.1); config errors
+  carry file, line, column and key (`(file:line:col)` suffix in text); a duplicate YAML key in
+  the config is `MTL902`, YAML anchors and aliases in the config are a type error; URL probe
+  reasons also include `invalid URL`, `url budget exceeded` and `request failed`; MTL004 detail
+  is path free (`file is not valid UTF-8` or `cannot read file (CODE)`).
 - C06: accepted Unicode deviations of the port (JavaScript regex and string semantics against
   Python). Each is a known, small difference, kept until a parity run shows a real case:
   - Digits: JS `\d` and the lexer `T_NUMBER` match ASCII digits only. Python `\d` matches every

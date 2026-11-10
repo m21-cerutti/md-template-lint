@@ -1,0 +1,15 @@
+md-template-lint 1.0.0
+Config: md-template-lint.yml
+========================
+
+========================
+Summary
+========================
+Total files:  0
+Passed:       0
+Failed:       0
+Warnings:     0 (in 0 file(s))
+Templates:    0 checked, 0 broken
+Run errors:   2
+
+========================

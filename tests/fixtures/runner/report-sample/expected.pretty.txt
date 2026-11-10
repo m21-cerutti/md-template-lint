@@ -1,0 +1,39 @@
+md-template-lint 1.0.0
+Config: md-template-lint.yml
+========================
+
+Template: docs/templates/adr.template.md
+Target:   docs/adr/*.md (3 file(s)) - architecture decision records
+
+  ✓ docs/adr/0001-first.md
+  ✗ docs/adr/0002-second.md
+      error MTL201 Field 'status': required but empty or missing
+      error MTL601 Heading: Missing required heading: 'Context'
+      warn  MTL202 Unknown key 'authors' not present in template
+  ✓ docs/adr/0003-third.md
+      warn  MTL202 Unknown key 'reviewer' not present in template
+
+Template: templates/x.md
+Target:   notes/*.md (2 file(s))
+
+  TEMPLATE ERROR: templates/x.md - File must have YAML frontmatter (---...---)
+
+ℹ MTL913 no files matched pair 'bugs' in root 'project'
+
+========================
+Summary
+========================
+Total files:  3
+Passed:       2
+Failed:       1
+Warnings:     2 (in 2 file(s))
+Templates:    2 checked, 1 broken
+Run warnings: 1
+
+Broken templates:
+  - templates/x.md - File must have YAML frontmatter (---...---)
+
+Failed files:
+  - docs/adr/0002-second.md
+
+========================

@@ -1,0 +1,3 @@
+---
+title: lower case folder
+---

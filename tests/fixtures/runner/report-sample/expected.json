@@ -1,0 +1,98 @@
+{
+  "schemaVersion": 1,
+  "tool": "md-template-lint",
+  "version": "1.0.0",
+  "mode": "lint",
+  "config": "md-template-lint.yml",
+  "results": [
+    {
+      "root": "project",
+      "pair": "adr",
+      "template": {
+        "path": "docs/templates/adr.template.md",
+        "status": "ok"
+      },
+      "files": [
+        {
+          "path": "docs/adr/0001-first.md",
+          "status": "pass",
+          "errors": [],
+          "warnings": []
+        },
+        {
+          "path": "docs/adr/0002-second.md",
+          "status": "fail",
+          "errors": [
+            {
+              "code": "MTL201",
+              "severity": "error",
+              "message": "Field 'status': required but empty or missing"
+            },
+            {
+              "code": "MTL601",
+              "severity": "error",
+              "message": "Heading: Missing required heading: 'Context'",
+              "heading": "Context"
+            }
+          ],
+          "warnings": [
+            {
+              "code": "MTL202",
+              "severity": "warning",
+              "message": "Unknown key 'authors' not present in template"
+            }
+          ]
+        },
+        {
+          "path": "docs/adr/0003-third.md",
+          "status": "pass",
+          "errors": [],
+          "warnings": [
+            {
+              "code": "MTL202",
+              "severity": "warning",
+              "message": "Unknown key 'reviewer' not present in template"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "root": "project",
+      "pair": "x",
+      "template": {
+        "path": "templates/x.md",
+        "status": "broken",
+        "error": {
+          "code": "MTL001",
+          "severity": "error",
+          "message": "File must have YAML frontmatter (---...---)"
+        }
+      },
+      "files": []
+    }
+  ],
+  "runErrors": [],
+  "runWarnings": [
+    {
+      "code": "MTL913",
+      "severity": "warning",
+      "message": "no files matched pair 'bugs' in root 'project'",
+      "pair": "bugs",
+      "root": "project"
+    }
+  ],
+  "unmatched": [],
+  "summary": {
+    "files": 3,
+    "passed": 2,
+    "failed": 1,
+    "warnings": 2,
+    "filesWithWarnings": 2,
+    "templatesChecked": 2,
+    "templatesBroken": 1,
+    "runErrors": 0,
+    "runWarnings": 1,
+    "exitCode": 1
+  }
+}

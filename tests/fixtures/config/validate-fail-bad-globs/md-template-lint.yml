@@ -1,0 +1,12 @@
+pairs:
+  - template: a.md
+    include:
+      - "../x"
+      - "!x.md"
+      - /abs/x.md
+      - "C:/x.md"
+      - "[abc"
+      - "{a,b"
+      - ""
+      - "ok/**/*.md"
+    exclude: "a}b"

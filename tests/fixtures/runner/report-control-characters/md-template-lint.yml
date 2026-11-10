@@ -1,0 +1,5 @@
+# No pass/fail split: a golden-output fixture for the sanitizing of echoed document values.
+pairs:
+  - name: ctl
+    template: templates/ctl.template.md
+    include: docs/*.md

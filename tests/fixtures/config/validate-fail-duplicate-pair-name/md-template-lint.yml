@@ -1,0 +1,7 @@
+pairs:
+  - name: adr
+    template: a.md
+    include: "*.md"
+  - name: adr
+    template: b.md
+    include: "*.md"

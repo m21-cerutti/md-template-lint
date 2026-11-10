@@ -1,0 +1,8 @@
+roots:
+  a: ./app-a
+  b: ./app-b
+pairs:
+  - name: both
+    template: templates/note.template.md
+    roots: [b, project, a]
+    include: docs/*.md

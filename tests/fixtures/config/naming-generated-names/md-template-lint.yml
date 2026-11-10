@@ -1,0 +1,17 @@
+# No pass/fail split: one config exercises every rule of the generated pair names (spec 6.3).
+pairs:
+  - template: adr.template.md
+    include: "*.md"
+  - name: adr.template
+    template: x.md
+    include: "*.md"
+  - template: .md
+    include: "*.md"
+  - template: ".md"
+    include: "*.md"
+  - template: "docs\\my note (v2).md"
+    include: "*.md"
+  - template: other.template.md
+    include: "*.md"
+  - template: other.template.md
+    include: "*.md"

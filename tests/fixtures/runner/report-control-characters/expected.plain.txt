@@ -1,0 +1,24 @@
+md-template-lint 1.0.0
+Config: md-template-lint.yml
+========================
+
+Template: templates/ctl.template.md
+Target:   docs/*.md (1 file(s))
+
+  FAIL docs/evil.md
+      error MTL301 Field 'kind': expected constant value 'abc', got 'evil\x1b[2Jred\u202eend'
+      error MTL301 Field 'note': expected constant value 'abc', got 'first second third'
+
+========================
+Summary
+========================
+Total files:  1
+Passed:       0
+Failed:       1
+Warnings:     0 (in 0 file(s))
+Templates:    1 checked, 0 broken
+
+Failed files:
+  - docs/evil.md
+
+========================

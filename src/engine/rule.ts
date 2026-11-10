@@ -286,7 +286,16 @@ export function reportSection(
   return diagnostic;
 }
 
-/** Section index set by `reportSection`; 0 for any other diagnostic. */
+/** Section index set by `reportSection`; 0 for any other diagnostic (sort key only). */
 export function sectionIndexOf(diagnostic: Diagnostic): number {
   return SECTION_INDEX.get(diagnostic) ?? 0;
+}
+
+/**
+ * Section index recorded by `reportSection`, or null for a diagnostic that was
+ * never tagged. Used to name the heading of a finding: an untagged diagnostic
+ * must not be attributed to section 0.
+ */
+export function recordedSectionIndex(diagnostic: Diagnostic): number | null {
+  return SECTION_INDEX.get(diagnostic) ?? null;
 }

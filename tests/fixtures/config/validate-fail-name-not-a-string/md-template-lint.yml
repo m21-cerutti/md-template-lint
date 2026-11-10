@@ -1,0 +1,7 @@
+pairs:
+  - name: 5
+    template: a.md
+    include: "*.md"
+  - name:
+    template: b.md
+    include: "*.md"

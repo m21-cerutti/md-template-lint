@@ -1,0 +1,5 @@
+roots:
+  project: ../elsewhere
+pairs:
+  - template: a.md
+    include: "*.md"

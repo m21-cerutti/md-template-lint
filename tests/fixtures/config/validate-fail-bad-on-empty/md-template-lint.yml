@@ -1,0 +1,5 @@
+onEmpty: maybe
+pairs:
+  - template: a.md
+    include: "*.md"
+    onEmpty: 3

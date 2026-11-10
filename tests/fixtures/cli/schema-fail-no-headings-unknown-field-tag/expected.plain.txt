@@ -1,0 +1,20 @@
+md-template-lint 9.9.9
+Config: (none)
+========================
+
+  PASS template.md
+Field  Type    Rules
+--------------------
+owner  string  presence:required
+
+Unknown tags found (typo or unimplemented feature):
+  - Field 'owner': unknown tag [optionl]
+
+========================
+Summary
+========================
+Templates:    1 checked, 0 broken
+Warnings:     1
+
+All templates passed!
+========================

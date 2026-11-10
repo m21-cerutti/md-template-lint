@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "tool": "md-template-lint",
+  "version": "1.0.0",
+  "mode": "lint",
+  "config": "md-template-lint.yml",
+  "results": [],
+  "runErrors": [
+    {
+      "code": "MTL904",
+      "severity": "error",
+      "message": "pairs[0].include: required key is missing",
+      "file": "md-template-lint.yml",
+      "line": 3,
+      "column": 5,
+      "key": "pairs[0].include"
+    },
+    {
+      "code": "MTL903",
+      "severity": "error",
+      "message": "pairs[0].inlcude: unknown key 'inlcude'",
+      "file": "md-template-lint.yml",
+      "line": 4,
+      "column": 5,
+      "key": "pairs[0].inlcude"
+    }
+  ],
+  "runWarnings": [],
+  "unmatched": [],
+  "summary": {
+    "files": 0,
+    "passed": 0,
+    "failed": 0,
+    "warnings": 0,
+    "filesWithWarnings": 0,
+    "templatesChecked": 0,
+    "templatesBroken": 0,
+    "runErrors": 2,
+    "runWarnings": 0,
+    "exitCode": 2
+  }
+}

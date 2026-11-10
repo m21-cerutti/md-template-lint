@@ -1,0 +1,4 @@
+version: "1"
+pairs:
+  - template: a.md
+    include: "*.md"

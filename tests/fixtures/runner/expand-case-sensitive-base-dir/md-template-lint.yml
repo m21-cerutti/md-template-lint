@@ -1,0 +1,4 @@
+pairs:
+  - name: upper
+    template: templates/t.template.md
+    include: "Docs/*.md"

@@ -1,0 +1,7 @@
+approvedPaths:
+  - ""
+  - 5
+  - ~/ok
+pairs:
+  - template: a.md
+    include: "*.md"

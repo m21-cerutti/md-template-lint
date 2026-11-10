@@ -1,0 +1,7 @@
+pairs:
+  - name: notes
+    template: templates/broken.template.md
+    include: notes/*.md
+  - name: docs
+    template: templates/broken.template.md
+    include: docs/*.md

@@ -1,0 +1,25 @@
+md-template-lint 9.9.9
+Config: (none)
+========================
+
+  PASS template.md
+Field  Type    Rules
+--------------------
+tags   list    presence:required
+name   string  presence:required
+
+Headings:
+  ## Body [content:min-lines:abc] (presence:required)
+
+Malformed tags:
+  - Field 'tags': malformed tag [count:min:abc] (line 2, column 26)
+  - Heading 'Body [content:min-lines:abc]': malformed tag [content:min-lines:abc] (line 6, column 28)
+
+========================
+Summary
+========================
+Templates:    1 checked, 0 broken
+Warnings:     2
+
+All templates passed!
+========================

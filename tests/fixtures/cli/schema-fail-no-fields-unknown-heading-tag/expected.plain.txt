@@ -1,0 +1,24 @@
+md-template-lint 9.9.9
+Config: (none)
+========================
+
+  PASS template.md
+Filename: [filename:case:kebab-case]
+
+Field  Type  Rules
+------------------
+
+Headings:
+  ## Overview [bogus] (presence:required, content:non-empty)
+
+Unknown tags found (typo or unimplemented feature):
+  - Heading 'Overview [bogus]': unknown tag [bogus]
+
+========================
+Summary
+========================
+Templates:    1 checked, 0 broken
+Warnings:     1
+
+All templates passed!
+========================

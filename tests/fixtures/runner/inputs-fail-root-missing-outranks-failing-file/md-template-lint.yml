@@ -1,0 +1,7 @@
+roots:
+  ghost: ./does-not-exist
+pairs:
+  - name: notes
+    template: templates/note.template.md
+    roots: [project, ghost]
+    include: docs/*.md

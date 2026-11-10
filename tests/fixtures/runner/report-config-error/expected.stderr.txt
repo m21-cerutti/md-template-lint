@@ -1,0 +1,2 @@
+error MTL904: pairs[0].include: required key is missing (md-template-lint.yml:3:5)
+error MTL903: pairs[0].inlcude: unknown key 'inlcude' (md-template-lint.yml:4:5)

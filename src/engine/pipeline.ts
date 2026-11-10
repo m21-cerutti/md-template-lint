@@ -31,6 +31,7 @@ import { rulesOf, runPhase, runRules, type RuleRegistry } from "./registry.js";
 import {
   FIELD_STEPS,
   itemIndexOf,
+  recordedSectionIndex,
   sectionIndexOf,
   TARGET_STEPS,
   type FieldRule,
@@ -85,14 +86,24 @@ function byStep<R extends FieldRule | TargetRule>(
  * them, then the findings that concern no single heading (MTL604).
  * A heading rule anchors its finding on the template heading line (`position`).
  * The sort is stable, so one heading keeps registry order. The anchor is only a
- * sort key: it is cleared, since it is a line of the template, not of the target.
+ * sort key (a line of the template, not of the target): it is cleared, and the
+ * text of the heading found at that line becomes the `heading` of the
+ * diagnostic (spec 8.1). Kept as an anchor, not replaced by `heading`: two
+ * sections may share one text, a line is unique.
  */
-function byTemplateHeading(diagnostics: readonly Diagnostic[]): Diagnostic[] {
+function byTemplateHeading(
+  diagnostics: readonly Diagnostic[],
+  template: DocumentModel,
+): Diagnostic[] {
   const anchored = diagnostics.filter((diagnostic) => diagnostic.position !== null);
   const loose = diagnostics.filter((diagnostic) => diagnostic.position === null);
   const line = (diagnostic: Diagnostic) => diagnostic.position?.line ?? 0;
   const sorted = [...anchored].sort((a, b) => line(a) - line(b));
-  return [...sorted.map((diagnostic) => ({ ...diagnostic, position: null })), ...loose];
+  const named = sorted.map((diagnostic): Diagnostic => {
+    const text = template.sections.find((section) => section.line === line(diagnostic))?.text;
+    return { ...diagnostic, position: null, ...(text === undefined ? {} : { heading: text }) };
+  });
+  return [...named, ...loose];
 }
 
 /**
@@ -111,11 +122,17 @@ function byItemIndex(diagnostics: readonly Diagnostic[]): Diagnostic[] {
  * finding per template section, in SECTION order across the codes MTL701 to
  * MTL705, not grouped by rule. The content rules tag each finding with its
  * template section index (`reportSection`); the sort is stable, so one section
- * keeps registry order. The index lives in a side table, so nothing is left on
- * the diagnostic.
+ * keeps registry order. The index lives in a side table, so it is not left on
+ * the diagnostic; the text of that section becomes its `heading` (spec 8.1).
  */
-function bySectionIndex(diagnostics: readonly Diagnostic[]): Diagnostic[] {
-  return [...diagnostics].sort((a, b) => sectionIndexOf(a) - sectionIndexOf(b));
+function bySectionIndex(diagnostics: readonly Diagnostic[], template: DocumentModel): Diagnostic[] {
+  return [...diagnostics]
+    .sort((a, b) => sectionIndexOf(a) - sectionIndexOf(b))
+    .map((diagnostic): Diagnostic => {
+      const index = recordedSectionIndex(diagnostic);
+      const text = index === null ? undefined : template.sections[index]?.text;
+      return text === undefined ? diagnostic : { ...diagnostic, heading: text };
+    });
 }
 
 /** Errors first, then warnings, each in emission order (spec 4.1, 8.4). */
@@ -166,8 +183,8 @@ export async function checkTarget(
   }
   for (const step of after) {
     const found = await runRules(byStep(targetRules, TARGET_STEPS, step), context);
-    if (step === "headings") out.push(...byTemplateHeading(found));
-    else if (step === "content") out.push(...bySectionIndex(found));
+    if (step === "headings") out.push(...byTemplateHeading(found, template));
+    else if (step === "content") out.push(...bySectionIndex(found, template));
     else out.push(...found);
   }
   return errorsFirst(out);

@@ -439,9 +439,10 @@ const ENUM_SEPARATOR = " | ";
  * Option list of an enum template field (spec 3.4 "Enum", legacy
  * `extract_enum_options_from_value`): the template VALUE split on the literal
  * ` | `, each option trimmed, empty ones dropped. A value without the
- * separator (a bare `type=enum` hint, a list) has no options.
+ * separator (a bare `type=enum` hint, a list) has no options. Exported for the
+ * `--verify` schema (src/runner/schema.ts), which shows the same list.
  */
-function enumOptions(value: YamlValue): string[] {
+export function enumOptions(value: YamlValue): string[] {
   if (typeof value !== "string" || !value.includes(ENUM_SEPARATOR)) return [];
   return value
     .split(ENUM_SEPARATOR)

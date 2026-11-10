@@ -1,0 +1,12 @@
+roots:
+  first: area-a
+  second: area-b
+pairs:
+  - name: notes
+    template: templates/note.template.md
+    roots: [first, second]
+    include: docs/*.md
+  - name: more
+    template: templates/note.template.md
+    roots: [first, second]
+    include: more/*.md

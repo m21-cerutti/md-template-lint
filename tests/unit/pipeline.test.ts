@@ -16,6 +16,7 @@ import {
   notImplemented,
   report,
   reportItem,
+  reportSection,
   URL_PROBE_TIMEOUT_MS,
   type AnyRule,
   type Category,
@@ -362,6 +363,16 @@ describe("target pipeline: headings step lists presence findings in template hea
     expect(found.map((d) => d.code)).toEqual(["MTL603", "MTL604"]);
     expect(found.map((d) => d.position)).toEqual([null, null]);
   });
+
+  it("fails: presence findings carry the template heading text, the order finding none", async () => {
+    const target = lines("---", "a: x", "---", "## Omega", "## Alpha", "## Draft notes");
+    const found = await findings(templateText, target);
+    expect(found.map((d) => [d.code, d.heading])).toEqual([
+      ["MTL603", "Draft notes"],
+      ["MTL604", undefined],
+    ]);
+    expect("heading" in (found[1] ?? {})).toBe(false);
+  });
 });
 
 describe("target pipeline: content step lists findings in template section order", () => {
@@ -431,9 +442,80 @@ describe("target pipeline: content step lists findings in template section order
     );
     const found = await findings(templateText, lines("---", "a: x", "---", "## A", "## B"));
     expect(found).toHaveLength(2);
+    // The index is not a key; the only addition is the `heading` of the section (spec 8.1).
     for (const diagnostic of found) {
-      expect(Object.keys(diagnostic).sort()).toEqual(["code", "message", "position", "severity"]);
+      expect(Object.keys(diagnostic).sort()).toEqual([
+        "code",
+        "heading",
+        "message",
+        "position",
+        "severity",
+      ]);
     }
+    expect(found.map((diagnostic) => diagnostic.heading)).toEqual(["A", "B"]);
+  });
+});
+
+describe("target pipeline: heading of a content finding comes only from a recorded section index", () => {
+  const lines = (...text: string[]) => text.join("\n");
+  // Two content-step rules: one tags its finding with section 1 (`reportSection`), the other
+  // reports through plain `report` and so records no section index at all.
+  const tagged = defineRule({
+    code: "MTL701",
+    name: "tagged",
+    severity: "error",
+    category: "content",
+    phase: "target",
+    step: "content",
+    check: (): Diagnostic[] => [reportSection(tagged, "tagged finding", 1)],
+  });
+  const untagged = defineRule({
+    code: "MTL702",
+    name: "untagged",
+    severity: "error",
+    category: "content",
+    phase: "target",
+    step: "content",
+    check: (): Diagnostic[] => [report(untagged, "untagged finding")],
+  });
+  const run = async (rules: readonly AnyRule[]) => {
+    const custom = registry({ content: rules });
+    const model = await template(lines("---", "a: x", "---", "## First", "## Second"));
+    return checkTarget(custom, model, lines("---", "a: x", "---"), "t.md", env);
+  };
+
+  it("passes: a finding tagged with section 1 names the second heading", async () => {
+    const found = await run([tagged]);
+    expect(found.map((d) => [d.message, d.heading])).toEqual([["tagged finding", "Second"]]);
+  });
+
+  it("fails: a finding without a recorded section index gets no heading (not section 0)", async () => {
+    const found = await run([untagged]);
+    expect(found).toHaveLength(1);
+    expect(found[0]?.heading).toBeUndefined();
+    expect("heading" in (found[0] ?? {})).toBe(false);
+  });
+
+  it("fails: a tagged and an untagged finding together: only the tagged one is named", async () => {
+    const found = await run([untagged, tagged]);
+    expect(found.map((d) => [d.message, d.heading])).toEqual([
+      ["untagged finding", undefined],
+      ["tagged finding", "Second"],
+    ]);
+  });
+
+  it("fails: a section index beyond the template sections names nothing", async () => {
+    const far = defineRule({
+      code: "MTL703",
+      name: "far",
+      severity: "error",
+      category: "content",
+      phase: "target",
+      step: "content",
+      check: (): Diagnostic[] => [reportSection(far, "far finding", 9)],
+    });
+    const found = await run([far]);
+    expect(found.map((d) => d.heading)).toEqual([undefined]);
   });
 });
 

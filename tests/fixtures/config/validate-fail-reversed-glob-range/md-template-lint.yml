@@ -1,0 +1,7 @@
+pairs:
+  - template: a.md
+    include: "[z-a].md"
+  - template: b.md
+    include:
+      - "ok.md"
+      - "docs/[9-0]*.md"

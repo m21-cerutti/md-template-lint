@@ -1,0 +1,36 @@
+md-template-lint 9.9.9
+Config: (none)
+========================
+
+  PASS template.md
+Field          Type    Rules
+----------------------------
+wrong_place    string  presence:required
+bad_count      list    presence:required
+unknown_field  string  presence:required
+
+Headings:
+  ## Wrong heading [value:filename] (presence:required)
+  ## Bad heading [content:min-lines:abc] (presence:required)
+  ## Unknown heading [bogus] (presence:required, content:non-empty)
+
+Unknown tags found (typo or unimplemented feature):
+  - Field 'unknown_field': unknown tag [optionl]
+  - Heading 'Unknown heading [bogus]': unknown tag [bogus]
+
+Malformed tags:
+  - Field 'bad_count': malformed tag [count:min:abc] (line 3, column 31)
+  - Heading 'Bad heading [content:min-lines:abc]': malformed tag [content:min-lines:abc] (line 9, column 35)
+
+Misplaced tags:
+  - Field 'wrong_place': tag [content:non-empty] is not valid in frontmatter (line 2, column 25)
+  - Heading 'Wrong heading [value:filename]': tag [value:filename] is not valid in a heading (line 7, column 18)
+
+========================
+Summary
+========================
+Templates:    1 checked, 0 broken
+Warnings:     6
+
+All templates passed!
+========================

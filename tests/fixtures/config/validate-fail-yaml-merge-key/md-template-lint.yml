@@ -1,0 +1,5 @@
+pairs:
+  - template: a.md
+    include: "*.md"
+    <<:
+      name: merged

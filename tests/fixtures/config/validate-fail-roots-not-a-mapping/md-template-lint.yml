@@ -1,0 +1,4 @@
+roots: [a, b]
+pairs:
+  - template: a.md
+    include: "*.md"

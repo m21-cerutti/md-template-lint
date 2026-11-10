@@ -1,0 +1,7 @@
+pairs:
+  - name: all
+    template: docs/template.md
+    include: "docs/**/*.md"
+    exclude:
+      - "**/README.md"
+      - "docs/drafts/**"

@@ -1,0 +1,4 @@
+pairs:
+  - name: docs
+    template: templates/t.template.md
+    include: docs/*.md

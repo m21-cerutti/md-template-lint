@@ -1,0 +1,6 @@
+pairs:
+  - template: a.md
+    include: []
+  - template: b.md
+    include: "*.md"
+    exclude: []

@@ -110,4 +110,10 @@ export interface Diagnostic {
   readonly severity: Severity;
   readonly message: string;
   readonly position: SourcePosition | null;
+  /**
+   * Template heading text the finding is about (spec 8.1), set by the pipeline for
+   * the heading presence findings (MTL601 to MTL603) and the content findings
+   * (MTL701 to MTL705). Absent for every other diagnostic.
+   */
+  readonly heading?: string;
 }

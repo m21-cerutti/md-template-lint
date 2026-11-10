@@ -1,0 +1,5 @@
+pairs:
+  - &first
+    template: a.md
+    include: "*.md"
+  - *first

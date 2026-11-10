@@ -1,0 +1,4 @@
+  ✗ docs/adr/0002-second.md
+      error MTL201 Field 'status': required but empty or missing
+      error MTL601 Heading: Missing required heading: 'Context'
+  TEMPLATE ERROR: templates/x.md - File must have YAML frontmatter (---...---)

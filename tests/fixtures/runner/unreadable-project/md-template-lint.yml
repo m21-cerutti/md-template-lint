@@ -1,0 +1,6 @@
+# No pass/fail split: the test copies this project to a temporary folder and adds files
+# whose bytes are not valid UTF-8 (they cannot be text fixtures).
+pairs:
+  - name: notes
+    template: note.template.md
+    include: docs/*.md

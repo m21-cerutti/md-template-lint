@@ -1,0 +1,4 @@
+pairs:
+  - name: from-discovery
+    template: a.md
+    include: "*.md"

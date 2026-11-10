@@ -1,0 +1,7 @@
+pairs:
+  - name: first
+    template: templates/note.template.md
+    include: docs/*.md
+  - name: second
+    template: templates/note.template.md
+    include: docs/*.md

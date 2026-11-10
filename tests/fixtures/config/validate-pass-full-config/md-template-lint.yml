@@ -1,0 +1,27 @@
+version: 1
+onEmpty: error
+roots:
+  shared: ../shared-templates
+  notes: ~/notes
+aliases:
+  assets: ./assets
+approvedPaths:
+  - ~/notes
+allowPrivateNetworks: true
+pairs:
+  - name: adr
+    template: docs/templates/adr.template.md
+    include: docs/adr/*.md
+    exclude: "**/README.md"
+    description: architecture decision records
+  - template: agent.template.md
+    templateRoot: shared
+    roots: [project, notes, project]
+    include:
+      - .opencode/agents/*.md
+      - docs/{a,b}/**/*.md
+    onEmpty: ignore
+  - template: agent.template.md
+    roots: "*"
+    include: "[a-c]?.md"
+    exclude: []

@@ -1,0 +1,6 @@
+aliases:
+  "@assets": ./assets
+  docs: 12
+pairs:
+  - template: a.md
+    include: "*.md"

@@ -1,0 +1,24 @@
+[
+  {
+    "path": "template.md",
+    "status": "ok",
+    "filenameCase": "kebab-case",
+    "fields": [],
+    "headings": [
+      {
+        "level": 2,
+        "text": "Overview [bogus]",
+        "rules": ["presence:required", "content:non-empty"]
+      }
+    ],
+    "diagnostics": [
+      {
+        "code": "MTL011",
+        "severity": "warning",
+        "message": "Heading 'Overview [bogus]': unknown tag [bogus]",
+        "line": 6,
+        "column": 13
+      }
+    ]
+  }
+]

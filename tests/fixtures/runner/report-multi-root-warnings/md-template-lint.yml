@@ -1,0 +1,9 @@
+# No pass/fail split: a golden-output fixture for a second root, a file with two warnings
+# (warnings differ from files with warnings) and a content finding with its heading.
+roots:
+  other: ./other
+pairs:
+  - name: notes
+    template: templates/note.template.md
+    roots: [project, other]
+    include: docs/*.md

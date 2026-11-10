@@ -1,0 +1,34 @@
+[
+  {
+    "path": "template.md",
+    "status": "ok",
+    "filenameCase": null,
+    "fields": [
+      { "name": "tags", "type": "list", "rules": ["presence:required"] },
+      { "name": "name", "type": "string", "rules": ["presence:required"] }
+    ],
+    "headings": [
+      {
+        "level": 2,
+        "text": "Body [content:min-lines:abc]",
+        "rules": ["presence:required"]
+      }
+    ],
+    "diagnostics": [
+      {
+        "code": "MTL012",
+        "severity": "warning",
+        "message": "Field 'tags': malformed tag [count:min:abc]",
+        "line": 2,
+        "column": 26
+      },
+      {
+        "code": "MTL012",
+        "severity": "warning",
+        "message": "Heading 'Body [content:min-lines:abc]': malformed tag [content:min-lines:abc]",
+        "line": 6,
+        "column": 28
+      }
+    ]
+  }
+]

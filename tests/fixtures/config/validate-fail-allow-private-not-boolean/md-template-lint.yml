@@ -1,0 +1,4 @@
+allowPrivateNetworks: "true"
+pairs:
+  - template: a.md
+    include: "*.md"

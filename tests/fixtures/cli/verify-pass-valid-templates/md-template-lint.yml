@@ -1,0 +1,10 @@
+pairs:
+  - name: notes
+    template: templates/note.template.md
+    include: docs/*.md
+  - name: tagged
+    template: templates/tagged.template.md
+    include: tagged/*.md
+  - name: notes-again
+    template: templates/note.template.md
+    include: more/*.md

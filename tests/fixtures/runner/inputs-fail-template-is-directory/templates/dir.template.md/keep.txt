@@ -1,0 +1,1 @@
+This folder is named like a template file: the template path is a directory.

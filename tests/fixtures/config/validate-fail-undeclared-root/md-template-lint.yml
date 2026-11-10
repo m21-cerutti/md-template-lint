@@ -1,0 +1,10 @@
+roots:
+  shared: ../shared
+pairs:
+  - template: a.md
+    templateRoot: tpl
+    roots: [project, app-c]
+    include: "*.md"
+  - template: b.md
+    roots: ghost
+    include: "*.md"

@@ -1,0 +1,4 @@
+pairs:
+  - name: ghost
+    template: templates/missing.template.md
+    include: docs/*.md
