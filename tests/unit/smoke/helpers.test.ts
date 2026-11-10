@@ -545,7 +545,7 @@ describe("smoke-pack: the fixture project tests/fixtures/smoke/clean-project", (
 describe("smoke-pack: tarball content (fixtures/release/tarball)", () => {
   const cases = [
     { name: "pass-expected-package", problems: [] },
-    { name: "fail-extra-file", problems: ["unexpected file: CHANGELOG.md"] },
+    { name: "fail-extra-file", problems: ["unexpected file: CONTRIBUTING.md"] },
     { name: "fail-missing-required", problems: ["missing required file: dist/cli.js"] },
     { name: "fail-map-file", problems: ["forbidden source map: dist/cli.js.map"] },
     { name: "fail-tests-leak", problems: ["leaks tests/: tests/unit/engine.test.ts"] },
@@ -581,6 +581,7 @@ describe("smoke-pack: tarball content (fixtures/release/tarball)", () => {
       "missing required file: package.json",
       "missing required file: README.md",
       "missing required file: LICENSE",
+      "missing required file: CHANGELOG.md",
       "missing required file: THIRD_PARTY_NOTICES.md",
       "missing required file: dist/cli.js",
       "missing required file: dist/index.js",
@@ -600,6 +601,7 @@ describe("smoke-pack: tarball content (fixtures/release/tarball)", () => {
         "package.json",
         "README.md",
         "LICENSE",
+        "CHANGELOG.md",
         "THIRD_PARTY_NOTICES.md",
         "dist/cli.js",
         "dist/index.js",

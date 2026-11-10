@@ -118,8 +118,9 @@ function byStep<R extends FieldRule | TargetRule>(
  * about one template heading (MTL601, MTL603, MTL605 to MTL610, MTL614, MTL617;
  * MTL611 on its parent; MTL612 and MTL615 on the tagged heading; MTL616 on the
  * last position of its run) in template heading order, as the legacy validator
- * emits them, then the findings that concern no single heading (MTL604). A
- * heading rule anchors its finding on the template heading line (`position`).
+ * emits them, then the findings that concern no single heading (MTL604 and
+ * MTL613, which carry no template anchor). A heading rule anchors its finding
+ * on the template heading line (`position`).
  * The sort is stable, so one heading keeps registry order. The anchor is only a
  * sort key (a line of the template, not of the target): it is cleared, and the
  * text of the heading found at that line becomes the `heading` of the

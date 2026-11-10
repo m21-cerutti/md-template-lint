@@ -32,6 +32,7 @@ Run all of them before a commit. Each must exit 0.
 | ----------------------- | ---------------------------------------------------------------------------------- |
 | `pnpm run check:parser` | `src/generated/` matches the grammars (no stale or hand-edited parser).            |
 | `pnpm run check:rules`  | Consistency of grammar, visitors, AST kinds, rule files, code ranges and the spec. |
+| `pnpm run check:syntax-doc` | `docs/syntax-reference.md` matches its generator (`pnpm run gen:syntax-doc` rewrites). |
 | `pnpm run typecheck`    | `tsc` strict, for the sources, tests and scripts.                                  |
 | `pnpm run lint`         | ESLint.                                                                            |
 | `pnpm run format:check` | Prettier (`pnpm run format` rewrites).                                             |
@@ -166,6 +167,8 @@ reference), [docs/spec.md](docs/spec.md) (contract), [docs/architecture.md](docs
 and [docs/migration.md](docs/migration.md) when behaviour changes for users of the legacy
 tools. Keep `docs/ai-capabilities.md` in sync when you add or change an AI agent, skill,
 command or tool.
+
+User-visible changes are recorded in [CHANGELOG.md](CHANGELOG.md) under `[Unreleased]`.
 
 By contributing you agree that your contribution is licensed under the MIT license of
 the project (see [LICENSE](LICENSE)).

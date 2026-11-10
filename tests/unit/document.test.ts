@@ -353,15 +353,39 @@ describe("DocumentModel.uniqueHeadingNames (spec 2.11)", () => {
   it.each([
     ["a typo of the name", "# [unique-heading-names]"],
     ["another word", "# [todo]"],
-  ])("is false, with no finding, for a standalone line holding %s", (_label, written) => {
+  ])("is false, with one unknown finding, for a standalone line holding %s", (_label, written) => {
     const model = load("---", written, "a: x", "---");
     expect(model.uniqueHeadingNames).toBe(false);
-    expect(model.findings).toEqual([]);
+    expect(model.findings).toMatchObject([
+      { reason: "unknown", tag: written.slice(2), subject: { commentLine: 2 } },
+    ]);
+    expect(model.findings).toHaveLength(1);
     expect(model.document.frontmatter?.lines[0]).toEqual({
       kind: "comment",
       line: 2,
       raw: written,
     });
+  });
+
+  it("an unknown comment-line tag is MTL010 `Comment line N`; a malformed switch stays MTL012", async () => {
+    const registry = createRegistry();
+    const template = ["---", "a: x", "# note [a] and [b]", "# [unique-headings-names:x]", "---"];
+    const status = await checkTemplate(registry, template.join("\n"));
+    if (status.status !== "ok") throw new Error("template broken");
+    expect(status.warnings.map((d) => [d.code, d.message])).toEqual([
+      ["MTL010", "Comment line 3: unknown tag [a]"],
+      ["MTL010", "Comment line 3: unknown tag [b]"],
+      ["MTL012", "Filename comment: malformed tag [unique-headings-names:x]"],
+    ]);
+  });
+
+  it("`[todo]` in a TARGET frontmatter comment or body gives no tag finding", async () => {
+    const registry = createRegistry();
+    const status = await checkTemplate(registry, ["---", "a: x", "---", "# Guide"].join("\n"));
+    if (status.status !== "ok") throw new Error("template broken");
+    const target = ["---", "# [todo]", "a: x", "---", "# Guide", "", "Text [todo]."].join("\n");
+    const env = createEnv({ io: createMemoryIo([]) });
+    expect(await checkTarget(registry, status.model, target, "t.md", env)).toEqual([]);
   });
 
   it("is true with a valid line next to a malformed one, which gives one MTL012 finding", () => {

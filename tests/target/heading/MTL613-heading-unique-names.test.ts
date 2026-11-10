@@ -249,16 +249,13 @@ const CASES: readonly TestCase[] = [
     ...fail([duplicate("setup", 7, 15), duplicate("Steps", 9, 17)], 1),
   },
   // Placement table of 2.11: `# [unique-headings-names]` in the template BODY is an H1 with
-  // EMPTY text (not the switch): every run reports `Missing required heading: ''`; the target
-  // H1 `Guide` takes no position of the run, so it is the H1 tail (MTL616 warning, 2.6 "Extra").
-  // No MTL613: nothing is switched on.
+  // EMPTY text (not the switch): every run reports `Missing required heading: ''`. The target
+  // H1 `Guide` is not reported as an extra: MTL616 is silent for a run whose template headings
+  // all have empty text (spec 2.10 step 4). No MTL613: nothing is switched on.
   {
     name: "fail-template-body-switch-line-is-an-empty-h1-heading",
     expected: [],
-    all: [
-      ["MTL601", null],
-      ["MTL616", 5],
-    ],
+    all: [["MTL601", null]],
     suppressed: 0,
   },
 ];
@@ -411,7 +408,8 @@ describe("MTL613 heading-unique-names", () => {
     const found = await lintAll("fail-template-body-switch-line-is-an-empty-h1-heading");
     expect(found.map((diagnostic) => diagnostic.message)).toEqual([
       "Heading: Missing required heading: ''",
-      "Heading: 1 extra heading(s) at level H1 after the template headings: ['Guide']",
     ]);
+    // An empty-text template heading gets no MTL616 (spec 2.10 step 4).
+    expect(found.map((diagnostic) => diagnostic.code)).not.toContain("MTL616");
   });
 });

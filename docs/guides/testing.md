@@ -108,6 +108,7 @@ Run them one at a time, each must exit 0, before a commit:
 ```bash
 pnpm run check:parser
 pnpm run check:rules
+pnpm run check:syntax-doc
 pnpm run typecheck
 pnpm run lint
 pnpm run format:check
@@ -126,6 +127,7 @@ is a green run that did not test the CLI process: build again after every change
 | ----------------------- | -------------------------------------------------------------------------- |
 | `pnpm run check:parser` | `src/generated/` equals what the grammars generate.                        |
 | `pnpm run check:rules`  | The consistency tests of `tests/consistency/`.                             |
+| `pnpm run check:syntax-doc` | `docs/syntax-reference.md` equals what `scripts/syntax-doc/generate.ts` generates (`pnpm run gen:syntax-doc` rewrites). |
 | `pnpm run typecheck`    | `tsc` strict on the sources, tests and scripts (`tsconfig.test.json`, `tsconfig.scripts.json`). |
 | `pnpm run lint`         | ESLint.                                                                    |
 | `pnpm run format:check` | Prettier (`pnpm run format` rewrites).                                     |
@@ -139,7 +141,7 @@ needs the network and is not a pre-commit gate ([ADR 0005](../adr/0005-packaging
 
 The repository scripts are TypeScript in `scripts/` and run through `tsx`, a devDependency
 ([ADR 0007](../adr/0007-tsx-script-runner.md)): `tsx scripts/<name>.ts`. Use the package scripts
-(`gen:parser`, `check:parser`, `new:rule`, `smoke:pack`); to run one by hand use
+(`gen:parser`, `check:parser`, `gen:syntax-doc`, `check:syntax-doc`, `new:rule`, `smoke:pack`); to run one by hand use
 `pnpm exec tsx scripts/<name>.ts`. Scripts may use any TypeScript syntax (enums, namespaces and
 parameter properties included), since `tsx` compiles them.
 

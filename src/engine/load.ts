@@ -145,16 +145,18 @@ export function loadDocument(text: string): LoadResult {
     fields.set(key, { key, value, line, comment, type: inferType(value, comment) });
   }
 
-  // Spec 2.1: field-tag findings only on lines that are YAML top-level keys.
+  // Spec 2.1: field-tag findings only on lines that are YAML top-level keys, plus the
+  // filename / unique-names lines and the standalone comment lines outside a multi-line value.
+  const interior = valueInteriorLines(yaml, lineCounter, frontmatter.startLine);
   const findings = analysis.findings.filter(
     (finding: TagFinding) =>
       finding.region === "body" ||
       keyLines.has(finding.position.line) ||
-      filenameLines.has(finding.position.line),
+      filenameLines.has(finding.position.line) ||
+      (commentLines.has(finding.position.line) && !interior.has(finding.position.line)),
   );
   // Spec 4.4 DIR3: frontmatter directives on YAML top-level key lines and on
   // whole-line comments outside a multi-line value; every body directive.
-  const interior = valueInteriorLines(yaml, lineCounter, frontmatter.startLine);
   const directives = document.directives.filter(
     (directive) =>
       directive.region === "body" ||

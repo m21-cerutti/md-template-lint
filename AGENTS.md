@@ -1,6 +1,6 @@
 ---
 title: AGENTS.md
-last_updated: 2026-10-30
+last_updated: 2026-11-04
 ---
 
 # AGENTS.md
@@ -62,6 +62,8 @@ per-project config and a lint-staged compatible CLI.
 pnpm install --frozen-lockfile  # install dependencies
 pnpm run gen:parser             # regenerate parser from the grammar
 pnpm run check:parser           # fail if src/generated differs from the grammars
+pnpm run gen:syntax-doc         # regenerate docs/syntax-reference.md
+pnpm run check:syntax-doc       # fail if docs/syntax-reference.md is stale
 pnpm run typecheck              # tsc strict
 pnpm test                       # vitest suite
 pnpm run check:rules && pnpm run lint && pnpm run format:check

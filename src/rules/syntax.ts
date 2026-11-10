@@ -28,11 +28,15 @@ import {
 import { formatName } from "../engine/pattern.js";
 import type { BodyTag, PatternPiece, TagFinding, TagFindingReason } from "../tags/ast.js";
 
-/** `Field '<key>'`, `Heading '<text>'`, or the filename comment (no subject). */
+/**
+ * `Field '<key>'`, `Heading '<text>'`, `Comment line <n>`, or the filename comment (no subject).
+ */
 function label(finding: TagFinding): string {
   const subject = finding.subject;
   if (subject === null) return "Filename comment";
-  return "field" in subject ? `Field '${subject.field}'` : `Heading '${subject.heading}'`;
+  if ("field" in subject) return `Field '${subject.field}'`;
+  if ("heading" in subject) return `Heading '${subject.heading}'`;
+  return `Comment line ${subject.commentLine}`;
 }
 
 /** Findings of `reason` (and `region` when given) in source order. */

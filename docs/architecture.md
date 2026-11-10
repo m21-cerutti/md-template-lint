@@ -98,7 +98,7 @@ The layers flowchart draws the main edges only. These imports exist in `src/` an
 | `src/runner/files.ts`, `template.ts` | Strict UTF-8 read and path checks; template load shared by lint and `--verify`.    |
 | `src/runner/schema.ts`             | `describeTemplate`: filename convention, fields (type, rules), headings (`--verify`). |
 | `src/cli.ts`, `src/cli/`           | Process entry (`bin`), `execute` catch-all, argument parser, `runCli`, `--verify` reporter, version. |
-| `scripts/`                         | TypeScript scripts run by `tsx` ([ADR 0007](adr/0007-tsx-script-runner.md)): `gen-parser.ts`, `check-parser.ts`, `new-rule.ts`, `smoke-pack.ts`, `smoke/`. Package scripts `gen:parser`, `check:parser`, `new:rule`, `smoke:pack`. |
+| `scripts/`                         | TypeScript scripts run by `tsx` ([ADR 0007](adr/0007-tsx-script-runner.md)): `gen-parser.ts`, `check-parser.ts`, `new-rule.ts`, `smoke-pack.ts`, `smoke/`, `syntax-doc/generate.ts` (generates and checks `docs/syntax-reference.md`), `syntax-doc/notes.ts` (its hand-written notes). Package scripts `gen:parser`, `check:parser`, `new:rule`, `smoke:pack`, `gen:syntax-doc`, `check:syntax-doc`. |
 
 The CLI is described in [CLI](#cli) below. It calls `loadConfig`, `createRealIo`, `runLint` (or
 `verifyConfig` / `verifyPaths`) and `report`, all exported from `src/index.ts`.

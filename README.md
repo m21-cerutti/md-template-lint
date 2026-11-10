@@ -13,6 +13,8 @@ Status: the port matches the legacy Python linter and the PowerShell wrappers, a
 from documented fixes (see [ADR 0006](docs/adr/0006-parity-reached.md)). The package
 is not published yet.
 
+Changes between versions are listed in [CHANGELOG.md](CHANGELOG.md).
+
 License: MIT, Copyright (c) 2026 Marc CERUTTI.
 
 ## Quick usage
@@ -91,6 +93,8 @@ Source of truth for flags, modes and output: [docs/spec.md](docs/spec.md) sectio
 what follows are files. An unknown option is `MTL920`, a missing option value is
 `MTL921`; both exit 2 and print a hint. The legacy flags `--pattern`, `--dir`,
 `--ignore` and `--base-dir` do not exist (see [docs/migration.md](docs/migration.md)).
+
+The `--help` output and the text-format `--verify` report include a one-line reminder: `Template syntax reference: <URL>` (a link to [docs/syntax-reference.md](docs/syntax-reference.md), a concise reference of tags, settings and rules for writing templates).
 
 ### Exit codes
 
@@ -306,7 +310,7 @@ Parsing, template tag and target directive diagnostics. No tag of its own.
 | `MTL002` | yaml-invalid            | error    | The frontmatter is not valid YAML.                                            |
 | `MTL003` | frontmatter-not-mapping | error    | The frontmatter is not a `key: value` mapping.                                |
 | `MTL004` | file-unreadable         | error    | The file cannot be read or is not valid UTF-8.                                |
-| `MTL010` | unknown-field-tag       | warning  | A bracket in a field comment looks like a tag but is unknown.                 |
+| `MTL010` | unknown-field-tag       | warning  | A bracket in a field or frontmatter comment looks like a tag but is unknown.  |
 | `MTL011` | unknown-heading-tag     | warning  | A leftover trailing bracket on a heading looks like an unknown tag.           |
 | `MTL012` | malformed-tag           | warning  | A known tag family with a bad argument, for example `[count:min:abc]`.        |
 | `MTL013` | misplaced-tag           | warning  | A valid tag in the wrong region (heading tag in frontmatter, or the reverse). |

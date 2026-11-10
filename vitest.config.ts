@@ -1,10 +1,12 @@
-import { defineConfig } from "vitest/config";
+import { configDefaults, defineConfig } from "vitest/config";
 
 /** Minimum percentage of every metric, enforced per source directory. */
 const MINIMUM = { lines: 85, statements: 85, functions: 85, branches: 85 };
 
 export default defineConfig({
   test: {
+    // tmp/ is scratch space (scripts/write-escaped.ts may create files there): never run it.
+    exclude: [...configDefaults.exclude, "tmp/**"],
     coverage: {
       provider: "v8",
       include: ["src/**"],

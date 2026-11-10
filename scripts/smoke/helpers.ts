@@ -271,7 +271,13 @@ export function checkRun(result: RunResult, expected: Expectation): string[] {
 // ---------------------------------------------------------------------------------------
 
 /** Files at the package root that the `files` whitelist lets through (package.json is automatic). */
-const ROOT_FILES: readonly string[] = ["package.json", "README.md", "LICENSE", "THIRD_PARTY_NOTICES.md"];
+const ROOT_FILES: readonly string[] = [
+  "package.json",
+  "README.md",
+  "LICENSE",
+  "CHANGELOG.md",
+  "THIRD_PARTY_NOTICES.md",
+];
 const REQUIRED_FILES: readonly string[] = [...ROOT_FILES, "dist/cli.js", "dist/index.js"];
 const LEAK_DIRS: readonly string[] = ["tests", "scripts", "src", "legacy", "tmp"];
 

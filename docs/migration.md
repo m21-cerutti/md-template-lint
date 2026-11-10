@@ -232,7 +232,7 @@ template tags show in `--verify` only.
 ## H3 and deeper headings are checked
 
 This is a breaking change (change C10, spec 2.6, [ADR 0009](adr/0009-all-heading-levels.md)),
-released in a major version. Read it before you upgrade a project that has templates with
+released in version 0.2.0. Read it before you upgrade a project that has templates with
 `###` or deeper headings.
 
 ### What changed
@@ -261,7 +261,7 @@ released in a major version. Read it before you upgrade a project that has templ
 | `MTL610` | error    | A required heading of level 3 to 6 is missing in the section of its parent.                          |
 | `MTL611` | error    | The headings of one parent are not in template order inside its section.                             |
 | `MTL612` | error    | A heading the template does not list sits under a heading tagged `[content:subheadings:disallow]`.   |
-| `MTL015` | warning  | A heading tag has no effect (today: the disallow tag on a `[presence:template-only]` heading).       |
+| `MTL015` | warning  | A heading tag has no effect (for example a tag on a `[presence:template-only]` heading, or a tag that needs a `[pattern:...]`). |
 
 `[content:subheadings:disallow]` is the error opt-out for extra headings in a whole subtree
 (`[content:subheadings:no-extra]`, `MTL615`, is the second one: it covers the direct children
@@ -296,7 +296,7 @@ Do not delete a required top-level heading to silence a finding.
 ## Headings are matched by position
 
 This is a breaking change (change C10 note, spec 2.6 and 2.10,
-[ADR 0012](adr/0012-positional-heading-matching.md)), released in the same major version as
+[ADR 0012](adr/0012-positional-heading-matching.md)), released in the same version (0.2.0) as
 the changes above. Before, a template heading was satisfied by the first target heading with
 the same level and text, wherever it stood. Now the template headings of one level and scope
 take the target headings in order, as one run, so a template reads as the outline it
@@ -419,6 +419,14 @@ themselves are additive; these differences are not.
   (change C11, not breaking: the default date shapes still apply, and the warning shows in
   `--verify` only). Fix: add the tag to the inline comment of the field (`[format:date]`
   accepts a calendar-valid `YYYY-MM-DD` date; spec 2.9).
+
+## Bracketed words in frontmatter comments
+
+A whole-line comment in the template frontmatter that holds an unknown bracketed word (for
+example `# [todo]` or `# note [x]`) now gives the warning `MTL010`
+(`Comment line <line>: unknown tag <tag>`, spec 2.1). It shows in `--verify` only and never
+changes the exit code. There is no escape syntax: remove the square brackets from the note
+(`# todo`).
 
 ## After the migration
 

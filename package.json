@@ -1,6 +1,6 @@
 {
   "name": "md-template-lint",
-  "version": "0.0.0",
+  "version": "0.2.0",
   "description": "Lint Markdown files (frontmatter and headings) against Markdown templates.",
   "type": "module",
   "engines": {
@@ -23,6 +23,7 @@
     "dist",
     "!dist/**/*.map",
     "LICENSE",
+    "CHANGELOG.md",
     "THIRD_PARTY_NOTICES.md",
     "README.md"
   ],
@@ -41,6 +42,8 @@
     "check:parser": "tsx scripts/check-parser.ts",
     "check:rules": "vitest run tests/consistency",
     "new:rule": "tsx scripts/new-rule.ts",
+    "gen:syntax-doc": "tsx scripts/syntax-doc/generate.ts write",
+    "check:syntax-doc": "tsx scripts/syntax-doc/generate.ts check",
     "typecheck": "tsc -p tsconfig.test.json && tsc -p tsconfig.scripts.json",
     "build": "tsc -p tsconfig.json",
     "test": "vitest run --passWithNoTests",

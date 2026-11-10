@@ -50,6 +50,16 @@ export interface SpecCode {
   /** "error", "warning" or "error or warning". */
   readonly severity: string;
   readonly category: Category;
+  /** Raw message (or detail text) cell of the 4.3 table, trimmed, Markdown kept. */
+  readonly message: string;
+}
+
+/** A run error of the docs/spec.md 4.3 "run errors" table (MTL9xx, no rule, no severity column). */
+export interface SpecRunCode {
+  readonly code: string;
+  readonly name: string;
+  /** Raw "Message (shape)" cell, trimmed, Markdown kept. */
+  readonly message: string;
 }
 
 /** Text of a Markdown section from its heading line to the next `stop` line. */
@@ -80,8 +90,24 @@ export function specCodes(text = spec()): SpecCode[] {
         name: unquote(cells[2] ?? ""),
         severity: unquote(cells[3] ?? ""),
         category,
+        message: (cells[4] ?? "").trim(),
       });
     }
+  }
+  return codes;
+}
+
+/** Run errors (MTL9xx) of the docs/spec.md 4.3 "run errors" table. */
+export function specRunCodes(text = spec()): SpecRunCode[] {
+  const codes: SpecRunCode[] = [];
+  for (const line of section(text, "#### run errors", "#### Directive warnings").split("\n")) {
+    if (!line.startsWith("| `MTL")) continue;
+    const cells = line.split("|");
+    codes.push({
+      code: unquote(cells[1] ?? ""),
+      name: unquote(cells[2] ?? ""),
+      message: (cells[3] ?? "").trim(),
+    });
   }
   return codes;
 }
@@ -380,7 +406,7 @@ function tokenText(token: number): string | undefined {
 }
 
 /** Source text of a token sequence, or a problem when a token has no sample text. */
-function sentenceText(tokens: readonly number[]): string | { problem: string } {
+export function sentenceText(tokens: readonly number[]): string | { problem: string } {
   let text = "";
   for (const token of tokens) {
     const sample = tokenText(token);

@@ -40,7 +40,6 @@ import type {
   FrontmatterInertTag,
   FrontmatterLine,
   FrontmatterTag,
-  FrontmatterUniqueNamesTag,
   HeadingSuffix,
   MarkdownDocument,
   Region,
@@ -168,15 +167,6 @@ class ParseSession {
     const family = probe.tagFamily();
     if (family.FILENAME_CS() !== null) return "filename";
     return family.UNIQUE_HEADINGS_NAMES() !== null ? "unique-names" : "other";
-  }
-
-  /**
-   * Template-wide switch of a standalone `# [word]` line (spec 2.11): the tag when stage 2
-   * knows the bare bracket, else null (a plain comment line, nothing to report).
-   */
-  uniqueNamesTag(bracket: ParserRuleContext): FrontmatterUniqueNamesTag | null {
-    const result = this.frontmatterTag(bracket);
-    return "tag" in result && result.tag.kind === "unique-names" ? result.tag : null;
   }
 
   frontmatterTag(bracket: ParserRuleContext): Resolved<FrontmatterTag> {
@@ -465,13 +455,31 @@ function buildFrontmatter(
   const collect = (directive: Directive | null) => {
     if (directive !== null) directives.push(directive);
   };
+  // Spec 2.1: a standalone comment line reports its UNKNOWN brackets only (known tags are inert
+  // there, malformed or wrong-region ones are not reported), subject `Comment line N`.
+  const reportUnknown = (line: number, results: readonly Classified<FrontmatterTag>[]) => {
+    const unknown = results.flatMap((result) =>
+      result !== null && "finding" in result && result.finding.reason === "unknown"
+        ? [result.finding]
+        : [],
+    );
+    session.collector.report(withSubject(unknown, { commentLine: line }));
+  };
   for (const fmLine of ctx.fmLine()) {
     const line = session.lineOf(fmLine);
     const raw = lineText(fmLine);
     const body = fmLine.getChild(0);
+    let isDirective = false;
     if (body instanceof FmFilenameLineContext || body instanceof FmCommentLineContext) {
       const hash = body.FM_LINE_HASH().symbol;
-      collect(frontmatterDirective(session, hash, raw.slice((hash.text ?? "#").length), true));
+      const directive = frontmatterDirective(
+        session,
+        hash,
+        raw.slice((hash.text ?? "#").length),
+        true,
+      );
+      collect(directive);
+      isDirective = directive !== null;
     }
     if (
       body instanceof FmFilenameLineContext &&
@@ -488,16 +496,32 @@ function buildFrontmatter(
         filename ??= result.tag;
         lines.push({ kind: "filename", line, raw, tag: result.tag });
       } else {
+        // `# [x:y]` alone, another family: a plain comment line, an unknown shape is reported.
+        if (!isDirective) reportUnknown(line, [session.classifyFrontmatter(body.tagCandidate())]);
         lines.push({ kind: "comment", line, raw });
       }
     } else if (body instanceof FmUniqueNamesLineContext) {
       // `# [word]` alone: the template-wide switch when the word is `unique-headings-names`
-      // (spec 2.11), else a plain comment line.
-      const tag = session.uniqueNamesTag(body.tagBareBracket());
+      // (spec 2.11), else a plain comment line (an unknown word is reported, `[rule]` and the
+      // type names are inert).
+      const result = session.classifyFrontmatter(body.tagBareBracket());
+      const tag =
+        result !== null && "tag" in result && result.tag.kind === "unique-names"
+          ? result.tag
+          : null;
       uniqueHeadingNames ||= tag !== null;
-      lines.push(
-        tag === null ? { kind: "comment", line, raw } : { kind: "unique-names", line, raw, tag },
-      );
+      if (tag === null) {
+        reportUnknown(line, [result]);
+        lines.push({ kind: "comment", line, raw });
+      } else lines.push({ kind: "unique-names", line, raw, tag });
+    } else if (body instanceof FmCommentLineContext) {
+      if (!isDirective) {
+        reportUnknown(
+          line,
+          body.fmCommentItem().map((item) => session.classifyFrontmatter(item)),
+        );
+      }
+      lines.push({ kind: "comment", line, raw });
     } else if (body instanceof FmKeyLineContext) {
       const keyToken = body.FM_KEY() ?? body.FM_KEY_BARE();
       const key = keyText(keyToken?.getText() ?? "");
@@ -516,13 +540,7 @@ function buildFrontmatter(
       }
       lines.push({ kind: "key", line, raw, key, comment });
     } else {
-      const kind =
-        body instanceof FmCommentLineContext
-          ? "comment"
-          : body instanceof FmBlankLineContext
-            ? "blank"
-            : "other";
-      lines.push({ kind, line, raw });
+      lines.push({ kind: body instanceof FmBlankLineContext ? "blank" : "other", line, raw });
     }
   }
   return {

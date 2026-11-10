@@ -1,7 +1,8 @@
-// Verify that src/generated/ is exactly what `pnpm run gen:parser` produces.
+// Verify that src/generated/ matches what `pnpm run gen:parser` produces.
 //
 // Generates both grammars (scripts/gen-parser.ts) into a fresh temporary
-// directory, then compares that output with src/generated/: a changed file, a
+// directory, then compares that output with src/generated/ (line endings are
+// normalized, so CRLF vs LF does not matter): a changed file, a
 // missing file or an extra (stale or hand-added) file fails with exit code 1.
 // src/generated/ itself is never modified. Works whether or not src/generated/
 // is committed.
@@ -18,7 +19,8 @@ function snapshot(directory: string): Map<string, string> {
   if (!existsSync(directory)) return hashes;
   for (const entry of readdirSync(directory, { withFileTypes: true })) {
     if (entry.isFile()) {
-      const content = readFileSync(join(directory, entry.name));
+      // The generator writes CRLF on Windows, a git checkout is LF: EOL is not content.
+      const content = readFileSync(join(directory, entry.name), "utf8").replace(/\r\n/g, "\n");
       hashes.set(entry.name, createHash("sha256").update(content).digest("hex"));
     }
   }

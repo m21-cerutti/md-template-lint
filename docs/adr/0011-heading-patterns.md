@@ -122,7 +122,7 @@ for an order tag without repeat tag.
     "Revision 2026-11-03" (`exist` dropped, no orderable-placeholder reason; order without
     repeat is the template error `MTL030` since A72n; two reasons remain).
 - **Release.** The tags are additive, but the positional matching under them is breaking
-  (ADR 0012), so Epic P ships in a major release.
+  (ADR 0012), so Epic P ships in the breaking release (0.2.0).
 
 ## Consequences
 

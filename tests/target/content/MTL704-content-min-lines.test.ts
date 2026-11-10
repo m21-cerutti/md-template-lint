@@ -48,6 +48,18 @@ const CASES = [
     warnings: [],
   },
   {
+    // A line holding only U+0085 (NEXT LINE) is blank.
+    name: "fail-next-line-only-line-is-blank",
+    expected: [message(8, 7)],
+    warnings: [],
+  },
+  {
+    // A line holding only U+001C (FILE SEPARATOR) is blank.
+    name: "fail-c0-separator-only-line-is-blank",
+    expected: [message(8, 7)],
+    warnings: [],
+  },
+  {
     name: "fail-empty-body-counts-zero",
     expected: [message(3, 0)],
     warnings: [],

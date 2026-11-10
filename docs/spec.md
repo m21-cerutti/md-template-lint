@@ -134,6 +134,20 @@ first unescaped `"` followed by `]`), and a family name may contain a dash (`rep
   emitted only for lines that match a top-level key of the parsed YAML document. A key-like line
   that is not a YAML key (inside a block scalar, a multi-line value) never produces a field-tag
   diagnostic. Results for normal templates are identical to legacy.
+- One more form, for a STANDALONE comment line of the template frontmatter (a whole-line `# ...`
+  comment that binds to no key): each unknown `[tag]` in that line, alone or mixed with free
+  text (`# [unique-heading-names]`, `# [todo]`, `# note [x]`), gives the `MTL010` warning
+  `Comment line {line}: unknown tag {tag}`. `{line}` is the 1-based line number in the template
+  file; `{tag}` is the bracket text as written, rendered like the key-line form. One finding per
+  unknown tag, in source order. Known tags on a standalone line keep their meaning (the
+  filename tag alone on a line, 2.5, and `[unique-headings-names]` alone on a line, 2.11, are the
+  switches; other known tags there stay inert) and give no unknown warning. A malformed form
+  alone on the line (`[unique-headings-names:x]`) keeps its `MTL012` behaviour; a malformed or
+  misplaced known-family tag mixed with text (`# note [count:min:abc]`) gives no finding. There is no escape syntax: to keep
+  a note with brackets out of the warning, write it without square brackets. This applies to
+  template FRONTMATTER comment lines only, not to the template body text and not to target
+  files. Like every `MTL010`, it is a warning shown by `--verify` alone and never changes the
+  exit code.
 
 ### 2.2 Presence tags (inline comment)
 
@@ -432,7 +446,7 @@ Exact-level matching, precise effect on the legacy codes:
 Rationale for exact levels everywhere (owner decision 2(b), ADR 0009): one matching rule
 for every level, no exception to explain; a heading at the wrong level changes the document
 outline, which is what a template fixes. Cost: a breaking change for documents that relied
-on the H1/H2 cross match (major release, migration note, 9).
+on the H1/H2 cross match (breaking release 0.2.0, migration note, 9).
 
 Order: template headings found in the target must appear in the same relative order. Two
 checks, one per scope:
@@ -1280,6 +1294,7 @@ Worked example 2, a date field without format (`--verify`). Template `release.te
 ```text
 md-template-lint <version>
 Config: (none)
+Template syntax reference: https://github.com/m21-cerutti/markdown-template-linter/blob/main/docs/syntax-reference.md
 ========================
 
   PASS release.template.md
@@ -1641,8 +1656,19 @@ parent, over the siblings of that level inside the target section of M. Steps:
    listed in ONE warning `MTL616` (heading-extra) for this run (this sequence and this
    scope: once per level in file scope, once per level and per parent match or instance in
    section scope), in file order, anchored on the first listed sibling; no finding when the
-   list is empty (owner decision 4 of A72l). A tail sibling that gets `MTL613`
+   list is empty (owner decision 4 of A72l). A run whose template headings are all REQUIRED
+   exact-text headings with EMPTY text (the template-body line `# [unique-headings-names]`, 2.11)
+   gives no `MTL616`; its `MTL601` stays the only finding. An optional, conditional or
+   template-only heading (`## [presence:optional]`) or a pattern heading keeps its `MTL616` even
+   when its text is empty after the tags are peeled (it has no `MTL601`). A tail sibling that gets `MTL613`
    (`[unique-headings-names]`) stays in this list (2.11 "Interplay", the `MTL616` overlap).
+   `MTL616` does not list a heading that another run of the same level, which overlaps this one
+   (a file-scope run and a section-scope run), takes as a match, takes as a mismatch (`MTL606`)
+   or sets aside (step 1, `MTL603`): such a heading belongs to that run and is not an extra of
+   this one. Pinned by `pass-heading-taken-by-an-overlapping-run-is-not-extra`,
+   `pass-heading-set-aside-by-an-overlapping-run-is-not-extra` and
+   `pass-heading-taken-as-mismatch-by-an-overlapping-run-is-not-extra` in
+   `tests/target/heading/MTL616-heading-extra.test.ts`.
 
 Consequences, each tied to an owner decision:
 
@@ -1867,7 +1893,7 @@ Interplay with the other heading rules:
   `MTL612` (unlisted under a disallow tag, topmost; error), nothing of its own because its
   topmost unlisted ancestor has `MTL612`, or a place in the `MTL616` list. So the warning
   lists only the tail headings no error names, and a run whose whole tail is named by errors
-  gives no `MTL616`. Set-aside siblings (`MTL603`) and mismatches (`MTL606`) are not in the
+  gives no `MTL616`. A run of only required exact-text template headings with EMPTY text never gives `MTL616` (step 4). Set-aside siblings (`MTL603`) and mismatches (`MTL606`) are not in the
   tail. Which code reports a tail sibling is decided before suppression: a suppressed
   `MTL612`, `MTL614` or `MTL615` does not add that heading to the `MTL616` list (4.1 step 8).
   A heading named by a `MTL601` hint that stays in the tail is still listed by `MTL616`:
@@ -2073,6 +2099,7 @@ Worked example 3, a duplicate pattern (`--verify`). Template `versions.template.
 ```text
 md-template-lint <version>
 Config: (none)
+Template syntax reference: https://github.com/m21-cerutti/markdown-template-linter/blob/main/docs/syntax-reference.md
 ========================
 
   FAIL versions.template.md
@@ -2518,10 +2545,10 @@ Placement cases (spelled out so A80b has one answer each):
 | `# [unique-headings-names]` alone on a line | template frontmatter | template-wide switch |
 | `[unique-headings-names]` after a heading text | template body, any level | per-heading switch on that heading |
 | `title: "x" # [unique-headings-names]` | template frontmatter key line | inert, not reported (as the filename tag on a key line, 2.5) |
-| `# note [unique-headings-names]` (other text or tags on the line) | template frontmatter comment line | inert, not reported (only a line holding the tag alone is the switch, as 2.5) |
-| `# [unique-headings-names]` | template BODY | an H1 heading with EMPTY text carrying the per-heading tag, not the switch; a required exact-text heading that no normal target has, so every lint run reports `Missing required heading: ''` (`MTL601`) and the author sees the mistake |
+| `# note [unique-headings-names]` (other text or tags on the line) | template frontmatter comment line | inert, not reported (a known tag, so no unknown warning; only a line holding the tag alone is the switch, as 2.5) |
+| `# [unique-headings-names]` | template BODY | an H1 heading with EMPTY text carrying the per-heading tag, not the switch; a required exact-text heading that no normal target has, so every lint run reports `Missing required heading: ''` (`MTL601`) and the author sees the mistake; `MTL616` is silent for a run of only required exact-text template headings with empty text, so `MTL601` is the only finding (2.10 step 4) |
 | `[unique-headings-names:x]`, `[unique-headings-names:]` | anywhere | malformed (`MTL012`, a known family with an argument; on a heading the bracket stays in the text) |
-| `[unique-heading-names]` (typo) | a key line or a heading | unknown tag (`MTL010` / `MTL011`); on a standalone comment line it is a plain comment with no finding (2.1 reports field-tag findings only on key lines) |
+| `[unique-heading-names]` (typo) | a key line or a heading | unknown tag (`MTL010` / `MTL011`); on a standalone frontmatter comment line, `MTL010` `Comment line {line}: unknown tag {tag}` (2.1) |
 | any form | a target file | inert (tags in a target are inert, 2.7; on a target heading the recognized tag is peeled from the text, 2.6) |
 
 DUPLICATE (owner decision 2 of A80a). Two target headings X and Y of one scope are duplicates
@@ -3101,7 +3128,7 @@ between the quotes (2.10). Messages are the legacy text
 | `MTL002` | yaml-invalid              | error    | `YAML parse error: {detail}` (`{detail}` is the `yaml` package message, not the PyYAML text; accepted deviation) | py L1655-1658 `TemplateParser.parse`   |
 | `MTL003` | frontmatter-not-mapping   | error    | `YAML frontmatter must be a mapping of 'key: value' pairs`           | py L1660-1661 `TemplateParser.parse`   |
 | `MTL004` | file-unreadable           | error    | `{detail}` (read or UTF-8 decode failure)                            | py L2072-2075 `lint_file` (target), L2606-2611 `main` (template) |
-| `MTL010` | unknown-field-tag         | warning  | `Field '{key}': unknown tag {tag}`                                   | py L773-803 `find_unknown_tags`, L2229-2231 `describe` |
+| `MTL010` | unknown-field-tag         | warning  | `Field '{key}': unknown tag {tag}` or `Comment line {line}: unknown tag {tag}` (on a standalone frontmatter comment line, 2.1) | py L773-803 `find_unknown_tags`, L2229-2231 `describe` |
 | `MTL011` | unknown-heading-tag       | warning  | `Heading '{text}': unknown tag {tag}`                                | py L864-871 `split_heading_tags`, L2232-2234 `describe` |
 | `MTL012` | malformed-tag             | warning  | `Field '{key}': malformed tag {tag}`, `Heading '{text}': malformed tag {tag}` or `Filename comment: malformed tag {tag}` | new (phase A6, located errors) |
 | `MTL013` | misplaced-tag             | warning  | `Field '{key}': tag {tag} is not valid in frontmatter` or `Heading '{text}': tag {tag} is not valid in a heading` | new (change C05) |
@@ -4444,6 +4471,10 @@ Unknown tags found (typo or unimplemented feature):
         |                 ^
 ```
 
+- Header: package name and version, then `Config:` with the config path (relative to the
+  working directory when inside it, absolute otherwise, `/` separators), then the one-line
+  reminder `Template syntax reference: <URL>` (a link to the syntax reference doc), then a
+  rule line (`========================`).
 - The `Filename:` line only when the template declares it. The line `Unique heading names:
   [unique-headings-names]` (A80c, 2.11) only under the template-wide switch, right after
   `Filename:` (or in its place), then the one blank line before the table. Columns are padded
@@ -4736,7 +4767,7 @@ A72b (this spec and the ADR) adds the four codes `MTL015`, `MTL610`, `MTL611`, `
   and deeper headings are checked" (fix: add `[presence:optional]` or remove the heading from
   the template; levels now matched exactly), README, `docs/architecture.md` (free code
   ranges, heading model), `templates/CHANGELOG.template.md` interim tags, dogfood run. The
-  breaking change of C10 and ADR 0009 ships as a major release: the A53 release phase picks
+  breaking change of C10 and ADR 0009 ships as the breaking release 0.2.0: the A53 release phase picks
   the version number and writes the CHANGELOG release note that points to the migration
   section.
 - Later epics: F (field formats) and P (heading patterns, repeat rules and order, spec phase
@@ -4839,7 +4870,7 @@ for Pc LAST (owner list named the cleanup first): removing `exist` before patter
 (P3, P4) would leave the ten shipped templates and about sixty fixtures without any
 replacement, so P8 first migrates them to `[pattern:"{text}"]` while `exist` still works
 (each migrated file checked against the working pattern engine), then Pc removes the old
-path; both land in the same major release, so no release has docs and code disagreeing.
+path; both land in the same breaking release (0.2.0), so no release has docs and code disagreeing.
 
 Status note (2026-11-04): phase Pc is DONE (`[presence:exist]` and `MTL602`
 removed, `HeadingMatch.textMatch` removed, the pin is 83), and the `exist` migration of the
@@ -4901,7 +4932,7 @@ Handoff:
   `tests/target/content/*.test.ts` that pin them; the worked examples of 2.6 (unchanged
   results, re-derived in A72k) become regression fixtures. The dogfood run (`templates/`,
   `docs/adr/`) is re-checked and any drift is listed. Owner examples B, C and E (exact-text
-  parts only) become fixtures here. Major release (C10 note).
+  parts only) become fixtures here. Breaking release 0.2.0 (C10 note).
 - P1 grammar and tags (no rule). Lexer `grammar/MdTemplateLexer.g4`: `TAG_STRICT` keywords
   `PATTERN` (`pattern`), `REPEAT_RULES` (`repeat-rules`), `SAME_LEVEL` (`same-level`),
   `DESCENDING` (`descending`), `NO_EXTRA` (`no-extra`); a pattern mode entered after
@@ -5201,7 +5232,7 @@ Handoff:
   `tags.test.ts`, `visitors.test.ts`, `cli/schema.test.ts`, `tests/integration/*.test.ts`,
   `tests/target/heading/*.test.ts`, `tests/target/content/*.test.ts`, `tests/syntax/syntax/MTL015-heading-tag-conflict.test.ts`); the `exist`-specific cases
   whose subject disappears are deleted in Pc instead (the whole `tests/fixtures/pairs/MTL602/`,
-  the second form of `MTL610`). Dogfood run. Release: major (positional matching and the
+  the second form of `MTL610`). Dogfood run. Release: breaking, 0.2.0 (positional matching and the
   dropped tag are breaking, C10 notes); a template without the new tags otherwise gives the same errors as after Pm,
   plus the `MTL616` warnings and the `MTL601` hint.
 - Pc cleanup (DONE; A72m, owner decision 1 and 7; LAST, after P8; breaking, no new code): remove
@@ -5357,7 +5388,7 @@ phase P7c, its A72m and A72n parts before P1). Ids are `AS1` to
   8.2.
 - AS15: All heading levels (2.6, change C10, ADR 0009; plan A72 Epic L). Owner decisions of
   2026-10-30, with the choices this spec adds:
-  (a) every level H1 to H6 is read and checked, no compatibility flag, released as a major
+  (a) every level H1 to H6 is read and checked, no compatibility flag, released as a breaking
   version with a migration note (owner decision 1; owner decisions are numbered as in ADR 0009,
   not to be confused with the kept quirks Q01 to Q08);
   (b) every level matches exactly, the legacy H1/H2 cross match by text is removed; `MTL602`
@@ -5766,7 +5797,7 @@ Behaviour that differs from legacy and is not one of the numbered defects.
   start with a line number and ` | `). Rationale: the user finds the line without opening
   the file.
 - C10: all heading levels (2.6, 2.7, 4.3, DIR5, DIR6, AS15, ADR 0009; plan A72 Epic L,
-  phases A72b to A72g in section 9). BREAKING, released as a major version, no compatibility
+  phases A72b to A72g in section 9). BREAKING, released as the breaking release 0.2.0, no compatibility
   flag. Legacy read only H1 and H2 as sections, matched a template heading by text at either
   of those two levels (only `exist` compared the level) and ignored H3 to H6 (old behaviour,
   removed). The port reads and checks every level: an untagged H3 to H6 template heading is
@@ -5792,9 +5823,9 @@ Behaviour that differs from legacy and is not one of the numbered defects.
   unchanged, except the A72l additions (owner decisions of AS17): every extra in the tail of
   a run gives the WARNING `MTL616` (exit code unchanged, suppressible), and the `MTL601`
   message of a swapped pair gains `(found later at line N, out of order)`. Migration: `docs/migration.md` section "Headings are matched by position"
-  (phase P8), released with the next major version.
+  (phase P8), released with the breaking release 0.2.0.
   BREAKING-CHANGE NOTE (A72m, owner decision 1 of A72m, AS17; phases P8 and Pc of section
-  9, both done; pre-release, same major version as the notes above): `[presence:exist]` is
+  9, both done; pre-release, same release as the notes above): `[presence:exist]` is
   REMOVED.
   It is now a malformed tag (`MTL012` in `--verify`); the bracket stays in the heading
   text, so the heading is an ordinary required heading that no target matches and every
@@ -5819,8 +5850,8 @@ Behaviour that differs from legacy and is not one of the numbered defects.
 - C12: heading patterns, repeat rules and order (2, 2.6, 2.7, 2.10, 4.1, 4.2, 4.3, DIR5,
   DIR6, DIR7, 7.3, 7.5, 8.1, 8.2, 8.3, 8.4, 8.5, AS17, ADR 0011, ADR 0012; plan A72 Epic P,
   phases A72j, A72k, A72l, A72m, A72n, Pm, P1 to P8 and Pc in section 9). The tags themselves are additive; the
-  positional match that A72k puts under them is breaking (C10 note), so Epic P ships in a
-  major release. Legacy had no way to match a heading whose text varies:
+  positional match that A72k puts under them is breaking (C10 note), so Epic P ships in the
+  breaking release 0.2.0. Legacy had no way to match a heading whose text varies:
   a release heading had to be written with its exact text or left unchecked. The port adds
   `[pattern:"..."]`, `[repeat-rules:same-level]` (with `min` and `max` forms),
   `[order:ascending]` / `[order:descending]` and `[content:subheadings:no-extra]` on
@@ -5843,7 +5874,7 @@ Behaviour that differs from legacy and is not one of the numbered defects.
   retired (C10 note). A template with a deeper child before a shallower one under one
   parent, valid before, now fails with `MTL019`.
   Revised by A72n (owner decisions of AS17, ADR 0011 and 0012 revisions; pre-release, same
-  major version): `MTL019` also for a parent with an invalid pattern; the order forms
+  release): `MTL019` also for a parent with an invalid pattern; the order forms
   `[order:first:semver:...]`; an order tag on a pattern heading without repeat tag is the
   template error `MTL030` heading-order-without-repeat (it was a `MTL015` warning), so such
   a template, which passed lint runs before, now fails them; `{int}` is renamed `{digits}`

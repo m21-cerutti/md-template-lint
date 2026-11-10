@@ -16,6 +16,10 @@ export type FormatName = (typeof FORMAT_NAMES)[number];
 
 export type UsageCode = "MTL920" | "MTL921" | "MTL922";
 
+export const SYNTAX_DOC_URL =
+  "https://github.com/m21-cerutti/markdown-template-linter/blob/main/docs/syntax-reference.md";
+export const SYNTAX_DOC_REMINDER = `Template syntax reference: ${SYNTAX_DOC_URL}`;
+
 export interface CliOptions {
   readonly configPath: string | undefined;
   readonly format: FormatName;
@@ -48,6 +52,8 @@ export const USAGE = [
   "matches no pair is skipped.",
   "",
   "Exit codes: 0 clean, 1 lint failure or broken template, 2 usage or run error.",
+  "",
+  SYNTAX_DOC_REMINDER,
   "",
 ].join("\n");
 

@@ -277,6 +277,22 @@ const CASES: readonly TestCase[] = [
     errors: [],
     suppressed: 0,
   },
+  // A run of only PATTERN headings (empty text after peeling) keeps MTL616: it has no MTL601,
+  // unlike the exact-text empty heading of the 2.11 body line (spec 2.10 step 4).
+  {
+    name: "fail-pattern-only-run-with-empty-text-keeps-the-warning",
+    expected: [extra(2, ["Zebra"], 7)],
+    errors: [],
+    suppressed: 0,
+  },
+  // An OPTIONAL heading with empty text after tag peeling keeps MTL616 (spec 2.10 step 4): only
+  // REQUIRED empty exact-text headings (reported by MTL601) silence the run.
+  {
+    name: "fail-optional-tag-only-heading-keeps-the-warning",
+    expected: [extra(2, ["Real", "Zebra"], 7)],
+    errors: [],
+    suppressed: 0,
+  },
 ];
 
 const read = (path: string): string =>

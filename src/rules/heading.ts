@@ -805,6 +805,16 @@ const headingSubheadingsOnlyDeclared = defineRule({
 });
 
 /**
+ * True for a REQUIRED exact-text template heading with empty text: the one MTL601 or MTL610
+ * already reports. An optional, conditional or pattern heading is never one.
+ */
+const isReportedEmpty = (section: Section | undefined): boolean =>
+  section !== undefined &&
+  headingPresence(section) === "required" &&
+  headingPattern(section) === null &&
+  section.text === "";
+
+/**
  * The tail of each run (spec 2.6 "Extra", 2.10 step 4, owner decision 4 of A72l): the extra
  * headings that no error names are ONE warning per run (one sequence in one scope: once per
  * level in file scope, once per level and per parent match or instance in section scope), in
@@ -812,10 +822,13 @@ const headingSubheadingsOnlyDeclared = defineRule({
  * (`repeatMisses`), MTL615 reports or MTL612 reports, every heading inside a stray block whose
  * topmost unlisted heading gets MTL612, and a heading an overlapping run of the same level sets
  * aside (MTL603) or takes (a match or a mismatch). A level and scope without position has no
- * run and no tail: its headings are free detail. Sorted by the template line of the LAST
- * position of the sequence (4.3), then by target line. Anchor (spec 4.4 DIR5): the first listed
- * heading; `{in}` as MTL605, `{n}` the level of the run; the `heading` member is the anchor's
- * text (spec 8.1).
+ * run and no tail: its headings are free detail. A run whose template headings are all
+ * REQUIRED exact-text headings with empty text (the template-body `# [unique-headings-names]`
+ * line, which MTL601 already reports) gives no MTL616; an optional, conditional or pattern
+ * heading keeps its MTL616. Sorted by the
+ * template line of the LAST position of the sequence (4.3), then by target line. Anchor (spec 4.4
+ * DIR5): the first listed heading; `{in}` as MTL605, `{n}` the level of the run; the `heading`
+ * member is the anchor's text (spec 8.1).
  */
 const headingExtra = defineRule({
   code: "MTL616",
@@ -857,6 +870,10 @@ const headingExtra = defineRule({
       return false;
     };
     const found = runs.flatMap((run) => {
+      const allEmpty = run.positions.every((position) =>
+        isReportedEmpty(context.template.sections[position.index]),
+      );
+      if (allEmpty) return [];
       const lastIndex = run.positions.at(-1)?.index;
       const last = lastIndex === undefined ? undefined : context.template.sections[lastIndex];
       const extras = run.tail.filter((heading) => !named.has(heading) && !inStrayBlock(heading));

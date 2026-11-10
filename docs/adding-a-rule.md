@@ -1,6 +1,6 @@
 ---
 title: Adding a rule
-last_updated: 2026-10-30
+last_updated: 2026-11-04
 ---
 
 # Adding a rule
@@ -167,6 +167,42 @@ and is named, quoted, by the test of that code. A syntax test runs the
 template through `--verify` (`verifyFixture` in `tests/helpers/verify.ts`); see
 `tests/syntax/syntax/MTL010-unknown-field-tag.test.ts`.
 
+### Fixtures with control characters
+
+Some editors and agent tools drop control characters such as U+001C or U+0085 when they write a
+file. `scripts/write-escaped.ts` writes the file from escape sequences instead, so no control
+character appears in the command:
+
+```bash
+node scripts/write-escaped.ts tests/fixtures/pairs/MTLxxx/<case>/target.md 'line\n\u0085\nline\n'
+```
+
+Use single quotes: in PowerShell `$` and backticks expand inside double quotes, but `$` is safe
+in single quotes. A `'` in the text must be doubled (`''`) in PowerShell.
+
+- Two arguments: the path and the escaped text. Output is UTF-8, no BOM unless `\uFEFF` is in
+  the text. It prints the path and the byte count.
+- Escapes: `\n` `\r` `\t` `\\` `\xHH` (code point U+00HH) `\uHHHH` (a surrogate pair is fine, a
+  lone surrogate is an error) `\u{H+}` (up to U+10FFFF). Any other escape or a trailing
+  backslash is an error.
+- Write area: only `tests/fixtures/` (create or overwrite) and the git-ignored `tmp/` (create
+  only). Any other path fails with "writes are limited to tests/fixtures/ and tmp/".
+- Extensions: only `.md`, `.txt`, `.json`, `.yml`, `.yaml` (case-insensitive). Anything else,
+  including no extension, `.ts`, `.js`, `.mjs`, `.test.ts`, `.ps1` or `.sh`, fails with
+  "extension not allowed", so the script never writes a file that `pnpm test` or a shell would
+  run. As a second guard, `vitest.config.ts` excludes `tmp/**` from the test run.
+- Permissions: the existing `node scripts/*` allow row in `opencode.jsonc` is the effective
+  gate; the `node scripts/write-escaped.ts *` row only documents this use and does not narrow it.
+- The path is relative to the repo root (or absolute inside it). Exit 1 and nothing written
+  when it is outside the root (links resolved to the real path), is a directory, or has a
+  segment that is secret-like (`.env*`, `*.env`, `*secret*`, `*credential*`, `*.pem`, `*.key`,
+  `id_rsa*`, `id_ed25519*`, `.ssh`, `.npmrc`, `auth.json`), `.git`, `node_modules`, a Windows
+  device name (`NUL`, `CON`, `COM1`, ...), an 8.3 short name (any `~` plus digit, like `GIT~1`)
+  or contains `:`. UNC (`\\host\share`), `\\?\` and drive-relative (`D:x.md`) paths are refused.
+- Missing parent folders are created. An existing file is overwritten only inside
+  `tests/fixtures/`, and not when it has hard links; in `tmp/` an existing file is never
+  overwritten ("refusing to overwrite").
+
 ## 5. Adding a new tag
 
 A rule that needs a new template tag touches five places (lexer, parser, AST, visitor,
@@ -205,5 +241,4 @@ pnpm test
 pnpm run build
 ```
 
-Then update the docs that name the rule ([spec.md](spec.md), the README tables) and, for a
-design decision, add an ADR (see [CONTRIBUTING.md](../CONTRIBUTING.md)).
+Then update the docs that name the rule ([spec.md](spec.md), the README tables), add a `FIX_NOTES` entry in `scripts/syntax-doc/notes.ts` keyed by the code with the typical fix, then run `pnpm run gen:syntax-doc`. For a design decision, add an ADR (see [CONTRIBUTING.md](../CONTRIBUTING.md)).

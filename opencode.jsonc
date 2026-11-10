@@ -119,6 +119,7 @@
     { "action": "shell", "resource": "node --version", "effect": "allow" },
     { "action": "shell", "resource": "node dist/*", "effect": "allow" },
     { "action": "shell", "resource": "node scripts/*", "effect": "allow" },
+    { "action": "shell", "resource": "node scripts/write-escaped.ts *", "effect": "allow" },
     { "action": "shell", "resource": "pnpm --version", "effect": "allow" },
     { "action": "shell", "resource": "pnpm install*", "effect": "allow" },
     { "action": "shell", "resource": "pnpm run *", "effect": "allow" },

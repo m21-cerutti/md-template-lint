@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { loadDocument } from "../../src/engine/load.js";
 import type { BodyHeading, FrontmatterLine } from "../../src/tags/ast.js";
 import {
+  analyzeDocument,
   InternalParseError,
   parseDocument,
   parseFilenameComment,
@@ -494,15 +495,24 @@ describe("unique heading names tag (spec 2.11)", () => {
       }
     });
 
-    it("a standalone `# [word]` line of another word is a plain comment: no switch, no finding", () => {
+    it("a standalone `# [word]` line of another word is a comment line with an unknown tag (MTL010)", () => {
       // Spec 2.11: only the name `unique-headings-names` makes the line the switch; spec 2.1
-      // reports field-tag findings on key lines only, so a typo here is silent.
+      // reports an unknown tag on a standalone comment line, subject `Comment line N`.
       for (const written of ["# [unique-heading-names]", "# [todo]"]) {
         const text = lines("---", written, "a: x", "---");
         const fm = parseDocument(text).frontmatter;
         expect(fm?.uniqueHeadingNames).toBe(false);
         expect(fm?.lines[0]).toEqual({ kind: "comment", line: 2, raw: written });
-        expect(loadedFindings(text)).toEqual([]);
+        expect(loadedFindings(text)).toMatchObject([
+          {
+            region: "frontmatter",
+            reason: "unknown",
+            tag: written.slice(2),
+            subject: { commentLine: 2 },
+            position: { line: 2 },
+          },
+        ]);
+        expect(loadedFindings(text)).toHaveLength(1);
       }
     });
 
@@ -525,6 +535,95 @@ describe("unique heading names tag (spec 2.11)", () => {
         },
       ]);
     });
+  });
+});
+
+/** Unknown tags on standalone template-frontmatter comment lines (spec 2.1, MTL010). */
+describe("unknown tags on frontmatter comment lines (spec 2.1)", () => {
+  const lines = (...text: string[]) => text.join("\n");
+  const loadedFindings = (text: string) => {
+    const result = loadDocument(text);
+    if (!result.ok) throw new Error(`load failed: ${result.failure.reason}`);
+    return result.model.findings;
+  };
+  const unknownAt = (line: number, tag: string) => ({
+    region: "frontmatter",
+    reason: "unknown",
+    tag,
+    subject: { commentLine: line },
+    position: { line },
+  });
+
+  it("reports an unknown tag mixed with free text", () => {
+    const found = loadedFindings(lines("---", "# note [x]", "a: x", "---"));
+    expect(found).toMatchObject([unknownAt(2, "[x]")]);
+    expect(found).toHaveLength(1);
+  });
+
+  it("reports one finding per unknown tag, in source order", () => {
+    const found = loadedFindings(lines("---", "# note [a] and [b]", "a: x", "---"));
+    expect(found).toMatchObject([unknownAt(2, "[a]"), unknownAt(2, "[b]")]);
+    expect(found).toHaveLength(2);
+    expect(found[0]?.position.column).toBeLessThan(found[1]?.position.column ?? 0);
+  });
+
+  it("reports `# [x:y]` alone (an unknown family) once", () => {
+    const found = loadedFindings(lines("---", "# [x:y]", "a: x", "---"));
+    expect(found).toMatchObject([unknownAt(2, "[x:y]")]);
+    expect(found).toHaveLength(1);
+  });
+
+  it("uses the 1-based file line as the subject", () => {
+    const found = loadedFindings(lines("---", "a: x", "b: y", "# [todo]", "c: z", "---"));
+    expect(found).toMatchObject([unknownAt(4, "[todo]")]);
+    expect(found).toHaveLength(1);
+  });
+
+  it.each([
+    ["`[rule]`", "# [rule]"],
+    ["a type name", "# [date]"],
+    ["a known tag with text", "# note [presence:optional]"],
+    ["the filename tag", "# [filename:case:snake_case]"],
+    ["a note tag", "# [note: see the docs]"],
+    ["a directive comment", "# md-template-lint disable-line MTL010 -- see [todo]"],
+  ])("reports nothing for %s", (_label, written) => {
+    expect(loadedFindings(lines("---", written, "a: x", "---"))).toEqual([]);
+  });
+
+  it("keeps `# [unique-headings-names]` as the switch, with no finding", () => {
+    const text = lines("---", "# [unique-headings-names]", "a: x", "---");
+    expect(parseDocument(text).frontmatter?.uniqueHeadingNames).toBe(true);
+    expect(loadedFindings(text)).toEqual([]);
+  });
+
+  it("reports nothing for a `# [todo]` line inside a block scalar value", () => {
+    const text = lines("---", "a: |", "  first", "  # [todo]", "  last", "b: x", "---");
+    expect(loadedFindings(text)).toEqual([]);
+  });
+
+  it("reports nothing for a `# [todo]` line inside a multi-line quoted value", () => {
+    const text = lines("---", 'a: "first', "  # [todo]", '  last"', "b: x", "---");
+    expect(loadedFindings(text)).toEqual([]);
+  });
+
+  it("the parser reports an interior `# [todo]` line, which the load drops", () => {
+    // Guards the interior-line exclusion of src/engine/load.ts: the raw analysis keeps the
+    // finding of the `#` line inside the block scalar; the loaded model must not.
+    const text = lines("---", "a: |", "  first", "  # [todo]", "  last", "b: x", "---");
+    expect(analyzeDocument(text).findings).toMatchObject([unknownAt(4, "[todo]")]);
+    expect(loadedFindings(text)).toEqual([]);
+  });
+
+  it("reports nothing for `[todo]` in body text", () => {
+    expect(loadedFindings(lines("---", "a: x", "---", "# Guide", "", "Text [todo]."))).toEqual([]);
+  });
+
+  it("keeps `# [unique-headings-names:x]` alone malformed with no comment-line subject", () => {
+    const found = loadedFindings(lines("---", "# [unique-headings-names:x]", "a: x", "---"));
+    expect(found).toMatchObject([
+      { reason: "malformed", tag: "[unique-headings-names:x]", subject: null },
+    ]);
+    expect(found).toHaveLength(1);
   });
 });
 

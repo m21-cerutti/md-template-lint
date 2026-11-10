@@ -10,7 +10,7 @@ deciders: [owner]
 
 Every template heading from H1 to H6 is checked, every level matches exactly, extra headings
 stay allowed unless a template heading carries `[content:subheadings:disallow]`, and the
-change ships as a breaking major release without a compatibility flag.
+change ships as a breaking release (0.2.0) without a compatibility flag.
 
 ## Context
 
@@ -24,7 +24,7 @@ change ships as a breaking major release without a compatibility flag.
   release, and no stray headings inside a release. That cannot be written with H1/H2 only.
 - Owner rounds 3 and 4 (2026-10-30, working proposal "heading patterns" rev 4, kept outside
   version control) decided: headings "always on, in all levels"; extra headings allowed by
-  default with the opt-out `[content:subheadings:disallow]`; decision 1: major release, no
+  default with the opt-out `[content:subheadings:disallow]`; decision 1: breaking release (0.2.0), no
   flag; decision 2(b): every level exact; decision 3(a): the tag covers the whole subtree.
   These decision numbers are the ones `docs/spec.md` cites (not the kept quirks Q01 to Q08).
 
@@ -48,7 +48,7 @@ change ships as a breaking major release without a compatibility flag.
 - **Disallow tag.** `[content:subheadings:disallow]` on any template heading forbids target
   headings that the template does not list anywhere in the matched section (whole subtree).
   Only the topmost unlisted heading of a stray subtree is reported. There is no `allow` tag.
-- **Release policy.** Breaking change, major version, migration note in `docs/migration.md`
+- **Release policy.** Breaking change, shipped in release 0.2.0, migration note in `docs/migration.md`
   (phase A72g), no compatibility flag or config switch.
 - **Note (2026-11-04).** Superseded in part: `[presence:exist]` was removed in phase Pc.
   It is now a malformed tag (`MTL012`) and `MTL602` is retired and

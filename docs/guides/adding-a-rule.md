@@ -358,6 +358,7 @@ The coverage gate (`pnpm run coverage`, 85% in `src/engine`, `src/rules` and `sr
 - [spec.md](../spec.md): the code row (step 2) and, for a rule with a tag, sections 2 and 9.
 - README: the rule tables of "Rule syntax by category".
 - An ADR in `docs/adr/` for a design decision (see [CONTRIBUTING.md](../../CONTRIBUTING.md)).
+- Syntax reference: add a `FIX_NOTES` entry keyed by the code in `scripts/syntax-doc/notes.ts` with the typical fix (one line), then run `pnpm run gen:syntax-doc`.
 - Commit as Conventional Commits (`feat(rules): add no-todo-value`).
 
 If you were only trying the guide, commit on the scratch branch, switch back and delete it:

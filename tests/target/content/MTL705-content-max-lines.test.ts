@@ -41,6 +41,18 @@ const CASES = [
     warnings: [],
   },
   {
+    // A line holding only U+0085 (NEXT LINE) is blank.
+    name: "fail-next-line-only-line-is-blank",
+    expected: [message(3, 4)],
+    warnings: [],
+  },
+  {
+    // A line holding only U+001C (FILE SEPARATOR) is blank.
+    name: "fail-c0-separator-only-line-is-blank",
+    expected: [message(3, 4)],
+    warnings: [],
+  },
+  {
     // 4 text lines plus lines holding only U+200B and U+180E (not whitespace for
     // Python `str.isspace`) count 6; the U+3000 line does not. A wider
     // isPythonSpace range (U+200B, U+180E) would give 4.

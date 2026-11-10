@@ -260,6 +260,7 @@ describe("package.json publish settings", () => {
       "dist",
       "!dist/**/*.map",
       "LICENSE",
+      "CHANGELOG.md",
       "THIRD_PARTY_NOTICES.md",
       "README.md",
     ]);

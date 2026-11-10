@@ -62,6 +62,23 @@ const CASES: readonly VerifyCase[] = [
       ),
     ],
   },
+  // Spec 2.1: an unknown tag on a standalone frontmatter comment line, alone or after free
+  // text, in source order across lines; a known tag there stays inert.
+  {
+    name: "fail-unknown-tag-on-standalone-comment-line",
+    exitCode: 0,
+    status: "ok",
+    diagnostics: [
+      warning("Comment line 2: unknown tag [todo]", 2, 3, "# [todo]"),
+      warning("Comment line 4: unknown tag [x]", 4, 8, "# note [x]"),
+      warning(
+        "Comment line 6: unknown tag [unique-heading-names]",
+        6,
+        3,
+        "# [unique-heading-names]",
+      ),
+    ],
+  },
 ];
 
 describe("MTL010 unknown-field-tag (--verify)", () => {

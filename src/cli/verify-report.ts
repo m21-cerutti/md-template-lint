@@ -18,6 +18,7 @@
  * template with template errors, and run errors.
  */
 import type { RunDiagnostic } from "../config/types.js";
+import { SYNTAX_DOC_REMINDER } from "./args.js";
 import type { Diagnostic } from "../engine/model.js";
 import { excerptRows, sourceLineOf } from "../reporters/excerpt.js";
 import { cleanText } from "../reporters/sanitize.js";
@@ -287,6 +288,7 @@ export function reportVerify(result: VerifyResult, options: VerifyReportOptions)
   if (!quiet) {
     line("cyan", `md-template-lint ${cleanText(options.version)}`);
     line("cyan", `Config: ${result.config === null ? "(none)" : cleanText(result.config)}`);
+    line("cyan", SYNTAX_DOC_REMINDER);
     line("cyan", RULE);
     out.push("");
   }

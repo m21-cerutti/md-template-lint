@@ -57,8 +57,10 @@ rules: their cases live in the config, runner and CLI unit tests.
 
 `pnpm run check:rules` is `vitest run tests/consistency`. Files: `rules.test.ts` (grammar,
 visitors, types, ranges, rule files and the spec code table agree), `rule-fixtures.test.ts` (the
-fixture layout check, run on the repository and on small in-memory trees), with their helpers
-`consistency.ts` and `rule-fixtures.ts`. `pending-rules.json` is the allow-list of spec codes that
+fixture layout check, run on the repository and on small in-memory trees) and
+`syntax-reference.test.ts` (drift of `docs/syntax-reference.md`: generated blocks current, notes
+coverage, pending flags, documented CLI flags and enums), with their helpers `consistency.ts`,
+`rule-fixtures.ts` and `syntax-reference.ts`. `pending-rules.json` is the allow-list of spec codes that
 are not implemented yet.
 
 ## Fixtures

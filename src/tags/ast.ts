@@ -227,8 +227,13 @@ export const BODY_TAG_KINDS = Object.keys(BODY_KIND_SET) as BodyTag["kind"][];
 // Findings (tag problems, before the registry turns them into diagnostics)
 // ---------------------------------------------------------------------------
 
-/** The field or heading a finding belongs to, when known. */
-export type TagSubject = { readonly field: string } | { readonly heading: string };
+/**
+ * The field, heading or comment line a finding belongs to, when known. No subject (`null`) means
+ * the filename comment; `commentLine` is the 1-based file line of a standalone frontmatter
+ * comment line.
+ */
+export type TagSubject =
+  { readonly field: string } | { readonly heading: string } | { readonly commentLine: number };
 
 /**
  * Why a bracket is a problem. Mapping to codes is the registry's job; see

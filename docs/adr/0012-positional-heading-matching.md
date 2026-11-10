@@ -91,7 +91,7 @@ pattern is invalid.
   position took (`exist` included: superseded, see "Revision 2026-11-03"); `MTL604` and `MTL611` keep their cross-level order check
   (within one level the run is ordered by construction); the scope, "checked" and section
   rules of ADR 0009 are unchanged.
-- **Release.** Breaking: a major release with a migration note (`docs/migration.md`,
+- **Release.** Breaking: the breaking release (0.2.0) with a migration note (`docs/migration.md`,
   "Headings are matched by position"); codes and messages of `MTL601` to `MTL612` are
   unchanged, except the `MTL601` hint (A72l), and extras gain the `MTL616` warning.
 

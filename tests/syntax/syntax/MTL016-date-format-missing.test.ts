@@ -469,6 +469,7 @@ describe("MTL016 section is the last one of the --verify text report (spec 8.3)"
 /** Spec 2.9 worked example 2: the whole plain output, `<version>` being 9.9.9. */
 const WORKED_EXAMPLE_2 = `md-template-lint 9.9.9
 Config: (none)
+Template syntax reference: https://github.com/m21-cerutti/markdown-template-linter/blob/main/docs/syntax-reference.md
 ========================
 
   PASS release.template.md

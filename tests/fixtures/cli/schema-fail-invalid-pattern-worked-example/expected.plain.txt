@@ -1,5 +1,6 @@
 md-template-lint 9.9.9
 Config: (none)
+Template syntax reference: https://github.com/m21-cerutti/markdown-template-linter/blob/main/docs/syntax-reference.md
 ========================
 
   PASS template.md

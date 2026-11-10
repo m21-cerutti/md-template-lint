@@ -1,3 +1,4 @@
+package/CHANGELOG.md
 package/LICENSE
 package/README.md
 package/THIRD_PARTY_NOTICES.md

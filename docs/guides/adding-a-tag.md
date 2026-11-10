@@ -175,7 +175,7 @@ For a new FAMILY (a new alternative of `fmTagBody` or `bodyTagBody`, a new keywo
 `...RULE_fmTagBody).rules.size` (8) and `...RULE_bodyTagBody).rules.size` (5). Raise the one you
 changed by one. A new argument of an existing family, as in the example, changes none of them.
 
-## 7. Tests and docs
+## 7. Tests, docs and syntax reference
 
 - Parser level: add the tag to the matching test of `tests/unit/tags.test.ts` (it parses
   `[order:ascending]` in "parses format, value, count, range, order and io tags") with
@@ -185,8 +185,9 @@ changed by one. A new argument of an existing family, as in the example, changes
   `MTL030`) is tested through `--verify` in `tests/syntax/syntax/`.
 - Docs: [spec.md](../spec.md) section 2 (the tag tables, and 2.7 for unknown and malformed tags),
   section 9, and the README rule tables.
+- Syntax reference: if this is a new tag FAMILY (a new alternative of `fmTagBody` or `bodyTagBody`), add a `TAG_NOTES` entry keyed by `<region>:<family>` in `scripts/syntax-doc/notes.ts` with `description` and `example` (a new tag ARGUMENT to an existing family needs no entry). Then run `pnpm run gen:syntax-doc`.
 - Gates, in this order, one at a time: `pnpm run check:parser`, `pnpm run check:rules`,
-  `pnpm run typecheck`, `pnpm run lint`, `pnpm run format:check`, `pnpm run build`, `pnpm test`.
+  `pnpm run check:syntax-doc`, `pnpm run typecheck`, `pnpm run lint`, `pnpm run format:check`, `pnpm run build`, `pnpm test`.
 
 If you only tried the guide, switch back and delete the scratch branch
 (`git switch main`, `git branch -D scratch/try-a-tag`).

@@ -56,6 +56,12 @@ export class BracketShapeVisitor extends FamilyVisitor<BracketShape> {
 
   override visitTagBareBracket = (ctx: TagBareBracketContext): BracketShape => {
     const name = ctx.tagHintName();
+    // Standalone `# [rule]` parses as a bare bracket (tagWord includes RULE): it is the inert
+    // rule marker, as on key lines (tagRuleMarker), never an unknown tag.
+    const pieces = name.tagHintPiece();
+    if (pieces.length === 1 && pieces[0]!.tagWord()?.RULE() != null) {
+      return { kind: "inert" };
+    }
     const ascii = name.tagHintPiece().every((piece) => piece.UWORD() === null);
     return ascii && !KNOWN_TYPE_NAMES.has(name.getText().toLowerCase())
       ? { kind: "bare", ctx }
