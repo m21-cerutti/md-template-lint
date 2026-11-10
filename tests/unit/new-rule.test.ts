@@ -1,7 +1,8 @@
 /**
  * `pnpm run new:rule` (scripts/new-rule.ts), run with `--root` in a temporary
- * tree. One passing case per layout (target, --syntax), failing cases for a
- * missing step and a duplicate rule.
+ * tree. Passing cases per layout (target, category syntax, --syntax), each fresh stub also
+ * passing the check:rules layout check (tests/consistency/rule-fixtures.ts) on the temp tree;
+ * failing cases for a missing step, --syntax with a field phase and a duplicate rule.
  */
 import { spawnSync } from "node:child_process";
 import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
@@ -10,6 +11,7 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import * as prettier from "prettier";
 import { ROOT } from "../consistency/consistency.js";
+import { diskTree, fixtureProblems } from "../consistency/rule-fixtures.js";
 
 let root = "";
 
@@ -77,6 +79,44 @@ describe("new:rule scaffold", () => {
       expect(existsSync(join(root, "tests", "fixtures", "templates", "MTL005", file))).toBe(true);
     }
     expect(await prettierClean(join(root, "src", "rules", "syntax.ts"))).toBe(true);
+  });
+
+  it("passes: a fresh target stub passes the check:rules layout check", () => {
+    const result = run("format", FAKE_RULE, "--step", "constant");
+    expect(result.status).toBe(0);
+    const rule = {
+      code: scaffoldedCode(result.stdout),
+      category: "format",
+      phase: "field",
+    } as const;
+    expect(fixtureProblems([rule], diskTree(root))).toEqual([]);
+  });
+
+  it("passes: category syntax without --syntax gets the syntax layout and passes the check", async () => {
+    const result = run("syntax", "rogue-tag");
+    expect(result.status).toBe(0);
+    const test = join(root, "tests", "syntax", "syntax", "MTL005-rogue-tag.test.ts");
+    expect(readFileSync(test, "utf8")).toContain('const DIR = "tests/fixtures/templates/MTL005";');
+    expect(await prettierClean(test)).toBe(true);
+    const rule = { code: "MTL005", category: "syntax", phase: "template" } as const;
+    expect(fixtureProblems([rule], diskTree(root))).toEqual([]);
+  });
+
+  it("passes: --syntax on another category is a template rule in the syntax layout", () => {
+    const result = run("format", FAKE_RULE, "--syntax");
+    expect(result.status).toBe(0);
+    const code = scaffoldedCode(result.stdout);
+    expect(readFileSync(join(root, "src", "rules", "format.ts"), "utf8")).toContain(
+      `    code: "${code}",\n    name: "${FAKE_RULE}",\n    severity: "error",\n    category: "format",\n    phase: "template",`,
+    );
+    const rule = { code, category: "format", phase: "template" } as const;
+    expect(fixtureProblems([rule], diskTree(root))).toEqual([]);
+  });
+
+  it("fails: --syntax with a field phase (the layout would not match the check)", () => {
+    const result = run("format", FAKE_RULE, "--syntax", "--phase", "field", "--step", "constant");
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("--syntax needs phase parse or template, not 'field'");
   });
 
   it("passes: ignores the bare `--` that `pnpm run new:rule -- ...` forwards", () => {

@@ -1,6 +1,6 @@
 /**
  * JSON reporter (docs/spec.md 8.5): valid JSON that parses back, stable keys, the
- * optional `heading` on heading diagnostics, `--quiet` does not shrink it. Golden files:
+ * optional `heading` on heading diagnostics, `--quiet` does not shrink it. Expected-output files:
  * tests/fixtures/runner/report-*\/expected.json (compared as parsed JSON, keys checked
  * apart).
  */

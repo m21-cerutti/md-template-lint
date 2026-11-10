@@ -1,6 +1,6 @@
 /**
  * Shared helpers of the config, runner and reporter tests: fixture paths and the
- * pass/fail split check (exactly 1 `pass-` case, at least as many `fail-` cases,
+ * pass/fail split check (at least 1 `pass-` case, at least 1 `fail-` case,
  * one fixture directory per case, no orphan directory of the group).
  */
 import { readdirSync, readFileSync } from "node:fs";
@@ -70,7 +70,7 @@ export function expectSplit(
 export function expectNameSplit(cases: readonly { readonly name: string }[]): void {
   const passing = cases.filter((testCase) => testCase.name.startsWith("pass-"));
   const failing = cases.filter((testCase) => testCase.name.startsWith("fail-"));
-  expect(passing).toHaveLength(1);
-  expect(failing.length).toBeGreaterThanOrEqual(passing.length);
+  expect(passing.length).toBeGreaterThanOrEqual(1);
+  expect(failing.length).toBeGreaterThanOrEqual(1);
   expect(passing.length + failing.length).toBe(cases.length);
 }

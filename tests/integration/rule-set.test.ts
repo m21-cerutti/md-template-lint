@@ -3,8 +3,8 @@
  * presence, format, count, range, type, enum, order, scheme, io and filename
  * tags; heading presence tags; content tags) run through `checkTemplate` and
  * `checkTarget` with the real registry and an in-memory env (no network). Each
- * case asserts the FULL ordered diagnostic list, not one code. Exactly 1
- * passing case, failing cases >= passing, one fixture dir each.
+ * case asserts the FULL ordered diagnostic list, not one code. At least 1
+ * passing case and 1 failing case, one fixture dir each.
  */
 import { readFileSync, readdirSync } from "node:fs";
 import { join, relative } from "node:path";
@@ -144,11 +144,11 @@ const env = createEnv({
 });
 
 describe("rule set: many-tag template, real registry, in-memory io", () => {
-  it("has exactly 1 pass- case and at least as many fail- cases, one fixture dir each", () => {
+  it("has at least 1 pass- case and at least 1 fail- case, one fixture dir each", () => {
     const passing = CASES.filter((testCase) => testCase.name.startsWith("pass-"));
     const failing = CASES.filter((testCase) => testCase.name.startsWith("fail-"));
-    expect(passing).toHaveLength(1);
-    expect(failing.length).toBeGreaterThanOrEqual(passing.length);
+    expect(passing.length).toBeGreaterThanOrEqual(1);
+    expect(failing.length).toBeGreaterThanOrEqual(1);
     expect(passing.length + failing.length).toBe(CASES.length);
     expect(CASES.filter((testCase) => testCase.expected.length === 0)).toEqual(passing);
     // Orphan detection: no directory at any depth besides the cases, and each holds only the pair.

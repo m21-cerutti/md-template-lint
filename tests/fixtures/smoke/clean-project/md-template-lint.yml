@@ -1,0 +1,5 @@
+# Synthetic project for `pnpm run smoke:pack` (scripts/smoke-pack.ts): lints clean, exit 0.
+pairs:
+  - name: notes
+    template: templates/note.template.md
+    include: docs/*.md

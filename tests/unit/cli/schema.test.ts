@@ -2,18 +2,18 @@
  * `--verify` schema output (docs/spec.md 7.3, 8.3, 8.5): the table of fields (inferred type
  * and rules), the headings with their rules, the `Filename:` line and the sections for
  * unknown, malformed and misplaced tags; and the same data as JSON (`filenameCase`, `fields`,
- * `headings`, `diagnostics`). Each case is a folder with `template.md` and two golden files,
+ * `headings`, `diagnostics`). Each case is a folder with `template.md` and two expected-output files,
  * `expected.plain.txt` (the whole plain output) and `expected.json` (the `templates` array),
  * written from the spec rules and the legacy `describe()`, not generated.
  * Fixtures: tests/fixtures/cli/schema-<case>/. "fail-" here means the schema reports tag
  * problems; they are warnings, so every case is exit 0. The templates with no heading or no
  * field carry such a problem on purpose, so they are fail- cases and the group keeps its
- * split (one pass-, fail- >= pass-).
+ * split (at least one pass- and one fail- case).
  *
- * Implementation-defined, not covered by spec 8.3: the goldens show a MALFORMED or MISPLACED
+ * Implementation-defined, not covered by spec 8.3: the expected files show a MALFORMED or MISPLACED
  * heading tag left in the heading text (`## Body [content:min-lines:abc]`, as the engine's
  * heading extraction keeps any bracket it does not recognise, spec 2.6). Spec 8.3 only
- * describes an unknown heading tag. A change of that extraction changes those goldens.
+ * describes an unknown heading tag. A change of that extraction changes those files.
  */
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -27,13 +27,13 @@ const GROUP = "schema-";
 
 interface Case {
   readonly name: string;
-  /** Fragments the text output must show, in order (a reading aid on top of the golden). */
+  /** Fragments the text output must show, in order (a reading aid on top of the expected file). */
   readonly shows: readonly string[];
   /** Fragments the text output must not have. */
   readonly lacks: readonly string[];
 }
 
-/** Exactly 1 passing case, failing cases >= passing; one fixture directory per case. */
+/** At least 1 passing case and 1 failing case; one fixture directory per case. */
 const CASES: readonly Case[] = [
   {
     // Types: enum, int, url, list-of-date, list, string; every rule kind, the first tag of a
@@ -124,26 +124,26 @@ const CASES: readonly Case[] = [
 ];
 
 const dir = (name: string): string => fixturePath("cli", `${GROUP}${name}`);
-/** A golden file with `\r\n` read as `\n` (a checkout may convert line ends). */
-const golden = (name: string, file: string): string =>
+/** An expected-output file with `\r\n` read as `\n` (a checkout may convert line ends). */
+const expectedFile = (name: string, file: string): string =>
   readFileSync(join(dir(name), file), "utf8").replaceAll("\r\n", "\n");
 
 const plainRun = (fixture: string) =>
   runCliIn(fixture, ["--verify", "--format", "plain", "template.md"]);
 
 describe("cli --verify schema: layout", () => {
-  it("has exactly 1 pass- case, at least as many fail- cases, one directory each", () => {
+  it("has at least 1 pass- case, at least 1 fail- case, one directory each", () => {
     expectSplit("cli", GROUP, CASES);
   });
 });
 
 describe("cli --verify schema: text (spec 8.3)", () => {
   for (const testCase of CASES) {
-    it(`${testCase.name}: plain output is the golden file`, async () => {
+    it(`${testCase.name}: plain output is the expected file`, async () => {
       const run = await plainRun(`${GROUP}${testCase.name}`);
       expect(run.exitCode).toBe(0);
       expect(run.stderr).toBe("");
-      expect(run.stdout).toBe(golden(testCase.name, "expected.plain.txt"));
+      expect(run.stdout).toBe(expectedFile(testCase.name, "expected.plain.txt"));
       let from = 0;
       for (const fragment of testCase.shows) {
         const at = run.stdout.indexOf(fragment, from);
@@ -161,7 +161,7 @@ describe("cli --verify schema: text (spec 8.3)", () => {
       expect(lines[at + 1]).toBe("-".repeat(header.length));
     });
 
-    it(`${testCase.name}: JSON templates are the golden file`, async () => {
+    it(`${testCase.name}: JSON templates are the expected file`, async () => {
       const run = await runCliIn(`${GROUP}${testCase.name}`, [
         "--verify",
         "--format",
@@ -170,7 +170,7 @@ describe("cli --verify schema: text (spec 8.3)", () => {
       ]);
       expect(run.exitCode).toBe(0);
       expect(parseJson(run.stdout).templates).toEqual(
-        JSON.parse(golden(testCase.name, "expected.json")) as unknown,
+        JSON.parse(expectedFile(testCase.name, "expected.json")) as unknown,
       );
     });
   }

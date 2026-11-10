@@ -1,0 +1,107 @@
+# Release (ADR 0005). Pushing a tag "v*" runs the gates, packs once, smoke-tests that exact
+# tarball and publishes it to npm with Trusted Publishing (OIDC) and provenance.
+# "Run workflow" (workflow_dispatch) is a dry run: same steps, never publishes.
+#
+# No secrets and no npm token: npm trusts this workflow file through OIDC. The owner must add
+# this repository and the workflow file name "release.yml" as a Trusted Publisher on
+# npmjs.com (package settings) before the first release.
+#
+# Only GitHub-owned actions (actions/*) are used, pinned by major version tag; no third-party
+# action runs here. Pinning by full commit SHA is a follow-up (ADR 0005, "Follow-ups").
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+# Least privilege: the default is read-only. Only the publish job adds id-token.
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.repository }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Gates, pack and smoke test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+
+      # No cache here: this job builds the tarball that is published with provenance, so it
+      # restores nothing that an earlier run (or a pull request) could have poisoned.
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+
+      # pnpm comes from the "packageManager" field of package.json through Corepack, which ships
+      # with Node 24. No third-party action runs in this workflow (ADR 0005).
+      - name: Enable pnpm (Corepack, version from packageManager)
+        run: corepack enable
+
+      # Same logic as the unit tests: scripts/smoke/helpers.ts (checkRelease).
+      - name: Tag matches the package version and repository
+        if: github.event_name == 'push'
+        env:
+          TAG: ${{ github.ref_name }}
+          REPOSITORY: ${{ github.repository }}
+        run: node scripts/smoke/check-release.ts "$TAG" "$REPOSITORY"
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run check:parser
+      - run: pnpm run check:rules
+      - run: pnpm run typecheck
+      - run: pnpm run lint
+      - run: pnpm run format:check
+      - run: pnpm test
+      - run: pnpm run build
+
+      - name: Pack
+        run: pnpm pack --pack-destination "$RUNNER_TEMP/pack"
+
+      # Tests the tarball that will be published, not a second pack.
+      - name: Pack smoke test
+        run: pnpm run smoke:pack -- --tarball "$RUNNER_TEMP"/pack/*.tgz
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: package-tarball
+          path: ${{ runner.temp }}/pack/*.tgz
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    name: Publish to npm
+    needs: verify
+    # Tag pushes only (never the dry run), and never from a fork.
+    if: github.event_name == 'push' && github.event.repository.fork == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # The owner configures required reviewers and tag protection on the "release" environment
+    # (repository settings, Environments). ADR 0005.
+    environment: release
+    permissions:
+      contents: read
+      id-token: write # npm Trusted Publishing (OIDC) and provenance
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: package-tarball
+          path: ${{ runner.temp }}/pack
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+
+      # Trusted Publishing (OIDC) and provenance need npm 11.5.1 or newer. The version is exact,
+      # never a range, so a new npm release cannot change what publishes. Raise it on purpose.
+      - name: Install a pinned npm
+        run: npm install --global npm@11.21.1
+
+      - name: Publish
+        run: npm publish "$RUNNER_TEMP"/pack/*.tgz --provenance --access public

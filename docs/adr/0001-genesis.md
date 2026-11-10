@@ -22,7 +22,7 @@ The linter is a TypeScript package named `md-template-lint` (MIT, Node >=22, ESM
 - Rules live in `src/rules/<category>.ts`, one file per category, with stable `MTLxxx` codes.
 - Each project declares its pairs, aliases and approved roots in `md-template-lint.yml`. This replaces the wrappers and `approved_path.yml`.
 - The CLI works with lint-staged and exits 0, 1 or 2.
-- `pnpm run parity` compares the output with the legacy golden files. It is the gate before the global install.
+- `pnpm run parity` compares the output with outputs captured from the legacy tools. It is the gate before the global install.
 - The repository is meant to live as `m21-cerutti/markdown-template-linter` once the owner creates it. The plan lives in `tmp/PLAN.md` (git-ignored). The package is never pushed or published by agents.
 
 ## Consequences
@@ -30,7 +30,8 @@ The linter is a TypeScript package named `md-template-lint` (MIT, Node >=22, ESM
 - One installable tool replaces a copied wrapper in every project.
 - Tag syntax has a single source of truth, the grammar, and a new rule without a new tag touches one category file. A rule that adds a tag touches five places (see ADR 0002).
 - The legacy defects get documented decisions instead of silent behaviour.
-- The legacy snapshot and a frozen corpus must be kept to prove parity.
+- The legacy snapshot and frozen sample data must be kept to prove parity.
+- Update 2026-10-30: parity was reached and the `pnpm run parity` tooling was removed, see [ADR 0006](0006-parity-reached.md). Phase A39 then removed the legacy snapshot and the frozen sample data (see ADR 0006).
 - The ANTLR toolchain adds build dependencies and a generated parser to commit.
 - GitHub repository, npm Trusted Publisher and first publish are manual steps.
 

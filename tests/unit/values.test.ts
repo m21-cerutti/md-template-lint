@@ -1,6 +1,6 @@
 /**
  * Case style helpers of src/engine/values.ts (docs/spec.md 2.3). Per
- * behaviour: exactly 1 passing case, failing cases >= passing.
+ * behaviour: at least 1 passing case and 1 failing case.
  */
 import { describe, expect, it } from "vitest";
 import {

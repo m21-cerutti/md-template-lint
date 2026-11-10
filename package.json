@@ -12,6 +12,20 @@
   },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "!dist/**/*.map",
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md",
+    "README.md"
+  ],
   "author": "Marc CERUTTI",
   "license": "MIT",
   "repository": {
@@ -33,7 +47,9 @@
     "coverage": "vitest run --coverage",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "prepack": "pnpm run build",
+    "smoke:pack": "node scripts/smoke-pack.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

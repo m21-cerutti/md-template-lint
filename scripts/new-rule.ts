@@ -5,18 +5,21 @@
 // Adds a `defineRule({...})` entry with a stub check (`notImplemented`, throws
 // when run) to src/rules/<category>.ts, before the
 // `// new:rule inserts above this line` marker, plus a test stub and fixture
-// folders in the A39 layout:
-//   target (default): tests/target/<category>/<MTLxxx>-<name>.test.ts
+// folders in the A39 layout, chosen from the phase (the same rule as
+// tests/consistency/rule-fixtures.ts):
+//   field / target phase: tests/target/<category>/<MTLxxx>-<name>.test.ts
 //                     tests/fixtures/pairs/<MTLxxx>/{pass-placeholder,fail-placeholder}/{template,target}.md
-//   --syntax:         tests/syntax/<category>/<MTLxxx>-<name>.test.ts
+//   parse / template phase (category syntax, or --syntax):
+//                     tests/syntax/<category>/<MTLxxx>-<name>.test.ts
 //                     tests/fixtures/templates/<MTLxxx>/{pass-placeholder,fail-placeholder}.md
+// The test stub names its fixture folder in `const DIR = "..."`, as `check:rules` requires.
 // Rename the placeholder cases to descriptive kebab-case names (pass-... or
 // fail-...), never numbered.
 // The code is `--code`, else the docs/spec.md 4.3 row with that name in that
 // category, else the next free code of the category range (then add the row
 // to the spec, or `pnpm run check:rules` fails). The code stays in
 // tests/consistency/pending-rules.json until the check is implemented.
-// Phase: `template` for category syntax, else `field`; `field` and `target`
+// Phase: `template` for category syntax or --syntax, else `field`; `field` and `target`
 // need `--step` (a FieldStep / TargetStep of src/engine/rule.ts; a wrong step
 // fails `pnpm run typecheck`). Ranges come from src/engine/ranges.json, the
 // same file src/engine/rule.ts imports. `--root` writes into another tree
@@ -158,8 +161,14 @@ if (bounds === undefined) {
 }
 if (!isKebab(name)) fail(`name '${name}' must be kebab-case (a-z, 0-9, -)`);
 
-const phase = options.phase ?? (category === "syntax" ? "template" : "field");
+const phase = options.phase ?? (options.syntax || category === "syntax" ? "template" : "field");
 if (!PHASES.includes(phase)) fail(`phase must be one of ${PHASES.join(", ")}`);
+// The layout follows the phase, as tests/consistency/rule-fixtures.ts derives it: a template-only
+// rule (parse, template) gets the syntax layout, a field or target rule the pair layout.
+const syntaxLayout = !STEP_PHASES.includes(phase);
+if (options.syntax && !syntaxLayout) {
+  fail(`--syntax needs phase parse or template, not '${phase}'`);
+}
 if (STEP_PHASES.includes(phase) && options.step === undefined) {
   fail(`phase '${phase}' needs --step (see FIELD_STEPS / TARGET_STEPS in src/engine/rule.ts)`);
 }
@@ -230,32 +239,31 @@ if (!updated.includes("notImplemented,")) {
   updated = updated.replace(importLine, replacement);
 }
 
-const family = options.syntax ? "syntax" : "target";
+const family = syntaxLayout ? "syntax" : "target";
 const testFile = join(root, "tests", family, category, `${code}-${name}.test.ts`);
-const fixtureRoot = options.syntax
+const fixtureRoot = syntaxLayout
   ? `tests/fixtures/templates/${code}`
   : `tests/fixtures/pairs/${code}`;
-const cases: Case[] = options.syntax
-  ? [
-      ["pass-placeholder", `${fixtureRoot}/pass-placeholder.md`, "clean"],
-      ["fail-placeholder", `${fixtureRoot}/fail-placeholder.md`, code],
-    ]
-  : [
-      ["pass-placeholder", `${fixtureRoot}/pass-placeholder`, "clean"],
-      ["fail-placeholder", `${fixtureRoot}/fail-placeholder`, code],
-    ];
+const extension = syntaxLayout ? ".md" : "";
+const cases: Case[] = [
+  ["pass-placeholder", `pass-placeholder${extension}`, "clean"],
+  ["fail-placeholder", `fail-placeholder${extension}`, code],
+];
 const test = [
   `/** ${code} ${name} (src/rules/${category}.ts). Stub from \`pnpm run new:rule\`. */`,
   'import { describe, expect, it } from "vitest";',
   'import { createRegistry } from "../../../src/engine/registry.js";',
   "",
-  "/** Case -> fixture -> expected result: exactly 1 passing case, failing cases >= passing. */",
+  // The quoted fixture folder is what `pnpm run check:rules` looks for in the test file.
+  `const DIR = "${fixtureRoot}";`,
+  "",
+  "/** Case -> fixture -> expected result: at least 1 passing and 1 failing case. */",
   "const CASES = [",
   // One property per line: the placeholder names exceed Prettier's 100 columns on one line.
   ...cases.flatMap(([caseName, fixture, expected]) => [
     "  {",
     `    name: "${caseName}",`,
-    `    fixture: "${fixture}",`,
+    `    fixture: \`\${DIR}/${fixture}\`,`,
     `    expected: "${expected}",`,
     "  },",
   ]),
@@ -282,7 +290,7 @@ for (const path of [testFile, join(root, fixtureRoot)]) {
 }
 writeFileSync(ruleFile, updated);
 write(testFile, test);
-if (options.syntax) {
+if (syntaxLayout) {
   write(join(root, fixtureRoot, "pass-placeholder.md"), placeholder);
   write(join(root, fixtureRoot, "fail-placeholder.md"), placeholder);
 } else {

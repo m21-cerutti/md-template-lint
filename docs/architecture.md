@@ -5,8 +5,27 @@ last_updated: 2026-10-30
 
 # Architecture
 
-Skeleton from phase A9. The contract is [spec.md](spec.md); the grammar decisions are in
+How the code is organised and why. The contract is [spec.md](spec.md); the grammar decisions are in
 [ADR 0002](adr/0002-grammar-structure.md). When this file and the spec disagree, the spec wins.
+
+## Overview
+
+`md-template-lint` checks Markdown files (frontmatter and H1/H2 headings) against Markdown
+templates. A template is the schema: its inline comments and heading suffixes carry bracket
+tags. The tags are specified once, in the two ANTLR grammars in `grammar/`. A run goes in four
+steps: the config loader reads `md-template-lint.yml` (pairs of template and glob), the runner
+walks the targets of each pair, the pipeline parses each file and runs the rules of
+`src/rules/<category>.ts` in a fixed order, and a reporter prints the diagnostics
+(`MTLnnn` codes) as text, plain text or JSON. The CLI wraps these steps and sets the exit code.
+The sections below detail each part.
+
+Guides:
+
+- [README](../README.md): install, usage, rule syntax by category, config reference, lint-staged.
+- [Adding a rule](adding-a-rule.md): scaffold, tests, fixtures, new tags, quality gates.
+- [Migration](migration.md): replace the legacy wrappers and `approved_path.yml`.
+- [Contributing](../CONTRIBUTING.md): setup, gates, commit style, ADR process.
+- [ADR 0006](adr/0006-parity-reached.md): result of the comparison with the legacy linter.
 
 ## Modules
 
@@ -365,7 +384,7 @@ order:
 Inside one step: registry order (category file order, then file order). The result lists
 errors first, then warnings, each in emission order.
 
-One exception, the `headings` step (legacy parity): the presence findings `MTL601` to `MTL603`
+One exception, the `headings` step (kept from the legacy linter): the presence findings `MTL601` to `MTL603`
 come in TEMPLATE HEADING order, interleaved across the three rules, not grouped by rule. Each
 of these rules anchors its finding on the line of the template heading it is about (the
 diagnostic `position`). After the step ran, the pipeline stable-sorts the anchored findings by
@@ -411,24 +430,36 @@ lists. Only a new stage-2 token whose lexer rule is a negated set needs a sample
 
 ## How to add a rule
 
-```bash
-pnpm run new:rule -- <category> <name> [--step <step>] [--phase <phase>] [--code MTLnnn] [--syntax]
-```
+The `pnpm run new:rule` scaffold (flags, what it writes, pending rules, test layout and
+fixtures) is described in [adding-a-rule.md](adding-a-rule.md#2-scaffold-the-rule). A new rule
+needs a row in the spec 4.3 code table; a rule that adds a tag also follows the five places above.
 
-- Adds a `defineRule` entry with `check: notImplemented("MTLxxx")` to `src/rules/<category>.ts`.
-  The stub throws when run; the code stays in `tests/consistency/pending-rules.json` until the
-  check is implemented, then remove it from that list.
-- Phase: `template` for category `syntax`, else `field`; `field` and `target` need `--step`.
-- A spec 4.3 row with that name gives the code and severity; a new code needs a spec row.
-- Tests and fixtures (A39 layout):
-  - target (default): `tests/target/<category>/<MTLxxx>-<name>.test.ts`, fixtures
-    `tests/fixtures/pairs/<MTLxxx>/<case>/template.md` and `target.md`;
-  - `--syntax`: `tests/syntax/<category>/<MTLxxx>-<name>.test.ts`, fixtures
-    `tests/fixtures/templates/<MTLxxx>/<case>.md`.
-- Case dirs and files are descriptive kebab-case names prefixed `pass-` or `fail-` (for example
-  `pass-all-required-present`, `fail-required-key-absent`), never numbered. The scaffold emits
-  `pass-placeholder` and `fail-placeholder`; rename them to describe what each case exercises.
-- Tests per rule: exactly one passing case, failing cases at least as many.
+## Tests: rule cases
+
+Every registered rule code has one test file and one fixture folder, with at least 1 `pass-` case
+and at least 1 `fail-` case. There is no upper bound: several `pass-` cases are welcome to test
+limit cases. Each case has its own fixture with a descriptive kebab-case
+name (`pass-<name>` / `fail-<name>`, never numbered), and the test file holds a table that maps
+the case name to the fixture and the expected result. No case text is written inline.
+
+| Family | Test file | Fixtures | Code path |
+| ------ | --------- | -------- | --------- |
+| Template syntax (phase `parse` or `template`: `MTL001`-`MTL004`, `MTL010`-`MTL013`) | `tests/syntax/<category>/<MTLxxx>-<name>.test.ts` | `tests/fixtures/templates/<MTLxxx>/<case>.md`, one template, no target | `md-template-lint --verify --format json <case>.md` through `runCli` (`tests/helpers/verify.ts`); asserts code, severity, message, line and column, template status and exit code (0, or 1 when broken) |
+| Target (phase `field` or `target`: `MTL101`-`MTL805`) | `tests/target/<category>/<MTLxxx>-<name>.test.ts` | `tests/fixtures/pairs/<MTLxxx>/<case>/template.md` + `target.md` | `checkTemplate` then `checkTarget` of `src/engine/pipeline.ts`; asserts the messages, severity and position of the code |
+
+The run diagnostics `MTL9xx` are not rules (no registry entry, no rule file). They depend on a
+config, a file system layout or the command line, so their cases live with the config, runner
+and CLI tests below. `tests/fixtures/smoke/clean-project/` is the synthetic project that
+`pnpm run smoke:pack` lints from the installed package.
+
+`tests/consistency/rule-fixtures.ts` (run by `rule-fixtures.test.ts`, part of `check:rules`, and
+on a fresh scaffold by `tests/unit/new-rule.test.ts`) enforces the layout: one fixture
+family per code (syntax or target, from the phase), one test file per code, the split, the case
+name format, the pair folder shape (exactly `template.md` and `target.md`), the case table equal to
+the fixture listing (`name: "..."` entries outside comments), and no orphan fixture folder,
+fixture case or test file. Controls outside the split (for example "no `[filename:case]` tag,
+no `MTL101`") live in `tests/fixtures/rule-controls/<MTLxxx>-<name>/` and must be named by the
+test of their code.
 
 ## Tests of config, runner, reporters and io
 
@@ -436,21 +467,23 @@ pnpm run new:rule -- <category> <name> [--step <step>] [--phase <phase>] [--code
 | ------------------------------------- | ------------------------------------------------------------------------------ |
 | `tests/unit/config/`                  | `validate` (one error kind per fixture), `discovery`, `naming`, `bytes` (invalid UTF-8, BOM + CRLF, zero byte), `paths`, `glob`. |
 | `tests/unit/runner/`                  | `inputs` (MTL909 to MTL911, exit precedence), `empty` (`onEmpty`), `broken`, `parse` (`Parse error:`), `expand`, `io-wiring`, `unreadable`, `walk`. |
-| `tests/unit/reporters/`               | `pretty`, `plain`, `json` against golden files, `cleanText`.                   |
+| `tests/unit/reporters/`               | `pretty`, `plain`, `json` against expected-output files, `cleanText`.          |
 | `tests/unit/io/`                      | `address`, `probe` (refusal table), `probe-behaviour`, `connect-guard`, `exists`. |
-| `tests/unit/cli/`                     | `usage`, `exit`, `list`, `list-large` (500+ arguments, temp folder) and `list-root-case` (root directory written in another case), `verify`, `schema` (golden table and JSON), `format`, `wiring` (injected `createIo`), `main` (catch-all), `version`, `layout`, `spawn` (`dist/cli.js`, skipped when missing or older than `src/`). |
+| `tests/unit/cli/`                     | `usage`, `exit`, `list`, `list-large` (500+ arguments, temp folder) and `list-root-case` (root directory written in another case), `verify`, `schema` (expected table and JSON), `format`, `wiring` (injected `createIo`), `main` (catch-all), `version`, `layout`, `spawn` (`dist/cli.js`, skipped when missing or older than `src/`). |
 | `tests/fixtures/cli/<case>/`          | One project per case: `exit-`, `list-`, `verify-`, `schema-` (a `template.md` with `expected.plain.txt` and `expected.json`), `format-`, `wiring-` (split), `usage-no-config` and `large-source-project` (one shared project each). |
 | `tests/fixtures/config/<case>/`       | One config per case: `validate-` (split), `discover-`, `naming-`.               |
 | `tests/fixtures/runner/<case>/`       | One project per case: `inputs-`, `empty-`, `broken-`, `parse-` (split), `expand-`, `io-`, `unreadable-`, `report-`. |
 | `tests/fixtures/tags/<case>/`         | One `document.md` per case (`pass-` / `fail-`), read by `tests/unit/parser-comment-line.test.ts`. |
 | `tests/helpers/`                      | Fixture paths, the pass/fail split check, runner and io fakes.                 |
+| `tests/unit/smoke/`                   | Packaging (ADR 0005): the pure helpers of `scripts/smoke-pack.ts` and `scripts/smoke/check-release.ts` (`scripts/smoke/helpers.ts`: process invocation and quoting, tarball content, tag and repository checks, CLI expectations), `check-release.ts` as a process, and the workflows `.github/workflows/ci.yml` and `release.yml` plus the `package.json` publish fields. |
+| `tests/fixtures/release/<group>/`     | One file per case (`pass-` / `fail-`): `manifest/`, `repository/` and `consumer/` (JSON: package.json fields, `repository` block, the smoke-test project after `pnpm add`) and `tarball/` (`.txt`: a `tar -tzf` listing). |
 
 A group of fixtures shares a prefix (`inputs-`, `empty-`, `broken-`, `parse-`, `validate-`), so each
 test file checks that its directories are exactly its cases (no orphan). Inside a group the case names
-start with `pass-` or `fail-`: exactly one `pass-` case, at least as many `fail-` cases. Groups without
+start with `pass-` or `fail-` (naming rules: [CONTRIBUTING.md](../CONTRIBUTING.md#tests)). Groups without
 a pass/fail split (`discover-`, `naming-`, `expand-`, `io-`, `unreadable-`, `report-`) list their cases
 without the prefix; the configs of the `report-`, `io-` and `unreadable-` projects start with a comment
-that says why. The golden files `expected.*` are written from the spec 8.2 and 8.5 samples, not
+that says why. The expected-output files `expected.*` are written from the spec 8.2 and 8.5 samples, not
 generated. Bytes that cannot be text fixtures (invalid UTF-8, a BOM with CRLF, symbolic links) are built
 in code in a temporary folder that the test removes.
 
@@ -475,10 +508,16 @@ when its header says so (`exit`, `verify` and `usage` for the neutral working di
 - one file per category in `src/rules/`; `src/engine/ranges.json` against spec 4.2;
 - every spec 4.3 code (except `MTL9xx`) implemented or pending, never both; a stub counts as
   pending; registered rules match the spec name, category and severity;
-- every registered rule code has a fixture directory (`tests/fixtures/pairs/<code>` or
-  `tests/fixtures/templates/<code>`), except the syntax codes `MTL001` to `MTL004` and `MTL010` to
-  `MTL013`, listed in `OTHER_TESTS` with their test file (`tests/rules/syntax.test.ts`); the `MTL9xx`
-  run diagnostics are not rules (`tests/consistency/rule-fixtures.test.ts`).
+- every registered rule code has its rule-case test file and fixtures, and no fixture is an
+  orphan ("Tests: rule cases" above, `tests/consistency/rule-fixtures.test.ts`); the `MTL9xx`
+  run diagnostics are not rules.
+
+## Legacy comparison harness (removed)
+
+A harness once compared the port with outputs captured from the legacy linter and the wrappers.
+The comparison finished on 2026-10-30 with every divergence documented, and the harness was
+removed, then its sample data (phase A39). See [ADR 0006](adr/0006-parity-reached.md) for the
+result and the commits that keep it.
 
 ## Coverage gate
 

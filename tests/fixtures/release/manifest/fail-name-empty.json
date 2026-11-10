@@ -1,0 +1,7 @@
+{
+  "name": "",
+  "version": "1.2.3",
+  "bin": {
+    "md-template-lint": "./dist/cli.js"
+  }
+}

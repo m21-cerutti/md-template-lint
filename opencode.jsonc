@@ -1,81 +1,187 @@
-// opencode.jsonc - minimal project configuration for markdown-template-linter.
-// No model pin: the global config owns the default.
-// External directory access (corpus capture, phase A1) comes from the fenced TEMP block in the
-// GLOBAL opencode.jsonc; remove it at the end of A1. No personal path in this file.
-// Rows marked "TEMP corpus capture A1" are removed at the end of A1. Rows marked "removed in A37" go with the parity tool.
+// opencode.jsonc - self-contained project permissions for md-template-lint.
+// Generic safe defaults are copied here so the file works without a user-level
+// config. No path outside the repo, no model or provider, no plugins.
+//
+// Recommended public plugins (install them in your own user config, not here):
+//   - @tarquinen/opencode-dcp        (dynamic context pruning)
+//   - opencode-claude-auth           (Claude subscription auth)
 {
   "$schema": "https://opencode.ai/config.json",
   "permissions": [
-    // Stack commands (Node/TypeScript with pnpm)
-    { "action": "shell", "resource": "npx vitest *", "effect": "allow" },
-    { "action": "shell", "resource": "npx tsc *", "effect": "allow" },
+    // --- Files outside the repo: ask by default
+    { "action": "external_directory", "resource": "*", "effect": "ask" },
+
+    // --- edit: ask, markdown allowed, secrets denied (allows after denies)
+    { "action": "edit", "resource": "*", "effect": "ask" },
+    { "action": "edit", "resource": "*.md", "effect": "allow" },
+    { "action": "edit", "resource": "ssh/*", "effect": "deny" },
+    { "action": "edit", "resource": "*.env", "effect": "deny" },
+    { "action": "edit", "resource": "*.env.*", "effect": "deny" },
+    { "action": "edit", "resource": "*.kdbx", "effect": "deny" },
+    { "action": "edit", "resource": "*.vault_password*", "effect": "deny" },
+    { "action": "edit", "resource": "*credential*", "effect": "deny" },
+    { "action": "edit", "resource": "*secret*", "effect": "deny" },
+    { "action": "edit", "resource": "*.pem", "effect": "deny" },
+    { "action": "edit", "resource": "*.key", "effect": "deny" },
+    { "action": "edit", "resource": "*id_rsa*", "effect": "deny" },
+    { "action": "edit", "resource": "*id_ed25519*", "effect": "deny" },
+    { "action": "edit", "resource": "*.ssh/*", "effect": "deny" },
+    { "action": "edit", "resource": "*.env.example", "effect": "allow" },
+
+    // --- read: allowed, secrets denied
+    { "action": "read", "resource": "*", "effect": "allow" },
+    { "action": "read", "resource": "ssh/*", "effect": "deny" },
+    { "action": "read", "resource": "*.env", "effect": "deny" },
+    { "action": "read", "resource": "*.env.*", "effect": "deny" },
+    { "action": "read", "resource": "*.kdbx", "effect": "deny" },
+    { "action": "read", "resource": "*.vault_password*", "effect": "deny" },
+    { "action": "read", "resource": "*credential*", "effect": "deny" },
+    { "action": "read", "resource": "*secret*", "effect": "deny" },
+    { "action": "read", "resource": "*.pem", "effect": "deny" },
+    { "action": "read", "resource": "*.key", "effect": "deny" },
+    { "action": "read", "resource": "*id_rsa*", "effect": "deny" },
+    { "action": "read", "resource": "*id_ed25519*", "effect": "deny" },
+    { "action": "read", "resource": "*.ssh/*", "effect": "deny" },
+    { "action": "read", "resource": "*.env.example", "effect": "allow" },
+
+    // --- other tools
+    { "action": "question", "resource": "*", "effect": "allow" },
+    { "action": "glob", "resource": "*", "effect": "allow" },
+    { "action": "glob", "resource": "*.env*", "effect": "deny" },
+    { "action": "glob", "resource": "*secret*", "effect": "deny" },
+    { "action": "glob", "resource": "*credential*", "effect": "deny" },
+    { "action": "glob", "resource": "*.pem*", "effect": "deny" },
+    { "action": "glob", "resource": "*.key", "effect": "deny" },
+    { "action": "glob", "resource": "*id_rsa*", "effect": "deny" },
+    { "action": "glob", "resource": "*id_ed25519*", "effect": "deny" },
+    { "action": "glob", "resource": "*vault_password*", "effect": "deny" },
+    { "action": "glob", "resource": "*.kdbx*", "effect": "deny" },
+    { "action": "glob", "resource": "*ssh/*", "effect": "deny" },
+    { "action": "glob", "resource": "*.env.example", "effect": "allow" },
+    { "action": "grep", "resource": "*", "effect": "allow" },
+    { "action": "subagent", "resource": "*", "effect": "allow" },
+    { "action": "skill", "resource": "*", "effect": "allow" },
+    { "action": "webfetch", "resource": "*", "effect": "allow" },
+    { "action": "websearch", "resource": "*", "effect": "deny" },
+
+    // --- shell: ask by default, read-only basics allowed
+    { "action": "shell", "resource": "*", "effect": "ask" },
+    { "action": "shell", "resource": "echo *", "effect": "allow" },
+    { "action": "shell", "resource": "ls *", "effect": "allow" },
+    { "action": "shell", "resource": "dir *", "effect": "allow" },
+    { "action": "shell", "resource": "cd *", "effect": "allow" },
+    { "action": "shell", "resource": "mkdir *", "effect": "allow" },
+    { "action": "shell", "resource": "cat *", "effect": "allow" },
+    { "action": "shell", "resource": "head *", "effect": "allow" },
+    { "action": "shell", "resource": "tail *", "effect": "allow" },
+    { "action": "shell", "resource": "wc *", "effect": "allow" },
+    { "action": "shell", "resource": "find *", "effect": "allow" },
+    { "action": "shell", "resource": "find * -exec*", "effect": "deny" },
+    { "action": "shell", "resource": "findstr *", "effect": "allow" },
+    { "action": "shell", "resource": "grep *", "effect": "allow" },
+    { "action": "shell", "resource": "rg *", "effect": "allow" },
+    { "action": "shell", "resource": "diff *", "effect": "allow" },
+    { "action": "shell", "resource": "pwd", "effect": "allow" },
+    { "action": "shell", "resource": "which *", "effect": "allow" },
+    { "action": "shell", "resource": "rm *", "effect": "deny" },
+
+    // PowerShell read-only cmdlets
+    { "action": "shell", "resource": "Get-Content*", "effect": "allow" },
+    { "action": "shell", "resource": "Get-ChildItem*", "effect": "allow" },
+    { "action": "shell", "resource": "Get-Item*", "effect": "allow" },
+    { "action": "shell", "resource": "Select-String*", "effect": "allow" },
+    { "action": "shell", "resource": "Test-Path*", "effect": "allow" },
+    { "action": "shell", "resource": "Write-Output*", "effect": "allow" },
+    { "action": "shell", "resource": "Get-Command*", "effect": "allow" },
+    { "action": "shell", "resource": "Compare-Object*", "effect": "allow" },
+
+    // Safe git: local work yes, push / remote / worktree no
+    { "action": "shell", "resource": "git add *", "effect": "allow" },
+    { "action": "shell", "resource": "git commit *", "effect": "allow" },
+    { "action": "shell", "resource": "git status *", "effect": "allow" },
+    { "action": "shell", "resource": "git log *", "effect": "allow" },
+    { "action": "shell", "resource": "git diff *", "effect": "allow" },
+    { "action": "shell", "resource": "git show *", "effect": "allow" },
+    { "action": "shell", "resource": "git branch *", "effect": "allow" },
+    { "action": "shell", "resource": "git check-ignore *", "effect": "allow" },
+    { "action": "shell", "resource": "git ls-files *", "effect": "allow" },
+    { "action": "shell", "resource": "git rev-parse *", "effect": "allow" },
+    { "action": "shell", "resource": "git *--no-index*", "effect": "deny" },
+    { "action": "shell", "resource": "git *--output*", "effect": "deny" },
+    { "action": "shell", "resource": "git *--ext-diff*", "effect": "deny" },
+    { "action": "shell", "resource": "git *--textconv*", "effect": "deny" },
+    { "action": "shell", "resource": "git push*", "effect": "deny" },
+    { "action": "shell", "resource": "git remote add*", "effect": "deny" },
+    { "action": "shell", "resource": "git remote set-url*", "effect": "deny" },
+    { "action": "shell", "resource": "git worktree *", "effect": "deny" },
+
+    // Stack: Node / TypeScript with pnpm
+    { "action": "shell", "resource": "node --version", "effect": "allow" },
     { "action": "shell", "resource": "node dist/*", "effect": "allow" },
     { "action": "shell", "resource": "node scripts/*", "effect": "allow" },
-    { "action": "shell", "resource": "node --version", "effect": "allow" },
-    { "action": "shell", "resource": "python scripts/*.py*", "effect": "allow" },
-    { "action": "shell", "resource": "pwsh -NoProfile -File scripts/*", "effect": "allow" },
-
-    // pnpm (package manager, replaces npm)
+    { "action": "shell", "resource": "pnpm --version", "effect": "allow" },
     { "action": "shell", "resource": "pnpm install*", "effect": "allow" },
     { "action": "shell", "resource": "pnpm run *", "effect": "allow" },
     { "action": "shell", "resource": "pnpm test*", "effect": "allow" },
+    { "action": "shell", "resource": "pnpm pack*", "effect": "allow" },
+    { "action": "shell", "resource": "pnpm ls*", "effect": "allow" },
+    { "action": "shell", "resource": "pnpm list *", "effect": "allow" },
+    { "action": "shell", "resource": "pnpm why *", "effect": "allow" },
     { "action": "shell", "resource": "pnpm exec vitest *", "effect": "allow" },
     { "action": "shell", "resource": "pnpm exec tsc *", "effect": "allow" },
     { "action": "shell", "resource": "pnpm exec eslint *", "effect": "allow" },
     { "action": "shell", "resource": "pnpm exec prettier *", "effect": "allow" },
     { "action": "shell", "resource": "pnpm exec antlr-ng *", "effect": "allow" },
-    { "action": "shell", "resource": "pnpm pack*", "effect": "allow" },
-    { "action": "shell", "resource": "pnpm ls*", "effect": "allow" },
-    { "action": "shell", "resource": "pnpm --version", "effect": "allow" },
+    { "action": "shell", "resource": "npx vitest *", "effect": "allow" },
+    { "action": "shell", "resource": "npx tsc *", "effect": "allow" },
+
+    // Global installs ask, publishing and package fetchers are denied
     { "action": "shell", "resource": "pnpm install -g*", "effect": "ask" },
     { "action": "shell", "resource": "pnpm install --global*", "effect": "ask" },
-    { "action": "shell", "resource": "pnpm i -g*", "effect": "ask" },
-    { "action": "shell", "resource": "pnpm i --global*", "effect": "ask" },
-    { "action": "shell", "resource": "pnpm install*--location*", "effect": "ask" },
     { "action": "shell", "resource": "pnpm install * -g*", "effect": "ask" },
     { "action": "shell", "resource": "pnpm install*--global*", "effect": "ask" },
+    { "action": "shell", "resource": "pnpm install*--location*", "effect": "ask" },
+    { "action": "shell", "resource": "pnpm i -g*", "effect": "ask" },
+    { "action": "shell", "resource": "pnpm i --global*", "effect": "ask" },
     { "action": "shell", "resource": "pnpm i * -g*", "effect": "ask" },
     { "action": "shell", "resource": "pnpm i*--global*", "effect": "ask" },
-    { "action": "shell", "resource": "pnpm add * -g*", "effect": "ask" },
-    { "action": "shell", "resource": "pnpm add*--global*", "effect": "ask" },
     { "action": "shell", "resource": "pnpm add -g*", "effect": "ask" },
     { "action": "shell", "resource": "pnpm add --global*", "effect": "ask" },
+    { "action": "shell", "resource": "pnpm add * -g*", "effect": "ask" },
+    { "action": "shell", "resource": "pnpm add*--global*", "effect": "ask" },
     { "action": "shell", "resource": "pnpm exec npm*", "effect": "deny" },
     { "action": "shell", "resource": "pnpm dlx*", "effect": "deny" },
+    { "action": "shell", "resource": "pnpm publish*", "effect": "deny" },
     { "action": "shell", "resource": "pnpm -r publish*", "effect": "deny" },
     { "action": "shell", "resource": "pnpm --filter * publish*", "effect": "deny" },
     { "action": "shell", "resource": "pnpm *publish*", "effect": "deny" },
-    { "action": "shell", "resource": "pnpm publish*", "effect": "deny" },
-
-    // Parity harness against the frozen legacy snapshot (removed in A37)
-    { "action": "shell", "resource": "python legacy/*.py*", "effect": "allow" },
-    { "action": "shell", "resource": "pwsh -NoProfile -File legacy/*", "effect": "allow" },
-
-    // Legacy wrapper capture (phase A1 only): wrapper invocations only. Python runs via the permanent legacy/ and scripts/ rows above.
-    { "action": "shell", "resource": "pwsh -NoProfile -File *lint_markdown*.ps1*", "effect": "allow" }, // TEMP corpus capture A1
-    { "action": "shell", "resource": "pwsh -File *lint_markdown*.ps1*", "effect": "allow" }, // TEMP corpus capture A1
-
-    // Phase A34 only: global install verification
-    { "action": "shell", "resource": "where md-template-lint*", "effect": "allow" }, // TEMP A34 verification, remove in A37 if unused
-    { "action": "shell", "resource": "md-template-lint *", "effect": "allow" }, // TEMP A34 verification, remove in A37 if unused
-
-    // Safe read-only git. Denies after diff/log allows block --no-index, --output, --ext-diff and --textconv.
-    { "action": "shell", "resource": "git status *", "effect": "allow" },
-    { "action": "shell", "resource": "git diff *", "effect": "allow" },
-    { "action": "shell", "resource": "git log *", "effect": "allow" },
-    { "action": "shell", "resource": "git *--no-index*", "effect": "deny" },
-    { "action": "shell", "resource": "git *--output*", "effect": "deny" },
-    { "action": "shell", "resource": "git *--ext-diff*", "effect": "deny" },
-    { "action": "shell", "resource": "git *--textconv*", "effect": "deny" },
-
-    // Never push, add a remote, publish or recurse-delete
-    { "action": "shell", "resource": "git push*", "effect": "deny" },
-    { "action": "shell", "resource": "git remote add*", "effect": "deny" },
-    { "action": "shell", "resource": "git remote set-url*", "effect": "deny" },
     { "action": "shell", "resource": "npm publish*", "effect": "deny" },
+
+    // Nested shells cannot be inspected: deny
+    { "action": "shell", "resource": "pwsh -Command *", "effect": "deny" },
+    { "action": "shell", "resource": "pwsh -c *", "effect": "deny" },
+    { "action": "shell", "resource": "pwsh -EncodedCommand*", "effect": "deny" },
+    { "action": "shell", "resource": "pwsh -NoProfile -Command *", "effect": "deny" },
+    { "action": "shell", "resource": "powershell -Command *", "effect": "deny" },
+    { "action": "shell", "resource": "powershell -c *", "effect": "deny" },
+    { "action": "shell", "resource": "powershell -EncodedCommand*", "effect": "deny" },
+    { "action": "shell", "resource": "powershell -NoProfile -Command *", "effect": "deny" },
+    { "action": "shell", "resource": "cmd /c *", "effect": "deny" },
+    { "action": "shell", "resource": "cmd /C *", "effect": "deny" },
+    { "action": "shell", "resource": "cmd.exe /c *", "effect": "deny" },
+    { "action": "shell", "resource": "bash -c *", "effect": "deny" },
+    { "action": "shell", "resource": "bash -lc *", "effect": "deny" },
+    { "action": "shell", "resource": "sh -c *", "effect": "deny" },
+    { "action": "shell", "resource": "python -c *", "effect": "deny" },
+    { "action": "shell", "resource": "python3 -c *", "effect": "deny" },
+    { "action": "shell", "resource": "py -c *", "effect": "deny" },
+    { "action": "shell", "resource": "node -e *", "effect": "deny" },
+    { "action": "shell", "resource": "node --eval*", "effect": "deny" },
+    { "action": "shell", "resource": "node -p*", "effect": "deny" },
+    { "action": "shell", "resource": "node --print*", "effect": "deny" },
     { "action": "shell", "resource": "Remove-Item*-r*", "effect": "deny" },
 
-    // SECRET GUARD: re-appended last so the allows above never win for secret-named arguments
+    // SECRET GUARD: keep LAST (last match wins, beats every allow above)
     { "action": "shell", "resource": "*.env*", "effect": "deny" },
     { "action": "shell", "resource": "*secret*", "effect": "deny" },
     { "action": "shell", "resource": "*credential*", "effect": "deny" },
@@ -87,6 +193,9 @@
     { "action": "shell", "resource": "*vault_password*", "effect": "deny" },
     { "action": "shell", "resource": "*.kdbx*", "effect": "deny" },
     { "action": "shell", "resource": "*.ssh/*", "effect": "deny" },
-    { "action": "shell", "resource": "*sensitive-guard*", "effect": "deny" }
+    { "action": "shell", "resource": "*sensitive-guard*", "effect": "deny" },
+    { "action": "shell", "resource": "*SENSITIVE_GUARD*", "effect": "deny" },
+    { "action": "read", "resource": "*sensitive-guard*", "effect": "deny" },
+    { "action": "edit", "resource": "*sensitive-guard*", "effect": "deny" }
   ]
 }

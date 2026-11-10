@@ -17,7 +17,7 @@ interface Case {
   readonly prefix?: boolean;
 }
 
-/** Exactly 1 passing case, failing cases >= passing; one fixture directory per case. */
+/** At least 1 passing case and 1 failing case; one fixture directory per case. */
 const CASES: readonly Case[] = [
   { name: "pass-clean-target", code: null },
   {
@@ -44,7 +44,7 @@ const CASES: readonly Case[] = [
 ];
 
 describe("runner parse errors: layout", () => {
-  it("has exactly 1 pass- case, at least as many fail- cases, one directory each", () => {
+  it("has at least 1 pass- case, at least 1 fail- case, one directory each", () => {
     expectSplit("runner", GROUP, CASES);
   });
 });

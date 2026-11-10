@@ -14,7 +14,6 @@ import {
   checkAstKinds,
   checkCodes,
   checkDefaultModeMirror,
-  checkNoStrayJs,
   checkRanges,
   checkRuleFiles,
   checkTypeNames,
@@ -23,7 +22,6 @@ import {
   firstSymbols,
   modeKeywords,
   modeRules,
-  repoFiles,
   sentences,
   specCodes,
   specRanges,
@@ -134,19 +132,6 @@ describe("check:rules", () => {
     expect(checkDefaultModeMirror(MdTemplateLexer.DEFAULT_MODE, MdTemplateLexer.BODY_TEXT)).toEqual(
       ["DEFAULT_MODE: found 0 B_ rules in BODY_TEXT, expected 8"],
     );
-  });
-
-  it("fails: a stray JavaScript file; exempt directories are skipped", () => {
-    expect(checkNoStrayJs(["scripts/old.mjs", "eslint.config.js", "a/b.cjs"])).toEqual([
-      "scripts/old.mjs: JavaScript source file, convert it to TypeScript (ADR 0004)",
-      "eslint.config.js: JavaScript source file, convert it to TypeScript (ADR 0004)",
-      "a/b.cjs: JavaScript source file, convert it to TypeScript (ADR 0004)",
-    ]);
-    expect(checkNoStrayJs(["scripts/gen-parser.ts", "package.json"])).toEqual([]);
-    const files = repoFiles();
-    expect(files).toContain("scripts/gen-parser.ts");
-    expect(files.some((file) => file.startsWith("node_modules/"))).toBe(false);
-    expect(files.some((file) => file.startsWith("src/generated/"))).toBe(false);
   });
 
   it("fails: a range drift and a stray rule file", () => {

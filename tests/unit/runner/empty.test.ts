@@ -18,7 +18,7 @@ interface Case {
   readonly severity: "warning" | "error" | null;
 }
 
-/** Exactly 1 passing case (nothing reported), failing cases >= passing. */
+/** At least 1 passing case (nothing reported) and 1 failing case. */
 const CASES: readonly Case[] = [
   { name: "pass-ignore", exitCode: 0, severity: null },
   { name: "fail-warn-by-default", exitCode: 0, severity: "warning" },
@@ -27,7 +27,7 @@ const CASES: readonly Case[] = [
 ];
 
 describe("runner empty target sets: layout", () => {
-  it("has exactly 1 pass- case, at least as many fail- cases, one directory each", () => {
+  it("has at least 1 pass- case, at least 1 fail- case, one directory each", () => {
     expectSplit("runner", GROUP, CASES);
   });
 });

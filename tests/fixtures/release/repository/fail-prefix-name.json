@@ -1,0 +1,7 @@
+{
+  "name": "md-template-lint",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/example-owner/example-repo-extra.git"
+  }
+}

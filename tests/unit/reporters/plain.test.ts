@@ -1,6 +1,6 @@
 /**
  * Plain reporter: the pretty layout with ASCII words (PASS, FAIL, INFO), never colored.
- * Echoed document values are sanitized (docs/spec.md 8, OWASP A03). Golden files:
+ * Echoed document values are sanitized (docs/spec.md 8, OWASP A03). Expected-output files:
  * tests/fixtures/runner/report-*\/expected.plain.txt.
  */
 import { describe, expect, it } from "vitest";
@@ -11,7 +11,7 @@ import { runFixture } from "../../helpers/run.js";
 const VERSION = "1.0.0";
 const ESC = String.fromCharCode(27);
 
-describe("plain reporter: golden output", () => {
+describe("plain reporter: expected output", () => {
   for (const name of [
     "report-sample",
     "report-control-characters",

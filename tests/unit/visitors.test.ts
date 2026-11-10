@@ -1,7 +1,7 @@
 /**
  * One table per visitor/listener module of src/tags/visitors/ (one tag family
- * each). Owner rule (2026-10-30): exactly 1 passing case per family, and at
- * least as many failing cases, one per distinct failure mode. More passing
+ * each). Owner rule (2026-10-30): at least 1 passing case and 1 failing
+ * case per family, one failing case per distinct failure mode. More passing
  * cases of the same families live in tags.test.ts and document.test.ts.
  *
  * A failing case expects a finding reason (`malformed`, `wrong-region`,

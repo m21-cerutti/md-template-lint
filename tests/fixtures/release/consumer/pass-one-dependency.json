@@ -1,0 +1,8 @@
+{
+  "name": "smoke-consumer",
+  "version": "0.0.0",
+  "private": true,
+  "dependencies": {
+    "md-template-lint": "file:md-template-lint-1.2.3.tgz"
+  }
+}

@@ -1,0 +1,10 @@
+package/CHANGELOG.md
+package/LICENSE
+package/README.md
+package/THIRD_PARTY_NOTICES.md
+package/dist/cli.d.ts
+package/dist/cli.js
+package/dist/engine/ranges.json
+package/dist/index.d.ts
+package/dist/index.js
+package/package.json

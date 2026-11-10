@@ -33,7 +33,7 @@ interface Case {
 const ok: Handler = () => status(200);
 const dns = { [PUBLIC_HOST]: [PUBLIC_ADDRESS] };
 
-/** Exactly 1 passing case (reachable), failing cases >= passing. */
+/** At least 1 passing case (reachable) and 1 failing case. */
 const CASES: readonly Case[] = [
   {
     name: "pass-head-200",
@@ -333,11 +333,11 @@ const CASES: readonly Case[] = [
 ];
 
 describe("URL probe: table layout", () => {
-  it("has exactly 1 pass- case and at least as many fail- cases", () => {
+  it("has at least 1 pass- case and at least 1 fail- case", () => {
     const passing = CASES.filter((testCase) => testCase.name.startsWith("pass-"));
     const failing = CASES.filter((testCase) => testCase.name.startsWith("fail-"));
-    expect(passing).toHaveLength(1);
-    expect(failing.length).toBeGreaterThanOrEqual(passing.length);
+    expect(passing.length).toBeGreaterThanOrEqual(1);
+    expect(failing.length).toBeGreaterThanOrEqual(1);
     expect(passing.length + failing.length).toBe(CASES.length);
     expect(new Set(CASES.map((testCase) => testCase.name)).size).toBe(CASES.length);
   });

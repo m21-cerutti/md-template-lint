@@ -21,7 +21,7 @@ interface Case {
   readonly error?: string;
 }
 
-/** Exactly 1 passing case, failing cases >= passing. */
+/** At least 1 passing case and 1 failing case. */
 const CASES: readonly Case[] = [
   { name: "pass-help-wins-over-bad-flag", args: ["--bogus", "--help"], exitCode: 0 },
   {
@@ -87,7 +87,7 @@ const CASES: readonly Case[] = [
 ];
 
 describe("cli usage: layout", () => {
-  it("has exactly 1 pass- case, at least as many fail- cases, and the one fixture directory", () => {
+  it("has at least 1 pass- case, at least 1 fail- case, and the one fixture directory", () => {
     expectNameSplit(CASES);
     expect(fixtureDirs("cli", "usage-")).toEqual([FIXTURE]);
   });

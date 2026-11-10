@@ -1,4 +1,4 @@
-# No pass/fail split: a golden-output fixture for the reports of a config with errors.
+# No pass/fail split: an expected-output fixture for the reports of a config with errors.
 pairs:
   - template: a.md
     inlcude: "*.md"

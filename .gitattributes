@@ -45,7 +45,5 @@
 *.docx binary
 *.xlsx binary
 
-# Frozen parity fixtures: keep the exact bytes (no EOL conversion).
-tests/corpus/** -text
-tests/golden/** -text
-legacy/** -text
+# Non-UTF-8 template fixtures of MTL004: keep the exact bytes (no EOL conversion).
+tests/fixtures/templates/MTL004/fail-*.md -text

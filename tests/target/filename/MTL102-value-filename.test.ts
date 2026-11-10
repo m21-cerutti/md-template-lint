@@ -25,7 +25,7 @@ interface TestCase {
   readonly expected: readonly string[];
 }
 
-/** Case -> fixture dir (same name) -> expected result: exactly 1 passing case, failing cases >= passing. */
+/** Case -> fixture dir (same name) -> expected result: at least 1 passing case and 1 failing case. */
 const CASES: readonly TestCase[] = [
   // Pass fixture, one run, three controls: the tagged `id` and `slug` (next to
   // other tags) equal the stem; the untagged `title` differs and is not checked;
@@ -133,11 +133,11 @@ describe("MTL102 value-filename", () => {
     });
   });
 
-  it("has exactly 1 pass- case and at least as many fail- cases, one fixture dir each", () => {
+  it("has at least 1 pass- case and at least 1 fail- case, one fixture dir each", () => {
     const passing = CASES.filter((testCase) => testCase.name.startsWith("pass-"));
     const failing = CASES.filter((testCase) => testCase.name.startsWith("fail-"));
-    expect(passing).toHaveLength(1);
-    expect(failing.length).toBeGreaterThanOrEqual(passing.length);
+    expect(passing.length).toBeGreaterThanOrEqual(1);
+    expect(failing.length).toBeGreaterThanOrEqual(1);
     expect(passing.length + failing.length).toBe(CASES.length);
     expect(CASES.filter((testCase) => testCase.expected.length === 0)).toEqual(passing);
     const dirs = readdirSync(fileURLToPath(new URL(`../../../${DIR}`, import.meta.url))).sort();

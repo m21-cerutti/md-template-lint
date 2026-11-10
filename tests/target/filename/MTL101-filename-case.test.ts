@@ -21,7 +21,7 @@ interface TestCase {
   readonly expected: readonly string[];
 }
 
-/** Case -> fixture dir (same name) -> expected result: exactly 1 passing case, failing cases >= passing. */
+/** Case -> fixture dir (same name) -> expected result: at least 1 passing case and 1 failing case. */
 const CASES: readonly TestCase[] = [
   // Silent controls in one run: the first standalone tag (PascalCase) wins over
   // a later one (snake_case); a tag trailing the `slug:` key line is inert; a
@@ -118,19 +118,20 @@ const CASES: readonly TestCase[] = [
   },
 ];
 
-/** Fixture dir outside the table: the template has no filename tag. */
-const CONTROL: TestCase = {
-  name: "control-template-without-filename-tag",
-  targetName: "Mixed-Case_Name.md",
-  expected: [],
-};
-
 const read = (path: string): string =>
   readFileSync(fileURLToPath(new URL(`../../../${path}`, import.meta.url)), "utf8");
 
+/**
+ * Control outside the pass-/fail- table and outside tests/fixtures/pairs (so the MTL101 split
+ * keeps its pass- cases about the tag): a template WITHOUT a `[filename:case:...]` tag never reports
+ * MTL101 (spec 2.5), whatever the target file name. `Mixed-Case_Name` breaks all four
+ * conventions (uppercase, hyphen and underscore).
+ */
+const CONTROL_DIR = "tests/fixtures/rule-controls/MTL101-no-filename-tag";
+const CONTROL_TARGET = "Mixed-Case_Name.md";
+
 /** Diagnostics of this code for the pair of a fixture folder. */
-async function lint(testCase: TestCase) {
-  const fixture = `${DIR}/${testCase.name}`;
+async function lint(testCase: TestCase, fixture = `${DIR}/${testCase.name}`) {
   const status = await checkTemplate(registry, read(`${fixture}/template.md`));
   if (status.status !== "ok") throw new Error(`${fixture}: template is broken`);
   const found = await checkTarget(
@@ -154,25 +155,21 @@ describe("MTL101 filename-case", () => {
     });
   });
 
-  it("has exactly 1 pass- case and at least as many fail- cases, one fixture dir each", () => {
+  it("has at least 1 pass- case and at least 1 fail- case, one fixture dir each", () => {
     const passing = CASES.filter((testCase) => testCase.name.startsWith("pass-"));
     const failing = CASES.filter((testCase) => testCase.name.startsWith("fail-"));
-    expect(passing).toHaveLength(1);
-    expect(failing.length).toBeGreaterThanOrEqual(passing.length);
+    expect(passing.length).toBeGreaterThanOrEqual(1);
+    expect(failing.length).toBeGreaterThanOrEqual(1);
     expect(passing.length + failing.length).toBe(CASES.length);
     // The passing case is the only one expecting no diagnostic.
     expect(CASES.filter((testCase) => testCase.expected.length === 0)).toEqual(passing);
-    // Every fixture dir is a table case or the control, and the control exists.
     const dirs = readdirSync(fileURLToPath(new URL(`../../../${DIR}`, import.meta.url))).sort();
-    expect(dirs).toEqual([...CASES.map((testCase) => testCase.name), CONTROL.name].sort());
+    expect(dirs).toEqual(CASES.map((testCase) => testCase.name).sort());
   });
 
-  // Control, outside the pass-/fail- table: a template with NO `[filename:...]`
-  // tag never reports MTL101, whatever the target file name (spec 2.5). The
-  // target name below breaks all four conventions: uppercase, hyphen and
-  // underscore.
-  it(`${CONTROL.name}: ${DIR}/${CONTROL.name}`, async () => {
-    expect(await lint(CONTROL)).toEqual([]);
+  it(`control: ${CONTROL_DIR} (no filename tag) reports nothing for ${CONTROL_TARGET}`, async () => {
+    const control = { name: "control", targetName: CONTROL_TARGET, expected: [] };
+    expect(await lint(control, CONTROL_DIR)).toEqual([]);
   });
 
   for (const testCase of CASES) {

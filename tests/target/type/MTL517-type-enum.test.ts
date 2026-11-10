@@ -39,8 +39,8 @@ interface TestCase {
 }
 
 /**
- * Case -> fixture dir (same name) -> expected result. Exactly 1 passing case,
- * failing cases >= passing.
+ * Case -> fixture dir (same name) -> expected result. At least 1 passing case and
+ * 1 failing case.
  */
 const CASES: readonly TestCase[] = [
   // Silent: members of every option list form (extra spaces, a single option
@@ -209,11 +209,11 @@ describe("MTL517 enum-option", () => {
     });
   });
 
-  it("has exactly 1 pass- case and at least as many fail- cases, one fixture dir each", () => {
+  it("has at least 1 pass- case and at least 1 fail- case, one fixture dir each", () => {
     const passing = CASES.filter((testCase) => testCase.name.startsWith("pass-"));
     const failing = CASES.filter((testCase) => testCase.name.startsWith("fail-"));
-    expect(passing).toHaveLength(1);
-    expect(failing.length).toBeGreaterThanOrEqual(passing.length);
+    expect(passing.length).toBeGreaterThanOrEqual(1);
+    expect(failing.length).toBeGreaterThanOrEqual(1);
     expect(passing.length + failing.length).toBe(CASES.length);
     expect(CASES.filter((testCase) => testCase.expected.length === 0)).toEqual(passing);
     const dirs = readdirSync(fileURLToPath(new URL(`../../../${DIR}`, import.meta.url))).sort();

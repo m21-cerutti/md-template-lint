@@ -3,19 +3,35 @@
 md-template-lint is MIT licensed (see `LICENSE`). It uses the packages below.
 Versions are pinned exactly in `package.json`. Checked on 2026-10-29 against the
 installed `node_modules/<pkg>/package.json`, the license file shipped in the
-package and the license detected by GitHub for the source repository.
+package and the license detected by GitHub for the source repository. Runtime
+dependency list and versions re-checked on 2026-10-30 for the first release
+(phase A30).
 
-## Runtime dependencies (shipped with the package)
+This file is part of the npm package (`files` whitelist in `package.json`, ADR 0005).
+The package tarball holds `dist/`, `LICENSE`, this file, `README.md` and `package.json`.
+
+## Runtime dependencies (installed with the package)
 
 `pnpm ls --prod --depth Infinity` lists exactly these two, with no transitive runtime
-dependencies.
+dependencies. The package does not bundle them; npm installs them next to it.
 
 | Package    | Version | npm `license` field | Shipped license file                                                        | GitHub repository license          | Conclusion   |
 | ---------- | ------- | ------------------- | --------------------------------------------------------------------------- | ---------------------------------- | ------------ |
 | `antlr4ng` | 3.0.16  | `BSD-3-Clause`      | `LICENSE.txt`: "The BSD license", Copyright (c) 2012-2023 The ANTLR Project, 3 clauses | `mike-lischke/antlr4ng`: `NOASSERTION` (GitHub cannot classify it; the text is the same 3-clause BSD) | BSD-3-Clause |
 | `yaml`     | 2.9.1   | `ISC`               | `LICENSE`: ISC, Copyright Eemeli Aro                                         | `eemeli/yaml`: ISC                 | ISC          |
 
-## Build-time dependency (not shipped)
+## Generated code shipped in `dist/`
+
+| Item                                                                  | Origin                                                                                                                         | Licence                                                    |
+| --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------- |
+| `dist/generated/*.js` and `*.d.ts` (lexer, parser, listener, visitor) | Compiled from `src/generated/`, which `antlr-ng` 1.0.10 generates from our own `grammar/MdTemplateLexer.g4` and `MdTemplateParser.g4` | **OPEN OWNER DECISION**, see "Open owner decisions" below. |
+
+The grammars are our work (MIT, see `LICENSE`). The generated files carry no licence
+header (checked: no "license" or "copyright" text in `src/generated/`). They call the
+`antlr4ng` runtime (BSD-3-Clause, above). The licence that applies to the output of
+`antlr-ng` itself is not stated by the tool and is not decided here.
+
+## Build-time dependencies (not shipped)
 
 | Package    | Version | npm `license` field | Shipped license file                                     | GitHub repository license                         | Conclusion   |
 | ---------- | ------- | ------------------- | -------------------------------------------------------- | ------------------------------------------------- | ------------ |
@@ -38,13 +54,16 @@ not shipped either.
   and the three clauses. This file is that notice.
 - MIT, BSD-3-Clause and ISC are compatible with distributing md-template-lint under MIT.
 
-## Open item for the owner
+## Open owner decisions
 
-- The parser under `src/generated/` is produced by `antlr-ng` from
-  `grammar/MdTemplateLexer.g4` and `grammar/MdTemplateParser.g4` and is committed. Neither `antlr-ng` nor `antlr4ng`
-  states a license for generated output. The ANTLR project's usual position is
-  that generated code belongs to the grammar author, but this was not confirmed
-  for antlr-ng. Unresolved; please confirm before the first release.
+- **OPEN OWNER DECISION: licence of the `antlr-ng` generated output.** The parser under
+  `src/generated/` is produced by `antlr-ng` from `grammar/MdTemplateLexer.g4` and
+  `grammar/MdTemplateParser.g4` and is committed. Its compiled form ships in
+  `dist/generated/`. Neither `antlr-ng` nor `antlr4ng` states a license for generated
+  output. The ANTLR project's usual position is that generated code belongs to the
+  grammar author, but this was not confirmed for antlr-ng. No legal conclusion is
+  recorded here. The owner decides (and may record it in ADR 0005 or a new ADR) before
+  the first `npm publish`: until then the release stays blocked on this item.
 - The `antlr-ng` npm `license` field (MIT) conflicts with its license file
   (BSD-3-Clause). This could be reported upstream. It does not block us.
 

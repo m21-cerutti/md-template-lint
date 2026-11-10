@@ -1,23 +1,23 @@
 ---
 title: md-template-lint specification
-last_updated: 2026-10-29
+last_updated: 2026-10-30
 ---
 
 # md-template-lint specification
 
-Phase A3 deliverable. This is the contract for the TypeScript port. It is derived from the
-frozen legacy linter and wrappers in `legacy/` and from the captured behaviour in
-`docs/research/wrapper-parity.md`. Later phases (grammar A6, engine A9, rules, config, CLI,
-parity A21 to A25) implement this file. When code and this file disagree, fix one of them in
+Phase A3 deliverable. This is the contract for the TypeScript port. It is derived from a
+frozen snapshot of the legacy linter and wrappers and from their captured behaviour (both
+removed from the tree after parity; history in `docs/research/wrapper-parity.md`). Later phases (grammar A6, engine A9, rules, config, CLI)
+implement this file. When code and this file disagree, fix one of them in
 the same change.
 
 Conventions in this file:
 
 - Template tags are written only inside inline code or fenced code, so this file is never
   parsed as a template.
-- `py` means `legacy/lint_markdown_template.py`. `ps` means `legacy/lint_markdown_core.ps1`.
-  `ps-multi` means `legacy/lint_markdown.multi-project.ps1`. `Lnnn` is a line number in the
-  frozen file named just before it.
+- `py` means the legacy `lint_markdown_template.py`. `ps` means the legacy
+  `lint_markdown_core.ps1`. `ps-multi` means the legacy `lint_markdown.multi-project.ps1`.
+  `Lnnn` is a line number in the frozen snapshot of the file named just before it.
 - "Frozen" behaviour is kept byte for byte (messages, order, defaults) unless a section says
   "changed". Every change is listed in section 5 (defects D01 to D18), section 10
   (assumptions AS1 to AS7) or section 11 (kept quirks Q01 to Q08, other changes C01 to C05).
@@ -526,7 +526,7 @@ heading text, `{pylist}` Python-style list, `{shape}` see 3.4. Messages are the 
 | Code     | Name                      | Severity | Message                                                              | Legacy source                          |
 | -------- | ------------------------- | -------- | -------------------------------------------------------------------- | -------------------------------------- |
 | `MTL001` | frontmatter-missing       | error    | `File must have YAML frontmatter (---...---)`                        | py L1649-1650 `TemplateParser.parse`   |
-| `MTL002` | yaml-invalid              | error    | `YAML parse error: {detail}` (`{detail}` is the `yaml` package message, not the PyYAML text; accepted deviation, parity decides the comparison) | py L1655-1658 `TemplateParser.parse`   |
+| `MTL002` | yaml-invalid              | error    | `YAML parse error: {detail}` (`{detail}` is the `yaml` package message, not the PyYAML text; accepted deviation) | py L1655-1658 `TemplateParser.parse`   |
 | `MTL003` | frontmatter-not-mapping   | error    | `YAML frontmatter must be a mapping of 'key: value' pairs`           | py L1660-1661 `TemplateParser.parse`   |
 | `MTL004` | file-unreadable           | error    | `{detail}` (read or UTF-8 decode failure)                            | py L2072-2075 `lint_file` (target), L2606-2611 `main` (template) |
 | `MTL010` | unknown-field-tag         | warning  | `Field '{key}': unknown tag {tag}`                                   | py L773-803 `find_unknown_tags`, L2229-2231 `describe` |
@@ -661,7 +661,8 @@ Source: py L1526-1581 `HeadingOrderValidator.validate_content`. The `{label}` is
 
 All warnings. Source: py L1811-1877 `_warn_path_exists`, `_warn_url_reachable`,
 `_check_io_exists`; probe py L530-563 `probe_url_reachable`. Paths in messages are printed
-with `/` and relative to the pair root when inside it (changed, D15).
+with `/`. The pair root is joined with a relative value as in legacy, so a real run prints
+an absolute path, as legacy does. The path separator normalisation is D15.
 
 | Code     | Name                  | Severity | Message                                                                                                                      | Legacy source |
 | -------- | --------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------- | ------------- |
@@ -699,8 +700,8 @@ and 7.
 
 ## 5. Defect decisions (D01 to D18)
 
-Decisions are fix, keep or drop. Defect ids come from `docs/research/wrapper-parity.md`
-section 5 and are never renumbered.
+Decisions are fix, keep or drop. Defect ids come from the phase A1 research (history note
+`docs/research/wrapper-parity.md`) and are never renumbered.
 
 | ID  | Defect (short)                                       | Decision | Reason and how                                                                                                                                                                      |
 | --- | ---------------------------------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -907,6 +908,8 @@ md-template-lint --verify [options] [templates...]
 
 `--help` and `--version` win over everything else on the command line. `--` ends options.
 An unknown flag is `MTL920`, a missing argument `MTL921`, exit 2, followed by the usage hint.
+A flag that takes a value (`--config`, `--format`) is missing its argument only when it is last or
+when the next argument starts with `--`; `--config -x` takes `-x` as the path.
 The legacy flags `--pattern`, `--dir`, `--ignore`, `--base-dir` do not exist (D07, D11).
 
 ### 7.2 Modes
@@ -916,8 +919,9 @@ The legacy flags `--pattern`, `--dir`, `--ignore`, `--base-dir` do not exist (D0
    path relative to the working directory, or absolute (either slash). For each root and pair,
    the file is a target when its path relative to the root matches an include and no exclude.
    A file matching no pair is ignored silently (lint-staged passes every staged `.md`). A file
-   matching several pairs is linted once per pair. A file that does not exist is `MTL912`
-   (the other files are still linted, change C01). Output order follows 8.4, not the argument
+   matching several pairs is linted once per pair. A file that matches a pair but does not exist
+   is `MTL912` (a missing file matching no pair is ignored like any other; the other files are
+   still linted, change C01). Output order follows 8.4, not the argument
    order.
 
 lint-staged config:
@@ -981,7 +985,7 @@ reports exit 2 at the end. A usage or config validation error stops before any l
 Every finding is `{ code, severity, message }`, plus optional `heading`, `line`, `column`
 (1-based, only where known, for example tag errors). `heading` is set for heading and content
 findings (MTL601-603, MTL701-705; MTL604 has no anchor and gets no heading). A `field` member is NOT emitted (change C07). `message` is the legacy text
-without the code. Parity checks compare `(path, severity, code, message)` after normalizing
+without the code. Comparisons with the legacy output use `(path, severity, code, message)` after normalizing
 separators (D18).
 
 ### 8.2 Text format
@@ -1312,7 +1316,7 @@ Behaviour that differs from legacy and is not one of the numbered defects.
   reasons also include `invalid URL`, `url budget exceeded` and `request failed`; MTL004 detail
   is path free (`file is not valid UTF-8` or `cannot read file (CODE)`).
 - C06: accepted Unicode deviations of the port (JavaScript regex and string semantics against
-  Python). Each is a known, small difference, kept until a parity run shows a real case:
+  Python). Each is a known, small difference, kept until a real case shows up:
   - Digits: JS `\d` and the lexer `T_NUMBER` match ASCII digits only. Python `\d` matches every
     Unicode decimal digit (class Nd). Affects int, float, date patterns, range/count/min-lines
     numbers.

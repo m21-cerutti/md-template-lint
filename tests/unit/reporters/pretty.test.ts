@@ -1,6 +1,6 @@
 /**
  * Pretty reporter (docs/spec.md 8.2): the wrapper layout, Unicode glyphs, ANSI color
- * only when asked. Golden files: tests/fixtures/runner/report-sample/expected.*.txt
+ * only when asked. Expected-output files: tests/fixtures/runner/report-sample/expected.*.txt
  * (written from the spec 8.2 sample, not generated).
  */
 import { describe, expect, it } from "vitest";

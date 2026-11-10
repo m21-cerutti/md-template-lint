@@ -1,4 +1,4 @@
-# No pass/fail split: a golden-output fixture for the sanitizing of echoed document values.
+# No pass/fail split: an expected-output fixture for the sanitizing of echoed document values.
 pairs:
   - name: ctl
     template: templates/ctl.template.md

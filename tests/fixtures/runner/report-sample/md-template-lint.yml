@@ -1,4 +1,4 @@
-# No pass/fail split: a golden-output fixture (the spec 8.2 sample) compared line for line.
+# No pass/fail split: an expected-output fixture (the spec 8.2 sample) compared line for line.
 pairs:
   - name: adr
     template: docs/templates/adr.template.md

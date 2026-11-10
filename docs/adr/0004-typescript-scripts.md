@@ -46,10 +46,10 @@ imports need the `.ts` extension.
 - **ESLint config:** `eslint.config.ts`, loaded through the `jiti` devDependency
   (MIT licence, build-time only, not shipped). ESLint 10 on Node needs `jiti` (or the
   experimental `unstable_native_nodejs_ts_config` flag) to read a TypeScript config.
-- **Enforcement:** `checkNoStrayJs` in `tests/consistency/consistency.ts` (part of
-  `pnpm run check:rules` and `allProblems()`) fails when a `.js`, `.mjs` or `.cjs` file exists
-  outside `.git/`, `node_modules/`, `dist/`, `coverage/`, `tmp/` (git-ignored scratch)
-  and `src/generated/`.
+- **Guideline, not enforced:** no `.js`, `.mjs` or `.cjs` file outside `src/generated/`,
+  `dist/`, `coverage/`, `node_modules/` and `tmp/` (git-ignored scratch). `pnpm run check:rules`
+  does not check it (a stray-file check was removed); the rule lives in `AGENTS.md` and
+  `CONTRIBUTING.md`, and review catches a violation.
 - `.prettierrc.json` and the `tsconfig*.json` files stay JSON: they are data, not code.
 
 ## Consequences

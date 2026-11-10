@@ -1,8 +1,8 @@
 /**
  * Target pipeline (docs/spec.md 4.1, 8.4): field-major order sorted by step,
  * the single missing/empty guard, async checks, and the io handle of
- * `[io:exists]` (in-memory, no network). Each group: 1 passing case, failing
- * cases >= passing.
+ * `[io:exists]` (in-memory, no network). Each group: at least 1 passing case
+ * and 1 failing case.
  */
 import { describe, expect, it } from "vitest";
 import { checkTarget, checkTemplate } from "../../src/engine/pipeline.js";

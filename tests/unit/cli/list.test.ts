@@ -25,7 +25,7 @@ interface Case {
 
 const MISSING_GONE = { code: "MTL912", message: "target not found: docs/gone.md" };
 
-/** Exactly 1 passing case, failing cases >= passing; one fixture directory per case. */
+/** At least 1 passing case and 1 failing case; one fixture directory per case. */
 const CASES: readonly Case[] = [
   {
     // lint-staged passes every staged .md: an excluded one, a non-Markdown file and the
@@ -113,7 +113,7 @@ const lint = (fixture: string, args: readonly string[], extra: readonly string[]
   runCliIn(fixture, ["--format", "json", ...extra, ...args]);
 
 describe("cli file-list mode: layout", () => {
-  it("has exactly 1 pass- case, at least as many fail- cases, one directory each", () => {
+  it("has at least 1 pass- case, at least 1 fail- case, one directory each", () => {
     expectSplit("cli", GROUP, CASES);
   });
 });

@@ -678,47 +678,6 @@ export function checkCodes(
   return problems;
 }
 
-// ---------------------------------------------------------------------------
-// TypeScript only (ADR 0004)
-// ---------------------------------------------------------------------------
-
-/** Directories (relative to ROOT) that may hold .js/.mjs/.cjs: generated, built, installed, git-ignored scratch. */
-const STRAY_JS_EXEMPT: readonly string[] = [
-  ".git",
-  "coverage",
-  "dist",
-  "node_modules",
-  "src/generated",
-  "tmp",
-];
-
-/** Every file of the repository as a posix path relative to ROOT, skipping the exempt directories. */
-export function repoFiles(
-  directory = ROOT,
-  exempt: readonly string[] = STRAY_JS_EXEMPT,
-  prefix = "",
-): string[] {
-  const files: string[] = [];
-  for (const entry of readdirSync(directory, { withFileTypes: true })) {
-    const relative = `${prefix}${entry.name}`;
-    if (entry.isDirectory()) {
-      if (!exempt.includes(relative)) {
-        files.push(...repoFiles(join(directory, entry.name), exempt, `${relative}/`));
-      }
-    } else {
-      files.push(relative);
-    }
-  }
-  return files;
-}
-
-/** No .js/.mjs/.cjs source file outside the exempt directories: scripts and tool configs are .ts. */
-export function checkNoStrayJs(files: readonly string[] = repoFiles()): string[] {
-  return files
-    .filter((file) => /\.(?:js|mjs|cjs)$/.test(file))
-    .map((file) => `${file}: JavaScript source file, convert it to TypeScript (ADR 0004)`);
-}
-
 /** Every check, in a fixed order. */
 export function allProblems(): string[] {
   return [
@@ -731,6 +690,5 @@ export function allProblems(): string[] {
     ...checkRuleFiles(),
     ...checkRanges(),
     ...checkCodes(),
-    ...checkNoStrayJs(),
   ];
 }

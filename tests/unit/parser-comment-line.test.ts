@@ -4,8 +4,8 @@
  * that is plain prose, the decoding of a quoted key in a finding subject, and a malformed
  * `[filename:...]` directive on its own line.
  *
- * Fixture of a case: `tests/fixtures/tags/<name>/document.md`. Exactly 1 passing case, failing
- * cases >= passing.
+ * Fixture of a case: `tests/fixtures/tags/<name>/document.md`. At least 1 passing case and 1
+ * failing case.
  */
 import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
@@ -59,7 +59,7 @@ const read = (name: string): string =>
   readFileSync(`${fixturePath("tags", name)}/document.md`, "utf8");
 
 describe("parser: frontmatter comment lines and key comments", () => {
-  it("has exactly 1 pass- case and at least as many fail- cases, one fixture dir each", () => {
+  it("has at least 1 pass- case and at least 1 fail- case, one fixture dir each", () => {
     expectSplit("tags", "", CASES);
     for (const testCase of CASES) {
       expect(readdirSync(fixturePath("tags", testCase.name))).toEqual(["document.md"]);
