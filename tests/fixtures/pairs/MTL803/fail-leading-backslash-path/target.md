@@ -1,0 +1,3 @@
+---
+note: \share\a.md
+---

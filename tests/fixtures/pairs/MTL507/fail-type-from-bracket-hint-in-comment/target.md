@@ -1,0 +1,3 @@
+---
+logo: some logo
+---

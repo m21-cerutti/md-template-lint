@@ -1,0 +1,3 @@
+---
+logo: "@Assets/logo.png"
+---

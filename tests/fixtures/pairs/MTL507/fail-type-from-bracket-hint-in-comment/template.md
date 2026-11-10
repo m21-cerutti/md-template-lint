@@ -1,0 +1,3 @@
+---
+logo: "x" # [path-alias]
+---

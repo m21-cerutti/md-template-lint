@@ -45,6 +45,20 @@ export interface Field {
   readonly type: string;
 }
 
+/**
+ * Presence mode of a template field (spec 2.2). Precedence when several tags
+ * are present: conditional, then optional, then required. No presence tag
+ * means required. Shared by the presence and the enum severity rules.
+ */
+export function presenceMode(field: Field): "required" | "optional" | "conditional" {
+  const modes = (field.comment?.tags ?? []).flatMap((tag) =>
+    tag.kind === "presence" ? [tag.mode] : [],
+  );
+  if (modes.includes("conditional")) return "conditional";
+  if (modes.includes("optional")) return "optional";
+  return "required";
+}
+
 /** An H1 or H2 heading and its body (spec 2.6). H3 to H6 stay in the body. */
 export interface Section {
   readonly level: 1 | 2;

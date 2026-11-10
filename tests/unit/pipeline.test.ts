@@ -12,8 +12,10 @@ import {
   createEnv,
   createMemoryIo,
   defineRule,
+  FIELD_STEPS,
   notImplemented,
   report,
+  reportItem,
   URL_PROBE_TIMEOUT_MS,
   type AnyRule,
   type Category,
@@ -193,8 +195,268 @@ describe("target pipeline: async io checks (in-memory io, no network)", () => {
       ],
     });
     const model = await template(tpl);
-    await expect(checkTarget(stubbed, model, "---\np: v\n---\n", "t.md")).rejects.toThrow(
+    await expect(checkTarget(stubbed, model, "---\np: v\n---\n", "t.md", env)).rejects.toThrow(
       "not implemented: MTL301",
     );
+  });
+});
+
+describe("target pipeline: io step lists findings in item order across rules", () => {
+  /** An io rule reporting the given item indexes of the value (one finding per index). */
+  const itemRule = (code: `MTL${string}`, indexes: readonly number[]) => {
+    const rule = defineRule({
+      code,
+      name: `items-${code}`,
+      severity: "warning",
+      category: "io",
+      phase: "field",
+      step: "io",
+      check: (context: FieldContext): Diagnostic[] =>
+        indexes.map((index) => reportItem(rule, `${code}:${context.key}:${index}`, index)),
+    });
+    return rule;
+  };
+  const itemRegistry = registry({
+    // Registry order MTL801 then MTL802; item order interleaves them.
+    io: [itemRule("MTL801", [0, 2]), itemRule("MTL802", [1, 3])],
+  });
+  const tpl = "---\np: x\nq: x\n---\n";
+  const target = "---\np: a\nq: b\n---\n";
+
+  it("an io step without finding leaves the result empty", async () => {
+    const empty = registry({ io: [] });
+    const model = await template(tpl);
+    expect(await checkTarget(empty, model, target, "t.md", env)).toEqual([]);
+  });
+
+  it("sorts the io findings of one field by item index and keeps fields in template order", async () => {
+    const status = await checkTemplate(itemRegistry, tpl);
+    if (status.status !== "ok") throw new Error("template broken");
+    const result = await checkTarget(itemRegistry, status.model, target, "t.md", env);
+    expect(result.map((d) => d.message)).toEqual([
+      "MTL801:p:0",
+      "MTL802:p:1",
+      "MTL801:p:2",
+      "MTL802:p:3",
+      "MTL801:q:0",
+      "MTL802:q:1",
+      "MTL801:q:2",
+      "MTL802:q:3",
+    ]);
+  });
+
+  it("never lets the item index reach the diagnostic seen by reporters", async () => {
+    const status = await checkTemplate(itemRegistry, tpl);
+    if (status.status !== "ok") throw new Error("template broken");
+    const result = await checkTarget(itemRegistry, status.model, target, "t.md", env);
+    for (const diagnostic of result) {
+      expect(Object.keys(diagnostic).sort()).toEqual(["code", "message", "position", "severity"]);
+    }
+  });
+});
+
+describe("target pipeline: env is a required argument", () => {
+  it("fails: checkTarget without env does not compile (no silent in-memory io)", async () => {
+    const empty = registry({});
+    const model = await template("---\np: x\n---\n");
+    // @ts-expect-error the env parameter has no default
+    const result = await checkTarget(empty, model, "---\np: v\n---\n", "t.md");
+    expect(result).toEqual([]);
+  });
+});
+
+/** The 10 present-value steps of docs/spec.md 4.1 step 3, spelled out (not read from FIELD_STEPS). */
+const SPEC_STEP_ORDER = [
+  "constant",
+  "count",
+  "range",
+  "order",
+  "scheme",
+  "io",
+  "value-filename",
+  "case",
+  "elements",
+  "type",
+] as const;
+
+describe("target pipeline: per-field steps run in spec 4.1 order", () => {
+  // One rule per step, registered in REVERSE spec order inside one category file.
+  const allSteps: readonly FieldStep[] = ["presence", ...SPEC_STEP_ORDER];
+  const reversed = [...allSteps].reverse().map((step, index) => {
+    const code = `MTL${390 - index}` as const;
+    const rule = defineRule({
+      code,
+      name: step,
+      severity: "error",
+      category: "format",
+      phase: "field",
+      step,
+      check: (context: FieldContext): Diagnostic[] =>
+        step === "presence" || context.value === "bad" ? [report(rule, step)] : [],
+    });
+    return rule;
+  });
+  const stepRegistry = registry({ format: reversed });
+
+  it("passes: a clean value triggers no step", async () => {
+    const model = await template("---\np: x\n---\n");
+    expect(await checkTarget(stepRegistry, model, "---\np: ok\n---\n", "t.md", env)).toEqual([]);
+  });
+
+  it("fails: every step of a present value fires in spec order, not registry order", async () => {
+    const model = await template("---\np: x\n---\n");
+    const result = await checkTarget(stepRegistry, model, "---\np: bad\n---\n", "t.md", env);
+    expect(result.map((d) => d.message)).toEqual([...SPEC_STEP_ORDER]);
+  });
+
+  it("fails: a missing value fires the presence step alone", async () => {
+    const model = await template("---\np: x\n---\n");
+    const result = await checkTarget(stepRegistry, model, "---\nq: 1\n---\n", "t.md", env);
+    expect(result.map((d) => d.message)).toEqual(["presence"]);
+  });
+
+  it("fails: FIELD_STEPS itself is presence, then the spec order", () => {
+    expect([...FIELD_STEPS]).toEqual(["presence", ...SPEC_STEP_ORDER]);
+  });
+});
+
+describe("target pipeline: headings step lists presence findings in template heading order", () => {
+  const real = createRegistry();
+  const lines = (...text: string[]) => text.join("\n");
+  const findings = async (templateText: string, targetText: string) => {
+    const status = await checkTemplate(real, templateText);
+    if (status.status !== "ok") throw new Error("template broken");
+    const found = await checkTarget(real, status.model, targetText, "t.md", env);
+    return found.filter((d) => d.code.startsWith("MTL60"));
+  };
+  const templateText = lines(
+    "---",
+    "a: x",
+    "---",
+    "## Alpha",
+    "## Beta [presence:exist]",
+    "## Draft notes [presence:template-only]",
+    "## Omega",
+  );
+
+  it("passes: a target that satisfies every heading has no finding", async () => {
+    const target = lines("---", "a: x", "---", "# Top", "## Alpha", "## Omega");
+    expect(await findings(templateText, target)).toEqual([]);
+  });
+
+  it("fails: MTL601, MTL602, MTL603 interleave by template heading, not by rule", async () => {
+    // Alpha missing (601), no H2 at all for Beta (602), Draft notes present (603), Omega missing (601).
+    const target = lines("---", "a: x", "---", "# Draft notes");
+    const found = await findings(templateText, target);
+    expect(found.map((d) => `${d.code} ${d.message}`)).toEqual([
+      "MTL601 Heading: Missing required heading: 'Alpha'",
+      "MTL602 Heading: Missing heading at level H2 [presence:exist]",
+      "MTL603 Heading: Heading 'Draft notes' is marked [presence:template-only] and must not appear in the linted file",
+      "MTL601 Heading: Missing required heading: 'Omega'",
+    ]);
+  });
+
+  it("fails: the template line anchor is cleared, and the order finding comes last", async () => {
+    const target = lines("---", "a: x", "---", "## Omega", "## Alpha", "## Draft notes");
+    const found = await findings(templateText, target);
+    expect(found.map((d) => d.code)).toEqual(["MTL603", "MTL604"]);
+    expect(found.map((d) => d.position)).toEqual([null, null]);
+  });
+});
+
+describe("target pipeline: content step lists findings in template section order", () => {
+  const real = createRegistry();
+  const lines = (...text: string[]) => text.join("\n");
+  const findings = async (templateText: string, targetText: string) => {
+    const status = await checkTemplate(real, templateText);
+    if (status.status !== "ok") throw new Error("template broken");
+    const found = await checkTarget(real, status.model, targetText, "t.md", env);
+    return found.filter((d) => d.code.startsWith("MTL70"));
+  };
+
+  it("passes: a target whose sections satisfy every content tag has no finding", async () => {
+    const templateText = lines(
+      "---",
+      "a: x",
+      "---",
+      "## A [content:table]",
+      "## B [content:non-empty]",
+    );
+    const target = lines("---", "a: x", "---", "## A", "| x |", "## B", "text");
+    expect(await findings(templateText, target)).toEqual([]);
+  });
+
+  it("fails: section A (MTL702) comes before section B (MTL701), not grouped by rule", async () => {
+    const templateText = lines(
+      "---",
+      "a: x",
+      "---",
+      "## A [content:table]",
+      "## B [content:non-empty]",
+    );
+    const target = lines("---", "a: x", "---", "## A", "## B");
+    const found = await findings(templateText, target);
+    expect(found.map((d) => `${d.code} ${d.message}`)).toEqual([
+      "MTL702 Section 'A': [content:table] no markdown table row found",
+      "MTL701 Section 'B': [content:non-empty] section body is empty",
+    ]);
+  });
+
+  it("fails: one section keeps registry order (MTL701 to MTL705), sections stay in template order", async () => {
+    const templateText = lines(
+      "---",
+      "a: x",
+      "---",
+      "## A [content:non-empty] [content:list] [content:min-lines:2]",
+      "## B [content:table] [content:max-lines:0]",
+    );
+    const target = lines("---", "a: x", "---", "## A", "## B", "text");
+    const found = await findings(templateText, target);
+    expect(found.map((d) => `${d.code} ${d.message.split(":")[0]}`)).toEqual([
+      "MTL701 Section 'A'",
+      "MTL703 Section 'A'",
+      "MTL704 Section 'A'",
+      "MTL702 Section 'B'",
+      "MTL705 Section 'B'",
+    ]);
+  });
+
+  it("never lets the section index reach the diagnostic seen by reporters", async () => {
+    const templateText = lines(
+      "---",
+      "a: x",
+      "---",
+      "## A [content:table]",
+      "## B [content:non-empty]",
+    );
+    const found = await findings(templateText, lines("---", "a: x", "---", "## A", "## B"));
+    expect(found).toHaveLength(2);
+    for (const diagnostic of found) {
+      expect(Object.keys(diagnostic).sort()).toEqual(["code", "message", "position", "severity"]);
+    }
+  });
+});
+
+describe("template warnings: sorted by source position across rules", () => {
+  const real = createRegistry();
+  const lines = (...text: string[]) => text.join("\n");
+  const warnings = async (text: string) => {
+    const status = await checkTemplate(real, text);
+    if (status.status !== "ok") throw new Error("template broken");
+    return status.warnings.map((d) => `${d.code}@${d.position?.line}:${d.position?.column}`);
+  };
+
+  it("passes: a clean template has no warning", async () => {
+    expect(await warnings(lines("---", "a: x # [presence:required]", "---", "## H"))).toEqual([]);
+  });
+
+  it("fails: a later rule code on an earlier line comes first", async () => {
+    const text = lines("---", "n: x # [count:min:abc]", "---", "## Notes [nope:y]");
+    expect(await warnings(text)).toEqual(["MTL012@2:19", "MTL011@4:10"]);
+  });
+
+  it("fails: on one line the earlier column comes first", async () => {
+    const text = lines("---", "n: x # [count:min:abc] [nope:y]", "---");
+    expect(await warnings(text)).toEqual(["MTL012@2:19", "MTL010@2:24"]);
   });
 });

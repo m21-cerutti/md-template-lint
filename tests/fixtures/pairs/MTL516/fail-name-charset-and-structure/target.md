@@ -1,0 +1,13 @@
+---
+aliases:
+  - "@/x"
+  - "@@a/x"
+  - "@as.sets/x"
+  - "@as sets/x"
+  - "@assèts/x"
+  - "@as$ets/x"
+  - "@assets"
+  - "@assets/"
+  - '@assets\x'
+  - "@a/b"
+---

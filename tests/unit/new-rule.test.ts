@@ -27,6 +27,16 @@ const run = (...args: string[]) =>
     encoding: "utf8",
   });
 
+/** A name that is never a docs/spec.md 4.3 row, so the scaffold picks the next free code. */
+const FAKE_RULE = "rogue-format-rule";
+
+/** The code the scaffold chose, read from its stdout (it moves as real rules land). */
+function scaffoldedCode(stdout: string): string {
+  const code = new RegExp(`new:rule: (MTL\\d{3}) ${FAKE_RULE} \\(stub\\) added`).exec(stdout)?.[1];
+  if (code === undefined) throw new Error(`no scaffolded code in: ${stdout}`);
+  return code;
+}
+
 async function prettierClean(file: string): Promise<boolean> {
   const options = (await prettier.resolveConfig(join(ROOT, "src", "index.ts"))) ?? {};
   return prettier.check(readFileSync(file, "utf8"), { ...options, filepath: file });
@@ -34,25 +44,24 @@ async function prettierClean(file: string): Promise<boolean> {
 
 describe("new:rule scaffold", () => {
   it("passes: a field rule stub, target test and pair fixtures", async () => {
-    const result = run("format", "constant-mismatch", "--step", "constant");
+    const result = run("format", FAKE_RULE, "--step", "constant");
     expect(result.status).toBe(0);
+    const code = scaffoldedCode(result.stdout);
     const ruleFile = join(root, "src", "rules", "format.ts");
     const rule = readFileSync(ruleFile, "utf8");
-    expect(rule).toContain(
-      'import { defineRule, notImplemented, type AnyRule } from "../engine/rule.js";',
-    );
-    expect(rule).toContain('    code: "MTL301",\n    name: "constant-mismatch",');
+    expect(rule).toMatch(/import \{[^}]*\bnotImplemented\b[^}]*\} from "..\/engine\/rule\.js";/);
+    expect(rule).toContain(`    code: "${code}",\n    name: "${FAKE_RULE}",`);
     expect(rule).toContain('    phase: "field",\n    step: "constant",');
-    expect(rule).toContain('    check: notImplemented("MTL301"),');
-    const test = join(root, "tests", "target", "format", "MTL301-constant-mismatch.test.ts");
+    expect(rule).toContain(`    check: notImplemented("${code}"),`);
+    const test = join(root, "tests", "target", "format", `${code}-${FAKE_RULE}.test.ts`);
     expect(existsSync(test)).toBe(true);
     for (const file of [
-      "pass/template.md",
-      "pass/target.md",
-      "fail-1/template.md",
-      "fail-1/target.md",
+      "pass-placeholder/template.md",
+      "pass-placeholder/target.md",
+      "fail-placeholder/template.md",
+      "fail-placeholder/target.md",
     ]) {
-      expect(existsSync(join(root, "tests", "fixtures", "pairs", "MTL301", file))).toBe(true);
+      expect(existsSync(join(root, "tests", "fixtures", "pairs", code, file))).toBe(true);
     }
     expect(await prettierClean(ruleFile)).toBe(true);
     expect(await prettierClean(test)).toBe(true);
@@ -64,29 +73,29 @@ describe("new:rule scaffold", () => {
     expect(result.stdout).toContain("is not a docs/spec.md 4.3 row");
     const test = join(root, "tests", "syntax", "syntax", "MTL005-rogue-tag.test.ts");
     expect(existsSync(test)).toBe(true);
-    expect(existsSync(join(root, "tests", "fixtures", "templates", "MTL005", "fail-1.md"))).toBe(
-      true,
-    );
+    for (const file of ["pass-placeholder.md", "fail-placeholder.md"]) {
+      expect(existsSync(join(root, "tests", "fixtures", "templates", "MTL005", file))).toBe(true);
+    }
     expect(await prettierClean(join(root, "src", "rules", "syntax.ts"))).toBe(true);
   });
 
   it("passes: ignores the bare `--` that `pnpm run new:rule -- ...` forwards", () => {
-    const result = run("--", "format", "constant-mismatch", "--step", "constant");
+    const result = run("--", "format", FAKE_RULE, "--step", "constant");
     expect(result.status).toBe(0);
     expect(result.stderr).toBe("");
-    expect(result.stdout).toContain("MTL301 constant-mismatch (stub) added");
+    expect(scaffoldedCode(result.stdout)).toMatch(/^MTL3\d\d$/);
   });
 
   it("fails: a field rule without --step", () => {
-    const result = run("format", "constant-mismatch");
+    const result = run("format", FAKE_RULE);
     expect(result.status).toBe(1);
     expect(result.stderr).toContain("phase 'field' needs --step");
   });
 
   it("fails: a rule that already exists", () => {
-    expect(run("format", "constant-mismatch", "--step", "constant").status).toBe(0);
-    const again = run("format", "constant-mismatch", "--step", "constant");
+    expect(run("format", FAKE_RULE, "--step", "constant").status).toBe(0);
+    const again = run("format", FAKE_RULE, "--step", "constant");
     expect(again.status).toBe(1);
-    expect(again.stderr).toContain("rule 'constant-mismatch' already exists");
+    expect(again.stderr).toContain(`rule '${FAKE_RULE}' already exists`);
   });
 });

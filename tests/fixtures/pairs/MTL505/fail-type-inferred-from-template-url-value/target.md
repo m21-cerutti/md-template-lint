@@ -1,0 +1,3 @@
+---
+home: home.example.com
+---

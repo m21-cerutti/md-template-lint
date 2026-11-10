@@ -11,8 +11,15 @@
  *    shared guard); otherwise the `field` rules of every other step, in
  *    FIELD_STEPS order;
  * 4. `target` rules of steps `unknown-keys`, `headings`, `content`;
- * inside one step, registry order (category file order, then file order).
+ * inside one step, registry order (category file order, then file order);
+ * the `headings` step then orders its presence findings by template heading,
+ * and the `content` step orders its findings by template section.
  * Errors are returned first, then warnings, each in emission order.
+ * `env` is required: a caller states its io on purpose (`createEnv` builds an
+ * in-memory one for tests; the production runner builds the real one).
+ *
+ * Template warnings (`checkTemplate`) are sorted by source position (line,
+ * then column) across rules, ties in registry order.
  *
  * The pipeline is async: checks may return a Promise (`[io:exists]` needs
  * file system and network access). Rules run one at a time, each awaited
@@ -22,8 +29,9 @@ import { loadDocument } from "./load.js";
 import { isEmptyValue, type Diagnostic, type DocumentModel } from "./model.js";
 import { rulesOf, runPhase, runRules, type RuleRegistry } from "./registry.js";
 import {
-  createEnv,
   FIELD_STEPS,
+  itemIndexOf,
+  sectionIndexOf,
   TARGET_STEPS,
   type FieldRule,
   type RuleEnv,
@@ -35,7 +43,20 @@ export type TemplateStatus =
   | { readonly status: "ok"; readonly model: DocumentModel; readonly warnings: Diagnostic[] }
   | { readonly status: "broken"; readonly diagnostics: Diagnostic[] };
 
-/** Parse a template. Broken (MTL001 to MTL004) or ok with its tag warnings (MTL010 to MTL013). */
+/**
+ * Source order: by line, then column; a diagnostic without a position first.
+ * The sort is stable, so equal positions keep registry order.
+ */
+function bySourcePosition(diagnostics: readonly Diagnostic[]): Diagnostic[] {
+  const line = (diagnostic: Diagnostic) => diagnostic.position?.line ?? 0;
+  const column = (diagnostic: Diagnostic) => diagnostic.position?.column ?? 0;
+  return [...diagnostics].sort((a, b) => line(a) - line(b) || column(a) - column(b));
+}
+
+/**
+ * Parse a template. Broken (MTL001 to MTL004) or ok with its tag warnings
+ * (MTL010 to MTL013), sorted by source position across rules (spec 4.1, 8.4).
+ */
 export async function checkTemplate(registry: RuleRegistry, text: string): Promise<TemplateStatus> {
   const loaded = loadDocument(text);
   if (!loaded.ok) {
@@ -46,7 +67,7 @@ export async function checkTemplate(registry: RuleRegistry, text: string): Promi
   return {
     status: "ok",
     model: loaded.model,
-    warnings: await runPhase(registry, "template", context),
+    warnings: bySourcePosition(await runPhase(registry, "template", context)),
   };
 }
 
@@ -56,6 +77,45 @@ function byStep<R extends FieldRule | TargetRule>(
   step: string,
 ): R[] {
   return steps.includes(step) ? rules.filter((rule) => rule.step === step) : [];
+}
+
+/**
+ * Order of the `headings` step (spec 4.1 step 5): the presence findings
+ * (MTL601 to MTL603) in template heading order, as the legacy validator emits
+ * them, then the findings that concern no single heading (MTL604).
+ * A heading rule anchors its finding on the template heading line (`position`).
+ * The sort is stable, so one heading keeps registry order. The anchor is only a
+ * sort key: it is cleared, since it is a line of the template, not of the target.
+ */
+function byTemplateHeading(diagnostics: readonly Diagnostic[]): Diagnostic[] {
+  const anchored = diagnostics.filter((diagnostic) => diagnostic.position !== null);
+  const loose = diagnostics.filter((diagnostic) => diagnostic.position === null);
+  const line = (diagnostic: Diagnostic) => diagnostic.position?.line ?? 0;
+  const sorted = [...anchored].sort((a, b) => line(a) - line(b));
+  return [...sorted.map((diagnostic) => ({ ...diagnostic, position: null })), ...loose];
+}
+
+/**
+ * Order of the `io` step of one field (spec 2.8, legacy `_check_io_exists`):
+ * one finding per list item, in ITEM order across the codes MTL801 to MTL805,
+ * not grouped by rule. The io rules tag each finding with its item index
+ * (`reportItem`); the sort is stable, so one item keeps registry order. The
+ * index lives in a side table, so nothing is left on the diagnostic.
+ */
+function byItemIndex(diagnostics: readonly Diagnostic[]): Diagnostic[] {
+  return [...diagnostics].sort((a, b) => itemIndexOf(a) - itemIndexOf(b));
+}
+
+/**
+ * Order of the `content` step (spec 4.1 step 6, legacy `validate_content`): one
+ * finding per template section, in SECTION order across the codes MTL701 to
+ * MTL705, not grouped by rule. The content rules tag each finding with its
+ * template section index (`reportSection`); the sort is stable, so one section
+ * keeps registry order. The index lives in a side table, so nothing is left on
+ * the diagnostic.
+ */
+function bySectionIndex(diagnostics: readonly Diagnostic[]): Diagnostic[] {
+  return [...diagnostics].sort((a, b) => sectionIndexOf(a) - sectionIndexOf(b));
 }
 
 /** Errors first, then warnings, each in emission order (spec 4.1, 8.4). */
@@ -72,7 +132,7 @@ export async function checkTarget(
   template: DocumentModel,
   text: string,
   targetPath: string,
-  env: RuleEnv = createEnv(),
+  env: RuleEnv,
 ): Promise<Diagnostic[]> {
   const loaded = loadDocument(text);
   if (!loaded.ok) {
@@ -100,11 +160,15 @@ export async function checkTarget(
       env,
     } as const;
     for (const step of steps) {
-      out.push(...(await runRules(byStep(fieldRules, FIELD_STEPS, step), fieldContext)));
+      const found = await runRules(byStep(fieldRules, FIELD_STEPS, step), fieldContext);
+      out.push(...(step === "io" ? byItemIndex(found) : found));
     }
   }
   for (const step of after) {
-    out.push(...(await runRules(byStep(targetRules, TARGET_STEPS, step), context)));
+    const found = await runRules(byStep(targetRules, TARGET_STEPS, step), context);
+    if (step === "headings") out.push(...byTemplateHeading(found));
+    else if (step === "content") out.push(...bySectionIndex(found));
+    else out.push(...found);
   }
   return errorsFirst(out);
 }

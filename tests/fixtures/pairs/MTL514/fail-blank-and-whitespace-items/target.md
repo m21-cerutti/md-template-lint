@@ -1,0 +1,7 @@
+---
+paths:
+  - ""
+  - "   "
+  -
+  - ./docs/readme.md
+---

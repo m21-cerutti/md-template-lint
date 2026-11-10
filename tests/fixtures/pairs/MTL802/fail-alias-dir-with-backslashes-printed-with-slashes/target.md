@@ -1,0 +1,3 @@
+---
+logo: "@winstore/logo.png"
+---

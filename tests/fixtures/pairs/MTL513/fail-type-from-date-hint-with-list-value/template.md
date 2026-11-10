@@ -1,0 +1,3 @@
+---
+dates: ["x"] # type=date
+---

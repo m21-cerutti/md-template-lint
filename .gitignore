@@ -29,6 +29,8 @@ secrets.*
 dist/
 build/
 target/
+# project test layout tests/target/
+!tests/target/
 out/
 .next/
 coverage/

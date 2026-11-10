@@ -1,0 +1,7 @@
+---
+aliases:
+  - ""
+  - "   "
+  -
+  - "@assets/logo.svg"
+---

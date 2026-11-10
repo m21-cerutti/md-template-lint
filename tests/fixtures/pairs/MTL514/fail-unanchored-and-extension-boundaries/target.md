@@ -1,0 +1,11 @@
+---
+paths:
+  - n/a
+  - QA/Test
+  - and/or
+  - dir/sub/
+  - docs/file.abcdef
+  - docs/file.
+  - docs/readme.md/
+  - docs/file.abcde
+---

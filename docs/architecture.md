@@ -102,7 +102,9 @@ defineRule({
 
 `RuleEnv` carries the config `aliases`, `approvedPaths`, the `pairRoot` and an injectable
 `io` (`exists(path)`, `probeUrl(url, timeoutMs)`, never throws, `URL_PROBE_TIMEOUT_MS` is
-5000). `createMemoryIo` and `createEnv` are the in-memory default for tests: no network.
+5000). `checkTarget` takes `env` as a required argument (no default, so no caller gets an
+in-memory io by accident). `createMemoryIo` and `createEnv` build the in-memory one for
+tests: no network.
 
 The registry throws `RegistryError` on a duplicate code, a category that does not match its
 file, a code outside the range, or a missing, unknown or unexpected `step`.
@@ -122,6 +124,34 @@ order:
 
 Inside one step: registry order (category file order, then file order). The result lists
 errors first, then warnings, each in emission order.
+
+One exception, the `headings` step (legacy parity): the presence findings `MTL601` to `MTL603`
+come in TEMPLATE HEADING order, interleaved across the three rules, not grouped by rule. Each
+of these rules anchors its finding on the line of the template heading it is about (the
+diagnostic `position`). After the step ran, the pipeline stable-sorts the anchored findings by
+that line (one heading keeps registry order), clears the anchor (it is a template line, not a
+target location) and appends the findings without an anchor, such as `MTL604`, which concerns
+the whole heading list, last.
+
+Second exception, the `io` step (legacy `_check_io_exists`): the findings `MTL801` to `MTL805`
+of one field come in ITEM order, interleaved across the five rules, not grouped by rule (a list
+`["docs/missing.md", "@gone/a.png"]` gives `MTL804` then `MTL801`). Each io rule reports through
+`reportItem(rule, message, index)` (`src/engine/rule.ts`), which records the item index in a side
+table (a `WeakMap`), never on the `Diagnostic`. After the step ran for one field, the pipeline
+stable-sorts its findings by that index (`byItemIndex`; one item keeps registry order). Reporters
+therefore never see the index: a diagnostic has exactly `code`, `severity`, `message`,
+`position`. Fields stay in template order.
+
+Third exception, the `content` step (legacy `validate_content`): the findings `MTL701` to
+`MTL705` come in TEMPLATE SECTION order, interleaved across the five rules, not grouped by rule
+(two empty sections `## A [content:table]` and `## B [content:non-empty]` give `MTL702` for A
+then `MTL701` for B). Each content rule reports through `reportSection(rule, message, index)`
+(`src/engine/rule.ts`), which records the template section index in a side table (a `WeakMap`),
+never on the `Diagnostic`. After the step ran, the pipeline stable-sorts its findings by that
+index (`bySectionIndex`; one section keeps registry order).
+
+`checkTemplate` returns its tag warnings (`MTL010` to `MTL013`) sorted by source position
+(line, then column) across rules; equal positions keep registry order.
 
 ## How to add a tag (5 places)
 
@@ -155,6 +185,9 @@ pnpm run new:rule -- <category> <name> [--step <step>] [--phase <phase>] [--code
     `tests/fixtures/pairs/<MTLxxx>/<case>/template.md` and `target.md`;
   - `--syntax`: `tests/syntax/<category>/<MTLxxx>-<name>.test.ts`, fixtures
     `tests/fixtures/templates/<MTLxxx>/<case>.md`.
+- Case dirs and files are descriptive kebab-case names prefixed `pass-` or `fail-` (for example
+  `pass-all-required-present`, `fail-required-key-absent`), never numbered. The scaffold emits
+  `pass-placeholder` and `fail-placeholder`; rename them to describe what each case exercises.
 - Tests per rule: exactly one passing case, failing cases at least as many.
 
 ## Consistency check

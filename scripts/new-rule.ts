@@ -7,9 +7,11 @@
 // `// new:rule inserts above this line` marker, plus a test stub and fixture
 // folders in the A39 layout:
 //   target (default): tests/target/<category>/<MTLxxx>-<name>.test.ts
-//                     tests/fixtures/pairs/<MTLxxx>/{pass,fail-1}/{template,target}.md
+//                     tests/fixtures/pairs/<MTLxxx>/{pass-placeholder,fail-placeholder}/{template,target}.md
 //   --syntax:         tests/syntax/<category>/<MTLxxx>-<name>.test.ts
-//                     tests/fixtures/templates/<MTLxxx>/{pass-1,fail-1}.md
+//                     tests/fixtures/templates/<MTLxxx>/{pass-placeholder,fail-placeholder}.md
+// Rename the placeholder cases to descriptive kebab-case names (pass-... or
+// fail-...), never numbered.
 // The code is `--code`, else the docs/spec.md 4.3 row with that name in that
 // category, else the next free code of the category range (then add the row
 // to the spec, or `pnpm run check:rules` fails). The code stays in
@@ -235,12 +237,12 @@ const fixtureRoot = options.syntax
   : `tests/fixtures/pairs/${code}`;
 const cases: Case[] = options.syntax
   ? [
-      ["pass-1", `${fixtureRoot}/pass-1.md`, "clean"],
-      ["fail-1", `${fixtureRoot}/fail-1.md`, code],
+      ["pass-placeholder", `${fixtureRoot}/pass-placeholder.md`, "clean"],
+      ["fail-placeholder", `${fixtureRoot}/fail-placeholder.md`, code],
     ]
   : [
-      ["pass", `${fixtureRoot}/pass`, "clean"],
-      ["fail-1", `${fixtureRoot}/fail-1`, code],
+      ["pass-placeholder", `${fixtureRoot}/pass-placeholder`, "clean"],
+      ["fail-placeholder", `${fixtureRoot}/fail-placeholder`, code],
     ];
 const test = [
   `/** ${code} ${name} (src/rules/${category}.ts). Stub from \`pnpm run new:rule\`. */`,
@@ -249,10 +251,14 @@ const test = [
   "",
   "/** Case -> fixture -> expected result: exactly 1 passing case, failing cases >= passing. */",
   "const CASES = [",
-  ...cases.map(
-    ([caseName, fixture, expected]) =>
-      `  { name: "${caseName}", fixture: "${fixture}", expected: "${expected}" },`,
-  ),
+  // One property per line: the placeholder names exceed Prettier's 100 columns on one line.
+  ...cases.flatMap(([caseName, fixture, expected]) => [
+    "  {",
+    `    name: "${caseName}",`,
+    `    fixture: "${fixture}",`,
+    `    expected: "${expected}",`,
+    "  },",
+  ]),
   "] as const;",
   "",
   `describe("${code} ${name}", () => {`,
@@ -277,10 +283,10 @@ for (const path of [testFile, join(root, fixtureRoot)]) {
 writeFileSync(ruleFile, updated);
 write(testFile, test);
 if (options.syntax) {
-  write(join(root, fixtureRoot, "pass-1.md"), placeholder);
-  write(join(root, fixtureRoot, "fail-1.md"), placeholder);
+  write(join(root, fixtureRoot, "pass-placeholder.md"), placeholder);
+  write(join(root, fixtureRoot, "fail-placeholder.md"), placeholder);
 } else {
-  for (const caseName of ["pass", "fail-1"]) {
+  for (const caseName of ["pass-placeholder", "fail-placeholder"]) {
     write(join(root, fixtureRoot, caseName, "template.md"), placeholder);
     write(join(root, fixtureRoot, caseName, "target.md"), placeholder);
   }

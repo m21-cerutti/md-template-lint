@@ -1,0 +1,12 @@
+---
+urls:
+  - "www.example.com"
+  - "https://"
+  - "https:///path"
+  - "https://?q=1"
+  - "https://#frag"
+  - "https:/example.com"
+  - "1http://host"
+  - "http://[::1/x"
+  - "http://::1]/x"
+---

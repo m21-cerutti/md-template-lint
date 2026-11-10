@@ -1,0 +1,14 @@
+---
+urls:
+  - "https://ex ample.com"
+  - "https://example.com/a b"
+  - "https://ex\tample.com"
+  - "https://ex<ample.com"
+  - "https://ex>ample.com"
+  - "https://ex{ample.com"
+  - "https://ex}ample.com"
+  - "https://ex|ample.com"
+  - 'https://ex\ample.com'
+  - "https://ex^ample.com"
+  - 'https://ex"ample.com'
+---

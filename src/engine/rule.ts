@@ -241,3 +241,52 @@ export function report(
 ): Diagnostic {
   return { code: rule.code, severity, message, position };
 }
+
+/**
+ * Item index of the diagnostics of the `io` step. A side table (not a field of
+ * `Diagnostic`), so the index never reaches a reporter: it is only the sort key
+ * the pipeline reads once, right after the step ran.
+ */
+const ITEM_INDEX = new WeakMap<Diagnostic, number>();
+
+/** A diagnostic about item `index` of a list value, see `byItemIndex` in the pipeline. */
+export function reportItem(
+  rule: Pick<AnyRule, "code" | "severity">,
+  message: string,
+  index: number,
+): Diagnostic {
+  const diagnostic = report(rule, message);
+  ITEM_INDEX.set(diagnostic, index);
+  return diagnostic;
+}
+
+/** Item index set by `reportItem`; 0 for any other diagnostic. */
+export function itemIndexOf(diagnostic: Diagnostic): number {
+  return ITEM_INDEX.get(diagnostic) ?? 0;
+}
+
+/**
+ * Template section index of the diagnostics of the `content` step. A side
+ * table like `ITEM_INDEX`: the index never reaches a reporter, it is only the
+ * sort key the pipeline reads once, right after the step ran.
+ */
+const SECTION_INDEX = new WeakMap<Diagnostic, number>();
+
+/**
+ * A diagnostic about the template section at `index` in `template.sections`,
+ * see `bySectionIndex` in the pipeline.
+ */
+export function reportSection(
+  rule: Pick<AnyRule, "code" | "severity">,
+  message: string,
+  index: number,
+): Diagnostic {
+  const diagnostic = report(rule, message);
+  SECTION_INDEX.set(diagnostic, index);
+  return diagnostic;
+}
+
+/** Section index set by `reportSection`; 0 for any other diagnostic. */
+export function sectionIndexOf(diagnostic: Diagnostic): number {
+  return SECTION_INDEX.get(diagnostic) ?? 0;
+}

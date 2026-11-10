@@ -1,0 +1,14 @@
+---
+paths:
+  - "./a<b/c.md"
+  - "./a>b/c.md"
+  - './a"b/c.md'
+  - "./a|b/c.md"
+  - "./a?b/c.md"
+  - "./a*b/c.md"
+  - "./a:b/c.md"
+  - "C:/a:b/c.md"
+  - "./a b/c.md"
+  - "/"
+  - "//server/share/a.md"
+---

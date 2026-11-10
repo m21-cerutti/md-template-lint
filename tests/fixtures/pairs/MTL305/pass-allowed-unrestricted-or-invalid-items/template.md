@@ -1,0 +1,16 @@
+---
+links: ["https://example.com"] # [format:scheme:https,http]
+mirrors: ["https://example.com"] # [format:scheme:,]
+padded: ["https://example.com"] # [format:scheme:https]
+nested_items: ["https://example.com"] # [format:scheme:https]
+scalar_value: ["https://example.com"] # [format:scheme:https]
+mapped: ["https://example.com"] # [format:scheme:https]
+free: ["https://example.com"]
+plain: ["a"] # [format:scheme:https]
+wrong_type: "https://example.com" # [format:scheme:https]
+blank: ["https://example.com"] # [format:scheme:https]
+spaces: ["https://example.com"] # [format:scheme:https]
+bare: ["https://example.com"] # [format:scheme:https]
+empty_list: ["https://example.com"] # [format:scheme:https]
+absent: ["https://example.com"] # [format:scheme:https]
+---

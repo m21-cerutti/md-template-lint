@@ -1,0 +1,3 @@
+---
+words: list-of-string
+---

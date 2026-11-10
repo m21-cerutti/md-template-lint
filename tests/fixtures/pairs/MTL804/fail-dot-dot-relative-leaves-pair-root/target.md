@@ -1,0 +1,3 @@
+---
+note: ../shared/a.md
+---

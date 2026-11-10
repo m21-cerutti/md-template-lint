@@ -1,0 +1,3 @@
+---
+logo: "@gone/logo.png"
+---

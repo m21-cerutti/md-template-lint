@@ -1,0 +1,3 @@
+---
+home: "https://example.com"
+---

@@ -269,10 +269,14 @@ occurrence is checked.
 | Tag                       | Rule                                                                                  | Code     |
 | ------------------------- | ------------------------------------------------------------------------------------- | -------- |
 | `[content:non-empty]`     | Section body must not be blank.                                                       | `MTL701` |
-| `[content:table]`         | Some line, trimmed, starts and ends with `\|` (a separator row counts).                | `MTL702` |
-| `[content:list]`          | Some line starts (after spaces) with a `-`, `*` or `+` bullet or `N.` / `N)` and then whitespace. Nested items count. | `MTL703` |
+| `[content:table]`         | Some line, trimmed, starts and ends with `\|` and has 2+ chars (a separator row counts). | `MTL702` |
+| `[content:list]`          | Some line starts (after whitespace) with a `-`, `*` or `+` bullet or `N.` / `N)` and then whitespace. Nested items count. | `MTL703` |
 | `[content:min-lines:N]`   | At least `N` non-blank lines in the body.                                             | `MTL704` |
 | `[content:max-lines:N]`   | At most `N` non-blank lines in the body.                                              | `MTL705` |
+
+If a heading carries several `min-lines` (or `max-lines`) tags, the first (leftmost) one is used.
+A malformed `N` (for example `[content:min-lines:abc]`) is an `MTL012` warning only and never gives
+`MTL704` or `MTL705`.
 
 The old `<!-- [rule] required -->` HTML comment is dead. It is inert prose.
 
@@ -312,6 +316,13 @@ Per item (a list contributes one check per non-blank string item):
    Otherwise `MTL803` (skipped).
 3. Anything else is relative and is resolved against the ROOT of the pair that matched the
    target (changed, D11) and tested (`MTL804`).
+   Residual (accepted, same as legacy): relative values and alias rests are NOT contained.
+   A `..` segment may leave the pair root or alias root, so `approvedPaths` only restricts
+   absolute values. The result is a warning that tells whether a file exists.
+   Printed text keeps `..` unfolded (legacy parity). The existence probe and the
+   `approvedPaths` containment test use the same lexically folded path, so on POSIX a
+   symlinked segment before `..` can differ from the legacy physical resolution (accepted).
+   A root prefix inside an alias rest (`@a//etc/x`) is stripped and joined under the alias root.
 4. URL: HTTP HEAD with a 5 second timeout, retried once with GET if HEAD fails. Status
    2xx or 3xx is reachable and silent. Anything else (other status, timeout, DNS failure,
    refused connection, any exception) is `MTL805` with a reason of at most 60 characters.
@@ -1259,3 +1270,19 @@ Behaviour that differs from legacy and is not one of the numbered defects.
 - C05: a known, well-formed tag in the wrong region (a heading-only tag in a frontmatter
   comment, or the reverse). Legacy ignored it silently. The port reports `MTL013`, a warning
   with line and column, shown by `--verify` only (2.7).
+- C06: accepted Unicode deviations of the port (JavaScript regex and string semantics against
+  Python). Each is a known, small difference, kept until a parity run shows a real case:
+  - Digits: JS `\d` and the lexer `T_NUMBER` match ASCII digits only. Python `\d` matches every
+    Unicode decimal digit (class Nd). Affects int, float, date patterns, range/count/min-lines
+    numbers.
+  - Whitespace: type checks, io paths and the frontmatter loader strip with JS `trim()`. The
+    range, order, url, path-alias and content rules strip with the Python `str.isspace` set.
+    Python `strip()` is the contract; the two sets differ for U+001C to U+001F, U+0085 and
+    U+FEFF.
+  - URLs: the syntactic URL check follows Python `urlsplit` but does not validate IPv6 bracket
+    literals, does not strip leading C0 control characters and does not apply the NFKC netloc
+    check.
+  - Numbers: an integer bound above 2^53 compares as a JS number. In `range` the printed bound
+    stays exact through BigInt; in `count` it is parsed with `parseInt` and prints inexactly.
+  - Filename stem: a target path that ends with a separator has an empty stem, while Python
+    `Path("dir/").stem` is `dir` (`[filename:case]`, `[value:filename]`).
