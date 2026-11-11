@@ -11,7 +11,7 @@ import { fixtureDirs, expectNameSplit } from "../../helpers/fixtures.js";
 import { runCliIn, VERSION } from "../../helpers/cli.js";
 
 const FIXTURE = "usage-no-config";
-const HINT = "Try 'md-template-lint --help' for usage.";
+const HINT = "Try 'mdtl --help' for usage.";
 
 interface Case {
   readonly name: string;

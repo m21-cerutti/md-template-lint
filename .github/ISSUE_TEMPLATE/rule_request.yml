@@ -1,0 +1,80 @@
+name: Rule request
+description: Propose a new rule, a new error code or a change to an existing code.
+title: "rule: "
+labels:
+  - rule
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The error codes are listed in the README ("Rule syntax by category") and in `docs/spec.md`.
+  - type: dropdown
+    id: family
+    attributes:
+      label: Code family
+      description: The family the diagnostic belongs to.
+      options:
+        - syntax (MTL001-MTL099)
+        - filename (MTL100-MTL199)
+        - presence (MTL200-MTL299)
+        - format (MTL300-MTL399)
+        - bounds (MTL400-MTL499)
+        - type (MTL500-MTL599)
+        - heading (MTL600-MTL699)
+        - content (MTL700-MTL799)
+        - io (MTL800-MTL899)
+        - run diagnostics (MTL900-MTL999)
+        - not sure
+    validations:
+      required: true
+  - type: dropdown
+    id: kind
+    attributes:
+      label: New or existing code
+      options:
+        - New code
+        - Change to an existing code
+    validations:
+      required: true
+  - type: input
+    id: existing-code
+    attributes:
+      label: Existing code
+      description: Only if you chose an existing code.
+      placeholder: MTL601
+    validations:
+      required: false
+  - type: textarea
+    id: template
+    attributes:
+      label: Template example
+      description: A minimal template, with the tag or setting you propose.
+      render: markdown
+    validations:
+      required: true
+  - type: textarea
+    id: target
+    attributes:
+      label: Target example
+      description: A minimal Markdown file that should trigger the diagnostic. Add one that should pass if useful.
+      render: markdown
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostic
+    attributes:
+      label: Expected diagnostic
+      description: The code, the severity (error or warning) and the message you expect.
+      placeholder: |
+        code: MTLxxx
+        severity: error
+        message: ...
+    validations:
+      required: true
+  - type: textarea
+    id: rationale
+    attributes:
+      label: Why this rule
+      description: The real case that needs it.
+    validations:
+      required: false

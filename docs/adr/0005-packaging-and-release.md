@@ -10,11 +10,18 @@ deciders: [owner]
 
 The npm package holds `dist/`, `LICENSE`, `CHANGELOG.md`, `THIRD_PARTY_NOTICES.md` and
 `README.md` (plus the always-included `package.json`). CI runs every gate on three operating systems and three Node
-versions. A tag `v*` publishes the tarball that the smoke test installed, with npm Trusted
+versions. A tag `X.Y.Z` (no `v` prefix) publishes the tarball that the smoke test installed, with npm Trusted
 Publishing and provenance. No secret is used.
 
 Amended 2026-11-04 (owner decision, 0.2.0 release prep): `CHANGELOG.md` ships in the package. It
 joins the `files` whitelist, the required files and the allowed root files of the smoke test.
+
+Amended 2026-11-11 (owner decision, 0.2.0 release prep): release tags carry no `v` prefix. The tag
+is exactly the package.json version (for example `0.2.0`), the workflow trigger is the GitHub
+workflow filter pattern `[0-9]+.[0-9]+.[0-9]+`, the environment tag rule and the tag protection
+use the fnmatch pattern `[0-9]*.[0-9]*.[0-9]*` (see the `release` environment bullet), and
+`checkTag` in `scripts/smoke/helpers.ts` rejects a tag with a leading `v`. Where this ADR below
+says tag `<version>`, `X.Y.Z` or "release tag", it means that rule.
 
 ## Context
 
@@ -66,11 +73,11 @@ Phase A30 prepares the first release. Facts that shape the decision:
   `pnpm/action-setup` and the pnpm cache because it builds nothing that is shipped and holds no
   write permission; the cache speeds up nine jobs. The release workflow builds the shipped
   artifact, so it uses neither (next item).
-- **Release** (`.github/workflows/release.yml`): trigger on a tag `v*`, plus `workflow_dispatch`
+- **Release** (`.github/workflows/release.yml`): trigger on a tag matching `[0-9]+.[0-9]+.[0-9]+`, plus `workflow_dispatch`
   as a dry run that never publishes. Job `verify` (`contents: read`) runs
   `pnpm exec tsx scripts/smoke/check-release.ts "$TAG" "$REPOSITORY"` after the install step, because
   [ADR 0007](0007-tsx-script-runner.md) made tsx a devDependency (before that it was
-  `node scripts/...` ahead of the install). Rules: tag must be exactly `v<version>`;
+  `node scripts/...` ahead of the install). Rules: tag must be exactly `<version>` (no `v`);
   `repository.url` must be `https://github.com/<repository>.git`, optionally `git+https`, anchored
   so `owner/name` never matches `owner/name-longer`; the rules are `checkRelease` in
   `scripts/smoke/helpers.ts`, unit tested; `${{ github.repository }}` is passed through `env`. The job then
@@ -91,8 +98,12 @@ Phase A30 prepares the first release. Facts that shape the decision:
   absent from `release.yml`.
 - **Environment `release`.** The publish job declares `environment: release`. The owner configures
   it in the repository settings (Settings, Environments, `release`): required reviewers (a human
-  approves every publish), a deployment branch and tag rule that allows only `v*` tags, and, in
-  the repository rules, tag protection for `v*` so only the owner can create such a tag. Without
+  approves every publish), a deployment branch and tag rule that allows only tags matching
+  `[0-9]*.[0-9]*.[0-9]*`, and, in the repository rules, tag protection for the same pattern so
+  only the owner can create such a tag. These two settings use fnmatch syntax, unlike the
+  workflow filter (`[0-9]+.[0-9]+.[0-9]+`): in fnmatch `+` is a literal character and `*` matches any
+  run of characters. The fnmatch pattern is looser than the workflow filter, so the in-job
+  `check-release.ts` check (tag equals the package.json version) stays the binding gate. Without
   these settings the environment is created empty on first use and approves nothing; the owner
   must set them before the first tag.
 - **Trusted Publishing:** no `NPM_TOKEN`, no secret. npm trusts the workflow through OIDC; it
@@ -127,7 +138,7 @@ Phase A30 prepares the first release. Facts that shape the decision:
   If that step fails on GitHub, switching is a one-step change (CI only). The release workflow's
   `corepack enable` with pnpm 11 is also unverified until the first run (a dry run through
   `workflow_dispatch` tests it without publishing).
-- The owner must configure the `release` environment (reviewers, `v*` tag rule) and tag
+- The owner must configure the `release` environment (reviewers, tag rule `[0-9]*.[0-9]*.[0-9]*`) and tag
   protection; the workflow cannot enforce them.
 - Follow-ups: pin actions by full commit SHA (with Dependabot for github-actions updates); a
   `clean` step before `build` so a local pack cannot include a stale `dist/` file.
@@ -144,5 +155,5 @@ Phase A30 prepares the first release. Facts that shape the decision:
 | Ship source maps                                        | Readable stack traces                    | Sources are not shipped, so the maps point at nothing                                 | Rejected                 |
 | `pnpm/action-setup` and a pnpm cache in the release     | Same setup as CI, faster                 | A mutable third-party tag and a poisonable cache in the build of the shipped artifact | Rejected (CI keeps them) |
 | `npm@^11.5.1` or `npm@latest` in the publish job        | Always current                           | The publisher changes without review                                                  | Rejected                 |
-| Publish job without an `environment`                    | Fewer settings                           | Any `v*` tag publishes with no human approval                                         | Rejected                 |
+| Publish job without an `environment`                    | Fewer settings                           | Any `X.Y.Z` tag publishes with no human approval                                      | Rejected                 |
 | SHA-pinned actions now                                  | Strongest supply-chain pinning           | Needs an update process first                                                         | Deferred                 |

@@ -1,6 +1,6 @@
 /**
  * Usage: tsx scripts/smoke/check-release.ts <tag> <owner>/<name>
- * Release guard (phase A30): verifies tag is v<version> and repository.url matches.
+ * Release guard (phase A30): verifies tag is <version> (no v prefix) and repository.url matches.
  * Provenance requires both to agree. Exit code: 0 ok, 1 check failed, 2 usage error.
  */
 import { readFileSync } from "node:fs";

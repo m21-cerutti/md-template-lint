@@ -118,7 +118,7 @@ function render(result: RunResult, options: TextOptions, glyphs: Glyphs, color: 
   };
 
   if (!quiet) {
-    line("cyan", `md-template-lint ${cleanText(options.version)}`);
+    line("cyan", `mdtl ${cleanText(options.version)}`);
     line("cyan", `Config: ${result.config === null ? "(none)" : cleanText(result.config)}`);
     line("cyan", RULE);
     out.push("");

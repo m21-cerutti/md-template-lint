@@ -54,7 +54,7 @@ describe("cli --format", () => {
     const byDefault = await runCliIn(FAILING, []);
     const named = await runCliIn(FAILING, ["--format", "text"]);
     const inline = await runCliIn(FAILING, ["--format=text"]);
-    expect(byDefault.stdout).toContain("md-template-lint 9.9.9");
+    expect(byDefault.stdout).toContain("mdtl 9.9.9");
     expect(byDefault.stdout).toContain("  ✓ docs/a.md");
     expect(byDefault.stdout).toContain("  ✗ docs/b.md");
     expect(byDefault.stdout).toContain("      error MTL201 ");
@@ -132,7 +132,7 @@ describe("cli --quiet (spec 7.1, 8.2)", () => {
     expect(run.exitCode).toBe(1);
     expect(run.stdout).toContain("  ✗ docs/b.md");
     expect(run.stdout).toContain("      error MTL201 ");
-    for (const hidden of ["md-template-lint 9.9.9", "docs/a.md", "Summary", "Template:"]) {
+    for (const hidden of ["mdtl 9.9.9", "docs/a.md", "Summary", "Template:"]) {
       expect(run.stdout).not.toContain(hidden);
     }
   });

@@ -65,7 +65,7 @@ describe("dist/cli.js as a process", () => {
   it.skipIf(!usable)("--help prints the usage, exit 0", () => {
     const run = spawn(["--help"]);
     expect(run.status).toBe(0);
-    expect(run.stdout.startsWith("Usage:\n  md-template-lint [options] [files...]")).toBe(true);
+    expect(run.stdout.startsWith("Usage:\n  mdtl [options] [files...]")).toBe(true);
     expect(run.stderr).toBe("");
   });
 
@@ -73,13 +73,13 @@ describe("dist/cli.js as a process", () => {
     const run = spawn(["--bogus"]);
     expect(run.status).toBe(2);
     expect(run.stdout).toBe("");
-    expect(run.stderr).toBe("error MTL920: unknown option: --bogus\nTry 'md-template-lint --help' for usage.\n");
+    expect(run.stderr).toBe("error MTL920: unknown option: --bogus\nTry 'mdtl --help' for usage.\n");
   });
 
   it.skipIf(!usable)("a failing file is exit 1, with the report on stdout", () => {
     const run = spawn([], "exit-fail-lint-failure");
     expect(run.status).toBe(1);
-    expect(run.stdout).toContain(`md-template-lint ${VERSION}`);
+    expect(run.stdout).toContain(`mdtl ${VERSION}`);
     expect(run.stdout).toContain("✗ docs/b.md");
     expect(run.stdout).not.toContain("\u001b[");
     expect(run.stderr).toBe("");

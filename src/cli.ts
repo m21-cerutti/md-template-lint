@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Process entry of `md-template-lint` (package `bin`, `dist/cli.js`). All behaviour
+ * Process entry of `mdtl` (package `bin`, with the alias `md-template-lint`, `dist/cli.js`). All behaviour
  * is in `src/cli/run.ts` and `src/cli/main.ts`; this file only reads the process
  * (arguments, working directory, terminal, `NO_COLOR`), writes the result and sets
  * the exit code.

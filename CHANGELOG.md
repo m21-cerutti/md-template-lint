@@ -35,7 +35,7 @@ PowerShell wrappers (see [docs/migration.md](docs/migration.md)).
 - Disable directives in a file: `disable-line`, `disable-next-line`, `disable-file` and
   `begin disable` / `end disable` blocks.
 - Packaging, CI and release: a `pnpm run smoke:pack` check of the tarball and a clean install,
-  a CI workflow on three operating systems and a release workflow for a `v*` tag.
+  a CI workflow on three operating systems and a release workflow for an `X.Y.Z` tag (no `v` prefix).
 - Template tags on every heading level (H1 to H6).
 - Heading patterns with placeholders and formats, for example
   `## Release [pattern:"[{semver}] - {date}"]`.
@@ -101,5 +101,5 @@ PowerShell wrappers (see [docs/migration.md](docs/migration.md)).
 - Rule `MTL602` (heading-level-missing). The code is reserved and never reused.
 - The parity harness, the corpus and the legacy wrappers.
 
-[Unreleased]: https://github.com/m21-cerutti/md-template-lint/compare/v0.2.0...HEAD
-[0.2.0]: https://github.com/m21-cerutti/md-template-lint/releases/tag/v0.2.0
+[Unreleased]: https://github.com/m21-cerutti/md-template-lint/compare/0.2.0...HEAD
+[0.2.0]: https://github.com/m21-cerutti/md-template-lint/releases/tag/0.2.0

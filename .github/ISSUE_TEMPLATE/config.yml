@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Question or help
+    url: https://github.com/m21-cerutti/md-template-lint/discussions
+    about: Ask a usage question or discuss an idea in GitHub Discussions.

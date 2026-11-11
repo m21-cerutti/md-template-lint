@@ -1,4 +1,4 @@
-# Release (ADR 0005). Pushing a tag "v*" runs the gates, packs once, smoke-tests that exact
+# Release (ADR 0005). Pushing a tag "X.Y.Z" (no v prefix) runs the gates, packs once, smoke-tests that exact
 # tarball and publishes it to npm with Trusted Publishing (OIDC) and provenance.
 # "Run workflow" (workflow_dispatch) is a dry run: same steps, never publishes.
 #
@@ -12,7 +12,7 @@ name: Release
 
 on:
   push:
-    tags: ["v*"]
+    tags: ["[0-9]+.[0-9]+.[0-9]+"]
   workflow_dispatch:
 
 # Least privilege: the default is read-only. Only the publish job adds id-token.

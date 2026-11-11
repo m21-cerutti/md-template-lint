@@ -32,8 +32,8 @@ export type ParsedArgs = { readonly kind: "help" } | { readonly kind: "version" 
 
 export const USAGE = [
   "Usage:",
-  "  md-template-lint [options] [files...]",
-  "  md-template-lint --verify [options] [templates...]",
+  "  mdtl [options] [files...]",
+  "  mdtl --verify [options] [templates...]",
   "",
   "Options:",
   "  --config <path>   Config file (default: md-template-lint.yml, searched upward)",
@@ -52,7 +52,7 @@ export const USAGE = [
   "",
 ].join("\n");
 
-export const USAGE_HINT = "Try 'md-template-lint --help' for usage.";
+export const USAGE_HINT = "Try 'mdtl --help' for usage.";
 
 const error = (code: UsageCode, message: string): ParsedArgs => ({
   kind: "usage-error",

@@ -13,7 +13,9 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
+  BIN_NAMES,
   binShimPath,
+  checkBinNames,
   checkRelease,
   checkRepositoryUrl,
   checkRun,
@@ -159,12 +161,12 @@ describe("smoke-pack: needsShell and commandInvocation", () => {
   });
 
   it("starts the file as given", () => {
-    expect(commandInvocation("C:\\w\\md-template-lint.cmd", "win32")).toEqual({
-      command: "C:\\w\\md-template-lint.cmd",
+    expect(commandInvocation("C:\\w\\mdtl.cmd", "win32")).toEqual({
+      command: "C:\\w\\mdtl.cmd",
       prefixArgs: [],
       shell: true,
     });
-    expect(commandInvocation("/w/md-template-lint", "linux").shell).toBe(false);
+    expect(commandInvocation("/w/mdtl", "linux").shell).toBe(false);
   });
 });
 
@@ -346,8 +348,36 @@ describe("smoke-pack: installedBinPath and binShimPath", () => {
   });
 
   it("puts the shim in node_modules/.bin, with .cmd only on Windows", () => {
-    expect(binShimPath("work", "md-template-lint", "win32")).toBe(join("work", "node_modules", ".bin", "md-template-lint.cmd"));
-    expect(binShimPath("work", "md-template-lint", "linux")).toBe(join("work", "node_modules", ".bin", "md-template-lint"));
+    expect(binShimPath("work", "mdtl", "win32")).toBe(join("work", "node_modules", ".bin", "mdtl.cmd"));
+    expect(binShimPath("work", "mdtl", "linux")).toBe(join("work", "node_modules", ".bin", "mdtl"));
+  });
+});
+
+describe("smoke-pack: checkBinNames", () => {
+  const cases = [
+    { name: "pass-both-names", manifest: { bin: { mdtl: "dist/cli.js", "md-template-lint": "./dist/cli.js" } }, problems: 0 },
+    { name: "fail-alias-missing", manifest: { bin: { mdtl: "dist/cli.js" } }, problems: 1 },
+    { name: "fail-wrong-target", manifest: { bin: { mdtl: "dist/other.js", "md-template-lint": "dist/cli.js" } }, problems: 1 },
+    { name: "fail-bin-is-a-string", manifest: { bin: "dist/cli.js" }, problems: 2 },
+    { name: "fail-no-bin", manifest: {}, problems: 2 },
+  ];
+
+  it("has at least one pass case and one fail case", () => {
+    expectNameSplit(cases);
+  });
+
+  for (const testCase of cases) {
+    it(testCase.name, () => {
+      expect(checkBinNames(testCase.manifest)).toHaveLength(testCase.problems);
+    });
+  }
+
+  it("expects the command mdtl and the alias md-template-lint", () => {
+    expect(BIN_NAMES).toEqual(["mdtl", "md-template-lint"]);
+  });
+
+  it("is satisfied by the real package.json", () => {
+    expect(checkBinNames(JSON.parse(readFileSync(join(REPO_ROOT, "package.json"), "utf8")))).toEqual([]);
   });
 });
 
@@ -410,7 +440,7 @@ describe("smoke-pack: checkRun", () => {
 });
 
 describe("smoke-pack: expectations of the installed CLI", () => {
-  const BOGUS_STDERR = "error MTL920: unknown option: --bogus\nTry 'md-template-lint --help' for usage.\n";
+  const BOGUS_STDERR = "error MTL920: unknown option: --bogus\nTry 'mdtl --help' for usage.\n";
 
   const cases = [
     {
@@ -426,7 +456,7 @@ describe("smoke-pack: expectations of the installed CLI", () => {
       name: "fail-version-has-no-newline-or-differs",
       checks: [
         [{ status: 0, stdout: "1.2.3", stderr: "" }, versionExpectation("1.2.3")],
-        [{ status: 0, stdout: "md-template-lint 1.2.3\n", stderr: "" }, versionExpectation("1.2.3")],
+        [{ status: 0, stdout: "mdtl 1.2.3\n", stderr: "" }, versionExpectation("1.2.3")],
       ] as const,
       problems: 2,
     },
@@ -464,7 +494,7 @@ describe("smoke-pack: expectations of the installed CLI", () => {
     expect(unknownOptionExpectation()).toEqual({
       label: "unknown option",
       status: 2,
-      stderrHas: ["error MTL920: unknown option: --bogus", "Try 'md-template-lint --help' for usage."],
+      stderrHas: ["error MTL920: unknown option: --bogus", "Try 'mdtl --help' for usage."],
     });
   });
 });
@@ -532,23 +562,23 @@ describe("smoke-pack: tarball content (fixtures/release/tarball)", () => {
 
 describe("release: checkTag", () => {
   const cases = [
-    { name: "pass-tag-is-v-and-version", tag: "v1.2.3", version: "1.2.3", ok: true },
-    { name: "fail-wrong-tag", tag: "v1.2.4", version: "1.2.3", ok: false },
-    { name: "fail-tag-without-leading-v", tag: "1.2.3", version: "1.2.3", ok: false },
+    { name: "pass-tag-is-version", tag: "1.2.3", version: "1.2.3", ok: true },
+    { name: "fail-wrong-tag", tag: "1.2.4", version: "1.2.3", ok: false },
+    { name: "fail-tag-with-leading-v", tag: "v1.2.3", version: "1.2.3", ok: false },
     {
       name: "fail-prerelease-tag-for-release-version",
-      tag: "v1.2.3-rc.1",
+      tag: "1.2.3-rc.1",
       version: "1.2.3",
       ok: false,
     },
     {
       name: "fail-release-tag-for-prerelease-version",
-      tag: "v1.2.3",
+      tag: "1.2.3",
       version: "1.2.3-rc.1",
       ok: false,
     },
     { name: "fail-empty-tag", tag: "", version: "1.2.3", ok: false },
-    { name: "fail-tag-with-suffix", tag: "v1.2.3 ", version: "1.2.3", ok: false },
+    { name: "fail-tag-with-suffix", tag: "1.2.3 ", version: "1.2.3", ok: false },
   ];
 
   it("has at least one pass case and one fail case", () => {
@@ -564,7 +594,7 @@ describe("release: checkTag", () => {
   }
 
   it("accepts the matching prerelease tag", () => {
-    expect(checkTag("v1.2.3-rc.1+b5", "1.2.3-rc.1+b5")).toEqual([]);
+    expect(checkTag("1.2.3-rc.1+b5", "1.2.3-rc.1+b5")).toEqual([]);
   });
 });
 
@@ -617,15 +647,15 @@ describe("release: checkRelease", () => {
   const manifest = { version: "1.2.3", repository: { url: "git+https://github.com/o/r.git" } };
 
   it("is empty when the tag and the repository agree with package.json", () => {
-    expect(checkRelease(manifest, "v1.2.3", "o/r")).toEqual([]);
+    expect(checkRelease(manifest, "1.2.3", "o/r")).toEqual([]);
   });
 
   it("reports the tag and the repository problems together", () => {
-    expect(checkRelease(manifest, "v9.9.9", "o/other")).toHaveLength(2);
+    expect(checkRelease(manifest, "9.9.9", "o/other")).toHaveLength(2);
   });
 
   it("reports a package.json without a valid version", () => {
-    expect(checkRelease({ version: "x" }, "vx", "o/r")).toEqual(["package.json: version is not semver: x"]);
+    expect(checkRelease({ version: "x" }, "x", "o/r")).toEqual(["package.json: version is not semver: x"]);
   });
 });
 
@@ -644,21 +674,21 @@ describe("release: scripts/smoke/check-release.ts as a process", () => {
     return { status: result.status, stdout: result.stdout, stderr: result.stderr };
   }
 
-  it("exits 0 for the tag v<version> of this repository", () => {
+  it("exits 0 for the tag <version> of this repository", () => {
     expect(repository).not.toBe("");
-    const run = check(`v${manifest.version}`, repository);
+    const run = check(manifest.version, repository);
     expect(run.status).toBe(0);
-    expect(run.stdout).toContain(`ok   tag v${manifest.version}`);
+    expect(run.stdout).toContain(`ok   tag ${manifest.version}`);
   });
 
-  it("exits 1 for a tag without the leading v", () => {
-    const run = check(manifest.version, repository);
+  it("exits 1 for a tag with a leading v", () => {
+    const run = check(`v${manifest.version}`, repository);
     expect(run.status).toBe(1);
     expect(run.stderr).toContain("does not match package.json version");
   });
 
   it("exits 1 for a repository whose name only starts like ours", () => {
-    const run = check(`v${manifest.version}`, repository.slice(0, -1));
+    const run = check(manifest.version, repository.slice(0, -1));
     expect(run.status).toBe(1);
     expect(run.stderr).toContain("repository.url");
   });

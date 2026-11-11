@@ -75,7 +75,7 @@ that run at exit 0. `.lintstagedrc.json` exists but is not wired to a hook. How 
 `pnpm run smoke:pack` is optional because `pnpm add` fetches `yaml` and `antlr4ng`; add
 `-- --offline` when the pnpm store is warm, or `-- --tarball <file>` to test a tarball that
 already exists. CI runs the gates on three operating systems and Node 22.18, 24 and 26; a tag
-`v*` publishes after the owner approves the `release` environment. See
+`X.Y.Z` (no `v` prefix) publishes after the owner approves the `release` environment. See
 [ADR 0005](docs/adr/0005-packaging-and-release.md).
 
 ## Commit style

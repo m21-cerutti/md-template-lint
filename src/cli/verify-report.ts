@@ -262,7 +262,7 @@ export function reportVerify(result: VerifyResult, options: VerifyReportOptions)
   const { summary } = result;
 
   if (!quiet) {
-    line("cyan", `md-template-lint ${cleanText(options.version)}`);
+    line("cyan", `mdtl ${cleanText(options.version)}`);
     line("cyan", `Config: ${result.config === null ? "(none)" : cleanText(result.config)}`);
     line("cyan", SYNTAX_DOC_REMINDER);
     line("cyan", RULE);

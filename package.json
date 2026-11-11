@@ -8,6 +8,7 @@
   },
   "packageManager": "pnpm@12.18.0",
   "bin": {
+    "mdtl": "dist/cli.js",
     "md-template-lint": "dist/cli.js"
   },
   "main": "dist/index.js",

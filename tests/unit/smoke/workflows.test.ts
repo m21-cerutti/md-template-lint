@@ -129,8 +129,8 @@ describe("release.yml", () => {
   const verify = RELEASE.jobs["verify"] as Job;
   const publish = RELEASE.jobs["publish"] as Job;
 
-  it("runs on a v* tag and on manual dispatch", () => {
-    expect(RELEASE.on.push?.tags).toEqual(["v*"]);
+  it("runs on a bare X.Y.Z tag (no v) and on manual dispatch", () => {
+    expect(RELEASE.on.push?.tags).toEqual(["[0-9]+.[0-9]+.[0-9]+"]);
     expect(Object.keys(RELEASE.on)).toContain("workflow_dispatch");
   });
 
@@ -238,7 +238,7 @@ describe("package.json publish settings", () => {
   it("points main, types, bin and exports into dist", () => {
     expect(PACKAGE.main).toBe("dist/index.js");
     expect(PACKAGE.types).toBe("dist/index.d.ts");
-    expect(PACKAGE.bin).toEqual({ "md-template-lint": "dist/cli.js" });
+    expect(PACKAGE.bin).toEqual({ mdtl: "dist/cli.js", "md-template-lint": "dist/cli.js" });
     expect(PACKAGE.exports["."]).toEqual({
       types: "./dist/index.d.ts",
       default: "./dist/index.js",

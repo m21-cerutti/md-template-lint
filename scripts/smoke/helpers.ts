@@ -164,6 +164,23 @@ export function readPackageFields(manifest: unknown, binName: string): PackageFi
   return { name, version, bin: entry.replaceAll("\\", "/").replace(/^\.\//, "") };
 }
 
+/** The command and its alias: both are `bin` entries of the package, both run `dist/cli.js`. */
+export const BIN_NAMES: readonly string[] = ["mdtl", "md-template-lint"];
+
+/** Problems of the `bin` map of a parsed package.json: one per name of `names` that is not `dist/cli.js`. */
+export function checkBinNames(manifest: unknown, names: readonly string[] = BIN_NAMES): string[] {
+  const bin = asRecord(manifest)["bin"];
+  const map = typeof bin === "object" && bin !== null && !Array.isArray(bin) ? (bin as Record<string, unknown>) : {};
+  const problems: string[] = [];
+  for (const name of names) {
+    const entry = map[name];
+    if (typeof entry !== "string" || entry.replaceAll("\\", "/").replace(/^\.\//, "") !== "dist/cli.js") {
+      problems.push(`package.json: bin ${name} is ${JSON.stringify(entry)}, expected "dist/cli.js"`);
+    }
+  }
+  return problems;
+}
+
 /** The name of the one dependency of the consumer package.json. Throws unless there is exactly one. */
 export function singleDependency(manifest: unknown): string {
   const deps = typeof manifest === "object" && manifest !== null ? (manifest as Record<string, unknown>)["dependencies"] : undefined;
@@ -226,7 +243,7 @@ export const projectLintExpectation = (project: string): Expectation => ({
 export const unknownOptionExpectation = (): Expectation => ({
   label: "unknown option",
   status: 2,
-  stderrHas: ["error MTL920: unknown option: --bogus", "Try 'md-template-lint --help' for usage."],
+  stderrHas: ["error MTL920: unknown option: --bogus", "Try 'mdtl --help' for usage."],
 });
 
 /** Problems of one run against its expectation; empty when it matches. */
@@ -304,10 +321,9 @@ export function checkTarballEntries(paths: readonly string[]): string[] {
 // Release checks (run by .github/workflows/release.yml through scripts/smoke/check-release.ts)
 // ---------------------------------------------------------------------------------------
 
-/** The pushed tag must be exactly `v` followed by the package.json version. */
+/** The pushed tag must be exactly the package.json version, with no `v` prefix. */
 export function checkTag(tag: string, version: string): string[] {
-  const expected = `v${version}`;
-  return tag === expected ? [] : [`tag ${JSON.stringify(tag)} does not match package.json version ${version} (expected ${expected})`];
+  return tag === version ? [] : [`tag ${JSON.stringify(tag)} does not match package.json version ${version} (expected ${version})`];
 }
 
 /**

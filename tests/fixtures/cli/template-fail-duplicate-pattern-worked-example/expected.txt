@@ -1,4 +1,4 @@
-md-template-lint 9.9.9
+mdtl 9.9.9
 Config: md-template-lint.yml
 ========================
 

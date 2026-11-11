@@ -12,7 +12,9 @@ import { basename, dirname, join, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 import {
+  BIN_NAMES,
   binShimPath,
+  checkBinNames,
   checkRun,
   checkTarballEntries,
   commandInvocation,
@@ -33,7 +35,7 @@ import {
 
 /** The synthetic fixture project that is linted from the installed package (exit 0 expected). */
 const SMOKE_PROJECT = ["tests", "fixtures", "smoke", "clean-project"] as const;
-const BIN_NAME = "md-template-lint";
+const BIN_NAME = "mdtl";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -104,11 +106,18 @@ function main(): number {
     pnpm(["add", tarball, "--ignore-workspace", ...(options.offline ? ["--offline"] : [])], consumer);
 
     const dependency = singleDependency(readJson(join(consumer, "package.json")));
-    const fields = readPackageFields(readJson(join(consumer, "node_modules", ...dependency.split("/"), "package.json")), BIN_NAME);
+    const manifest = readJson(join(consumer, "node_modules", ...dependency.split("/"), "package.json"));
+    const binProblems = checkBinNames(manifest);
+    if (binProblems.length > 0) {
+      for (const problem of binProblems) process.stderr.write(`FAIL ${problem}\n`);
+      return 1;
+    }
+    const fields = readPackageFields(manifest, BIN_NAME);
     const binFile = installedBinPath(consumer, fields);
     const shim = binShimPath(consumer, BIN_NAME, process.platform);
-    if (!existsSync(binFile) || !existsSync(shim)) {
-      throw new Error(`installed bin missing: ${existsSync(binFile) ? "" : binFile} ${existsSync(shim) ? "" : shim}`.trim());
+    const missing = [binFile, ...BIN_NAMES.map((name) => binShimPath(consumer, name, process.platform))].filter((file) => !existsSync(file));
+    if (missing.length > 0) {
+      throw new Error(`installed bin missing: ${missing.join(" ")}`);
     }
 
     const project = join(work, "project");
@@ -127,7 +136,7 @@ function main(): number {
       for (const problem of problems) process.stderr.write(`FAIL ${problem}\n`);
       return 1;
     }
-    process.stdout.write(`ok   ${fields.name}@${fields.version}: --version (shim and node), fixture project lint, unknown option\n`);
+    process.stdout.write(`ok   ${fields.name}@${fields.version}: bins ${BIN_NAMES.join(" + ")}, --version (shim and node), fixture project lint, unknown option\n`);
     return 0;
   } finally {
     try {
