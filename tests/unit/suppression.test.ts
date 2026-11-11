@@ -73,7 +73,7 @@ const CASES: readonly Case[] = [
     suppressed: 0,
   },
   // disable-file: anywhere, with or without anchor, by code only. `## Appendix` is in the tail
-  // of the level-2 run: the warning MTL616 (spec 2.6 "Extra"), silenced too.
+  // of the level-2 run: the warning MTL616 (docs/grammar.md "Extra"), silenced too.
   { name: "pass-disable-file-anywhere", reported: [], suppressed: 4 },
   {
     name: "fail-disable-file-matches-code-only",

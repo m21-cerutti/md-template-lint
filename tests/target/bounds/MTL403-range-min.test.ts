@@ -10,7 +10,7 @@ const registry = createRegistry();
 const CODE = "MTL403";
 const DIR = "tests/fixtures/pairs/MTL403";
 
-/** Spec 4.3 message of MTL403: raw target text, parsed bound in Python repr style. */
+/** Spec 4.3 message of MTL403: raw target text, parsed bound in repr style. */
 const message = (key: string, value: string, min: string): string => `Field '${key}': value ${value} is below range:min ${min}`;
 
 interface TestCase {
@@ -31,7 +31,7 @@ const CASES: readonly TestCase[] = [
   // Silent in one run (all fields string-typed, so there is no type guard):
   // n == bound (int, negative, float `2.50` vs `2.5`), above the bound, a
   // padded value, `+1` and `1e-3` (not `-?digits(.digits)?`), a BOM-prefixed
-  // text (Python `strip` keeps U+FEFF, so it is not a number), a word, a
+  // text (the whitespace-set strip keeps U+FEFF, so it is not a number), a word, a
   // mapping, a list (MTL405 territory), a blank value and a missing key (spec
   // 4.1 step 3 gate), a field with only a max tag, an untagged field.
   {
@@ -55,9 +55,9 @@ const CASES: readonly TestCase[] = [
     expected: [message("ratio", "2.49", "2.5")],
     warnings: [],
   },
-  // The bound is printed as Python prints the parsed number (spec 4.3 notes).
+  // The bound is printed as the parsed number (spec 4.3 notes).
   {
-    name: "fail-bounds-print-as-python-parsed-numbers",
+    name: "fail-bounds-print-as-parsed-numbers",
     expected: [
       message("leading_zeros", "1", "7"),
       message("trailing_zero_float", "1", "2.5"),
@@ -92,7 +92,7 @@ const CASES: readonly TestCase[] = [
     warnings: [],
   },
   // `{value}` is the raw target text, not the parsed number or the stripped
-  // text; every Python-space padding (NEL, U+001F, NBSP, tab and newline,
+  // text; every whitespace-set padding (NEL, U+001F, NBSP, tab and newline,
   // U+3000) is stripped for the comparison only.
   {
     name: "fail-value-prints-raw-target-text",
@@ -115,7 +115,7 @@ const CASES: readonly TestCase[] = [
     // Spec 2.9: `date_typed` is a date field without [format:date].
     warnings: ["MTL016"],
   },
-  // Legacy takes the leftmost tag: [min:5] wins over a later [min:1] and
+  // The leftmost tag wins: [min:5] wins over a later [min:1] and
   // [min:1] wins over a later [min:5].
   {
     name: "fail-first-minimum-tag-wins",

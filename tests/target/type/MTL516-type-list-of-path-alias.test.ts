@@ -51,7 +51,7 @@ const CASES: readonly TestCase[] = [
     expected: [entries("aliases", "['assets/b.svg', '/assets/d.svg']")],
   },
   // Empty or doubled name, characters outside [A-Za-z0-9_-], no slash, empty
-  // rest, a backslash instead of the slash (doubled by the Python repr); the
+  // rest, a backslash instead of the slash (doubled by the repr); the
   // last item (@a/b) is valid.
   {
     name: "fail-name-charset-and-structure",
@@ -68,9 +68,9 @@ const CASES: readonly TestCase[] = [
     name: "fail-blank-and-whitespace-items",
     expected: [entries("aliases", "['', '   ', '']")],
   },
-  // A nested list or mapping item prints as its Python str, then repr-quoted.
+  // A nested list or mapping item prints as its value text, then repr-quoted.
   {
-    name: "fail-nested-list-and-mapping-items-print-as-python-text",
+    name: "fail-nested-list-and-mapping-items-print-as-value-text",
     expected: [entries("aliases", `["['@a/b']", "{'k': '@c/d'}"]`)],
   },
   // Errors follow the template key order, not the target order.

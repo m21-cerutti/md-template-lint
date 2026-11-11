@@ -1,5 +1,5 @@
 /**
- * MTL616 heading-extra (src/rules/heading.ts, docs/spec.md 2.6 "Extra", 2.10 step 4 and
+ * MTL616 heading-extra (src/rules/heading.ts, docs/grammar.md "Extra", docs/spec.md 2.10 step 4 and
  * "Interplay", 4.3, 4.4 DIR5 to DIR7, 8.1), the only WARNING of the heading category. The tail
  * headings of a run (one sequence in one scope) that no error names (MTL612 with its stray
  * block, MTL614, MTL615) are ONE warning per run, anchored on the first listed heading, sorted
@@ -177,7 +177,7 @@ const CASES: readonly TestCase[] = [
     errors: [],
     suppressed: 0,
   },
-  // Stray block (2.6 "Extra", 2.10 step 4): `### Free` has no template parent, so its level-3
+  // Stray block (docs/grammar.md "Extra", spec 2.10 step 4): `### Free` has no template parent, so its level-3
   // run is file scope: it takes line 5, the tail is `### Extra` (11) and `### Later` (15).
   // `## Stray` (9) is unlisted under the disallow tag of `# Doc`: MTL612, topmost. `### Extra`
   // lies inside that block: not listed. `### Later` is outside the region: listed. The level-1
@@ -237,7 +237,7 @@ const CASES: readonly TestCase[] = [
     errors: [],
     suppressed: 0,
   },
-  // Texts are listed as written, with Python `repr` rules (4.3, Q02): non-ASCII letters stay as
+  // Texts are listed as written, with `repr` rules (4.3, Q02): non-ASCII letters stay as
   // they are and the backslash of `a\b` is doubled in the list.
   {
     name: "fail-unicode-and-backslash-heading-texts-are-listed-as-written",
@@ -251,10 +251,10 @@ const CASES: readonly TestCase[] = [
     errors: [],
     suppressed: 0,
   },
-  // `{pylist}` is a Python repr (4.3): a text with `'` and no `"` takes double quotes, a text
+  // `{pylist}` is a repr-quoted list (4.3): a text with `'` and no `"` takes double quotes, a text
   // with `"` keeps single quotes.
   {
-    name: "fail-quotes-in-listed-texts-follow-python-repr",
+    name: "fail-quotes-in-listed-texts-follow-repr",
     expected: [
       {
         message: "Heading: 2 extra heading(s) at level H1 after the template headings: " + `["It's done", 'Say "hi"']`,

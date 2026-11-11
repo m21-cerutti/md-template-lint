@@ -69,7 +69,7 @@ const CASES: readonly TestCase[] = [
     expected: [outside("warning", "conditional_only", "published", DRAFT_ACCEPTED), outside("warning", "conditional_and_optional", "published", DRAFT_ACCEPTED), outside("warning", "conditional_and_required", "published", DRAFT_ACCEPTED)],
   },
   // Precedence conditional > optional > required whatever the tag order
-  // (legacy `parse_presence`): every combination is a warning.
+  // (presence parsing): every combination is a warning.
   {
     name: "fail-presence-tag-order-never-changes-severity",
     expected: [
@@ -95,7 +95,7 @@ const CASES: readonly TestCase[] = [
     name: "fail-comparison-is-case-sensitive",
     expected: [outside("error", "status", "Draft", DRAFT_ACCEPTED)],
   },
-  // The target value is compared as written: no trim (legacy `value not in options`).
+  // The target value is compared as written: no trim (exact membership in the options).
   {
     name: "fail-padded-value-is-not-trimmed",
     expected: [
@@ -105,7 +105,7 @@ const CASES: readonly TestCase[] = [
       outside("error", "tab_padded", "\tdraft\t", DRAFT_ACCEPTED),
     ],
   },
-  // A list or mapping is never a member; it prints as its Python str.
+  // A list or mapping is never a member; it prints as its value text.
   {
     name: "fail-list-and-mapping-values-are-never-members",
     expected: [outside("error", "list_value", "['draft', 'accepted']", DRAFT_ACCEPTED), outside("error", "mapping_value", "{'state': 'draft'}", DRAFT_ACCEPTED), outside("error", "single_item_list", "['draft']", DRAFT_ACCEPTED)],
@@ -141,9 +141,9 @@ const CASES: readonly TestCase[] = [
     name: "fail-numeric-and-unicode-options",
     expected: [outside("error", "numeric", "4", "['1', '2', '3']"), outside("error", "unicode", "ete", "['été', 'hiver']")],
   },
-  // The options print with Python repr quoting; the value is printed as is.
+  // The options print with repr quoting; the value is printed as is.
   {
-    name: "fail-quote-characters-print-with-python-repr-quoting",
+    name: "fail-quote-characters-print-with-repr-quoting",
     expected: [outside("error", "quoted", "it's not", `["it's", 'say "hi"']`)],
   },
   // Errors follow the template key order, not the target order.

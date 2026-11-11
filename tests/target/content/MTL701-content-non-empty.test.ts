@@ -23,8 +23,8 @@ const message = (section: string): string => `Section '${section}': [content:non
  */
 const CASES = [
   {
-    // Bodies holding only U+FEFF, U+200B or U+180E are NOT blank for Python
-    // `str.isspace` (swapping isPythonSpace for String.trim would flag U+FEFF).
+    // Bodies holding only U+FEFF, U+200B or U+180E are NOT blank for the
+    // whitespace set (swapping `isUnicodeSpace` for String.trim would flag U+FEFF).
     name: "pass-section-has-text",
     expected: [],
     warnings: [],
@@ -152,7 +152,7 @@ describe("MTL701 content-non-empty", { tags: ["MTL701", "content"] }, () => {
     const status = await checkTemplate(registry, read(`${fixture}/template.md`));
     if (status.status !== "ok") throw new Error(`${fixture}: template is broken`);
     const found = await checkTarget(registry, status.model, read(`${fixture}/target.md`), `${fixture}/target.md`, createEnv());
-    // Legacy `validate_content`: section `Changes` (MTL702) comes before `Overview` (MTL701).
+    // Content rules run per section in template order: section `Changes` (MTL702) comes before `Overview` (MTL701).
     expect(found.map((diagnostic) => `${diagnostic.code} ${diagnostic.message}`)).toEqual(["MTL702 Section 'Changes': [content:table] no markdown table row found", `MTL701 ${message("Overview")}`]);
   });
 

@@ -13,8 +13,8 @@ const DIR = "tests/fixtures/pairs/MTL309";
 /** The other codes of the format family (tag isolation unless a case lists them). */
 const OTHER_FORMAT_CODES = ["MTL301", "MTL302", "MTL303", "MTL304", "MTL305", "MTL306", "MTL307", "MTL308"];
 
-/** Spec 4.3 message of MTL309; `pylist` is the Python list of the bad items. */
-const message = (key: string, pylist: string): string => `Field '${key}': list contains entries not matching [format:elements:date]: ${pylist}`;
+/** Spec 4.3 message of MTL309; `listText` is the list text of the bad items. */
+const message = (key: string, listText: string): string => `Field '${key}': list contains entries not matching [format:elements:date]: ${listText}`;
 
 interface Finding {
   readonly message: string;
@@ -103,7 +103,7 @@ const CASES: readonly TestCase[] = [
     ],
   },
   // Spec 2.9: items are tested as their text, so on a plain `list` field (no type rule on
-  // the items) a nested list and a mapping are listed as Python text (Q02, double quoted).
+  // the items) a nested list and a mapping are listed as value text (Q02, double quoted).
   {
     name: "fail-nested-list-and-mapping-items-on-list-field",
     expected: [{ message: message("dates", `["['2026-01-01']", "{'a': '2026-01-01'}"]`), line: 2 }],

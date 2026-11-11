@@ -46,7 +46,7 @@ const CASES: readonly TestCase[] = [
     targetName: "release notes.md",
     expected: [message("release notes", "snake_case")],
   },
-  // Only the last extension is removed (Python `Path.stem`).
+  // Only the last extension is removed.
   {
     name: "fail-snake-case-stem-has-inner-dot",
     targetName: "release.notes.md",
@@ -70,8 +70,8 @@ const CASES: readonly TestCase[] = [
     expected: [message("résumé", "snake_case")],
   },
   // An empty file name (the path ends with a separator) gives an empty stem,
-  // which matches no case style. Pinned for the engine contract; Python
-  // `Path("dir/").stem` would give `dir` instead.
+  // which matches no case style. Pinned for the engine contract (a path
+  // library would give `dir` instead).
   {
     name: "fail-snake-case-empty-stem",
     targetName: "",

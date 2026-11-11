@@ -5,7 +5,7 @@
  */
 import { defineRule, report, type AnyRule, type FieldContext } from "../engine/rule.js";
 import { isList, isMapping, presenceMode, type Diagnostic, type YamlValue } from "../engine/model.js";
-import { FLOAT_PATTERN, isPathLike, isValidDateValue, isValidPathAliasValue, isValidUrlValue, pyRepr, valueText } from "../engine/values.js";
+import { FLOAT_PATTERN, isPathLike, isValidDateValue, isValidPathAliasValue, isValidUrlValue, reprValue, valueText } from "../engine/values.js";
 
 const INT_PATTERN = /^-?\d+$/;
 
@@ -185,7 +185,7 @@ const typeUrl = defineRule({
 
 /**
  * `path` (spec 3.4 "Path predicate"): the shared `isPathLike` predicate. The
- * value is NOT trimmed (legacy `is_path_like(value)`), so a padded value fails
+ * value is NOT trimmed, so a padded value fails
  * the no-whitespace shape. A list or mapping is a shape mismatch.
  */
 const typePath = defineRule({
@@ -228,7 +228,7 @@ const typePathAlias = defineRule({
   },
 });
 
-/** `<formats>` of spec 4.3 (`DATE_FORMATS_TEXT_WITH_ONGOING` in the legacy linter). */
+/** `<formats>` of spec 4.3. */
 const DATE_FORMATS = "YYYY-MM-DD / YYYY-MM / YYYY / DD/MM/YYYY / present / présent";
 
 /** An `int` item (spec 3.4): a string whose trimmed text matches `INT_PATTERN`. */
@@ -237,17 +237,16 @@ function isIntItem(item: YamlValue): boolean {
 }
 
 /**
- * Detail of a list-of type mismatch, or null for a valid value (legacy
- * `validate_value`, list branch). A non-list is `expected a YAML list of
- * <things>, got <shape>`. Else each item failing `isValid` is listed as its
- * text (`valueText`: a list or mapping item prints as its Python `str`) in a
- * Python list of strings, in item order. The list is never empty here: the
+ * Detail of a list-of type mismatch, or null for a valid value. A non-list is
+ * `expected a YAML list of <things>, got <shape>`. Else each item failing
+ * `isValid` is listed as its text (`valueText`: a list or mapping item prints
+ * as its `reprValue` text) in a bracketed list of strings, in item order. The list is never empty here: the
  * pipeline skips an empty list before step `type`.
  */
 function listOfDetail(value: YamlValue, things: string, entries: string, isValid: (item: YamlValue) => boolean): string | null {
   if (!isList(value)) return `expected a YAML list of ${things}, got ${shapeName(value)}`;
   const bad = value.filter((item) => !isValid(item)).map(valueText);
-  return bad.length === 0 ? null : `list contains ${entries}: ${pyRepr(bad)}`;
+  return bad.length === 0 ? null : `list contains ${entries}: ${reprValue(bad)}`;
 }
 
 /**
@@ -270,7 +269,7 @@ const typeListOfString = defineRule({
     }
     const nested = value.flatMap((item, index) => (isList(item) || isMapping(item) ? [`item ${index} is ${shapeName(item)}`] : []));
     if (nested.length === 0) return [];
-    return [report(typeListOfString, typeMessage(context, `list contains non-scalar entries: ${pyRepr(nested)}`))];
+    return [report(typeListOfString, typeMessage(context, `list contains non-scalar entries: ${reprValue(nested)}`))];
   },
 });
 
@@ -361,8 +360,7 @@ const typeListOfPathAlias = defineRule({
 const ENUM_SEPARATOR = " | ";
 
 /**
- * Option list of an enum template field (spec 3.4 "Enum", legacy
- * `extract_enum_options_from_value`): the template VALUE split on the literal
+ * Option list of an enum template field (spec 3.4 "Enum"): the template VALUE split on the literal
  * ` | `, each option trimmed, empty ones dropped. A value without the
  * separator (a bare `[enum]` hint, a list) has no options. Exported for the
  * `--verify` schema (src/runner/schema.ts), which shows the same list.
@@ -377,9 +375,9 @@ export function enumOptions(value: YamlValue): string[] {
 
 /**
  * `enum` (spec 3.4 "Enum"): membership of the target value in the option list
- * of the template value. The comparison is exact (legacy `value not in
- * options`): case sensitive, no trim, and a list or mapping is never a member
- * (printed as its Python `str`). No options means no check. The severity is
+ * of the template value. The comparison is exact:
+ * case sensitive, no trim, and a list or mapping is never a member (printed
+ * as its `reprValue` text). No options means no check. The severity is
  * error for a required field and warning for an optional or conditional one.
  */
 const typeEnum = defineRule({
@@ -396,7 +394,7 @@ const typeEnum = defineRule({
     if (options.length === 0) return [];
     if (typeof value === "string" && options.includes(value)) return [];
     const severity = presenceMode(context.templateField) === "required" ? "error" : "warning";
-    return [report(typeEnum, typeMessage(context, `value '${valueText(value)}' is not one of the allowed options ${pyRepr(options)}`), null, severity)];
+    return [report(typeEnum, typeMessage(context, `value '${valueText(value)}' is not one of the allowed options ${reprValue(options)}`), null, severity)];
   },
 });
 

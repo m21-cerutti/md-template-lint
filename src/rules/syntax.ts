@@ -219,7 +219,7 @@ const dateFormatMissing = defineRule({
 /**
  * The pieces a template heading is compared by (spec 2.10 "Duplicate pattern", A72l): the
  * pieces of its effective pattern for a pattern heading, else the literal pattern of its
- * stored text (one literal piece, 2.6 "Match of T"; also a heading whose pattern tag MTL015
+ * stored text (one literal piece, docs/grammar.md "Match of T"; also a heading whose pattern tag MTL015
  * ignores).
  */
 function comparedPieces(section: Section): readonly PatternPiece[] {

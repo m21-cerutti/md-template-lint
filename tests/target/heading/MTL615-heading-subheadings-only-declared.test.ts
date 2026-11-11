@@ -133,7 +133,7 @@ const CASES: readonly TestCase[] = [
   // 7), does not match and takes nothing; if the tag were applied to the sibling it did not take,
   // `### Kid` (line 9), a direct child of `## Gamma`, would be reported.
   { name: "pass-absent-optional-heading-with-the-tag-has-no-effect", expected: [], errors: [] },
-  // Spec 2.6 "Checked": `### D` is unchecked because its parent `## P` has no match
+  // docs/grammar.md "Checked": `### D` is unchecked because its parent `## P` has no match
   // (`## Other` stands there), so the tag does nothing; only `## P` is reported (MTL601).
   {
     name: "pass-unchecked-section-scope-heading-with-the-tag-gives-none",

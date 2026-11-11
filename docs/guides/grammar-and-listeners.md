@@ -18,7 +18,7 @@ Companion pages: [architecture.md](../architecture.md) ([lexer modes](../archite
 
 | Piece                      | File                          | Role                                                     |
 | -------------------------- | ----------------------------- | -------------------------------------------------------- |
-| Lexer grammar              | `grammar/MdTemplateLexer.g4`  | Tokens and the 16 lexer modes (regions of a document).   |
+| Lexer grammar              | `grammar/MdTemplateLexer.g4`  | Tokens and the 18 lexer modes (regions of a document).   |
 | Parser grammar             | `grammar/MdTemplateParser.g4` | Rules: `document`, `fm*`, `body*`, `tag*`, `directive*`. |
 | Generated parser           | `src/generated/`              | antlr-ng output. Never hand-edited.                      |
 | Error listeners, collector | `src/tags/listeners.ts`       | Collect lexer and parser errors; `DiagnosticCollector`.  |

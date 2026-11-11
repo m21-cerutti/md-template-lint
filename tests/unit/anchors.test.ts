@@ -91,7 +91,7 @@ describe("anchor lines of target diagnostics (spec 4.4 DIR5)", () => {
     const target = ["---", "title: Notes", "status: draft", "owner: a", "---", "", "# Notes", "", "## Overview", "", "## Details", "", "## Context", "", "## Overview", "", "Text.", ""].join("\n");
     // The run takes line 9 (`Overview`, empty body), 11 (`Details`), 13 (`Context`); the second
     // `## Overview` (line 15, with text) is in the tail: not the match, so line 9 is checked.
-    // The tail heading is the warning MTL616, anchored on it (spec 2.6 "Extra", DIR5).
+    // The tail heading is the warning MTL616, anchored on it (docs/grammar.md "Extra", DIR5).
     expect(await anchors(target)).toEqual([
       ["MTL701", 9],
       ["MTL616", 15],

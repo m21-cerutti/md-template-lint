@@ -35,7 +35,7 @@ const CASES = [
   },
   {
     // Leading-only, trailing-only and inner pipes, a lone `|`, a `  |  ` line and a
-    // U+FEFF-prefixed row (U+FEFF is not whitespace for Python) are not rows.
+    // U+FEFF-prefixed row (U+FEFF is not in the whitespace set) are not rows.
     name: "fail-pipe-lines-lack-both-ends",
     expected: [MESSAGE],
     warnings: [],

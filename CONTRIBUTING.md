@@ -143,9 +143,10 @@ change run `pnpm run gen:parser`, commit the output, and verify with
 
 ## Adding a rule
 
-See [docs/adding-a-rule.md](docs/adding-a-rule.md): `pnpm run new:rule -- <category> <name>`,
-the spec row, the implementation in `src/rules/<category>.ts`, the tests and fixtures, the
-five places to touch for a new tag, and the gates.
+See [docs/guides/adding-a-rule.md](docs/guides/adding-a-rule.md): the spec row,
+`pnpm run new:rule -- <category> <name>`, the fixtures and a failing test first, then the
+implementation in `src/rules/<category>.ts`, and the gates. A new template tag (the five places to
+touch) is in [docs/guides/adding-a-tag.md](docs/guides/adding-a-tag.md).
 
 ## Decisions (ADR process)
 
@@ -180,7 +181,7 @@ contract also updates [docs/spec.md](docs/spec.md) in the same commit.
 
 Update the docs in the same change as the code: the README (usage, rule tables, config
 reference), [docs/spec.md](docs/spec.md) (contract), [docs/architecture.md](docs/architecture.md),
-and [docs/migration.md](docs/migration.md) when behaviour changes for users of the legacy
+and [ADR 0014](docs/adr/0014-legacy-behaviour-catalogue.md) when behaviour changes for users of the legacy
 tools. Keep `docs/ai-capabilities.md` in sync when you add or change an AI agent, skill,
 command or tool.
 

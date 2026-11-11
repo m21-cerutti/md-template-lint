@@ -51,7 +51,7 @@ const CASES: readonly TestCase[] = [
     name: "fail-value-differs-next-to-other-tags",
     expected: [message("slug", "target", "other-name")],
   },
-  // A list never matches, even when its Python text equals the stem (Q02).
+  // A list never matches, even when its value text equals the stem (Q02).
   {
     name: "fail-single-item-list-never-matches",
     expected: [message("id", "target", "['target']")],
@@ -64,7 +64,7 @@ const CASES: readonly TestCase[] = [
     name: "fail-mapping-value-never-matches",
     expected: [message("id", "target", "{'name': 'target'}")],
   },
-  // Stem of the target name, as Python `Path.stem` (last extension only).
+  // Stem of the target name: the last extension only is removed.
   {
     name: "fail-leading-dot-name-keeps-dot-in-stem",
     targetName: ".hidden.md",
@@ -94,8 +94,7 @@ const CASES: readonly TestCase[] = [
     expected: [message("id", "a.b", "a")],
   },
   // Spec 4.3 says "file name stem": a backslash separates segments on every
-  // platform here. Python `PurePosixPath.stem` would keep the whole text on
-  // POSIX; on Windows (the legacy platform) it gives `target`, as the port.
+  // platform here, on POSIX hosts too: the stem is `target`.
   {
     name: "fail-backslash-path-uses-last-segment-as-stem",
     targetName: "nested\\target.md",

@@ -12,8 +12,8 @@ const DIR = "tests/fixtures/pairs/MTL305";
 /** The other codes of the format family: none may fire in any case (tag isolation). */
 const OTHER_FORMAT_CODES = ["MTL301", "MTL302", "MTL303", "MTL304"];
 
-/** Spec 4.3 message of MTL305; `pylist` is the Python list text, `schemes` the allow-list. */
-const message = (key: string, pylist: string, schemes: string): string => `Field '${key}': list contains URLs with a disallowed scheme ${pylist} [format:scheme:${schemes}]`;
+/** Spec 4.3 message of MTL305; `listText` is the list text, `schemes` the allow-list. */
+const message = (key: string, listText: string, schemes: string): string => `Field '${key}': list contains URLs with a disallowed scheme ${listText} [format:scheme:${schemes}]`;
 
 interface TestCase {
   readonly name: string;
@@ -57,12 +57,12 @@ const CASES: readonly TestCase[] = [
     name: "fail-item-with-surrounding-spaces-shown-as-written",
     expected: [message("links", "['  ftp://files.example.com ']", "https")],
   },
-  // Python `repr`: a backslash is doubled, U+200B is `\u200b`.
+  // `repr` quoting: a backslash is doubled, U+200B is `\u200b`.
   {
-    name: "fail-backslash-and-zero-width-in-path-escaped-like-python",
+    name: "fail-backslash-and-zero-width-in-path-repr-escaped",
     expected: [message("links", String.raw`['ftp://files.example.com/a\\b', 'ftp://files.example.com/z\u200bw']`, "https")],
   },
-  // An apostrophe makes Python pick double quotes.
+  // An apostrophe makes the repr pick double quotes.
   {
     name: "fail-apostrophe-in-url-shown-in-double-quotes",
     expected: [message("links", `["ftp://files.example.com/it's"]`, "https")],
@@ -71,7 +71,7 @@ const CASES: readonly TestCase[] = [
     name: "fail-allow-list-sorted-lowercased-without-duplicates",
     expected: [message("links", "['ftp://files.example.com']", "http,https")],
   },
-  // Legacy `re.search`: the first scheme tag of a field wins.
+  // The first scheme tag of a field wins.
   {
     name: "fail-first-scheme-tag-wins",
     expected: [message("links", "['ftp://files.example.com']", "https")],

@@ -31,7 +31,7 @@
  *
  * The only embedded code is the fence length: a closing fence must use the
  * same character (separate modes) and be AT LEAST AS LONG as the opening one
- * (legacy `_closes_fence`). Lengths are unbounded, so one counter (set by an
+ * Lengths are unbounded, so one counter (set by an
  * action on the opening line) and one predicate on the closing line remain.
  *
  * Input contract: line ends are normalized to LF and the text ends with LF
@@ -94,7 +94,7 @@ tokens {
 // Fragments shared by several modes
 // ===========================================================================
 
-fragment F_INDENT   : ([ \t] ([ \t] [ \t]?)?)? ;      // legacy `\s{0,3}`
+fragment F_INDENT   : ([ \t] ([ \t] [ \t]?)?)? ;      // `\s{0,3}`
 fragment F_HEADING  : '#' '#'? '#'? '#'? '#'? '#'? [ \t]+ ;
 fragment F_FENCE_BT : F_INDENT '```' '`'* ~'\n'* ;
 fragment F_FENCE_TL : F_INDENT '~~~' '~'* ~'\n'* ;
@@ -111,7 +111,7 @@ fragment F_WORD_CHAR : [\p{L}\p{N}_] ;
 // DEFAULT_MODE: start of the document
 // ===========================================================================
 
-// Legacy `\A---[ \t]*\n`: only the first line can open the frontmatter.
+// `\A---[ \t]*\n`: only the first line can open the frontmatter.
 FM_OPEN : '---' [ \t]* '\n' -> mode(FM) ;
 
 // Any other first line: the body line-start rules of mode BODY.
@@ -130,7 +130,7 @@ DS_CHAR : ~'\n' -> type(BODY_TEXT_START), mode(BODY_TEXT) ;
 
 mode FM;
 
-// Legacy `^---[ \t]*(\n|\Z)`: the first delimiter line closes the block.
+// `^---[ \t]*(\n|\Z)`: the first delimiter line closes the block.
 FM_CLOSE : '---' [ \t]* '\n' -> mode(BODY) ;
 FM_BLANK : F_BLANK ;
 // Whole-line comment (binds to no key) or the filename comment (spec 2.5).
@@ -185,7 +185,7 @@ B_FENCE_TL : F_FENCE_TL { this.openFence(); } -> type(FENCE_OPEN), mode(FENCE_TI
 B_TABLE : F_TABLE -> type(BODY_TABLE_ROW) ;
 B_LIST : F_LIST -> type(BODY_LIST_ITEM) ;
 // One-line HTML comment. Multi-line comments are plain lines, so headings
-// inside them still count (kept legacy limitation, spec 2.6).
+// inside them still count (known limitation, spec 2.6).
 B_HTML : F_HTML -> type(BODY_HTML_COMMENT) ;
 B_BLANK : F_BLANK -> type(BODY_BLANK) ;
 B_CHAR : ~'\n' -> type(BODY_TEXT_START), mode(BODY_TEXT) ;
@@ -223,17 +223,17 @@ T_LBRACK : '[' -> type(LBRACK) ;
 T_RBRACK : ']' -> type(RBRACK) ;
 T_COLON : ':' -> type(COLON) ;
 T_DASH : '-' -> type(DASH) ;
-// Trailing heading comment (legacy `<!--.*-->`, greedy to the last `-->`).
+// Trailing heading comment (`<!--.*-->`, greedy to the last `-->`).
 HTML_COMMENT : '<!--' ~'\n'* '-->' ;
 
-// `YYYY-MM-DD` as a case-sensitive substring, like legacy `"YYYY-MM-DD" in comment`.
+// `YYYY-MM-DD` as a case-sensitive substring of the comment.
 DATE_PLACEHOLDER options { caseInsensitive = false; } : F_WORD_CHAR* 'YYYY-MM-DD' F_WORD_CHAR* ;
 RULE : 'rule' ;
 ISO  : 'iso' ;
 URL  : 'url' ;
 LIEN : 'lien' ;
 PATH : 'path' ;
-// Alias marker `@<name>/` (legacy `@[\w-]+/`).
+// Alias marker `@<name>/` (`@[\w-]+/`).
 ALIAS_MARK : '@' [\p{L}\p{N}_-]+ '/' ;
 
 T_NUMBER : [0-9]+ -> type(NUMBER) ;

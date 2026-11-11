@@ -1,18 +1,18 @@
 /**
  * Category `format` (docs/spec.md 4.3, codes MTL300-MTL399): value shape
- * rules from tags. The legacy codes MTL301 to MTL305 are ported; of the field
- * format codes (spec 2.9, change C11) MTL306 to MTL309 are implemented.
+ * rules from tags. Codes MTL301 to MTL305 are the base format rules; MTL306 to
+ * MTL309 are the field format rules (spec 2.9, change C11).
  */
 import { defineRule, report, type AnyRule, type FieldContext } from "../engine/rule.js";
 import { isList, type Diagnostic } from "../engine/model.js";
-import { isIsoDate, isSemver, isValidDateValue, isValidUrlValue, matchesCaseStyle, pyRepr, valueText } from "../engine/values.js";
+import { isIsoDate, isSemver, isValidDateValue, isValidUrlValue, matchesCaseStyle, reprValue, valueText } from "../engine/values.js";
 import type { ValueShape } from "../tags/ast.js";
 
 /**
  * `[format:constant:<v>]` (spec 2.3): a scalar value must equal the constant
  * as a string. A list or mapping never matches (Q02). The pipeline runs step
  * `constant` only for a present, non-empty value (spec 4.1 step 3). The first
- * constant tag of the field wins, as the legacy `re.search`.
+ * constant tag of the field wins.
  */
 const constantMismatch = defineRule({
   code: "MTL301",
@@ -33,9 +33,9 @@ const constantMismatch = defineRule({
 /**
  * `[format:snake_case]` / `[format:kebab-case]` (spec 2.3): a scalar string
  * value must match the case style. Skipped for a list or mapping. The value is
- * not trimmed (`matchesCaseStyle`). The first case tag of the field wins, as
- * the legacy `re.search`. The pipeline runs step `case` only for a present,
- * non-empty value (spec 4.1 step 3).
+ * not trimmed (`matchesCaseStyle`). The first case tag of the field wins.
+ * The pipeline runs step `case` only for a present, non-empty value (spec 4.1
+ * step 3).
  */
 const caseMismatch = defineRule({
   code: "MTL302",
@@ -55,10 +55,9 @@ const caseMismatch = defineRule({
 
 /**
  * `[format:elements:snake_case|kebab-case]` (spec 2.3): every item of a list
- * must match the case style. Skipped when the value is not a list. As legacy
- * `str(item)`, a nested list or mapping is tested (and listed) as its Python
- * text, which never matches. The message lists the bad items as a Python list
- * of strings. The pipeline runs step `elements` only for a non-empty value
+ * must match the case style. Skipped when the value is not a list. A nested
+ * list or mapping is tested (and listed) as its `reprValue` text, which never
+ * matches. The message lists the bad items as a bracketed list of strings. The pipeline runs step `elements` only for a non-empty value
  * (spec 4.1 step 3). The first elements tag of the field wins.
  */
 const elementsCaseMismatch = defineRule({
@@ -74,15 +73,14 @@ const elementsCaseMismatch = defineRule({
     if (tag === undefined || value === null || !isList(value)) return [];
     const bad = value.map(valueText).filter((item) => !matchesCaseStyle(tag.style, item));
     if (bad.length === 0) return [];
-    return [report(elementsCaseMismatch, `Field '${context.key}': list contains entries not matching [format:elements:${tag.style}]: ${pyRepr(bad)}`)];
+    return [report(elementsCaseMismatch, `Field '${context.key}': list contains entries not matching [format:elements:${tag.style}]: ${reprValue(bad)}`)];
   },
 });
 
 /**
  * The scheme allow-list of a template field, or null for no restriction
- * (spec 2.3). Legacy `_check_url_schemes` applies it only when the template
- * field has the given inferred type. The first scheme tag wins (legacy
- * `re.search`); an empty list after trimming means no restriction. Schemes
+ * (spec 2.3). It applies only when the template field has the given
+ * inferred type. The first scheme tag wins; an empty list after trimming means no restriction. Schemes
  * come lowercased from the tag; a set drops duplicates.
  */
 function schemeAllowList(context: FieldContext, type: "url" | "list-of-url"): { readonly allowed: ReadonlySet<string>; readonly text: string } | null {
@@ -116,7 +114,7 @@ const schemeDisallowed = defineRule({
 
 /**
  * `[format:scheme:<s1>,<s2>,...]` on a `list-of-url` field: one error naming
- * every valid URL item with a disallowed scheme, as a Python list of strings.
+ * every valid URL item with a disallowed scheme, as a bracketed list of strings.
  * Invalid items and non-string items are skipped (MTL515 reports them).
  */
 const schemeDisallowedItem = defineRule({
@@ -132,7 +130,7 @@ const schemeDisallowedItem = defineRule({
     if (list === null || value === null || !isList(value)) return [];
     const bad = value.filter((item): item is string => typeof item === "string" && isValidUrlValue(item) && !isValidUrlValue(item, list.allowed));
     if (bad.length === 0) return [];
-    return [report(schemeDisallowedItem, `Field '${context.key}': list contains URLs with a disallowed scheme ${pyRepr(bad)} [format:scheme:${list.text}]`)];
+    return [report(schemeDisallowedItem, `Field '${context.key}': list contains URLs with a disallowed scheme ${reprValue(bad)} [format:scheme:${list.text}]`)];
   },
 });
 
@@ -205,7 +203,7 @@ function elementsShape(context: FieldContext): ValueShape | null {
 
 /**
  * `[format:elements:semver]` (spec 2.9): on a list value, one error listing
- * every item that is not a SEMVER, as a Python list of strings. Items are
+ * every item that is not a SEMVER, as a bracketed list of strings. Items are
  * tested as their text (`valueText`, as MTL303), exact, no trimming, so a
  * nested list or mapping is listed. Skipped when the value is not a list.
  * Silent when `[format:elements:date]` is the first elements shape tag. Step
@@ -223,13 +221,13 @@ const elementsSemverMismatch = defineRule({
     if (elementsShape(context) !== "semver" || value === null || !isList(value)) return [];
     const bad = value.map(valueText).filter((item) => !isSemver(item));
     if (bad.length === 0) return [];
-    return [report(elementsSemverMismatch, `Field '${context.key}': list contains entries not matching [format:elements:semver]: ${pyRepr(bad)}`)];
+    return [report(elementsSemverMismatch, `Field '${context.key}': list contains entries not matching [format:elements:semver]: ${reprValue(bad)}`)];
   },
 });
 
 /**
  * `[format:elements:date]` (spec 2.9): on a list value, one error listing
- * every item that is not an ISO DATE, as a Python list of strings. Items are
+ * every item that is not an ISO DATE, as a bracketed list of strings. Items are
  * tested as their text (`valueText`), exact, no trimming. On a field of type
  * `list-of-date` an item that fails the default date parsing
  * (`isValidDateValue`) is not listed: the type rule lists it (`MTL513`, one
@@ -253,7 +251,7 @@ const elementsDateMismatch = defineRule({
       .map(valueText)
       .filter((item) => !isIsoDate(item));
     if (bad.length === 0) return [];
-    return [report(elementsDateMismatch, `Field '${context.key}': list contains entries not matching [format:elements:date]: ${pyRepr(bad)}`)];
+    return [report(elementsDateMismatch, `Field '${context.key}': list contains entries not matching [format:elements:date]: ${reprValue(bad)}`)];
   },
 });
 

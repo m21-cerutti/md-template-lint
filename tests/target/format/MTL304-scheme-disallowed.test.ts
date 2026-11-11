@@ -47,7 +47,7 @@ const CASES: readonly TestCase[] = [
     name: "fail-allow-list-sorted-lowercased-without-duplicates",
     expected: [message("site", "ftp://files.example.com", "http,https")],
   },
-  // Legacy `re.search`: the first scheme tag of a field wins.
+  // The first scheme tag of a field wins.
   {
     name: "fail-first-scheme-tag-wins",
     expected: [message("site", "ftp://files.example.com", "https")],

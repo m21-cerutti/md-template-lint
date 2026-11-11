@@ -26,7 +26,7 @@ const CASES = [
     fixture: "tests/fixtures/pairs/MTL604/pass-optional-and-conditional-headings-absent",
     expected: [],
   },
-  // Positional matching (spec 2.6 "Match of T", 2.10 "Positional match", ADR 0012): the template
+  // Positional matching (docs/grammar.md "Match of T", spec 2.10 "Positional match", ADR 0012): the template
   // headings of one level take the siblings in order, so a same-level swap is a MISSING heading
   // (MTL601), never an order error; MTL604 only reports an order ACROSS levels (spec 2.6 "Order").
   {
@@ -88,7 +88,7 @@ const CASES = [
     expected: ["Heading: Missing required heading: 'Alpha' (found later at line 7, out of order)", "Heading: Missing required heading: 'Beta'"],
   },
   {
-    // The MTL601 message is the raw text between single quotes (the python repr is only for the
+    // The MTL601 message is the raw text between single quotes (the repr quoting is only for the
     // MTL604 lists, next case). The swapped heading (line 7) gives the hint.
     name: "fail-swapped-heading-text-with-quote-is-missing",
     fixture: "tests/fixtures/pairs/MTL604/fail-swapped-heading-text-with-quote-is-missing",
@@ -96,10 +96,10 @@ const CASES = [
   },
   {
     // Order across levels: the H2 `Beta` matches (line 5) before the H1 `Alpha's notes` (line
-    // 7) that precedes it in the template. The lists are python reprs: a text with `'` is
+    // 7) that precedes it in the template. The lists are repr-quoted: a text with `'` is
     // double-quoted.
-    name: "fail-heading-text-with-quote-uses-python-repr",
-    fixture: "tests/fixtures/pairs/MTL604/fail-heading-text-with-quote-uses-python-repr",
+    name: "fail-heading-text-with-quote-uses-repr",
+    fixture: "tests/fixtures/pairs/MTL604/fail-heading-text-with-quote-uses-repr",
     expected: [order(`["Alpha's notes", 'Beta']`, `['Beta', "Alpha's notes"]`)],
   },
   {

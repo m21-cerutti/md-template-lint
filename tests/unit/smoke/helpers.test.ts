@@ -550,7 +550,7 @@ describe("smoke-pack: tarball content (fixtures/release/tarball)", () => {
     ]);
   });
 
-  it.each(["src", "legacy", "tmp"])("flags a file under %s/", (dir) => {
+  it.each(["src", "tmp"])("flags a file under %s/", (dir) => {
     const paths = tarballEntries(readText("tarball", "pass-expected-package", "txt")).concat(`${dir}/a.ts`);
     expect(checkTarballEntries(paths)).toEqual([`leaks ${dir}/: ${dir}/a.ts`]);
   });

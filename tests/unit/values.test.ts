@@ -31,8 +31,8 @@ import {
   isValidPathAliasValue,
   isValidUrlValue,
   matchesCaseStyle,
-  pyRepr,
-  pyReprString,
+  reprValue,
+  reprString,
   valueText,
 } from "../../src/engine/values.js";
 
@@ -104,7 +104,7 @@ describe("isValidUrlValue: strict URL predicate (spec 3.4)", () => {
     expect(isValidUrlValue("a-b.c://host")).toBe(true);
   });
 
-  it("passes: Python strip() edges (tab, no-break space); fails: the same inside the value", () => {
+  it("passes: whitespace-set edges (tab, no-break space); fails: the same inside the value", () => {
     expect(isValidUrlValue("\thttps://example.com\t")).toBe(true);
     expect(isValidUrlValue("\u00a0https://example.com\u00a0")).toBe(true);
     expect(isValidUrlValue("https://ex\tample.com")).toBe(false);
@@ -116,7 +116,7 @@ describe("isValidUrlValue: strict URL predicate (spec 3.4)", () => {
     expect(isValidUrlValue("https://example.com#frag")).toBe(true);
   });
 
-  it("fails: a closing bracket without an opening one in the authority (Python urlsplit)", () => {
+  it("fails: a closing bracket without an opening one in the authority", () => {
     expect(isValidUrlValue("http://::1]/x")).toBe(false);
     expect(isValidUrlValue("http://[::1]/x")).toBe(true);
   });
@@ -185,7 +185,7 @@ describe("isValidPathAliasValue: strict path alias predicate (spec 3.4)", () => 
     expect(isValidPathAliasValue(["@assets/logo"])).toBe(false);
   });
 
-  it("follows the Python whitespace set, not the JS one (U+001C, U+0085, U+FEFF)", () => {
+  it("follows the Unicode whitespace set, not the JS one (U+001C, U+0085, U+FEFF)", () => {
     expect(isValidPathAliasValue("@assets/a\u001cb")).toBe(false);
     expect(isValidPathAliasValue("@assets/a\u0085b")).toBe(false);
     expect(isValidPathAliasValue("@assets/a\ufeffb")).toBe(true);
@@ -350,53 +350,53 @@ describe("isSemver: SEMVER predicate of [format:semver] (spec 2.9)", () => {
   });
 });
 
-describe("pyReprString: Python `repr` of a string (Q02)", () => {
+describe("reprString: `repr` quoting of a string (Q02)", () => {
   it("passes: plain text in single quotes, printable non-ASCII kept", () => {
-    expect(pyReprString("job notes")).toBe("'job notes'");
-    expect(pyReprString("café 😀")).toBe("'café 😀'");
+    expect(reprString("job notes")).toBe("'job notes'");
+    expect(reprString("café 😀")).toBe("'café 😀'");
   });
 
   it("fails: quotes pick the delimiter, backslash and quote are escaped", () => {
-    expect(pyReprString("it's")).toBe('"it\'s"');
-    expect(pyReprString('say "hi"')).toBe("'say \"hi\"'");
-    expect(pyReprString('it\'s "x"')).toBe("'it\\'s \"x\"'");
-    expect(pyReprString("a\\b")).toBe("'a\\\\b'");
+    expect(reprString("it's")).toBe('"it\'s"');
+    expect(reprString('say "hi"')).toBe("'say \"hi\"'");
+    expect(reprString('it\'s "x"')).toBe("'it\\'s \"x\"'");
+    expect(reprString("a\\b")).toBe("'a\\\\b'");
   });
 
   it("fails: newline, carriage return, tab and other control characters are escaped", () => {
-    expect(pyReprString("a\nb\rc\td")).toBe("'a\\nb\\rc\\td'");
-    expect(pyReprString("a\u0000b\u001fc\u007fd")).toBe("'a\\x00b\\x1fc\\x7fd'");
+    expect(reprString("a\nb\rc\td")).toBe("'a\\nb\\rc\\td'");
+    expect(reprString("a\u0000b\u001fc\u007fd")).toBe("'a\\x00b\\x1fc\\x7fd'");
   });
 
-  it("fails: non-printable code points use \\x, \\u or \\U like Python", () => {
-    expect(pyReprString("a\u00a0b")).toBe("'a\\xa0b'");
-    expect(pyReprString("a\u0085b")).toBe("'a\\x85b'");
-    expect(pyReprString("a\u200bb")).toBe("'a\\u200bb'");
-    expect(pyReprString("a\u2028b")).toBe("'a\\u2028b'");
-    expect(pyReprString("a\u{e0001}b")).toBe("'a\\U000e0001b'");
+  it("fails: non-printable code points use \\x, \\u or \\U escapes", () => {
+    expect(reprString("a\u00a0b")).toBe("'a\\xa0b'");
+    expect(reprString("a\u0085b")).toBe("'a\\x85b'");
+    expect(reprString("a\u200bb")).toBe("'a\\u200bb'");
+    expect(reprString("a\u2028b")).toBe("'a\\u2028b'");
+    expect(reprString("a\u{e0001}b")).toBe("'a\\U000e0001b'");
   });
 });
 
-describe("pyRepr and valueText: Python `repr` and `str` of a YAML value (Q02)", () => {
+describe("reprValue and valueText: list text and plain text of a YAML value (Q02)", () => {
   it("passes: a list of strings", () => {
-    expect(pyRepr(["a", "it's"])).toBe("['a', \"it's\"]");
+    expect(reprValue(["a", "it's"])).toBe("['a', \"it's\"]");
   });
 
   it("fails: nested list and mapping text, empty containers", () => {
-    expect(pyRepr(new Map([["k", ["a", "b"]]]))).toBe("{'k': ['a', 'b']}");
-    expect(pyRepr([["a"], new Map([["k", "v"]])])).toBe("[['a'], {'k': 'v'}]");
-    expect(pyRepr([])).toBe("[]");
-    expect(pyRepr(new Map())).toBe("{}");
+    expect(reprValue(new Map([["k", ["a", "b"]]]))).toBe("{'k': ['a', 'b']}");
+    expect(reprValue([["a"], new Map([["k", "v"]])])).toBe("[['a'], {'k': 'v'}]");
+    expect(reprValue([])).toBe("[]");
+    expect(reprValue(new Map())).toBe("{}");
   });
 
-  it("fails: valueText keeps a string raw and prints a list or mapping as Python text", () => {
+  it("fails: valueText keeps a string raw and prints a list or mapping as repr text", () => {
     expect(valueText("it's")).toBe("it's");
     expect(valueText(["a"])).toBe("['a']");
     expect(valueText(new Map([["k", "v"]]))).toBe("{'k': 'v'}");
   });
 });
 
-describe("matchesCaseStyle: legacy `re.match(...$)` parity", () => {
+describe("matchesCaseStyle: a final newline is allowed, nothing else", () => {
   it("passes: one final newline is allowed (a YAML block scalar ends with one)", () => {
     expect(matchesCaseStyle("snake_case", "job_notes\n")).toBe(true);
   });

@@ -12,8 +12,8 @@ const DIR = "tests/fixtures/pairs/MTL303";
 /** The other codes of the format family: none may fire in any case (tag isolation). */
 const OTHER_FORMAT_CODES = ["MTL301", "MTL302", "MTL304", "MTL305"];
 
-/** Spec 4.3 message of MTL303; `pylist` is the Python list text of the bad items. */
-const message = (key: string, style: string, pylist: string): string => `Field '${key}': list contains entries not matching [format:elements:${style}]: ${pylist}`;
+/** Spec 4.3 message of MTL303; `listText` is the list text of the bad items. */
+const message = (key: string, style: string, listText: string): string => `Field '${key}': list contains entries not matching [format:elements:${style}]: ${listText}`;
 
 interface TestCase {
   readonly name: string;
@@ -54,26 +54,26 @@ const CASES: readonly TestCase[] = [
     name: "fail-duplicate-bad-items-listed-twice",
     expected: [message("tags", "kebab-case", "['Bad_One', 'Bad_One']")],
   },
-  // An apostrophe makes Python pick double quotes.
+  // An apostrophe makes the repr pick double quotes.
   {
     name: "fail-item-with-apostrophe-shown-in-double-quotes",
     expected: [message("tags", "kebab-case", `["it's-bad"]`)],
   },
-  // Python `repr`: a backslash is doubled, a tab is `\t`, U+200B is `\u200b`.
+  // `repr` quoting: a backslash is doubled, a tab is `\t`, U+200B is `\u200b`.
   {
-    name: "fail-backslash-tab-and-zero-width-items-escaped-like-python",
+    name: "fail-backslash-tab-and-zero-width-items-repr-escaped",
     expected: [message("tags", "kebab-case", String.raw`['a\\b', 'tab\there', 'zero\u200bwidth']`)],
   },
-  // Legacy `str(item)`: a nested list or mapping is listed as its Python text.
+  // A nested list or mapping is listed as its value text.
   {
-    name: "fail-nested-list-item-listed-as-python-text",
+    name: "fail-nested-list-item-listed-as-value-text",
     expected: [message("tags", "kebab-case", `["['a', 'b']"]`)],
   },
   {
-    name: "fail-nested-mapping-item-listed-as-python-text",
+    name: "fail-nested-mapping-item-listed-as-value-text",
     expected: [message("tags", "kebab-case", `["{'a': 'b'}"]`)],
   },
-  // Legacy `re.search`: the first elements tag of a field wins.
+  // The first elements tag of a field wins.
   {
     name: "fail-first-elements-tag-wins",
     expected: [message("tags", "snake_case", "['release-notes']")],

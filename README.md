@@ -155,7 +155,7 @@ Source of truth for flags, modes and output: [docs/spec.md](docs/spec.md) sectio
 `--help` and `--version` win over every other argument. `--` ends the options;
 what follows are files. An unknown option is `MTL920`, a missing option value is
 `MTL921`; both exit 2 and print a hint. The legacy flags `--pattern`, `--dir`,
-`--ignore` and `--base-dir` do not exist (see [docs/migration.md](docs/migration.md)).
+`--ignore` and `--base-dir` do not exist (see [ADR 0014](docs/adr/0014-legacy-behaviour-catalogue.md)).
 
 The `--help` output and the text-format `--verify` report include a one-line reminder: `Template syntax reference: <URL>` (a link to [docs/syntax-reference.md](docs/syntax-reference.md), a concise reference of tags, settings and rules for writing templates).
 
@@ -528,7 +528,7 @@ All messages are `Field '<key>' (type=<type>): <detail>`.
 Tags go after the text of a heading of any level (H1 to H6). Headings inside fenced
 code are ignored. Heading text comparison is exact and case-sensitive, and the level
 must be the same: a template `## Context` is not satisfied by a target `# Context`.
-A heading with no tag at all is required. See [docs/migration.md](docs/migration.md) for
+A heading with no tag at all is required. See [ADR 0014](docs/adr/0014-legacy-behaviour-catalogue.md) for
 the upgrade from H1/H2-only checking and to positional matching.
 
 #### Positional matching
@@ -723,7 +723,7 @@ malformed tag (`MTL012` in `--verify`): the bracket stays in the heading text, t
 ordinary required exact-text heading, and a lint run reports it missing (for example
 `Missing required heading: 'Context [presence:exist]'`). `MTL602` is retired and reserved. Write a
 plain heading when the text is fixed, or `[pattern:"{text}"]` for any text; the migration steps,
-with a before/after table, are in [docs/migration.md](docs/migration.md).
+with a before/after table, are in [ADR 0014](docs/adr/0014-legacy-behaviour-catalogue.md).
 
 | Before                         | After                                                                                |
 | ------------------------------ | ------------------------------------------------------------------------------------ |
@@ -1280,8 +1280,8 @@ node dist/cli.js
 - [docs/README.md](docs/README.md): index of everything under `docs/` (guides, glossary, ADRs).
 - [docs/spec.md](docs/spec.md): the contract (tags, types, codes, config, CLI, output).
 - [docs/architecture.md](docs/architecture.md): modules, run flow, rule contract.
-- [docs/adding-a-rule.md](docs/adding-a-rule.md): how to add a rule or a tag.
-- [docs/migration.md](docs/migration.md): replace the legacy wrappers and `approved_path.yml`.
+- [docs/guides/adding-a-rule.md](docs/guides/adding-a-rule.md), [docs/guides/adding-a-tag.md](docs/guides/adding-a-tag.md): how to add a rule or a tag.
+- [docs/adr/0014-legacy-behaviour-catalogue.md](docs/adr/0014-legacy-behaviour-catalogue.md): replace the legacy wrappers and `approved_path.yml`; breaking changes of 0.2.0.
 - [docs/adr/](docs/adr/0001-genesis.md): architecture decision records.
 - [CONTRIBUTING.md](CONTRIBUTING.md): setup, quality gates, commit style.
 - [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md): licenses of the dependencies.
@@ -1323,7 +1323,7 @@ pnpm run gen:parser
 pnpm run check:parser
 ```
 
-Scaffold a rule (see [docs/adding-a-rule.md](docs/adding-a-rule.md)):
+Scaffold a rule (see [docs/guides/adding-a-rule.md](docs/guides/adding-a-rule.md)):
 
 ```bash
 pnpm run new:rule -- <category> <name>

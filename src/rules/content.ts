@@ -2,7 +2,7 @@
  * Category `content` (docs/spec.md 4.3, codes MTL700-MTL799): section body
  * rules (spec 2.6, 4.1 step 6). All codes of the category are ported.
  *
- * Order (legacy `validate_content`): one section after the other, the five
+ * Order: one section after the other, the five
  * codes inside a section. Each rule tags its findings with the template
  * section index (`reportSection`) and the pipeline stable-sorts the `content`
  * step by it. The finding anchors on the target heading of the checked
@@ -10,7 +10,7 @@
  */
 import { defineRule, reportSection, type AnyRule, type TargetContext } from "../engine/rule.js";
 import { headingPattern, matchHeadings, type Diagnostic, type Section } from "../engine/model.js";
-import { isPythonSpace, stripPythonSpace } from "../engine/values.js";
+import { isUnicodeSpace, stripUnicodeSpace } from "../engine/values.js";
 
 /** A checked template section, its target match and the message label. */
 interface CheckedSection {
@@ -54,13 +54,13 @@ function writtenPattern(section: Section): string {
 }
 
 /**
- * True when every code point of `text` is Python whitespace (an empty text is
- * blank). Not `String.trim`: ECMAScript trims U+FEFF and keeps U+001C-001F
- * and U+0085, Python does the opposite (legacy `not body.strip()`).
+ * True when every code point of `text` is whitespace of `isUnicodeSpace` (an
+ * empty text is blank). Not `String.trim`: ECMAScript trims U+FEFF and keeps
+ * U+001C-001F and U+0085, `isUnicodeSpace` does the opposite.
  */
 function isBlank(text: string): boolean {
   for (const char of text) {
-    if (!isPythonSpace(char.codePointAt(0) ?? 0)) return false;
+    if (!isUnicodeSpace(char.codePointAt(0) ?? 0)) return false;
   }
   return true;
 }
@@ -72,7 +72,7 @@ function hasContentTag(section: Section, check: "non-empty" | "table" | "list"):
 
 /**
  * Value of the FIRST `[content:<bound>-lines:N]` tag of the template section
- * (legacy `re.search` takes the leftmost one; tags are in source order), or
+ * (the leftmost one wins; tags are in source order), or
  * null. A malformed N is not a tag: the parser reports it as MTL012 only.
  */
 function lineBound(section: Section, bound: "min" | "max"): number | null {
@@ -82,28 +82,28 @@ function lineBound(section: Section, bound: "min" | "max"): number | null {
   return null;
 }
 
-/** Lines of `body` that are not blank (legacy `line.strip()` is truthy). */
+/** Lines of `body` that are not blank. */
 function nonBlankLineCount(body: string): number {
   return body.split("\n").filter((line) => !isBlank(line)).length;
 }
 
 /**
- * Legacy `^\s*\|.*\|\s*$` on one line: after trimming, at least two
+ * Table row, `^\s*\|.*\|\s*$` on one line: after trimming, at least two
  * characters, the first and the last a pipe. A lone `|` is not a row.
  */
 function isTableRow(line: string): boolean {
-  const trimmed = stripPythonSpace(line);
+  const trimmed = stripUnicodeSpace(line);
   return trimmed.length >= 2 && trimmed.startsWith("|") && trimmed.endsWith("|");
 }
 
 /**
- * Legacy `^\s*(?:[-*+]\s+|\d+[.)]\s+)` on one line (re.match, Unicode str
- * semantics): `\s` is Python whitespace, `\d` any decimal digit (category Nd).
+ * List item, `^\s*(?:[-*+]\s+|\d+[.)]\s+)` anchored at the start of one line:
+ * `\s` is `isUnicodeSpace`, `\d` any decimal digit (category Nd).
  * A marker alone at the end of the line is not an item: whitespace must follow.
  */
 function isListItem(line: string): boolean {
   const chars = [...line];
-  const isSpaceAt = (index: number): boolean => index < chars.length && isPythonSpace(chars[index]?.codePointAt(0) ?? 0);
+  const isSpaceAt = (index: number): boolean => index < chars.length && isUnicodeSpace(chars[index]?.codePointAt(0) ?? 0);
   let index = 0;
   while (isSpaceAt(index)) index += 1;
   const first = chars[index] ?? "";

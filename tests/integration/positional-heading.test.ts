@@ -1,6 +1,6 @@
 /**
- * Regression fixtures of the POSITIONAL heading match (docs/spec.md 2.6 "Match of T", 2.10
- * "Positional match", ADR 0012, phase Pm): the worked examples of 2.6 (the exact-level guide
+ * Regression fixtures of the POSITIONAL heading match (docs/grammar.md "Match of T", docs/spec.md
+ * 2.10 "Positional match", ADR 0012, phase Pm): the worked examples of 2.6 (the exact-level guide
  * and the `[content:subheadings:disallow]` changelog, with their variants) and the exact-text
  * parts of the owner examples B, C, E, H and I of 2.10 worked example 4, plus the run rules
  * they rest on (an extra between template headings shifts the run, an extra after the last
@@ -125,13 +125,13 @@ const CASES: readonly TestCase[] = [
     expected: [missingLater("Alpha", 7)],
   },
   {
-    // Spec 2.6 "Extra": A takes line 5; B and C look at the extra `X` (line 7): both missing,
+    // docs/grammar.md "Extra": A takes line 5; B and C look at the extra `X` (line 7): both missing,
     // although they are present later (the run has no gaps and never goes back). From the
     // cursor (line 7) onward, B is at line 9 and C at line 11: both get the hint (2.10 3b).
     name: "fail-extra-between-template-headings-shifts-the-run",
     expected: [missingLater("B", 9), missingLater("C", 11)],
   },
-  // Spec 2.6 "Extra": siblings after the last position are extra, allowed (MTL616 is a warning).
+  // docs/grammar.md "Extra": siblings after the last position are extra, allowed (MTL616 is a warning).
   { name: "pass-extra-after-the-last-position-is-allowed", expected: [] },
   {
     // Spec 2.10 step 1: every `## T` is set aside, the first gets MTL603; the run A, B is not
@@ -146,7 +146,7 @@ const CASES: readonly TestCase[] = [
     ],
   },
   {
-    // Spec 2.6 "Siblings"/"Sequence": a section-scope run is per parent. `### X` of `## P`
+    // docs/grammar.md "Siblings"/"Sequence": a section-scope run is per parent. `### X` of `## P`
     // takes line 9; `### X` of `## Q` walks the siblings of Q only (`### Y`): missing.
     name: "fail-section-scope-run-is-per-parent-not-shared",
     expected: [

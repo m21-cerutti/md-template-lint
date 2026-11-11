@@ -217,5 +217,5 @@ unknown tag name is an error.
 - [docs/guides/adding-a-rule.md](../docs/guides/adding-a-rule.md): the tests and fixtures of a new
   rule (step 6).
 - [docs/spec.md](../docs/spec.md): the contract and the code table (4.3).
-- [docs/architecture.md](../docs/architecture.md#tests-rule-cases): the layout tables.
+- [docs/guides/testing.md](../docs/guides/testing.md#fixtures-and-case-names): the fixture layout.
 - [CONTRIBUTING.md](../CONTRIBUTING.md#tests): the test rules for contributors.

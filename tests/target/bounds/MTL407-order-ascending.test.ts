@@ -38,7 +38,7 @@ const CASES: readonly TestCase[] = [
   // the marker tying with 9999-12-31 (any case and accent), slash dates, ISO
   // and slash forms of one day mixed with `YYYY` and `YYYY-MM`, a later year
   // with a smaller month and day, `YYYY` / `YYYY-MM` equal to their first day,
-  // padded items (Python strip incl. NEL), padded markers (space, tab and
+  // padded items (whitespace-set strip incl. NEL), padded markers (space, tab and
   // newline, accent and case) tying with each other, invalid and nested items between valid ones
   // (a BOM-prefixed date is invalid), a single item, a `[date]`-hinted list;
   // type guard: a list of strings, a scalar date, an untagged list-of-date and
@@ -84,7 +84,7 @@ const CASES: readonly TestCase[] = [
     expected: [message("career", " present ", "2026-06-01")],
     warnings: noDateFormat(1),
   },
-  // Marker == 9999-12-31 (legacy key): equal is fine, 9999-12-30 after it is
+  // Marker == 9999-12-31 (the highest date key): equal is fine, 9999-12-30 after it is
   // not; `PRÉSENT` and `présent` tie, a date after them is a violation, a
   // marker after a date is not.
   {
@@ -115,9 +115,9 @@ const CASES: readonly TestCase[] = [
     warnings: noDateFormat(1),
   },
   // Items are shown as written (padding and NEL kept); the BOM item is invalid
-  // (Python `strip` keeps U+FEFF) and skipped.
+  // (the whitespace-set strip keeps U+FEFF) and skipped.
   {
-    name: "fail-items-shown-as-written-after-python-strip",
+    name: "fail-items-shown-as-written-after-strip",
     expected: [message("dates", " 2026-03-01 ", "\u00852026-01-01")],
     warnings: noDateFormat(1),
   },

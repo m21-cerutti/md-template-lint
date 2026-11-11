@@ -13,7 +13,7 @@ const warning = (message: string, line: number, column: number, sourceLine: stri
 
 /** Case -> fixture `<name>.md` -> expected `--verify` result. */
 const CASES: readonly VerifyCase[] = [
-  // Known tags and the inert legacy marker `[rule]` give no warning.
+  // Known tags and the inert marker `[rule]` give no warning.
   { name: "pass-known-field-tags", exitCode: 0, status: "ok", diagnostics: [] },
   // An unknown family on a key line.
   {

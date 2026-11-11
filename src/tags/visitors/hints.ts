@@ -2,8 +2,8 @@
  * Family `type hints` (spec 2.4): `[<word>]`, `YYYY-MM-DD`,
  * `ISO`, `url`/`lien`, `path`, `@<name>/`. A LISTENER (simple collection, no
  * return value): walk an inline comment and collect every hint in source order.
- * Hints anywhere in the comment count, inside brackets too (legacy searched
- * the whole comment text).
+ * Hints anywhere in the comment count, inside brackets too (the whole
+ * comment text is searched).
  */
 import type { TerminalNode, Token } from "antlr4ng";
 import { MdTemplateLexer } from "../../generated/MdTemplateLexer.js";

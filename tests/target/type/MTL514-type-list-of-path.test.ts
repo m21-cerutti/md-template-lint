@@ -60,7 +60,7 @@ const CASES: readonly TestCase[] = [
     name: "fail-forbidden-characters-colon-whitespace-and-bare-separators",
     expected: [entries("paths", `['./a<b/c.md', './a>b/c.md', './a"b/c.md', './a|b/c.md', './a?b/c.md', './a*b/c.md', ` + "'./a:b/c.md', 'C:/a:b/c.md', './a b/c.md', '/', '//server/share/a.md']")],
   },
-  // Items are not trimmed (legacy `is_path_like(value)`).
+  // Items are not trimmed (`isPathLike(value)` takes the raw item).
   {
     name: "fail-padded-items-are-not-trimmed",
     expected: [entries("paths", "[' ./docs/readme.md', './docs/readme.md ', '  ./docs/readme.md  ']")],
@@ -75,9 +75,9 @@ const CASES: readonly TestCase[] = [
     name: "fail-blank-and-whitespace-items",
     expected: [entries("paths", "['', '   ', '']")],
   },
-  // A nested list or mapping item prints as its Python str, then repr-quoted.
+  // A nested list or mapping item prints as its value text, then repr-quoted.
   {
-    name: "fail-nested-list-and-mapping-items-print-as-python-text",
+    name: "fail-nested-list-and-mapping-items-print-as-value-text",
     expected: [entries("paths", `["['./b.md']", "{'p': './c.md'}"]`)],
   },
   // Errors follow the template key order, not the target order.

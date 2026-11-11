@@ -139,7 +139,7 @@ function reportVerifyJson(result: VerifyResult, version: string): ReportOutput {
 
 /**
  * The `Field  Type  Rules` table: columns padded to the widest name and type, and under the
- * header a run of `-` of the header length (spec 8.3, legacy `describe()`).
+ * header a run of `-` of the header length (spec 8.3).
  */
 function tableLines(schema: TemplateSchema): string[] {
   const names = schema.fields.map((field) => cleanText(field.name));
@@ -218,7 +218,7 @@ function schemaLines(schema: TemplateSchema, warnings: readonly ReportedDiagnost
   if (schema.headings.length > 0) {
     text.push("Headings:");
     for (const heading of schema.headings) {
-      // Presence is always the first rule, so the list is never empty (legacy `describe()`).
+      // Presence is always the first rule, so the list is never empty.
       const rules = heading.rules.map(cleanText).join(", ");
       text.push(`  ${"#".repeat(heading.level)} ${cleanText(heading.text)} (${rules})`);
     }

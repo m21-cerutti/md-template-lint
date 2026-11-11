@@ -10,7 +10,7 @@ const registry = createRegistry();
 const CODE = "MTL405";
 const DIR = "tests/fixtures/pairs/MTL405";
 
-/** Spec 4.3 message of MTL405: Python list of the items as written, parsed bound. */
+/** Spec 4.3 message of MTL405: list text of the items as written, parsed bound. */
 const message = (key: string, items: string, min: string): string => `Field '${key}': item(s) ${items} are below range:min ${min}`;
 
 interface TestCase {
@@ -62,9 +62,9 @@ const CASES: readonly TestCase[] = [
     expected: [message("offsets", "['-4', '-3.5']", "-3")],
     warnings: [],
   },
-  // The bound is printed as Python prints the parsed number (spec 4.3 notes).
+  // The bound is printed as the parsed number (spec 4.3 notes).
   {
-    name: "fail-bounds-print-as-python-parsed-numbers",
+    name: "fail-bounds-print-as-parsed-numbers",
     expected: [
       message("leading_zeros", "['1']", "7"),
       message("trailing_zero_float", "['1']", "2.5"),
@@ -105,7 +105,7 @@ const CASES: readonly TestCase[] = [
     // Spec 2.9: `date_list` is a list-of-date field without [format:elements:date].
     warnings: ["MTL016"],
   },
-  // Legacy takes the leftmost tag: [min:5] wins over a later [min:1] and
+  // The leftmost tag wins: [min:5] wins over a later [min:1] and
   // [min:1] wins over a later [min:5].
   {
     name: "fail-first-minimum-tag-wins",

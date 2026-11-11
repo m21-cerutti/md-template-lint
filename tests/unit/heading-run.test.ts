@@ -1,6 +1,6 @@
 /**
  * `HeadingRun` and `HeadingPosition` of `matchHeadings` (src/engine/model.ts): the positional run
- * of docs/spec.md 2.6 "Sequence", "Match of T", "Extra" and 2.10 "Positional match" steps 1 to 4
+ * of docs/grammar.md "Sequence", "Match of T", "Extra" and docs/spec.md 2.10 "Positional match" steps 1 to 4
  * (ADR 0012). Every expected value below is derived by hand from the spec, not from the code.
  * Body line 1 is file line 5 (the frontmatter takes lines 1 to 4), so the `L<n>` comments are
  * file lines; one heading per line, no blank lines, so the heading of body line `n` is on file
@@ -38,7 +38,7 @@ const positionOf = (items: readonly HeadingMatch[], index: number): HeadingPosit
   return must(found);
 };
 
-describe("HeadingRun: one run per level and scope (spec 2.6 'Sequence', 2.10 'Positional match')", () => {
+describe("HeadingRun: one run per level and scope (docs/grammar.md 'Sequence', spec 2.10 'Positional match')", () => {
   it("a file-scope run lists the siblings of its level, its positions in template order, and the tail", () => {
     // Siblings of level 2: L5, L6, L7; `A` takes L5, `B` takes L6; L7 is the tail (extra).
     const items = run(["## A", "## B"], ["## A", "## B", "## C"]);
@@ -187,7 +187,7 @@ describe("HeadingRun.setAside: template-only siblings (spec 2.10 step 1, MTL603)
     ]);
   });
 
-  it("a run with only a template-only heading has no position and so no tail (spec 2.6 'Extra')", () => {
+  it("a run with only a template-only heading has no position and so no tail (docs/grammar.md 'Extra')", () => {
     // `T` is set aside; the other sibling `X` is free detail, not an extra: no tail.
     const found = must(must(run(["## T [presence:template-only]"], ["## T", "## X"])[0]).run);
     expect(found.positions).toEqual([]);
@@ -196,7 +196,7 @@ describe("HeadingRun.setAside: template-only siblings (spec 2.10 step 1, MTL603)
   });
 });
 
-describe("HeadingRun in section scope: one run per level and per parent match (spec 2.6 'Siblings')", () => {
+describe("HeadingRun in section scope: one run per level and per parent match (docs/grammar.md 'Siblings')", () => {
   const TEMPLATE = ["# Guide", "## P", "### X", "## Q", "### X", "### Y"];
 
   it("walks the target section of its parent's match only, and names the parent", () => {
@@ -248,7 +248,7 @@ describe("HeadingRun in section scope: one run per level and per parent match (s
   });
 
   it("a section-scope heading under an unmatched parent is not checked: no run, no match", () => {
-    // `## P` looks at `## Other` (L5): missing, so `### X` is not checked (spec 2.6 'Checked').
+    // `## P` looks at `## Other` (L5): missing, so `### X` is not checked (docs/grammar.md 'Checked').
     const items = run(["## P", "### X"], ["## Other", "### X"]);
     const child = must(items[1]);
     expect(child.checked).toBe(false);

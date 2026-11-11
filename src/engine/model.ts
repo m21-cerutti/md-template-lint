@@ -94,7 +94,7 @@ export function headingPresence(section: Section): HeadingPresence {
 /**
  * The effective (first, spec 2.10) `[pattern:"..."]` tag of a template heading
  * is invalid (`MTL014`, spec 2.10 INVALID PATTERN): the heading is not
- * checked, at any level, and is not a position (spec 2.6 "Sequence", "Checked").
+ * checked, at any level, and is not a position (docs/grammar.md "Sequence", "Checked").
  */
 export function hasInvalidPattern(section: Section): boolean {
   const pattern = section.tags.find((tag) => tag.kind === "pattern");
@@ -114,7 +114,7 @@ export function headingPattern(section: Section): readonly PatternPiece[] | null
 
 /**
  * True when the target heading text `text` matches template heading `section`
- * (spec 2.6 "Match of T", 2.10 MATCH): its pattern for a pattern heading,
+ * (docs/grammar.md "Match of T", spec 2.10 MATCH): its pattern for a pattern heading,
  * else its exact text (case-sensitive, the literal pattern of its text).
  */
 export function headingMatches(section: Section, text: string): boolean {
@@ -131,7 +131,7 @@ export function isRepeatHeading(section: Section): boolean {
   return headingPattern(section) !== null && section.tags.some((tag) => tag.kind === "repeat");
 }
 
-/** One position of a run (spec 2.6 "Sequence", 2.10 step 2): a template heading and what it took. */
+/** One position of a run (docs/grammar.md "Sequence", spec 2.10 step 2): a template heading and what it took. */
 export interface HeadingPosition {
   /** Index in `template.sections` of the template heading. */
   readonly index: number;
@@ -172,7 +172,7 @@ export interface HeadingPosition {
 }
 
 /**
- * One positional run (spec 2.6 "Sequence", 2.10 "Positional match", ADR 0012):
+ * One positional run (docs/grammar.md "Sequence", spec 2.10 "Positional match", ADR 0012):
  * the sequence of one level and scope over the siblings of that scope. File
  * scope: one run per level over the whole file. Section scope: one run per
  * level and per match of the template parent, over its target section.
@@ -192,14 +192,14 @@ export interface HeadingRun {
   readonly positions: readonly HeadingPosition[];
   /**
    * The siblings from the cursor onward (2.10 step 4): the extra headings.
-   * Empty when the run has no position (2.6 "Extra": no run, no tail). The warning MTL616
+   * Empty when the run has no position (docs/grammar.md "Extra": no run, no tail). The warning MTL616
    * lists the ones no error (MTL612, MTL614, MTL615) names (src/rules/heading.ts).
    */
   readonly tail: readonly Section[];
 }
 
 /**
- * How one template heading relates to a target (spec 2.6 "Levels, parents and scope"), in one
+ * How one template heading relates to a target (docs/grammar.md "Levels, parents and scope"), in one
  * scope. A template heading has one entry per scope it is matched in (in section scope, one per
  * entry of its template parent: per parent match or instance) and, in that scope, one entry
  * per INSTANCE of a repeat heading (spec 2.10 "Repeat rules": every instance is a match for
@@ -212,7 +212,7 @@ export interface HeadingMatch {
   /** FILE: H1, H2 or no template parent; SECTION: H3 to H6 with a template parent. */
   readonly scope: "file" | "section";
   /**
-   * The positional match (spec 2.6 "Match of T"): the sibling its position took
+   * The positional match (docs/grammar.md "Match of T"): the sibling its position took
    * in `run` (for a repeat heading: the instance of this entry). Null when the position took
    * nothing or only a mismatch (`MTL606`), when the heading is not checked and for a
    * `[presence:template-only]` heading (not a position).
@@ -245,7 +245,7 @@ export interface HeadingMatch {
   readonly setAside: Section | null;
 }
 
-/** File scope (spec 2.6): an H1 or H2, or a heading without template parent. */
+/** File scope (docs/grammar.md "Scope"): an H1 or H2, or a heading without template parent. */
 export const isFileScope = (section: Section): boolean => section.level <= 2 || section.parent === null;
 
 /**
@@ -348,7 +348,7 @@ export function matchHeadings(template: DocumentModel, target: DocumentModel): H
     const own: HeadingMatch[] = [];
     for (const parentItem of parents) {
       const parentMatch = parentItem?.match ?? null;
-      // Spec 2.6 "Checked": a heading with an invalid pattern (MTL014) is never checked, and
+      // docs/grammar.md "Checked": a heading with an invalid pattern (MTL014) is never checked, and
       // neither are its section-scope descendants (their parent is not checked).
       const checked = !hasInvalidPattern(section) && (parentItem === undefined || (parentItem.checked && parentMatch !== null && headingPresence(parentItem.section) !== "template-only"));
       let run: HeadingRun | null = null;

@@ -106,7 +106,7 @@ describe("document structure", () => {
     expect(headings(result.body).map((h) => h.text)).toEqual(["Real", "After"]);
   });
 
-  it("keeps headings inside a multi-line HTML comment (legacy limitation)", () => {
+  it("keeps headings inside a multi-line HTML comment (known limitation)", () => {
     const result = doc("<!--", "## Inside", "-->");
     expect(headings(result.body).map((h) => h.text)).toEqual(["Inside"]);
   });

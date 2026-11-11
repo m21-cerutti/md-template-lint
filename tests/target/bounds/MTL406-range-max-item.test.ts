@@ -10,7 +10,7 @@ const registry = createRegistry();
 const CODE = "MTL406";
 const DIR = "tests/fixtures/pairs/MTL406";
 
-/** Spec 4.3 message of MTL406: Python list of the items as written, parsed bound. */
+/** Spec 4.3 message of MTL406: list text of the items as written, parsed bound. */
 const message = (key: string, items: string, max: string): string => `Field '${key}': item(s) ${items} are above range:max ${max}`;
 
 interface TestCase {
@@ -62,9 +62,9 @@ const CASES: readonly TestCase[] = [
     expected: [message("offsets", "['-2', '-2.5']", "-3")],
     warnings: [],
   },
-  // The bound is printed as Python prints the parsed number (spec 4.3 notes).
+  // The bound is printed as the parsed number (spec 4.3 notes).
   {
-    name: "fail-bounds-print-as-python-parsed-numbers",
+    name: "fail-bounds-print-as-parsed-numbers",
     expected: [
       message("leading_zeros", "['99']", "7"),
       message("trailing_zero_float", "['99']", "2.5"),
@@ -105,7 +105,7 @@ const CASES: readonly TestCase[] = [
     // Spec 2.9: `date_list` is a list-of-date field without [format:elements:date].
     warnings: ["MTL016"],
   },
-  // Legacy takes the leftmost tag: [max:1] wins over a later [max:9] and
+  // The leftmost tag wins: [max:1] wins over a later [max:9] and
   // [max:9] wins over a later [max:1].
   {
     name: "fail-first-maximum-tag-wins",

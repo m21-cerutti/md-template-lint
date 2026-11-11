@@ -9,8 +9,8 @@ What kinds of test the project has, where they live, how fixtures are named and 
 helpers exist, and the order of the gates. Test runner: `vitest` (`pnpm test` is
 `vitest run --passWithNoTests`). Tests never use the network and never read a real configuration.
 
-Related: [Adding a rule](adding-a-rule.md) (the tests of a new rule, step 6),
-[architecture.md](../architecture.md#tests-rule-cases) (the layout tables),
+Related: [Adding a rule](adding-a-rule.md) (the tests of a new rule, written first: step 4),
+[fixtures and case names](#fixtures-and-case-names) (the layout),
 [CONTRIBUTING.md](../../CONTRIBUTING.md#tests), [glossary](../glossary.md).
 
 ## The five kinds of test
@@ -171,6 +171,6 @@ written from the code only proves the code does what it does. Write the case tab
 
 - [Adding a rule](adding-a-rule.md), [Adding a tag](adding-a-tag.md),
   [Grammar and listeners](grammar-and-listeners.md).
-- [architecture.md: tests of config, runner, reporters and io](../architecture.md#tests-of-config-runner-reporters-and-io)
+- [architecture.md: runner and config](../architecture.md#runner-and-config)
   and [consistency check](../architecture.md#consistency-check).
 - [CONTRIBUTING.md](../../CONTRIBUTING.md#quality-gates), [glossary](../glossary.md).

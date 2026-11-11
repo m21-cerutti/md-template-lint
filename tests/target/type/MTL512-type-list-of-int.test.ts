@@ -58,14 +58,14 @@ const CASES: readonly TestCase[] = [
     name: "fail-blank-and-whitespace-items",
     expected: [entries("ids", "['', '   ', '']")],
   },
-  // A nested list or mapping item prints as its Python str, then repr-quoted.
+  // A nested list or mapping item prints as its value text, then repr-quoted.
   {
-    name: "fail-nested-list-and-mapping-items-print-as-python-text",
+    name: "fail-nested-list-and-mapping-items-print-as-value-text",
     expected: [entries("ids", `["['2', '3']", "{'a': '1'}"]`)],
   },
-  // Python repr quoting of the printed items.
+  // Repr quoting of the printed items.
   {
-    name: "fail-items-with-quote-characters-use-python-repr-quoting",
+    name: "fail-items-with-quote-characters-use-repr-quoting",
     expected: [entries("ids", `["it's", 'say "hi"', 'both \\' and "']`)],
   },
   // Errors follow the template key order, not the target order.

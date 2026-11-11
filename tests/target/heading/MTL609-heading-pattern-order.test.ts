@@ -161,7 +161,7 @@ const CASES: readonly TestCase[] = [
   { name: "pass-invalid-pattern-gives-no-order-finding", expected: [] },
   { name: "pass-repeat-tag-without-pattern-gives-no-order-finding", expected: [] },
   { name: "pass-order-tag-without-repeat-tag-gives-no-order-finding", expected: [] },
-  // Spec 2.6 "Checked": parent absent (MTL601), parent taken as a mismatch (MTL606),
+  // docs/grammar.md "Checked": parent absent (MTL601), parent taken as a mismatch (MTL606),
   // template-only parent (MTL603): the child is not checked, never reported.
   { name: "pass-child-under-absent-parent-is-not-checked", expected: [] },
   { name: "pass-child-under-mismatched-parent-is-not-checked", expected: [] },

@@ -2,7 +2,7 @@
  * Family `heading suffix` (spec 2.6). A VISITOR over bodyHeading that returns
  * the level and the text items, plus the peeling of trailing tags.
  *
- * Legacy `(.+?)\s*(<!--.*-->)?\s*$`: a trailing one-line HTML comment is
+ * Heading text, `(.+?)\s*(<!--.*-->)?\s*$`: a trailing one-line HTML comment is
  * dropped. Tags are peeled from the right while the text ends in a valid body
  * tag; only the single leftover trailing bracket can give a finding.
  */

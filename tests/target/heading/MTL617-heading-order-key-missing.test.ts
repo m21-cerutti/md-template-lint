@@ -34,7 +34,7 @@ interface TestCase {
 /**
  * Spec 4.3: `{in}{count} heading(s) have no {kind} to order by {tag}, use a [pattern:...] with
  * {placeholder}: {pylist}`. `{kind}` and `{placeholder}` are separate literals, so a source that
- * swaps or derives one from the other wrongly is caught. `pylist` defaults to the plain
+ * swaps or derives one from the other wrongly is caught. `listText` defaults to the plain
  * single-quoted texts; a case with quotes, backslashes or non-ASCII text passes it as written.
  */
 const keyMissing = (
@@ -44,9 +44,9 @@ const keyMissing = (
   texts: readonly string[],
   line: number,
   parent: string | null = null,
-  pylist: string = `[${texts.map((text) => `'${text}'`).join(", ")}]`,
+  listText: string = `[${texts.map((text) => `'${text}'`).join(", ")}]`,
 ): Expected => ({
-  message: `Heading: ${parent === null ? "" : `Section '${parent}': `}${texts.length} heading(s) have ` + `no ${kind} to order by ${tag}, use a [pattern:...] with ${placeholder}: ${pylist}`,
+  message: `Heading: ${parent === null ? "" : `Section '${parent}': `}${texts.length} heading(s) have ` + `no ${kind} to order by ${tag}, use a [pattern:...] with ${placeholder}: ${listText}`,
   line,
   heading: texts[0] ?? "",
 });
@@ -107,7 +107,7 @@ const CASES: readonly TestCase[] = [
   },
   // Invalid pattern (MTL014): no repeat heading, no repeat set.
   { name: "pass-invalid-pattern-gives-none", expected: [] },
-  // Spec 2.6 "Checked": parent absent (MTL601), parent taken as a mismatch (MTL606),
+  // docs/grammar.md "Checked": parent absent (MTL601), parent taken as a mismatch (MTL606),
   // template-only parent (MTL603): the child is not checked, never reported.
   { name: "pass-child-under-absent-parent-is-not-checked", expected: [] },
   { name: "pass-child-under-mismatched-parent-is-not-checked", expected: [] },
@@ -148,7 +148,7 @@ const CASES: readonly TestCase[] = [
   // The order tag sits on a `[presence:template-only]` heading: no pattern heading, its pattern,
   // repeat and order tags are ignored (MTL015, spec 2.10 "Presence" table): no repeat set.
   { name: "pass-template-only-heading-gives-none", expected: [] },
-  // `{pylist}` is a Python repr list (Q02): `Step it's` holds `'` and no `"`, so it is
+  // `{pylist}` is a repr-quoted list (Q02): `Step it's` holds `'` and no `"`, so it is
   // double-quoted; `Étape` stays as is; the backslash of `Step a\b` is doubled.
   {
     name: "fail-quote-backslash-and-non-ascii-texts-escaped",

@@ -1,8 +1,8 @@
 /**
  * The all-levels section model (docs/spec.md 2.6, change C10, docs/adr/0009-all-heading-levels.md):
  * `Section.endLine`, `Section.parent` (src/engine/load.ts) and the scope, match and `checked`
- * flag of `matchHeadings` (src/engine/model.ts). The match is POSITIONAL (spec 2.6 "Match of T",
- * 2.10 "Positional match", ADR 0012): the template headings of one level and scope take the
+ * flag of `matchHeadings` (src/engine/model.ts). The match is POSITIONAL (docs/grammar.md "Match of
+ * T", spec 2.10 "Positional match", ADR 0012): the template headings of one level and scope take the
  * siblings of that scope in order, adjacent, with no skipping. Every expected value below is
  * derived by hand from the spec definitions, not from the code. Body line 1 is file line 5 (the
  * frontmatter takes lines 1 to 4), so the `L<n>` comments are file lines. The positional run
@@ -48,7 +48,7 @@ const must = <T>(value: T | undefined): T => {
   return value;
 };
 
-describe("Section.endLine and Section.parent (spec 2.6 'Levels, parents and scope')", () => {
+describe("Section.endLine and Section.parent (docs/grammar.md 'Levels, parents and scope')", () => {
   const BODY = [
     "# One", //                 L5
     "", //                      L6
@@ -170,7 +170,7 @@ describe("matchHeadings scope (spec 2.6: FILE scope for H1, H2 and no template p
   it("an H2 before the template H2 shifts the run: the parent has no match, its H3 is not checked", () => {
     // Spec 2.10 step 3b: the level-2 position `Context` looks only at the next sibling, `Other`
     // (L6); it does not match, so `Context` takes nothing and is missing. `### Decision` has a
-    // parent without match: not checked (2.6 "Checked").
+    // parent without match: not checked (docs/grammar.md "Checked").
     const result = matched(
       ["# Guide", "## Context", "### Decision"],
       [
@@ -312,7 +312,7 @@ describe("matchHeadings scope (spec 2.6: FILE scope for H1, H2 and no template p
     // An H3 after an H2 of the template: `### A` leads (file), `### C` follows `## B` (section).
     // File-scope level-3 run: the sequence is `A` only; the H3 siblings of the whole file are
     // `C` (L6) and `A` (L7). `A` looks at the first one, `C`: no match, so `A` is missing (an
-    // extra before the heading is not skipped, 2.6 "Extra").
+    // extra before the heading is not skipped, docs/grammar.md "Extra").
     const mixed = matched(["### A", "## B", "### C"], ["## B", "### C", "### A"]);
     expect(must(mixed.get("A"))).toMatchObject({ scope: "file", match: null });
     expect(must(mixed.get("B"))).toMatchObject({ scope: "file", match: 5 });
@@ -363,7 +363,7 @@ describe("matchHeadings scope (spec 2.6: FILE scope for H1, H2 and no template p
   });
 });
 
-describe("matchHeadings checked flag (spec 2.6 'Checked')", () => {
+describe("matchHeadings checked flag (docs/grammar.md 'Checked')", () => {
   const TEMPLATE = [
     "# Guide", //                                    0
     "## Missing", //                                 1
@@ -394,8 +394,8 @@ describe("matchHeadings checked flag (spec 2.6 'Checked')", () => {
       expect(must(result.get(text)).checked, text).toBe(true);
     }
     expect(must(result.get("Missing")).match).toBeNull();
-    // `Draft` is `[presence:template-only]`: not a position, so it has no match (2.6 "Match of
-    // T"); its sibling (L6) is set aside (2.10 step 1) and does not shift the level-2 run.
+    // `Draft` is `[presence:template-only]`: not a position, so it has no match (docs/grammar.md
+    // "Match of T"); its sibling (L6) is set aside (spec 2.10 step 1) and does not shift the level-2 run.
     expect(must(result.get("Draft")).match).toBeNull();
     // Level-2 positions: Missing, Opt, Cond, Here (no Draft). The only free sibling, `Here`
     // (L8), is looked at by Missing, Opt and Cond in turn (no match, nothing taken), then taken.

@@ -56,7 +56,7 @@ const CASES: readonly TestCase[] = [
     name: "fail-mapping-value-never-matches",
     expected: [message("status", "draft", "{'state': 'draft'}")],
   },
-  // Legacy `re.search`: the first constant tag of a field wins.
+  // The first constant tag of a field wins.
   {
     name: "fail-first-constant-tag-wins",
     expected: [message("status", "draft", "final")],

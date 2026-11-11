@@ -48,7 +48,7 @@ change ships as a breaking release (0.2.0) without a compatibility flag.
 - **Disallow tag.** `[content:subheadings:disallow]` on any template heading forbids target
   headings that the template does not list anywhere in the matched section (whole subtree).
   Only the topmost unlisted heading of a stray subtree is reported. There is no `allow` tag.
-- **Release policy.** Breaking change, shipped in release 0.2.0, migration note in `docs/migration.md`
+- **Release policy.** Breaking change, shipped in release 0.2.0, migration note in [ADR 0014](0014-legacy-behaviour-catalogue.md)
   (phase A72g), no compatibility flag or config switch.
 - **Note (2026-11-04).** Superseded in part: `[presence:exist]` was removed in phase Pc.
   It is now a malformed tag (`MTL012`) and `MTL602` is retired and

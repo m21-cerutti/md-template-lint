@@ -41,7 +41,7 @@ only checks the syntax of templates.
 - A flag that needs a value (`--config`, `--format`) and gets none (nothing follows, the next argument
   starts with `--`, or the value is empty) is `MTL921`. An unknown option is `MTL920`. Both exit 2 and print
   a hint. The legacy flags `--pattern`, `--dir`, `--ignore` and `--base-dir` do not exist (see
-  [migration.md](migration.md)).
+  [ADR 0014](adr/0014-legacy-behaviour-catalogue.md)).
 - `--help` and the text-format `--verify` report end with the line `Template syntax reference: <URL>`, a
   link to [syntax-reference.md](syntax-reference.md).
 

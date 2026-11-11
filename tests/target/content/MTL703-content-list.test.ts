@@ -24,7 +24,7 @@ const CASES = [
     // One [content:list] section per shape: `- a`, `* a`, `+ a`, `1. a`, `12) a`,
     // Arabic-Indic digit (U+0663) and fullwidth digit (U+FF13) markers, a tab and
     // an ideographic space (U+3000) after the marker, U+3000 before it, and a
-    // deeply indented nested item (all Python `\d` / `\s` matches).
+    // deeply indented nested item (all `\d` / `\s` Unicode matches).
     name: "pass-list-marker-and-whitespace-shapes",
     expected: [],
     warnings: [],
@@ -41,7 +41,7 @@ const CASES = [
   },
   {
     // Also `²)` (category No), `Ⅳ.` (category Nl), and a marker followed only by
-    // U+200B or U+FEFF (not whitespace for Python).
+    // U+200B or U+FEFF (not in the whitespace set).
     name: "fail-unsupported-marker-styles",
     expected: [MESSAGE],
     warnings: [],

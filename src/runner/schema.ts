@@ -16,7 +16,7 @@
  * first tag
  * (spec 2.1). Presence is ALWAYS the first rule, as the effective mode (spec 2.2 and 2.6
  * precedence; `required` when no presence tag is written), and a conditional one carries
- * its text: `presence:conditional:<detail>` (the legacy `describe()`).
+ * its text: `presence:conditional:<detail>`.
  */
 import { presenceMode, type DocumentModel, type Field, type Section } from "../engine/model.js";
 import { orderToken } from "../engine/pattern.js";

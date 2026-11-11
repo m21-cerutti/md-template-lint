@@ -1,5 +1,5 @@
 /**
- * Python `str.isspace()` whitespace set in the content rules MTL701-MTL705
+ * Unicode whitespace set (`isUnicodeSpace`) in the content rules MTL701-MTL705
  * (src/rules/content.ts, docs/spec.md 2.6). The characters are built from
  * code points, so this file stays plain ASCII (the Write tool cannot store
  * U+001C-001F, U+0085 or the no-break space class in a fixture file).
@@ -15,14 +15,14 @@ const registry = createRegistry();
 const range = (from: number, to: number): number[] => Array.from({ length: to - from + 1 }, (_, index) => from + index);
 
 /**
- * Python whitespace the rules must treat as blank: tab, vertical tab, form
+ * Whitespace of the set the rules must treat as blank: tab, vertical tab, form
  * feed, the C0 separators, NEL, NBSP and the Unicode spaces. LF is the line
  * separator and CR never reaches a rule: the loader turns CRLF and a lone CR
  * into LF first (spec 1.1, `normalizeLineEnds`), so U+000D has no test here.
  */
 const BLANK: readonly number[] = [0x09, ...range(0x0b, 0x0c), ...range(0x1c, 0x1f), 0x85, 0xa0, 0x1680, ...range(0x2000, 0x200a), 0x2028, 0x2029, 0x202f, 0x205f];
 
-/** Neighbours of every range edge of the set: not whitespace for Python. */
+/** Neighbours of every range edge of the set: not in the whitespace set. */
 const NOT_BLANK: readonly number[] = [0x08, 0x0e, 0x1b, 0x21, 0x84, 0x86, 0xa1, 0x167f, 0x1681, 0x1fff, 0x2010, 0x2027, 0x202e, 0x2030, 0x205e, 0x2060, 0x2fff, 0x3001];
 
 const label = (codePoint: number): string => `U+${codePoint.toString(16).toUpperCase().padStart(4, "0")}`;

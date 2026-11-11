@@ -11,15 +11,15 @@ deciders: [owner]
 Every script and tool config is TypeScript. Scripts run with `node scripts/x.ts`
 (Node type stripping). `engines.node` is `>=22.18`.
 
-> Superseded in part by [ADR 0007](0007-tsx-script-runner.md) (2026-10-30): scripts now run
-> through `tsx` (`tsx scripts/x.ts`), not Node type stripping. TypeScript scripts, `jiti` for
-> `eslint.config.ts` and `engines.node` `>=22.18` stand. The text below is the record of the
-> original decision and still says `node scripts/x.ts`.
->
-> The "erasable syntax only" script rule and the `erasableSyntaxOnly` option of
-> `tsconfig.scripts.json` were lifted in phase A69 (2026-10-30): scripts run through `tsx`,
-> which compiles enums, namespaces and parameter properties, so the rule no longer applies.
-> Mentions of it below are historical record only.
+> **Relation to ADR 0007.** [ADR 0007](0007-tsx-script-runner.md) (2026-10-30) supersedes
+> this ADR in part and this ADR stays `accepted` for the rest. Superseded by ADR 0007: the
+> runner choice (Node type stripping, rejection of `tsx`), the "erasable syntax only" script
+> rule, and the `erasableSyntaxOnly` option of `tsconfig.scripts.json`. Scripts now run through
+> `tsx` (`tsx scripts/x.ts`), which compiles enums, namespaces and parameter properties. Still
+> in force: every script and tool config is TypeScript, `jiti` for `eslint.config.ts`,
+> `engines.node` `>=22.18`, the `import type` and `.ts` extension rules, the tsconfig layout
+> and the guideline on `.js` files. The text below is the record of the original decision and
+> still says `node scripts/x.ts`; mentions of the erasable-syntax rule are historical only.
 
 ## Context
 
@@ -67,7 +67,7 @@ imports need the `.ts` extension.
 - Scripts are type-checked by `pnpm run typecheck` and linted by `pnpm run lint:ts`.
 - Contributors need Node 22.18 or newer (the dev tools, not the shipped `dist/`, need it).
 - A script that uses an enum or a parameter property fails twice: `tsc -p tsconfig.scripts.json` and Node itself.
-- `node scripts/*.ts` is covered by the existing `node scripts/*` shell allow rule in `opencode.jsonc`.
+- `node scripts/*.ts` was covered by an existing `node scripts/*` shell allow rule of the project permission config (superseded: scripts run through `tsx`, ADR 0007).
 - Editors without a TypeScript-aware ESLint loader need `jiti` installed (it is a devDependency).
 
 ## Alternatives considered

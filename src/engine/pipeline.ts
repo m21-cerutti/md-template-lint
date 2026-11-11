@@ -100,8 +100,8 @@ function byStep<R extends FieldRule | TargetRule>(rules: readonly R[], steps: re
  * Order of the `headings` step (spec 4.1 step 5, 4.3 "heading"): the findings
  * about one template heading (MTL601, MTL603, MTL605 to MTL610, MTL614, MTL617;
  * MTL611 on its parent; MTL612 and MTL615 on the tagged heading; MTL616 on the
- * last position of its run) in template heading order, as the legacy validator
- * emits them, then the findings that concern no single heading (MTL604 and
+ * last position of its run) in template heading order,
+ * then the findings that concern no single heading (MTL604 and
  * MTL613, which carry no template anchor). A heading rule anchors its finding
  * on the template heading line (`position`).
  * The sort is stable, so one heading keeps registry order. The anchor is only a
@@ -130,7 +130,7 @@ function byTemplateHeading(diagnostics: readonly Diagnostic[], template: Documen
 }
 
 /**
- * Order of the `io` step of one field (spec 2.8, legacy `_check_io_exists`):
+ * Order of the `io` step of one field (spec 2.8):
  * one finding per list item, in ITEM order across the codes MTL801 to MTL805,
  * not grouped by rule. The io rules tag each finding with its item index
  * (`reportItem`); the sort is stable, so one item keeps registry order. The
@@ -141,7 +141,7 @@ function byItemIndex(diagnostics: readonly Diagnostic[]): Diagnostic[] {
 }
 
 /**
- * Order of the `content` step (spec 4.1 step 6, legacy `validate_content`): one
+ * Order of the `content` step (spec 4.1 step 6): one
  * finding per template section, in SECTION order across the codes MTL701 to
  * MTL705, not grouped by rule. The content rules tag each finding with its
  * template section index (`reportSection`); the sort is stable, so one section

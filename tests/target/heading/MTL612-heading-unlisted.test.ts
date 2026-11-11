@@ -152,7 +152,7 @@ const CASES: readonly TestCase[] = [
     expected: [unlisted("Context", "Draft", 3, 13)],
   },
   {
-    // A tag on a `[pattern:"{text}"]` heading applies to the sibling its position took (spec 2.6
+    // A tag on a `[pattern:"{text}"]` heading applies to the sibling its position took (docs/grammar.md
     // "Match of T": the match is the sibling taken; ADR 0012): `## Whatever`. `First` is listed,
     // `Third` is not. (Inside ONE run two positions never share a sibling, but two tagged
     // template headings of the same level in different scopes can: see the next case.)
@@ -222,7 +222,7 @@ const CASES: readonly TestCase[] = [
 /**
  * Every code of the pass- cases (not only MTL612), derived from the fixtures and the spec:
  * the tag-guard cases give the MTL601/MTL603 their own rules require, an extra in the tail of
- * a run that no error names gives the warning MTL616 (spec 2.6 "Extra"), the rest are clean.
+ * a run that no error names gives the warning MTL616 (docs/grammar.md "Extra"), the rest are clean.
  */
 const PASS_CODES: Readonly<Record<string, readonly string[]>> = {
   "pass-listed-headings-not-reported": [],

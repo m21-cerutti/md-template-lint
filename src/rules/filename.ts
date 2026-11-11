@@ -7,7 +7,7 @@ import type { Diagnostic } from "../engine/model.js";
 import { matchesCaseStyle, valueText } from "../engine/values.js";
 
 /**
- * File name stem of a target path, as Python `Path(path).stem`: the last path
+ * File name stem of a target path: the last path
  * segment without its last extension. A leading dot is not an extension
  * (`.md` keeps its name) and a trailing dot is not either (`a.` keeps it).
  */

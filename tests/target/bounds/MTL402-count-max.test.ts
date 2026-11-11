@@ -55,7 +55,7 @@ const CASES: readonly TestCase[] = [
     expected: [message("tags", 1, 0)],
     warnings: [],
   },
-  // Legacy takes the leftmost tag: [max:1] wins over a later [max:9] and
+  // The leftmost tag wins: [max:1] wins over a later [max:9] and
   // [max:9] wins over a later [max:1].
   {
     name: "fail-first-maximum-tag-wins",

@@ -3,8 +3,8 @@
  * presence and order. Heading suffix tags are spec 2.6; the evaluation order
  * is spec 4.1 step 5. Every message carries the prefix `Heading: `.
  *
- * Every rule reads the positional run of `matchHeadings` (spec 2.6 "Match of
- * T", 2.10 "Positional match", ADR 0012): the template headings of one level
+ * Every rule reads the positional run of `matchHeadings` (docs/grammar.md "Match
+ * of T", spec 2.10 "Positional match", ADR 0012): the template headings of one level
  * and scope take the siblings of that level and scope in order, at the exact
  * level (change C10). MTL601 and MTL604 look at file-scope template
  * headings only; MTL603 at the first sibling each checked template-only
@@ -29,14 +29,14 @@
 import { defineRule, report, setAnchorLine, type AnyRule } from "../engine/rule.js";
 import { headingMatches, headingPattern, headingPresence, isRepeatHeading, matchHeadings, type Diagnostic, type DocumentModel, type HeadingMatch, type HeadingRun, type Section } from "../engine/model.js";
 import { compareOrderKeys, failingPiece, orderKey, orderTagText, type OrderTag } from "../engine/pattern.js";
-import { pyRepr } from "../engine/values.js";
+import { reprValue } from "../engine/values.js";
 import type { PatternPiece, SourcePosition } from "../tags/ast.js";
 
 /**
  * Template anchor of a heading finding (MTL601 to MTL603, MTL610 to MTL612):
  * the line of the template heading it is about (MTL611: the parent, MTL612:
  * the tagged heading). The pipeline stable-sorts the `headings` step
- * by it (legacy interleaving in template heading order) and then clears it,
+ * by it (interleaving in template heading order) and then clears it,
  * so it never reaches a reporter as a location in the target.
  */
 const anchor = (section: Section): SourcePosition => ({ line: section.line, column: 1 });
@@ -69,7 +69,7 @@ const pieceText = (piece: PatternPiece): string => (piece.kind === "placeholder"
 
 /**
  * Checked required file-scope template headings without a match. A file-scope heading is
- * unchecked only when its pattern is invalid (MTL014, spec 2.6 "Checked"). A pattern heading
+ * unchecked only when its pattern is invalid (MTL014, docs/grammar.md "Checked"). A pattern heading
  * is never MTL601: MTL605 replaces it (spec 2.10 "Presence").
  */
 function missingInFile(matches: readonly HeadingMatch[]): HeadingMatch[] {
@@ -154,8 +154,8 @@ const headingOrder = defineRule({
     const indices = fileScope.flatMap((item) => (item.match === null ? [] : [targets.indexOf(item.match)]));
     if (indices.slice(1).every((index, before) => (indices[before] ?? 0) <= index)) return [];
     const deepest = Math.max(2, ...fileScope.map((item) => item.section.level));
-    const templateOrder = pyRepr(fileScope.map((item) => item.section.text));
-    const targetOrder = pyRepr(targets.filter((section) => section.level <= deepest).map((section) => section.text));
+    const templateOrder = reprValue(fileScope.map((item) => item.section.text));
+    const targetOrder = reprValue(targets.filter((section) => section.level <= deepest).map((section) => section.text));
     return [report(headingOrder, `Heading: Heading order mismatch: template order ${templateOrder} vs target order ${targetOrder}`)];
   },
 });
@@ -369,7 +369,7 @@ const headingOrderKeyMissing = defineRule({
       const kind = order.by.slice("first-".length);
       const diagnostic = report(
         headingOrderKeyMissing,
-        `Heading: ${scopePrefix(item)}${keyless.length} heading(s) have no ${kind} to order by ` + `${orderTagText(order)}, use a [pattern:...] with {${kind}}: ` + pyRepr(keyless.map((instance) => instance.text)),
+        `Heading: ${scopePrefix(item)}${keyless.length} heading(s) have no ${kind} to order by ` + `${orderTagText(order)}, use a [pattern:...] with {${kind}}: ` + reprValue(keyless.map((instance) => instance.text)),
         anchor(section),
       );
       return [setAnchorLine({ ...diagnostic, heading: first.text }, first.line)];
@@ -402,7 +402,7 @@ const headingRepeatMiss = defineRule({
       if (first === undefined) return [];
       const diagnostic = report(
         headingRepeatMiss,
-        `Heading: ${scopePrefix(item)}${misses.length} heading(s) match ` + `[pattern:"${writtenPattern(section)}"] after the end of its run ` + `[repeat-rules:same-level]: ${pyRepr(misses.map((heading) => heading.text))}`,
+        `Heading: ${scopePrefix(item)}${misses.length} heading(s) match ` + `[pattern:"${writtenPattern(section)}"] after the end of its run ` + `[repeat-rules:same-level]: ${reprValue(misses.map((heading) => heading.text))}`,
         anchor(section),
       );
       return [setAnchorLine({ ...diagnostic, heading: first.text }, first.line)];
@@ -471,8 +471,8 @@ const headingOrderInSection = defineRule({
       const indices = children.flatMap((item) => (item.match === null ? [] : [targets.indexOf(item.match)]));
       if (indices.slice(1).every((index, before) => (indices[before] ?? 0) <= index)) return [];
       const deepest = Math.max(...children.map((item) => item.section.level));
-      const templateOrder = pyRepr(children.map((item) => item.section.text));
-      const targetOrder = pyRepr(targets.filter((heading) => heading.line > match.line && heading.line <= match.endLine && heading.level <= deepest).map((heading) => heading.text));
+      const templateOrder = reprValue(children.map((item) => item.section.text));
+      const targetOrder = reprValue(targets.filter((heading) => heading.line > match.line && heading.line <= match.endLine && heading.level <= deepest).map((heading) => heading.text));
       const diagnostic = report(headingOrderInSection, `Heading: Section '${match.text}': heading order mismatch: ` + `template order ${templateOrder} vs target order ${targetOrder}`, anchor(section));
       // Spec 8.1: `heading` is the target parent text (the pipeline keeps it).
       return [setAnchorLine({ ...diagnostic, heading: match.text }, match.line)];
@@ -663,7 +663,7 @@ const headingSubheadingsOnlyDeclared = defineRule({
 const isReportedEmpty = (section: Section | undefined): boolean => section !== undefined && headingPresence(section) === "required" && headingPattern(section) === null && section.text === "";
 
 /**
- * The tail of each run (spec 2.6 "Extra", 2.10 step 4, owner decision 4 of A72l): the extra
+ * The tail of each run (docs/grammar.md "Extra", spec 2.10 step 4, owner decision 4 of A72l): the extra
  * headings that no error names are ONE warning per run (one sequence in one scope: once per
  * level in file scope, once per level and per parent match or instance in section scope), in
  * file order. Left out, decided before suppression (4.1 step 8): the tail siblings MTL614 lists
@@ -724,7 +724,7 @@ const headingExtra = defineRule({
     found.sort((a, b) => a.last.line - b.last.line || a.first.line - b.first.line);
     return found.map(({ run, last, extras, first }) => {
       const scope = run.scope === "section" && run.parentMatch !== null ? `Section '${run.parentMatch.text}': ` : "";
-      const diagnostic = report(headingExtra, `Heading: ${scope}${extras.length} extra heading(s) at level H${run.level} after the ` + `template headings: ${pyRepr(extras.map((heading) => heading.text))}`, anchor(last));
+      const diagnostic = report(headingExtra, `Heading: ${scope}${extras.length} extra heading(s) at level H${run.level} after the ` + `template headings: ${reprValue(extras.map((heading) => heading.text))}`, anchor(last));
       return setAnchorLine({ ...diagnostic, heading: first.text }, first.line);
     });
   },

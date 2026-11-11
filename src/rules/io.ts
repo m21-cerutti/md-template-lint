@@ -4,7 +4,7 @@
  * only through `env.io` (src/engine/rule.ts), so tests inject an in-memory io.
  * EVERY finding is a warning. Codes: MTL801 to MTL805.
  *
- * Order (legacy `_check_io_exists`): one finding per item, in item order across
+ * Order: one finding per item, in item order across
  * the five codes. Each rule tags its findings with the item index (`reportItem`)
  * and the pipeline stable-sorts the `io` step of a field by it.
  */
@@ -43,7 +43,7 @@ function split(path: string): Parts {
   return { prefix, segments };
 }
 
-/** Printed and probed form: the joined path, `..` NOT folded (legacy `root / remainder`). */
+/** Printed and probed form: the joined path, `..` NOT folded. */
 function unfolded(parts: Parts): string {
   const body = parts.segments.join("/");
   return body === "" && parts.prefix === "" ? "." : `${parts.prefix}${body}`;
@@ -80,8 +80,8 @@ function isInside(path: string, directory: string): boolean {
 }
 
 /**
- * A resolved location: `resolved` is the printed text (unfolded, legacy
- * parity); `probe` is the path handed to `env.io.exists`, FOLDED, so the file
+ * A resolved location: `resolved` is the printed text (unfolded);
+ * `probe` is the path handed to `env.io.exists`, FOLDED, so the file
  * system is asked about the same path the containment test judged.
  */
 interface Location {
@@ -132,7 +132,7 @@ function planPath(context: FieldContext, value: string): Action {
  * `[io:exists]` and has type `path`, `list-of-path`, `url` or `list-of-url`
  * (a no-op on every other type, so `path-alias` fields are not handled here).
  * A list type with a non-list value is skipped. Blank and non-string items are
- * skipped; the others are trimmed (legacy `_check_io_exists`). `index` is the
+ * skipped; the others are trimmed. `index` is the
  * position in the list (0 for a scalar).
  */
 function plans(context: FieldContext): Plan[] {
@@ -229,7 +229,7 @@ const pathMissing = defineRule({
   },
 });
 
-/** At most `REASON_MAX_LENGTH` characters, cut with `...` (legacy `probe_url_reachable`). */
+/** At most `REASON_MAX_LENGTH` characters, cut with `...`. */
 const shortReason = (reason: string): string => (reason.length > REASON_MAX_LENGTH ? `${reason.slice(0, REASON_MAX_LENGTH - 3)}...` : reason);
 
 /**

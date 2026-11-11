@@ -4,13 +4,13 @@
  */
 import { defineRule, report, type AnyRule, type FieldContext } from "../engine/rule.js";
 import { isList, type Diagnostic } from "../engine/model.js";
-import { DATE_PARTS, FLOAT_PATTERN, isOngoingMarker, isValidDateValue, pyRepr, stripPythonSpace } from "../engine/values.js";
+import { DATE_PARTS, FLOAT_PATTERN, isOngoingMarker, isValidDateValue, reprValue, stripUnicodeSpace } from "../engine/values.js";
 import type { FrontmatterValueTag } from "../tags/ast.js";
 
 /**
- * Value of the FIRST `[count:<bound>:N]` tag of the template field (legacy
- * `re.search` takes the leftmost one; tags are in source order), or null. A
- * malformed N is not a tag: the parser reports it as MTL012 only.
+ * Value of the FIRST `[count:<bound>:N]` tag of the template field (the
+ * leftmost one; tags are in source order), or null. A malformed N is not a
+ * tag: the parser reports it as MTL012 only.
  */
 function countBound(context: FieldContext, bound: "min" | "max"): number | null {
   for (const tag of context.templateField.comment?.tags ?? []) {
@@ -66,9 +66,9 @@ const countMax = defineRule({
 type RangeTag = Extract<FrontmatterValueTag, { readonly kind: "range" }>;
 
 /**
- * The FIRST `[range:<bound>:N]` tag of the template field (legacy `re.search`
- * takes the leftmost one; tags are in source order), or null. A malformed N is
- * not a tag: the parser reports it as MTL012 only.
+ * The FIRST `[range:<bound>:N]` tag of the template field (the leftmost one;
+ * tags are in source order), or null. A malformed N is not a tag: the parser
+ * reports it as MTL012 only.
  */
 function rangeTag(context: FieldContext, bound: "min" | "max"): RangeTag | null {
   for (const tag of context.templateField.comment?.tags ?? []) {
@@ -78,13 +78,13 @@ function rangeTag(context: FieldContext, bound: "min" | "max"): RangeTag | null 
 }
 
 /**
- * Python `repr(float)` (spec 4.3): shortest round-trip digits, fixed notation
+ * Text of a float (spec 4.3): shortest round-trip digits, fixed notation
  * while the decimal point position `decpt` (value = 0.DIGITS x 10^decpt) is in
  * -4 < decpt <= 16, else exponent form `d[.ddd]e[+-]XX` (at least 2 exponent
  * digits). A whole float keeps one decimal (`2.0`), `-0.0` keeps its sign.
  * Not JavaScript number formatting (`1e-7`, `1.5e+16` differ).
  */
-function pyFloatRepr(number: number): string {
+function floatRepr(number: number): string {
   if (!Number.isFinite(number)) return number > 0 ? "inf" : "-inf";
   const sign = number < 0 || Object.is(number, -0) ? "-" : "";
   const magnitude = Math.abs(number);
@@ -104,27 +104,25 @@ function pyFloatRepr(number: number): string {
 }
 
 /**
- * The bound as Python prints the parsed number (spec 4.3, legacy
- * `parse_numeric_bound`): an integer bound (no `.`) in plain decimal, exact for
- * any size (`007` -> 7, `-0` -> 0), a float bound as `repr(float)`.
+ * The bound as the parsed number (spec 4.3): an integer bound (no `.`) in
+ * plain decimal, exact for any size (`007` -> 7, `-0` -> 0), a float bound as
+ * `floatRepr`.
  */
 function printBound(tag: RangeTag): string {
-  return tag.isFloat ? pyFloatRepr(tag.value) : BigInt(tag.text).toString();
+  return tag.isFloat ? floatRepr(tag.value) : BigInt(tag.text).toString();
 }
 
 /**
- * The number a text stands for, or null (legacy `_is_float_str` then
- * `float()`): the text stripped of Python whitespace must match
- * `-?digits(.digits)?`. No exponent, no leading plus, no `inf` or `nan`. ASCII
- * digits only (Python `\d` also takes other Unicode decimal digits; accepted
- * deviation, like the other number rules of the port).
+ * The number a text stands for, or null: the text stripped of whitespace
+ * (`stripUnicodeSpace`) must match `-?digits(.digits)?`. No exponent, no
+ * leading plus, no `inf` or `nan`. ASCII digits only.
  */
 function numericValue(text: string): number | null {
-  const stripped = stripPythonSpace(text);
+  const stripped = stripUnicodeSpace(text);
   return FLOAT_PATTERN.test(stripped) ? Number(stripped) : null;
 }
 
-/** The list items that are numeric text and fail `isOutside` (legacy list branch), as written. */
+/** The list items that are numeric text and fail `isOutside`, as written. */
 function outsideItems(list: readonly unknown[], isOutside: (number: number) => boolean): string[] {
   const found: string[] = [];
   for (const item of list) {
@@ -136,7 +134,7 @@ function outsideItems(list: readonly unknown[], isOutside: (number: number) => b
 }
 
 /**
- * `[range:min:N]` on a scalar (spec 2.3, legacy `_check_numeric_range`): numeric
+ * `[range:min:N]` on a scalar (spec 2.3): numeric
  * text below N. NO type guard: a string-typed field is checked too. A mapping, a
  * list (see `rangeMinItem`) and non-numeric text are skipped silently. The
  * message shows the raw target text and the parsed bound (spec 4.3). The
@@ -180,7 +178,7 @@ const rangeMax = defineRule({
 
 /**
  * `[range:min:N]` on a list (spec 2.3): ONE error naming every numeric item
- * below N, as a Python list of the items as written. Items that are not numeric
+ * below N, as a bracketed list of the items as written. Items that are not numeric
  * text (including nested lists and mappings) are skipped. ANY list is checked,
  * not only `list-of-int`.
  */
@@ -197,7 +195,7 @@ const rangeMinItem = defineRule({
     if (tag === null || value === null || !isList(value)) return [];
     const below = outsideItems(value, (number) => number < tag.value);
     if (below.length === 0) return [];
-    return [report(rangeMinItem, `Field '${context.key}': item(s) ${pyRepr(below)} are below range:min ${printBound(tag)}`)];
+    return [report(rangeMinItem, `Field '${context.key}': item(s) ${reprValue(below)} are below range:min ${printBound(tag)}`)];
   },
 });
 
@@ -215,24 +213,24 @@ const rangeMaxItem = defineRule({
     if (tag === null || value === null || !isList(value)) return [];
     const above = outsideItems(value, (number) => number > tag.value);
     if (above.length === 0) return [];
-    return [report(rangeMaxItem, `Field '${context.key}': item(s) ${pyRepr(above)} are above range:max ${printBound(tag)}`)];
+    return [report(rangeMaxItem, `Field '${context.key}': item(s) ${reprValue(above)} are above range:max ${printBound(tag)}`)];
   },
 });
 
-/** Sort key of the ongoing marker: after every real date (legacy `_DATE_SORT_INFINITY`). */
+/** Sort key of the ongoing marker: after every real date. */
 const ONGOING_SORT_KEY = 99991231;
 
 /**
- * Comparable `YYYYMMDD` number of a date item, or null (legacy `date_sort_key`):
+ * Comparable `YYYYMMDD` number of a date item, or null:
  * not a string or not a calendar-valid date (`isValidDateValue`) gives null. A
  * bare `YYYY` sorts as `YYYY-01-01`, `YYYY-MM` as `YYYY-MM-01`, `DD/MM/YYYY` by
  * its calendar date, and the ongoing marker (`present`, `présent`, any case)
  * as 9999-12-31, so it ties with a real 9999-12-31. The text is stripped of
- * Python whitespace first, as legacy.
+ * whitespace first (`stripUnicodeSpace`).
  */
 function dateSortKey(item: unknown): number | null {
   if (typeof item !== "string") return null;
-  const candidate = stripPythonSpace(item);
+  const candidate = stripUnicodeSpace(item);
   if (isOngoingMarker(candidate)) return ONGOING_SORT_KEY;
   if (!isValidDateValue(candidate)) return null;
   for (const { shape, pick } of DATE_PARTS) {
@@ -247,7 +245,7 @@ function dateSortKey(item: unknown): number | null {
 }
 
 /**
- * `[order:ascending]` (spec 2.3, legacy `_check_order_ascending`): on a field of
+ * `[order:ascending]` (spec 2.3): on a field of
  * type `list-of-date` (declared or inferred from the TEMPLATE), adjacent dates
  * must be in non-decreasing order. One error per decreasing adjacent pair, in
  * list order. Items that are not valid dates are skipped, so the pair is formed

@@ -99,7 +99,7 @@ const CASES: readonly VerifyCase[] = [
   // not in it, so the two `{semver}` headings are adjacent (spec 2.7).
   fail({ name: "fail-same-pattern-h2-separated-by-h3" }, samePattern("B", "{semver}", "A", 5, 9, 6, '## B [pattern:"{semver}"]')),
   // Headings without template parent are file scope at any level: two leading H3 headings
-  // form one sequence (spec 2.6 "Sequence").
+  // form one sequence (docs/grammar.md "Sequence").
   fail({ name: "fail-two-leading-h3-with-same-pattern" }, samePattern("B", "{semver}", "A", 5, 7, 7, '### B [pattern:"{semver}"]')),
   // Two H1 headings with the same text are one file-scope sequence of level 1.
   fail({ name: "fail-two-h1-with-same-text" }, sameText("Doc", "Doc", 5, 7, 3, "# Doc")),

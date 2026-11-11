@@ -40,8 +40,8 @@ const CASES = [
   },
   {
     // 4 text lines plus lines holding only U+200B, U+180E and U+FEFF (none is
-    // whitespace for Python `str.isspace`) count 7; the U+3000 line does not.
-    // Swapping isPythonSpace for String.trim would drop U+FEFF and give 6.
+    // whitespace set) count 7; the U+3000 line does not.
+    // Swapping `isUnicodeSpace` for String.trim would drop U+FEFF and give 6.
     name: "fail-unicode-whitespace-lines-not-counted",
     expected: [message(8, 7)],
     warnings: [],
@@ -74,7 +74,7 @@ const CASES = [
     warnings: [],
   },
   {
-    // Legacy takes the leftmost tag: [min-lines:4] wins over the later [min-lines:1].
+    // The leftmost tag wins: [min-lines:4] wins over the later [min-lines:1].
     name: "fail-first-minimum-tag-wins",
     expected: [message(4, 2)],
     warnings: [],

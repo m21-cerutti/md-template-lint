@@ -163,7 +163,7 @@ describe("type hints", () => {
     ]);
   });
 
-  it("finds YYYY-MM-DD as a case-sensitive substring, like legacy", () => {
+  it("finds YYYY-MM-DD as a case-sensitive substring", () => {
     for (const text of ["dateYYYY-MM-DD", "YYYY-MM-DDThh", "x_YYYY-MM-DD_y", "(YYYY-MM-DD)"]) {
       expect(parseInlineComment(text).hints.map((h) => h.kind)).toEqual(["date-placeholder"]);
     }
@@ -223,7 +223,7 @@ describe("heading suffix", () => {
       { region: "body", kind: "presence", mode: "optional" },
       { region: "body", kind: "content-lines", bound: "min", value: 3 },
     ]);
-    // The leftover trailing bracket is tag-shaped and unknown (legacy split_heading_tags).
+    // The leftover trailing bracket is tag-shaped and unknown.
     expect(result.findings).toMatchObject([{ region: "body", reason: "unknown", tag: "[x]", subject: { heading: "Overview [x]" } }]);
     expect(parseHeadingSuffix("Overview (x) [presence:optional]").findings).toEqual([]);
   });

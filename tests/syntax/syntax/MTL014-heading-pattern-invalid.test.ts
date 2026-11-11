@@ -173,7 +173,7 @@ describe("MTL014 heading-pattern-invalid (--verify)", { tags: ["MTL014", "syntax
   }
 });
 
-describe("MTL014 in a lint run (spec 2.6 Checked, 2.10, DIR6)", { tags: ["MTL014", "syntax"] }, () => {
+describe("MTL014 in a lint run (docs/grammar.md Checked, spec 2.10, DIR6)", { tags: ["MTL014", "syntax"] }, () => {
   const head = "---\ntitle: x\n---\n\n";
 
   it("is never printed in a lint run and a directive naming it is MTL022 (DIR6)", async () => {
@@ -264,8 +264,8 @@ describe("MTL014 in a lint run (spec 2.6 Checked, 2.10, DIR6)", { tags: ["MTL014
     expect(await lint(template, target)).toEqual([]);
   });
 
-  // Spec 2.10 step 1 sets siblings aside only for a CHECKED template-only heading, and spec 2.6
-  // says a heading with an invalid pattern is not checked: its text sets nothing aside, so a
+  // Spec 2.10 step 1 sets siblings aside only for a CHECKED template-only heading, and docs/grammar.md
+  // "Checked" says a heading with an invalid pattern is not checked: its text sets nothing aside, so a
   // target sibling with that text is an ordinary sibling (here it blocks position C).
   it("a template-only heading with an invalid pattern sets nothing aside", async () => {
     const template = `${head}# Guide\n\n## A\n\n## Notes [presence:template-only] [pattern:"{x}"]\n\n## C\n`;

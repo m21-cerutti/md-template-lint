@@ -13,8 +13,8 @@ const DIR = "tests/fixtures/pairs/MTL308";
 /** The other codes of the format family: none may fire in any case (tag isolation). */
 const OTHER_FORMAT_CODES = ["MTL301", "MTL302", "MTL303", "MTL304", "MTL305", "MTL306", "MTL307"];
 
-/** Spec 4.3 message of MTL308; `pylist` is the Python list of the bad items. */
-const message = (key: string, pylist: string): string => `Field '${key}': list contains entries not matching [format:elements:semver]: ${pylist}`;
+/** Spec 4.3 message of MTL308; `listText` is the list text of the bad items. */
+const message = (key: string, listText: string): string => `Field '${key}': list contains entries not matching [format:elements:semver]: ${listText}`;
 
 interface Finding {
   readonly message: string;
@@ -69,7 +69,7 @@ const CASES: readonly TestCase[] = [
   },
   // Items tested as their text (as MTL303): a nested list is listed.
   {
-    name: "fail-nested-list-item-listed-as-python-text",
+    name: "fail-nested-list-item-listed-as-value-text",
     expected: [{ message: message("supported", `["['1.0.0']"]`), line: 2 }],
   },
   // `[format:elements:semver] [format:elements:date]`: semver is first, so it runs.
@@ -85,10 +85,10 @@ const CASES: readonly TestCase[] = [
       { message: message("tested", "['next']"), line: 2 },
     ],
   },
-  // Spec 2.9: a mapping item is tested as its Python text and listed as that text (Q02:
+  // Spec 2.9: a mapping item is tested as its value text and listed as that text (Q02:
   // the text holds `'` and no `"`, so its repr uses double quotes).
   {
-    name: "fail-mapping-item-listed-as-python-text",
+    name: "fail-mapping-item-listed-as-value-text",
     expected: [{ message: message("supported", `["{'a': '1.0.0'}"]`), line: 2 }],
   },
   // Every bad item is listed, a duplicate twice, the empty string as ''.

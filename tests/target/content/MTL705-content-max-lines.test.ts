@@ -52,16 +52,16 @@ const CASES = [
     warnings: [],
   },
   {
-    // 4 text lines plus lines holding only U+200B and U+180E (not whitespace for
-    // Python `str.isspace`) count 6; the U+3000 line does not. A wider
-    // isPythonSpace range (U+200B, U+180E) would give 4.
+    // 4 text lines plus lines holding only U+200B and U+180E (not in the
+    // whitespace set) count 6; the U+3000 line does not. A wider
+    // `isUnicodeSpace` range (U+200B, U+180E) would give 4.
     name: "fail-unicode-whitespace-lines-not-counted",
     expected: [message(3, 6)],
     warnings: [],
   },
   {
-    // A line holding only U+FEFF is NOT blank in Python (`str.isspace`), but
-    // `String.trim` would strip it: swapping isPythonSpace for trim gives 3, not 4.
+    // A line holding only U+FEFF is NOT blank in the whitespace set, but
+    // `String.trim` would strip it: swapping `isUnicodeSpace` for trim gives 3, not 4.
     name: "fail-bom-only-line-is-non-blank",
     expected: [message(3, 4)],
     warnings: [],
@@ -96,7 +96,7 @@ const CASES = [
     warnings: [],
   },
   {
-    // Legacy takes the leftmost tag: [max-lines:2] wins over the later [max-lines:9].
+    // The leftmost tag wins: [max-lines:2] wins over the later [max-lines:9].
     name: "fail-first-maximum-tag-wins",
     expected: [message(2, 3)],
     warnings: [],

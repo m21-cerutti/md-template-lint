@@ -73,7 +73,7 @@ const CASES: readonly TestCase[] = [
   // An invalid pattern (MTL014) or a repeat tag without pattern (MTL015): no repeat heading.
   { name: "pass-invalid-pattern-is-no-repeat-heading", expected: [] },
   { name: "pass-repeat-tag-without-pattern-is-ignored", expected: [] },
-  // Spec 2.6 "Checked": a section-scope child is checked only under a checked, matched, not
+  // docs/grammar.md "Checked": a section-scope child is checked only under a checked, matched, not
   // template-only parent; an unchecked child is never reported (one cause, one finding).
   // Parent absent (MTL601), parent taken as a mismatch (MTL606), template-only parent.
   { name: "pass-child-under-absent-parent-is-not-checked", expected: [] },

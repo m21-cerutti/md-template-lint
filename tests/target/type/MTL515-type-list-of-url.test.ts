@@ -67,7 +67,7 @@ const CASES: readonly TestCase[] = [
     scheme: [],
   },
   // Space and tab inside, then each forbidden authority character; the
-  // backslash is doubled and the tab escaped by the Python repr.
+  // backslash is doubled and the tab escaped by the repr.
   {
     name: "fail-spaces-and-forbidden-authority-characters",
     expected: [
@@ -87,9 +87,9 @@ const CASES: readonly TestCase[] = [
     expected: [entries("urls", "['', '   ', '']")],
     scheme: [],
   },
-  // A nested list or mapping item prints as its Python str, then repr-quoted.
+  // A nested list or mapping item prints as its value text, then repr-quoted.
   {
-    name: "fail-nested-list-and-mapping-items-print-as-python-text",
+    name: "fail-nested-list-and-mapping-items-print-as-value-text",
     expected: [entries("urls", `["['https://b.example']", "{'u': 'https://c.example'}"]`)],
     scheme: [],
   },

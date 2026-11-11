@@ -10,7 +10,8 @@ last_updated: 2026-09-06 # [presence:required] [format:date] [date]
 - Save as `docs/ai-capabilities.md`. Keep the frontmatter, delete this
   section and every `[tag:...]` marker from the heading lines.
 - List only PROJECT-LOCAL capabilities in the tables. Global capabilities
-  live outside the repository: keep the one pointer line, never list them.
+  live in the user's own opencode configuration: keep the one pointer line
+  (no personal path), never list them.
 - Write "None." under a heading with no entries; do not delete the heading.
 - Update this file whenever a capability is added, renamed or removed.
 
@@ -77,8 +78,4 @@ Global agents, skills, commands and MCPs are configured per user, outside this r
 
 ## Verification [content:non-empty]
 
-Validate the capability definitions after any change:
-
-```bash
-python path/to/opencode-lint/scripts/validate_opencode.py . --json
-```
+Validate the capability definitions after any change with the `opencode-lint` skill (command `/lint`).

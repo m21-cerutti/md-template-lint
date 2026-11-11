@@ -226,12 +226,12 @@ tagName
     : tagWord (DASH tagWord)*
     ;
 
-// Legacy inert marker `[rule]` (spec 2.7).
+// Inert marker `[rule]` (spec 2.7).
 tagRuleMarker
     : LBRACK RULE RBRACK
     ;
 
-// Single-token bracket `[<word>]` (spec 2.4), legacy `\[[\w-]+\]`.
+// Single-token bracket `[<word>]` (spec 2.4), `\[[\w-]+\]`.
 tagBareBracket
     : LBRACK tagHintName RBRACK
     ;

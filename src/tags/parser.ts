@@ -538,7 +538,7 @@ function buildBodyBlock(session: ParseSession, block: BodyBlockContext): BodyBlo
       .map((item) => item.getText())
       .join("")
       .trim();
-    // Legacy `#{1,2}\s+(.+?)`: a heading needs text.
+    // A heading, `#{1,2}\s+(.+?)`, needs text.
     if (content === "") return { kind: "text", line, raw };
     const heading = buildHeadingText(session, items);
     session.collector.report(heading.findings);

@@ -84,7 +84,7 @@ describe("region separation", () => {
     ]);
   });
 
-  it("treats tags in inline code like legacy: found in a comment, not trailing a heading", () => {
+  it("treats tags in inline code as plain text: found in a comment, not trailing a heading", () => {
     const result = doc("---", "a: b # `[presence:optional]`", "---", "## H `[count:min:1]`");
     expect(result.findings).toEqual([]);
     const key = result.frontmatter?.lines[0];

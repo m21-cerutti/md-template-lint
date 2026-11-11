@@ -13,7 +13,7 @@ All notable changes to this project are listed here. The format follows
 ## [0.2.0] - 2026-11-05
 
 First release of the TypeScript port. It replaces the legacy Python linter and the
-PowerShell wrappers (see [docs/migration.md](docs/migration.md)).
+PowerShell wrappers (see [ADR 0014](docs/adr/0014-legacy-behaviour-catalogue.md)).
 
 ### Added
 
@@ -57,7 +57,7 @@ PowerShell wrappers (see [docs/migration.md](docs/migration.md)).
 - `MTL010` warning `Comment line {line}: unknown tag {tag}` for an unknown `[tag]` in a
   standalone comment line of the template frontmatter (for example `# [todo]`). `--verify` only,
   never changes the exit code. There is no escape: write the note without square brackets. See
-  "Bracketed words in frontmatter comments" in [docs/migration.md](docs/migration.md).
+  "Bracketed words in frontmatter comments" in [ADR 0014](docs/adr/0014-legacy-behaviour-catalogue.md).
 - `MTL601` message hint `found later at line N, out of order` when a sibling with the missing
   text comes later in the target.
 
@@ -68,36 +68,36 @@ PowerShell wrappers (see [docs/migration.md](docs/migration.md)).
   `### Context`. An untagged H3 to H6 template heading is now required in every target. A
   heading of level 3 to 6 with a template parent matches only inside the matched section of
   that parent (section scope). See "H3 and deeper headings are checked" in
-  [docs/migration.md](docs/migration.md).
+  [ADR 0014](docs/adr/0014-legacy-behaviour-catalogue.md).
 - BREAKING: headings are matched by position, not by search. The template headings of one
   level and scope take the target headings in order. An extra heading before or between
   template headings shifts the match, extras after the last one give the warning `MTL616`, and
   a swapped pair is `MTL601` with a hint. See "Headings are matched by position" in
-  [docs/migration.md](docs/migration.md).
+  [ADR 0014](docs/adr/0014-legacy-behaviour-catalogue.md).
 - BREAKING: template errors (`MTL017`, `MTL018`, `MTL019`, `MTL030`) are printed on the
   template file in lint runs, not in `--verify` only, and the run exits 1. The targets are
   still linted. See "Headings are matched by position" in
-  [docs/migration.md](docs/migration.md).
+  [ADR 0014](docs/adr/0014-legacy-behaviour-catalogue.md).
 - `MTL610` reports a required heading of level 3 to 6 that is missing in the section of its
   parent. Its second message form is gone with `[presence:exist]`.
 - `MTL616` no longer fires for a run of only required exact-text template headings with empty
   text (the template-body line `# [unique-headings-names]`); only `MTL601` reports it.
 - BREAKING: `{int}` is renamed `{digits}`. `{int}` is now an unknown placeholder (`MTL014`).
-  See "Other changes for heading tags" in [docs/migration.md](docs/migration.md).
+  See "Other changes for heading tags" in [ADR 0014](docs/adr/0014-legacy-behaviour-catalogue.md).
 - BREAKING: order tags `[order:ascending]` and `[order:descending]` compare the heading text,
   not a number inside it. Use `[order:first:number|date|semver:...]` to order by a value. See
-  "Other changes for heading tags" in [docs/migration.md](docs/migration.md).
+  "Other changes for heading tags" in [ADR 0014](docs/adr/0014-legacy-behaviour-catalogue.md).
 - BREAKING: the `{text}` case formats `snakecase`, `camelcase`, `screamcase` and `kebabcase`
   refuse digits-only text and need at least one letter. Use `{digits}` for such text. See
-  "Other changes for heading tags" in [docs/migration.md](docs/migration.md).
+  "Other changes for heading tags" in [ADR 0014](docs/adr/0014-legacy-behaviour-catalogue.md).
 - BREAKING: the global alias file `approved_path.yml` is replaced by the config keys `aliases`
   and `approvedPaths`. See "Aliases and approved paths" in
-  [docs/migration.md](docs/migration.md).
+  [ADR 0014](docs/adr/0014-legacy-behaviour-catalogue.md).
 
 ### Removed
 
 - BREAKING: the `[presence:exist]` tag. Use a heading pattern such as `[pattern:"{text}"]`.
-  See "The `exist` presence tag is removed" in [docs/migration.md](docs/migration.md).
+  See "The `exist` presence tag is removed" in [ADR 0014](docs/adr/0014-legacy-behaviour-catalogue.md).
 - Rule `MTL602` (heading-level-missing). The code is reserved and never reused.
 - The parity harness, the corpus and the legacy wrappers.
 

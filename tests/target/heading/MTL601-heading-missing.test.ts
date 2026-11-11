@@ -130,7 +130,7 @@ const CASES = [
   },
   {
     // Spec 2.10 step 3b: the sibling `Alpha` (line 7) is set aside by the template-only `Alpha`
-    // (MTL603), so it is outside the run and not named: the legacy message.
+    // (MTL603), so it is outside the run and not named: the plain message.
     name: "fail-set-aside-same-text-sibling-gives-no-hint",
     fixture: "tests/fixtures/pairs/MTL601/fail-set-aside-same-text-sibling-gives-no-hint",
     expected: ["Heading: Missing required heading: 'Alpha'"],
@@ -187,7 +187,7 @@ describe("MTL601 heading-missing", { tags: ["MTL601", "heading"] }, () => {
     expect(await codes("pass-missing-section-scope-h3-is-not-mtl601")).toEqual(["MTL610"]);
     expect(await codes("fail-leading-h3-without-template-parent-is-file-scope")).toEqual(["MTL601"]);
     expect(await codes("pass-leading-h3-without-template-parent-matches-anywhere-in-file")).toEqual([]);
-    // `## Other` is left in the tail of the level-2 run: the warning MTL616 (spec 2.6 "Extra").
+    // `## Other` is left in the tail of the level-2 run: the warning MTL616 (docs/grammar.md "Extra").
     expect(await codes("fail-h2-under-missing-h1-is-still-reported")).toEqual(["MTL601", "MTL601", "MTL616"]);
   });
 

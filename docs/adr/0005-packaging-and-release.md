@@ -25,7 +25,7 @@ says tag `<version>`, `X.Y.Z` or "release tag", it means that rule.
 
 ## Context
 
-Phase A30 prepares the first release. Facts that shape the decision:
+The first release needs a packaging and release design. Facts that shape the decision:
 
 - `engines.node` is `>=22.18` ([ADR 0004](0004-typescript-scripts.md)); the package manager is
   pnpm ([ADR 0003](0003-pnpm.md)).
@@ -55,7 +55,7 @@ Phase A30 prepares the first release. Facts that shape the decision:
   temp project outside the repository, then runs the installed `bin`. Tarball check: required
   `package.json`, `README.md`, `LICENSE`, `CHANGELOG.md`, `THIRD_PARTY_NOTICES.md`,
   `dist/cli.js`, `dist/index.js`; forbidden any `.map`, any file outside `dist/` and those five root files, and
-  anything under `tests/`, `scripts/`, `src/`, `legacy/`, `tmp/`. CLI check, through the real shim
+  anything under `tests/`, `scripts/`, `src/`, `tmp/`. CLI check, through the real shim
   of `node_modules/.bin` (`.cmd` on Windows, started with quoted arguments, never with raw
   `shell: true`) and once with `node <bin file>`: `--version` (exit 0, prints the package version
   and a newline), a copy of the synthetic fixture project `tests/fixtures/smoke/clean-project`
@@ -95,7 +95,13 @@ Phase A30 prepares the first release. Facts that shape the decision:
   restores no cache (`setup-node` without `cache`), so a poisoned cache entry from an earlier run
   cannot reach the artifact. The only actions left are GitHub-owned (`actions/*`), pinned by major
   tag. `tests/unit/smoke/workflows.test.ts` asserts that `pnpm/action-setup` and `cache` are
-  absent from `release.yml`.
+  absent from `release.yml`. Caveat (amended 2026-11-11): `pnpm-workspace.yaml` allows the
+  install script of `esbuild` (`allowBuilds: esbuild: true`, a `tsx` dependency,
+  [ADR 0007](0007-tsx-script-runner.md)), so that script runs in `verify` on every
+  `pnpm install --frozen-lockfile`. A compromised script could alter the tarball that `verify`
+  uploads and `publish` signs with provenance. The frozen lockfile (pinned version and
+  integrity hash) is the protection; the absence of `id-token` in `verify` limits token theft,
+  not artifact tampering. The owner has yet to confirm the allowance.
 - **Environment `release`.** The publish job declares `environment: release`. The owner configures
   it in the repository settings (Settings, Environments, `release`): required reviewers (a human
   approves every publish), a deployment branch and tag rule that allows only tags matching
@@ -132,12 +138,14 @@ Phase A30 prepares the first release. Facts that shape the decision:
   (valid YAML, permissions, matrix, no secret, provenance in the release workflow only) and by the
   first real run on GitHub, which is not verified yet.
 - The smoke test reads the synthetic project `tests/fixtures/smoke/clean-project`
-  (`SMOKE_PROJECT` in `scripts/smoke-pack.ts`; repointed in phase A39).
+  (`SMOKE_PROJECT` in `scripts/smoke-pack.ts`; repointed when the frozen legacy data was removed).
   `tests/unit/smoke/helpers.test.ts` checks that it lints clean.
-- CI uses `pnpm/action-setup@v6` with pnpm 11; its README recommends `pnpm/setup` for pnpm 11+.
-  If that step fails on GitHub, switching is a one-step change (CI only). The release workflow's
-  `corepack enable` with pnpm 11 is also unverified until the first run (a dry run through
-  `workflow_dispatch` tests it without publishing).
+- CI uses `pnpm/action-setup@v6` without a version input, so it installs the version named by
+  `packageManager` in `package.json` (pnpm 11 when this was written; `pnpm@12.18.0` on 2026-11-11);
+  its README recommends `pnpm/setup` for pnpm 11+. If that step fails on GitHub, switching is a
+  one-step change (CI only). The release workflow's `corepack enable` reads the same
+  `packageManager` field (`pnpm@12.18.0` on 2026-11-11, not a fixed pnpm 11) and is unverified
+  until the first run (a dry run through `workflow_dispatch` tests it without publishing).
 - The owner must configure the `release` environment (reviewers, tag rule `[0-9]*.[0-9]*.[0-9]*`) and tag
   protection; the workflow cannot enforce them.
 - Follow-ups: pin actions by full commit SHA (with Dependabot for github-actions updates); a

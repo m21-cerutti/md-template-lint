@@ -4,7 +4,7 @@
  * unknown, malformed and misplaced tags; and the same data as JSON (`filenameCase`, `fields`,
  * `headings`, `diagnostics`). Each case is a folder with `template.md` and two expected-output files,
  * `expected.plain.txt` (the whole plain output) and `expected.json` (the `templates` array),
- * written from the spec rules and the legacy `describe()`, not generated.
+ * written from the spec rules, not generated.
  * Fixtures: tests/fixtures/cli/schema-<case>/. "fail-" here means the schema reports tag
  * problems; they are warnings, so every case is exit 0, except a template ERROR (MTL017,
  * spec 2.7), which is exit 1 (`exitCode` of the case). The templates with no heading or no

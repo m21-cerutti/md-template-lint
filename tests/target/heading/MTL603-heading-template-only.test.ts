@@ -74,7 +74,7 @@ const CASES = [
     expected: [message("Draft notes")],
   },
   {
-    // Spec 2.6 "Checked", 2.10 step 3b: `## Other` comes first, so the level-2 position
+    // docs/grammar.md "Checked", spec 2.10 step 3b: `## Other` comes first, so the level-2 position
     // `Context` looks at it, does not match and takes nothing: no match for the parent, its
     // template-only child is not checked, and the `### Draft notes` of the file are free.
     name: "pass-template-only-h3-under-parent-shifted-by-extra-h2",
@@ -88,7 +88,7 @@ const CASES = [
     expected: [message("Draft")],
   },
   {
-    // Spec 2.6 "checked": the section-scope descendants of a template-only heading are never
+    // docs/grammar.md "Checked": the section-scope descendants of a template-only heading are never
     // checked, so only `Notes` (line 5) is reported, not the matched `### Draft` (line 7).
     name: "fail-template-only-child-of-matched-template-only-parent-is-not-checked",
     fixture: "tests/fixtures/pairs/MTL603/fail-template-only-child-of-matched-template-only-parent-is-not-checked",
@@ -101,7 +101,7 @@ const CASES = [
     expected: [],
   },
   {
-    // Spec 2.6 "checked": the parent `## Context` has no match, so the child is not checked.
+    // docs/grammar.md "Checked": the parent `## Context` has no match, so the child is not checked.
     name: "pass-template-only-h3-under-missing-parent",
     fixture: "tests/fixtures/pairs/MTL603/pass-template-only-h3-under-missing-parent",
     expected: [],

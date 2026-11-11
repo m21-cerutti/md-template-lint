@@ -120,7 +120,7 @@ const CASES: readonly TestCase[] = [
     ],
   },
   {
-    // Spec 2.6 "Extra", 2.10 step 3b: an H2 before `## Context` shifts the run. `Context` looks at
+    // docs/grammar.md "Extra", spec 2.10 step 3b: an H2 before `## Context` shifts the run. `Context` looks at
     // `## Other`, takes nothing and is missing (MTL601): its child `### Decision` is not checked
     // (no MTL610), though a `### Decision` sits under the extra `## Other` and under `Context`.
     name: "pass-parent-shifted-by-an-extra-heading-gives-no-finding",

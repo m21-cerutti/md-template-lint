@@ -52,7 +52,7 @@ const CASES: readonly TestCase[] = [
     name: "fail-value-has-trailing-space",
     expected: [message("code_name", "release_notes ", "snake_case")],
   },
-  // Legacy `re.search`: the first case tag of a field wins.
+  // The first case tag of a field wins.
   {
     name: "fail-first-case-tag-wins",
     expected: [message("slug", "release-notes", "snake_case")],

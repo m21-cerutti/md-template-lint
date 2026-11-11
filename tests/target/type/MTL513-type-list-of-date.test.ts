@@ -64,9 +64,9 @@ const CASES: readonly TestCase[] = [
     name: "fail-blank-and-whitespace-items",
     expected: [entries("dates", "['', '   ', '']")],
   },
-  // A nested list or mapping item prints as its Python str, then repr-quoted.
+  // A nested list or mapping item prints as its value text, then repr-quoted.
   {
-    name: "fail-nested-list-and-mapping-items-print-as-python-text",
+    name: "fail-nested-list-and-mapping-items-print-as-value-text",
     expected: [entries("dates", `["['2026-01-16']", "{'d': '2026-01-17'}"]`)],
   },
   // Errors follow the template key order, not the target order.

@@ -313,7 +313,7 @@ const UNANCHORED_PATH = "notes/Bad_Name.md";
  * its template-only heading, step 1). `Overview` looks at `Details`: missing. `Details` takes
  * it. `Context` looks at `Overview`: missing. So the swapped pair is TWO `MTL601`, and there is
  * no `MTL604` (a same-level swap cannot be an order error, 2.6 "Order"). `Overview` (L9) is
- * left in the tail: the warning `MTL616`, anchored on it (2.6 "Extra").
+ * left in the tail: the warning `MTL616`, anchored on it (docs/grammar.md "Extra").
  */
 const UNANCHORED_EXPECTED: readonly Expected[] = [
   { code: "MTL101", line: null }, // file name Bad_Name, [filename:case:kebab-case]
