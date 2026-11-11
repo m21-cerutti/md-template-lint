@@ -377,5 +377,4 @@ The full list of codes, messages and severities is in [spec.md](../spec.md) sect
 
 ## Notes
 
-- The former migration guide is removed from the working tree and is not kept in the published history.
 - The `type=<name>` comment hint was removed in commit `62fe76a` (grammar, tag visitors, tests and fixtures); the section "The `type=<name>` comment hint is removed" is the record of the change for users.

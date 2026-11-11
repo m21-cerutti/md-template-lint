@@ -29,19 +29,14 @@ Parity is closed. The following are removed:
 - `docs/PARITY_REPORT.md` and `tests/golden/DIFF.md`, which only described the harness run;
 - every mention of the parity gate in the README, CONTRIBUTING and `docs/`.
 
-The removed material is not kept in the published history:
-
-- The harness, its tests and fixtures (feat(parity): parity harness and diff classifier).
-- The final statement with the figures above, and the report and DIFF table of that date (docs: add final parity statement).
-
 At the time of this decision the frozen `legacy/`, `tests/corpus/` and `tests/golden/` data stayed, to be removed later together with the corpus and golden tests. `docs/research/wrapper-parity.md` stays as the research record of the legacy behaviour.
 
-Update (2026-10-30): that later removal is done, so the frozen data no longer exists in the working tree (this settles the "kept to prove parity" line of [ADR 0001](0001-genesis.md)). The frozen data, its capture scripts and the tests that read it are removed; the published history no longer holds the corpus or the goldens. `docs/research/wrapper-parity.md` is shrunk to a history note.
+Update (2026-10-30): that later removal is done, so the frozen data no longer exists in the working tree (this settles the "kept to prove parity" line of [ADR 0001](0001-genesis.md)). The frozen data, its capture scripts and the tests that read it are removed. `docs/research/wrapper-parity.md` is shrunk to a history note.
 
 ## Consequences
 
 - One gate fewer: `check:parser`, `check:rules`, `typecheck`, `lint`, `format:check`, `test` and `build`.
-- The comparison cannot be re-run from the working tree. The commits that held the harness were removed from the published history.
+- The comparison cannot be re-run from the working tree.
 - [ADR 0001](0001-genesis.md) and [ADR 0005](0005-packaging-and-release.md) still mention `pnpm run parity`. They carry a short update note pointing here; their decisions are not rewritten, and this record supersedes those mentions.
 - The documented divergences remain the decisions of [spec.md](../spec.md) section 5.
 
