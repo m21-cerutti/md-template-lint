@@ -5,7 +5,7 @@ last_updated: 2026-11-11
 
 # Glossary
 
-The terms of the code and the docs, grouped by theme and alphabetical inside each group (a leading `--` is ignored). Each entry names the type, file or key the term has in the code; when a term has no code name of its own, the entry says so. Back to the [docs index](README.md).
+The terms of the code and the docs, grouped by theme and alphabetical inside each group (a leading `--` is ignored). Each entry names the type, file or key the term has in the code; when a term has no code name of its own, the entry says so. Back to the [docs index](INDEX.md).
 
 <!-- prettier-ignore-start -->
 <!-- omit in toc -->

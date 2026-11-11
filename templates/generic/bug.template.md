@@ -1,5 +1,6 @@
 ---
 # [filename:case:snake_case]
+# [unique-headings-names]
 id: short_bug_title # [presence:required] [value:filename] [format:snake_case]
 title: Short description of the bug # [presence:required]
 status: draft | reported | fixed | wontfix # [presence:required]
@@ -20,32 +21,32 @@ tags: [tag-one, tag-two] # [presence:optional] [count:max:6] [format:elements:ke
 
 One or two sentences: what breaks and when.
 
-## Minimal Example [content:non-empty]
+## Minimal example [content:non-empty]
 
 The smallest input or command that triggers the bug. Use a code block.
 
-## How to Reproduce [content:list]
+## How to reproduce [content:list]
 
 1. Step one.
 2. Step two.
 
-## Expected vs Result [content:table]
+## Expected vs result [content:table]
 
 | Expected            | Result                |
 | ------------------- | --------------------- |
 | What should happen. | What happens instead. |
 
-## Context [presence:optional]
+## Context [presence:optional] [content:non-empty]
 
 Why it matters, what you were doing, links to related reports. Paste the exact
 error message in a code block.
 
-## Possible Fixes or Workarounds [presence:optional]
+## Possible fixes or workarounds [presence:optional] [content:non-empty]
 
 Ideas, patches, or a way to avoid the bug. Add the commit or file reference once
 fixed.
 
-## Notes [presence:optional]
+## Notes [presence:optional] [content:non-empty]
 
 Anything else: upstream status, follow-ups.
 
@@ -57,7 +58,13 @@ Anything else: upstream status, follow-ups.
 - Status values:
   - `draft`: written locally, not yet reported anywhere.
   - `reported`: filed upstream, `issue_url` set, waiting for a fix.
-  - `fixed`: resolved; fill Possible Fixes or Workarounds with the change.
+  - `fixed`: resolved; fill Possible fixes or workarounds with the change.
   - `wontfix`: closed on purpose; say why in Notes.
+- Headings are matched by exact level and exact text, in template order. Insert
+  no section between two template sections; add your own after the last one,
+  `Notes` (a warning, not an error). Delete the optional sections you do not
+  need.
+- For an empty required list write `- None.`; for an empty table write `None.`
+  in the first cell.
 - Never paste secrets, tokens or private paths into the example or environment.
 - Delete this section and every `[tag:...]` marker before saving.

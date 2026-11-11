@@ -1,4 +1,5 @@
 ---
+# [unique-headings-names]
 name: short-skill-name # [presence:required] [format:kebab-case]
 description: What the skill does and when to load it # [presence:required]
 compatibility: opencode # [presence:optional]
@@ -19,12 +20,12 @@ what it is NOT for, and name the neighbouring skill that covers that case.
 2. Second action.
 3. Check the result and report it.
 
-## Resources [content:list]
+## Resources [presence:optional] [content:non-empty] [content:list]
 
 - `scripts/example.ts`: what it does and how to run it.
 - `references/example.md`: when to read it.
 
-## Notes [presence:optional]
+## Notes [presence:optional] [content:non-empty]
 
 Limits, known gaps or follow-ups.
 
@@ -36,5 +37,8 @@ Limits, known gaps or follow-ups.
   Put the triggers in it, in one or two sentences.
 - Keep the body short. Move long material to `references/` and link it from
   Resources.
-- Resources lists only files that exist next to the skill. Check each path.
+- Resources is optional: delete it when the skill has no extra file. Check each path.
+- Headings are matched by exact level and exact text, in template order. Insert
+  no section between two template sections; add your own after the last one (a
+  warning, not an error). Delete the optional sections you do not need.
 - Delete this section and every `[tag:...]` marker before saving.

@@ -1,18 +1,18 @@
 ---
 title: AGENTS.md
-last_updated: 2026-11-04
+last_updated: 2026-11-11
 ---
 
 # AGENTS.md
 
-## Mandatory Instructions
+## Mandatory instructions
 
 - Never `git push` and never add a git remote. Pushing is a human step.
 - Never commit secrets; verify against `.gitignore` before every commit.
 - Run the quality gates below before every commit.
 - Mark a plan item done only after its verification passes.
 
-## Behavioral Principles
+## Behavioral principles
 
 - **Think Before Coding.** Don't assume. If a requirement has multiple
   interpretations, list them. If a simpler approach exists, say so.
@@ -32,13 +32,13 @@ last_updated: 2026-11-04
 - Do NOT ship personal paths or personal data in code, tests or docs.
 - Do NOT commit with `--no-verify`.
 
-## Project Purpose
+## Project purpose
 
 `md-template-lint` is a TypeScript/pnpm port of the Markdown template linter.
 It checks Markdown instance files against Markdown templates, with a
 per-project config and a lint-staged compatible CLI.
 
-## Tech Stack and Key Tools
+## Tech stack and key tools
 
 - **Language:** TypeScript, Node >=22.18 (ESM). Scripts and tool configs are `.ts` too (`tsx scripts/x.ts`, ADR 0007)
 - **Package manager:** `pnpm` (package `md-template-lint`)
@@ -47,15 +47,15 @@ per-project config and a lint-staged compatible CLI.
 - **Config:** per-project `md-template-lint.yml`
 - **Owner and license:** GitHub `m21-cerutti`, MIT, Copyright (c) 2026 Marc CERUTTI
 
-## Project Structure
+## Project structure
 
 - `grammar/` ANTLR lexer and parser grammars (`*.g4`) for every template tag.
 - `src/rules/<category>.ts` one file per rule category, stable `MTLxxx` codes.
 - `src/` engine core, config loader, runner, reporters, CLI.
 - `tests/` vitest suites.
-- `docs/` spec, architecture, ADRs, guides, disable directives (index: [docs/README.md](docs/README.md)); `templates/` doc templates.
+- `docs/` spec, architecture, ADRs, guides, disable directives (index: [docs/INDEX.md](docs/INDEX.md)); `templates/` doc templates.
 
-## How to Build and Test
+## How to build and test
 
 ```bash
 pnpm install --frozen-lockfile  # install dependencies
@@ -69,22 +69,22 @@ pnpm run check:rules && pnpm run lint && pnpm run format:check
 pnpm run build && pnpm run smoke:pack
 ```
 
-## Acceptance Criteria and Quality Gates
+## Acceptance criteria and quality gates
 
-- All gates in "How to Build and Test" pass
+- All gates in "How to build and test" pass
 - Changes documented (README, `docs/`, ADR for decisions)
 - Commit message follows Conventional Commits
 - No secrets committed (.env, keys, tokens)
 - Update CHANGELOG.md on braking changes or new features.
 
-## Error Handling and Recovery
+## Error handling and recovery
 
 - **Test failure:** find the root cause, fix, re-run before moving on.
 - **Type or lint error:** fix at the source; do not silence the checker.
 - **Missing information:** ask the user before guessing.
 - **Same error twice:** escalate to a higher-tier model instead of retrying, and add it to frictions encontered.
 
-## Agent Workflow
+## Agent workflow
 
 1. **Plan:** break multi-step work into items tracked in `tmp/PLAN.md`.
 2. **Execute:** one phase at a time; commit only after verification passes.

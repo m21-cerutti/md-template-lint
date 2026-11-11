@@ -26,7 +26,7 @@ Start with the [architecture](architecture.md) and the [glossary](glossary.md).
 | [guides/adding-a-tag.md](guides/adding-a-tag.md)                   | The five places of a new template tag, tests first, with a worked example and the checks.                                                                                                                                      |
 | [guides/grammar-and-listeners.md](guides/grammar-and-listeners.md) | The two grammars, the two parse stages, lexer modes, visitors, listeners, directives in the parser, the generated parser.                                                                                                      |
 | [guides/testing.md](guides/testing.md)                             | Syntax, target, unit, integration and consistency tests, fixtures, helpers, the gate order, scripts.                                                                                                                           |
-| [../tests/README.md](../tests/README.md)                           | The map of the test suite: families, folders, fixtures, the `pass-` / `fail-` rule, how to run them.                                                                                                                           |
+| [../tests/INDEX.md](../tests/INDEX.md)                             | The map of the test suite: families, folders, fixtures, the `pass-` / `fail-` rule, how to run them.                                                                                                                           |
 | [syntax-reference.md](syntax-reference.md)                         | Reference for writing templates: tag forms, heading patterns, type hints, disable directives with a complete example, error codes, enums. The tag, type hint, error and enum tables are generated (`pnpm run gen:syntax-doc`). |
 | [cli.md](cli.md)                                                   | The command line: flags, exit codes, output formats, `--verify`, file arguments, path and backslash handling.                                                                                                                  |
 | [configuration.md](configuration.md)                               | The `md-template-lint.yml` file: every key with type and default, pairs, paths, globs, `onEmpty`, the `io` options (`approvedPaths`, `aliases`, `allowPrivateNetworks`).                                                       |
@@ -50,7 +50,8 @@ Process: [../CONTRIBUTING.md](../CONTRIBUTING.md#decisions-adr-process).
 | [adr/0011-heading-patterns.md](adr/0011-heading-patterns.md)                       | `[pattern:"..."]`, `[repeat-rules:same-level]` and `[order:...]` on headings (`MTL014`, `MTL605` to `MTL609`, `MTL614`, `MTL617`, `MTL017`, `MTL018`); placeholder formats and `{char}`; `{digits}`, first-semver order, order without repeat `MTL030`.                          |
 | [adr/0012-positional-heading-matching.md](adr/0012-positional-heading-matching.md) | Headings match by position, as one adjacent run; `[content:subheadings:no-extra]` (`MTL615`); extra-heading warning (`MTL616`); `[presence:exist]` removed (now `MTL012`), `MTL602` retired and reserved, child order error `MTL019`, also for a parent with an invalid pattern. |
 | [adr/0013-unique-headings-names.md](adr/0013-unique-headings-names.md)             | Opt-in `[unique-headings-names]`, template-wide or per heading: each later duplicate heading name is `MTL613` (implemented).                                                                                                                                                     |
-| [adr/0014-legacy-behaviour-catalogue.md](adr/0014-legacy-behaviour-catalogue.md)   | Legacy defects D01 to D18 and changes C01 to C13; replace the legacy wrappers and `approved_path.yml` with one `md-template-lint.yml`; the breaking changes of 0.2.0 and how to fix a template.                                                                                  |
+| [adr/0014-legacy-behaviour-catalogue.md](adr/0014-legacy-behaviour-catalogue.md)   | Legacy defects D01 to D18 and changes C01 to C14; replace the legacy wrappers and `approved_path.yml` with one `md-template-lint.yml`; the breaking changes of 0.2.0 and how to fix a template.                                                                                  |
+| [adr/0015-optional-frontmatter.md](adr/0015-optional-frontmatter.md)               | Opt-in template frontmatter line: a target without frontmatter skips MTL001 and the field rules; misplaced tags are MTL031 (accepted).                                                                                                                                           |
 
 ## Research notes (history)
 
@@ -67,11 +68,11 @@ Process: [../CONTRIBUTING.md](../CONTRIBUTING.md#decisions-adr-process).
 
 ## Templates
 
-Document templates live in two folders, see [../templates/README.md](../templates/README.md). Check one with `md-template-lint --verify <file>`.
+Document templates live in two folders, see [../templates/INDEX.md](../templates/INDEX.md). Check one with `md-template-lint --verify <file>`.
 
 ### Generic templates
 
-Reusable skeletons in [../templates/generic/](../templates/generic/): copy one and adapt it. Pairs of this repository without a project variant use these directly.
+Reusable skeletons in [../templates/generic/](../templates/generic/): copy one and adapt it. CONTRIBUTING, AI_GUIDELINE, THIRD_PARTY_NOTICES and architecture carry an optional `Summary` table of contents. The frontmatter of README, TODO and INDEX is optional.
 
 | File                                                                                                         | For                                                                                             |
 | ------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
@@ -88,6 +89,9 @@ Reusable skeletons in [../templates/generic/](../templates/generic/): copy one a
 | [../templates/generic/CONTRIBUTING.template.md](../templates/generic/CONTRIBUTING.template.md)               | `CONTRIBUTING.md`: how to report, fork, test, commit and open a pull request.                   |
 | [../templates/generic/AI_GUIDELINE.template.md](../templates/generic/AI_GUIDELINE.template.md)               | `AI_GUIDELINE.md`: policy for AI-assisted contributions.                                        |
 | [../templates/generic/THIRD_PARTY_NOTICES.template.md](../templates/generic/THIRD_PARTY_NOTICES.template.md) | `THIRD_PARTY_NOTICES.md`: licences of bundled third-party code, one block per package.          |
+| [../templates/generic/research.template.md](../templates/generic/research.template.md)                       | Research note: question, sourced facts, cross-references, gaps, direct answer.                  |
+| [../templates/generic/research-tech.template.md](../templates/generic/research-tech.template.md)             | Technical solution comparison: fit-first metrics table, one recommendation, alternatives.       |
+| [../templates/generic/INDEX.template.md](../templates/generic/INDEX.template.md)                             | `INDEX.md` (or `README.md`) of a folder: its files grouped by purpose.                          |
 | [../templates/generic/ai/](../templates/generic/ai/)                                                         | AI configuration templates, listed below.                                                       |
 | [../templates/generic/ai/AGENTS.template.md](../templates/generic/ai/AGENTS.template.md)                     | `AGENTS.md`: rules, stack, build and test, quality gates for coding agents.                     |
 | [../templates/generic/ai/agent.template.md](../templates/generic/ai/agent.template.md)                       | Agent definition: description, mode, model, permissions, role, task, format.                    |
@@ -96,15 +100,14 @@ Reusable skeletons in [../templates/generic/](../templates/generic/): copy one a
 
 ### Project variants
 
-This repository's own variants in [../templates/](../templates/), used by `md-template-lint.yml`. Same file names as the generic ones; each differs as shown.
+This repository's own variants in [../templates/](../templates/), used by `md-template-lint.yml`. Each one is fitted to a file of this repository and differs from its generic template as shown.
 
-| File                                                                                         | Difference from the generic template                                                                |
-| -------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| [../templates/CHANGELOG.template.md](../templates/CHANGELOG.template.md)                     | Optional `Summary` table of contents and optional area headings (`Area`) inside the release groups. |
-| [../templates/CONTRIBUTING.template.md](../templates/CONTRIBUTING.template.md)               | Optional `Summary` table of contents; the first section is `Overview` (generic: `Summary`).         |
-| [../templates/AI_GUIDELINE.template.md](../templates/AI_GUIDELINE.template.md)               | Optional `Summary` table of contents.                                                               |
-| [../templates/THIRD_PARTY_NOTICES.template.md](../templates/THIRD_PARTY_NOTICES.template.md) | Optional `Summary` table of contents; the package table is `Packages` (generic: `Summary`).         |
-| [../templates/architecture.template.md](../templates/architecture.template.md)               | Optional `Summary` table of contents.                                                               |
+| File                                                                               | Difference from the generic template                                                                              |
+| ---------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| [../templates/CHANGELOG.template.md](../templates/CHANGELOG.template.md)           | Optional `Summary` table of contents and optional area headings (`Area`) inside the release groups.               |
+| [../templates/README.template.md](../templates/README.template.md)                 | The sections of this README (Description, Configuration, Template syntax, Security, Documentation and so on).     |
+| [../templates/research-note.template.md](../templates/research-note.template.md)   | Free-form history note: only the frontmatter (`title`, `last_updated`) and the H1 are fixed, no required section. |
+| [../templates/spec-technical.template.md](../templates/spec-technical.template.md) | The numbered sections of `docs/spec.md` (Model, Template tags, Types, Lint pipeline, CLI, Output and so on).      |
 
 ## Which doc for which question
 
@@ -114,7 +117,7 @@ This repository's own variants in [../templates/](../templates/), used by `md-te
 | Understand how a run works        | [architecture.md](architecture.md) (sequence diagram, run flow)                                      |
 | Add a rule or a tag               | [guides/adding-a-rule.md](guides/adding-a-rule.md), [guides/adding-a-tag.md](guides/adding-a-tag.md) |
 | Change the grammar or a directive | [guides/grammar-and-listeners.md](guides/grammar-and-listeners.md)                                   |
-| Write or run tests                | [guides/testing.md](guides/testing.md), [../tests/README.md](../tests/README.md)                     |
+| Write or run tests                | [guides/testing.md](guides/testing.md), [../tests/INDEX.md](../tests/INDEX.md)                       |
 | Write a new template              | [syntax-reference.md](syntax-reference.md) (codes, tags, enums, disable directives)                  |
 | Run the tool or read its output   | [cli.md](cli.md) (flags, exit codes, `--verify`)                                                     |
 | Write the config file             | [configuration.md](configuration.md) (keys, pairs, paths, globs, `io` options)                       |

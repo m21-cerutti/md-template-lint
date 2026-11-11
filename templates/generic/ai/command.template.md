@@ -1,5 +1,6 @@
 ---
 # [filename:case:kebab-case]
+# [unique-headings-names]
 description: One line shown in the command list # [presence:required]
 agent: agent-name # [presence:optional]
 model: provider/model-id # [presence:optional] [string]
@@ -42,4 +43,8 @@ described in Usage.
 - The Prompt section is what the agent receives. Write `$ARGUMENTS` where the
   user text goes; use `$1`, `$2` for single positional values.
 - Keep the prompt to one job. Chain several jobs with a skill, not a long prompt.
+- Headings are matched by exact level and exact text, in template order. Insert
+  no section between two template sections; add your own after the last one,
+  `Examples` (a warning, not an error). Delete the optional sections you do
+  not need.
 - Delete this section and every `[tag:...]` marker before saving.

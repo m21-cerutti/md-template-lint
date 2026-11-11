@@ -1,4 +1,5 @@
 ---
+# [unique-headings-names]
 last_updated: 2026-11-11 # [presence:required] [format:date] [date]
 ---
 
@@ -6,6 +7,10 @@ last_updated: 2026-11-11 # [presence:required] [format:date] [date]
 
 How [project name] treats contributions made with AI tools: code
 assistants, chat models, agents and bots.
+
+## Summary [presence:optional] [content:non-empty]
+
+- Table of contents: one link per section.
 
 ## Scope [content:non-empty]
 
@@ -64,6 +69,12 @@ Repeated low-quality submissions lead to a block.
 they follow. For example: maintainers are exempt from the disclosure rule
 but remain accountable for what they merge.]
 
+## Recommended opencode setup [presence:optional] [content:non-empty]
+
+[Optional tool setup for contributors who use the same AI tool as the
+maintainers: plugins, settings, rule files, each with a public link. Say what
+the repository loads by itself and what needs a per-machine install.]
+
 ## Rationale and references [content:non-empty]
 
 [Why the project allows AI tools with disclosure and human accountability:
@@ -79,10 +90,18 @@ projects, for comparison:
 - Pick the policy first: allow with disclosure (this skeleton), or ban. A ban
   needs a different `Principle`, `Disclosure` and `Enforcement`; keep the
   other section names.
-- Keep the order of the sections. `Maintainer use` is optional.
+- The `Summary` block with its `omit in toc` markers is optional. Its list is
+  maintained by the Markdown All in One extension, not by hand.
+- Headings are matched by exact level and exact text, in template order. Insert
+  no section between two template sections; add your own after the last one,
+  `Rationale and references` (a warning, not an error). `Maintainer use` and
+  `Recommended opencode setup` are optional.
 - Replace every bracketed placeholder, or delete the line or section it
   belongs to.
 - Link this file from `CONTRIBUTING.md`, in its AI section.
 - Keep the rules enforceable: say what a maintainer does when a rule is broken.
+- `Recommended opencode setup`: keep it only if the project ships tool
+  settings. Use public links only. No personal names, paths or user-level
+  config paths. Never say a tool is active when it needs a per-machine install.
 - Never put secrets, tokens or personal paths in examples.
 - Delete this section and every `[tag:...]` marker before saving.

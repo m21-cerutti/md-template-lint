@@ -1,5 +1,6 @@
 ---
 # [filename:case:kebab-case]
+# [unique-headings-names]
 description: One line on what the agent does and when to pick it # [presence:required]
 mode: primary | subagent | all # [presence:required]
 model: provider/model-id # [presence:optional] [string]
@@ -45,4 +46,8 @@ caller parses it, so keep it stable.
   `effect` is `allow`, `ask` or `deny`. Start strict (`ask` or `deny`) and open
   only what the role needs; a later row wins over an earlier one.
 - Keep Role, Task and Format short. A long prompt costs tokens on every call.
+- Headings are matched by exact level and exact text, in template order. Insert
+  no section between two template sections; add your own after the last one,
+  `Rules` (a warning, not an error). Delete the optional sections you do not
+  need.
 - Delete this section and every `[tag:...]` marker before saving.

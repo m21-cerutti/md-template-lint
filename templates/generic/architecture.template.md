@@ -1,12 +1,17 @@
 ---
+# [unique-headings-names]
 title: Architecture overview # [presence:required]
-last_updated: 2026-10-29 # [presence:required] [format:date] [date]
+last_updated: 2026-11-11 # [presence:required] [format:date] [date]
 ---
 
 # Architecture title [pattern:"{text}"]
 
 One paragraph: the shape of the system in plain words. Link the product and
 technical specifications.
+
+## Summary [presence:optional] [content:non-empty]
+
+- Table of contents: one link per section.
 
 ## Overview [content:non-empty]
 
@@ -53,9 +58,15 @@ when there are none.
 
 - Save as `docs/architecture.md`. Keep the frontmatter and refresh
   `last_updated` on every change.
+- The `Summary` block with its `omit in toc` markers is optional. Its list is
+  maintained by the Markdown All in One extension, not by hand.
 - One diagram per concern: one mermaid fence, then the explanation, then a
   `Sources:` line naming the files the diagram was drawn from.
 - Name nodes by role (Client, Service, Store), not by product, unless the
   product is the point.
-- Add one H2 per extra diagram (data model, request flow, states) after Overview.
+- Add one H3 per extra diagram (data model, request flow, states) inside
+  Overview, after its first diagram.
+- Headings are matched by exact level and exact text, in template order. Insert
+  no section between two template sections; add your own after `Discrepancies`
+  (a warning, not an error). Delete the optional sections you do not need.
 - Delete this section and every `[tag:...]` marker before saving.

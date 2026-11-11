@@ -172,7 +172,7 @@ What it wrote:
   a table with `pass-placeholder` and `fail-placeholder`, `it.todo` cases, and the tags of the
   `describe` (`{ tags: ["MTL310", "format"] }`: the code and the family, which
   `tests/consistency/rule-test-tags.test.ts` requires, see
-  [Run one error code or family](../../tests/README.md#run-one-error-code-or-family)).
+  [Run one error code or family](../../tests/INDEX.md#run-one-error-code-or-family)).
 - `tests/fixtures/pairs/MTL310/pass-placeholder/` and `.../fail-placeholder/`, each with a
   `template.md` and a `target.md` holding an empty frontmatter.
 

@@ -6,7 +6,7 @@ date: 2026-10-29
 deciders: [owner]
 ---
 
-# ADR
+# ADR 0001: Genesis, port the linter to TypeScript
 
 `md-template-lint` is a TypeScript/Node package that replaces the legacy Python Markdown template linter and its PowerShell wrappers, with an ANTLR grammar for the template tags.
 

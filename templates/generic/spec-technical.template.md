@@ -1,4 +1,5 @@
 ---
+# [unique-headings-names]
 title: Technical specification # [presence:required]
 last_updated: 2026-10-29 # [presence:required] [format:date] [date]
 ---
@@ -42,8 +43,11 @@ for grammars and examples.
 
 - Save as `docs/spec.md`. Keep the frontmatter and refresh `last_updated` on
   every change.
-- Number sections and cite them from code and tests; never renumber a published id.
 - One statement per requirement. Every requirement names how it is verified.
-- Add sections (configuration, output, pipeline) as the system needs them; keep
-  the ones above in this order.
+- Headings are matched by exact level and exact text, in template order. Insert
+  no section between two template sections; add your own (configuration,
+  output, pipeline) after `Assumptions` (a warning, not an error). Delete the
+  optional sections you do not need.
+- For an empty required section write `- None.` (list) or `None.` in the first
+  cell (table).
 - Delete this section and every `[tag:...]` marker before saving.

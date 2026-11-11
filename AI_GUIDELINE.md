@@ -20,6 +20,7 @@ How `md-template-lint` treats contributions made with AI tools: code assistants,
 - [Automated issues and pull requests](#automated-issues-and-pull-requests)
 - [Enforcement](#enforcement)
 - [Maintainer use](#maintainer-use)
+- [Recommended opencode setup](#recommended-opencode-setup)
 - [Rationale and references](#rationale-and-references)
 
 ## Scope
@@ -71,6 +72,38 @@ Maintainers use [OpenCode](https://opencode.ai/) for AI-assisted development. Th
 - **docs/ai-capabilities.md:** inventory of the project agents, skills, commands, tools and scripts.
 
 Keep AGENTS.md, the README and `docs/ai-capabilities.md` in sync with the code, and verify agent output: run the tests and read the diff before committing.
+
+## Recommended opencode setup
+
+This section is optional. You do not need it to contribute. It describes the setup the maintainers use with [OpenCode](https://opencode.ai/). The repository does not load any of it for you: everything below goes in your own configuration, and nothing in the project depends on it.
+
+**Plugins.**
+
+- [opencode-models-discovery](https://www.npmjs.com/package/opencode-models-discovery) ([GitHub](https://github.com/yuhp/opencode-models-discovery)): discovers the models of OpenAI-compatible providers, such as local servers, and adds them to OpenCode. Useful only if you use such a provider.
+- [Magic Context](https://www.npmjs.com/package/@cortexkit/opencode-magic-context) ([GitHub](https://github.com/cortexkit/magic-context)): manages the context window in the background and keeps project memory across sessions. It turns off the built-in compaction, needs a model for its historian and creates a `.cortexkit/` folder in the project. Follow its setup guide, the GitHub README.
+
+Add them to your global OpenCode config, or to the git-ignored `.opencode/opencode.jsonc` of your clone. OpenCode merges the plugin arrays of all config files. OpenCode 2 names the key `plugins`, OpenCode 1 names it `plugin`.
+
+**Settings.**
+
+```jsonc
+{
+  "$schema": "https://opencode.ai/config.json",
+  "plugins": ["opencode-models-discovery@2.1.1", "@cortexkit/opencode-magic-context@latest"],
+  "snapshots": false,
+}
+```
+
+`snapshots` is optional. OpenCode stores full copies of tracked and eligible untracked files for `/undo` in its data directory ([snapshots guide](https://opencode.ai/docs/snapshots)). Setting it to `false` stops that capture, but `/undo` then cannot restore files; use git for that.
+
+**Terse replies (caveman).** [Caveman](https://github.com/JuliusBrussee/caveman) is an optional plugin that makes the agent answer in short, exact sentences, which uses fewer tokens. This repository ships no caveman rule file, so it is off unless you install it on your machine. The installer adds the plugin, the `/caveman` commands and the mode switch to your user configuration. Preview first, then install once:
+
+```bash
+npx -y github:JuliusBrussee/caveman -- --only opencode --dry-run
+npx -y github:JuliusBrussee/caveman -- --only opencode
+```
+
+On npm 12 or newer, add `--allow-git=root` after `npx`, for example `npx --allow-git=root -y github:JuliusBrussee/caveman -- --only opencode`. The installer runs code fetched from a GitHub repository: read [INSTALL.md](https://github.com/JuliusBrussee/caveman/blob/main/INSTALL.md) first, and prefer a release-pinned form, which it also documents.
 
 ## Rationale and references
 

@@ -1,4 +1,5 @@
 ---
+# [unique-headings-names]
 last_updated: 2026-11-11 # [presence:required] [format:date] [date]
 ---
 
@@ -7,7 +8,11 @@ last_updated: 2026-11-11 # [presence:required] [format:date] [date]
 Thank you for helping [project name]. This page explains how to report a
 problem, propose a change and get a pull request merged.
 
-## Summary [content:non-empty]
+## Summary [presence:optional] [content:non-empty]
+
+- Table of contents: one link per section.
+
+## Overview [content:non-empty]
 
 Start here: open an issue first, fork the repository, make the change on a
 branch of your fork, and open a pull request against `[default branch]`.
@@ -115,11 +120,16 @@ the [code of conduct](CODE_OF_CONDUCT.md).
 
 - Save as `CONTRIBUTING.md` at the repository root. Keep the frontmatter and
   refresh `last_updated` on every change.
-- The sections follow the usual order of a contributor: summary, ways to
+- The `Summary` block with its `omit in toc` markers is optional. Its list is
+  maintained by the Markdown All in One extension, not by hand.
+- The sections follow the usual order of a contributor: overview, ways to
   contribute, issue first, workflow, setup, gates, specific procedures,
-  commits, checklist, AI, review, security, license. Keep the order.
+  commits, checklist, AI, review, security, license.
+- Headings are matched by exact level and exact text, in template order. Insert
+  no section between two template sections; add your own after the last one,
+  `License and conduct` (a warning, not an error).
 - Optional sections are `Project-specific changes` and `Generated code`. Delete
-  them when they do not apply; keep the order of the others.
+  them when they do not apply.
 - Replace every bracketed placeholder. Delete a line or a section you cannot
   fill instead of leaving a placeholder.
 - Every command in the file must run as written. Test them before saving.

@@ -3,7 +3,7 @@ title: AI Capabilities
 last_updated: 2026-11-11
 ---
 
-# AI Capabilities
+# AI capabilities
 
 ## Scope
 
@@ -49,22 +49,22 @@ Project tools live in `.opencode/tools/`. There are none; the table lists the to
 repository instead (the gates an agent runs, from `package.json`, `.husky/`, `.lintstagedrc.json`
 and `.github/workflows/`).
 
-| Tool                                                         | Purpose                                                                                                                                               |
-| ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `typescript` (`tsc`)                                         | Compiles `src/` to `dist/` (`pnpm run build`) and type-checks sources, tests and scripts in strict mode (`pnpm run typecheck`).                       |
-| `tsx`                                                        | Runs the TypeScript scripts of `scripts/` without a build step ([ADR 0007](adr/0007-tsx-script-runner.md)).                                           |
-| `vitest`, `@vitest/coverage-v8`                              | Test runner (`pnpm test`), the consistency checks (`pnpm run check:rules`) and the coverage gate (`pnpm run coverage`).                               |
-| `antlr-ng`, `antlr4ng`                                       | Generates the parser from `grammar/*.g4` into `src/generated/` (`pnpm run gen:parser`, no Java); `antlr4ng` is the runtime the generated parser uses. |
-| `eslint`, `@eslint/js`, `typescript-eslint`, `jiti`          | TypeScript lint (`pnpm run lint:ts`); `jiti` loads `eslint.config.ts`.                                                                                |
-| `prettier`                                                   | Formatter (`pnpm run format`, `pnpm run format:check`); `.prettierignore` skips generated and fixture files.                                          |
-| `markdownlint-cli2`                                          | Markdown style lint of every `*.md` (`pnpm run lint:md`), config in `.markdownlint-cli2.jsonc`.                                                       |
-| `@ls-lint/ls-lint`                                           | File and folder name rules (`pnpm run lint:names`), config in `.ls-lint.yml`.                                                                         |
-| `secretlint`, `@secretlint/secretlint-rule-preset-recommend` | Secret scan of all files (`pnpm run lint:secrets`), config in `.secretlintrc.json` and `.secretlintignore`.                                           |
-| `husky`, `lint-staged`                                       | Git hooks (`prepare` installs them) and the staged-file runner. See the hooks table below.                                                            |
-| `@commitlint/cli`, `@commitlint/config-conventional`         | Conventional Commits check on the commit message (`.commitlintrc.ts`).                                                                                |
-| `@types/node`                                                | Node type definitions for the sources and scripts.                                                                                                    |
-| `yaml`                                                       | Runtime dependency: parses frontmatter and the per-project `md-template-lint.yml`.                                                                    |
-| `mdtl` / `md-template-lint` (`node dist/cli.js`)             | The product itself, used as a dogfood gate: lints this repository's docs against `templates/` and `templates/generic/` with `md-template-lint.yml`.   |
+| Tool                                                         | Purpose                                                                                                                                                                      |
+| ------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `typescript` (`tsc`)                                         | Compiles `src/` to `dist/` (`pnpm run build`) and type-checks sources, tests and scripts in strict mode (`pnpm run typecheck`).                                              |
+| `tsx`                                                        | Runs the TypeScript scripts of `scripts/` without a build step ([ADR 0007](adr/0007-tsx-script-runner.md)).                                                                  |
+| `vitest`, `@vitest/coverage-v8`                              | Test runner (`pnpm test`), the consistency checks (`pnpm run check:rules`) and the coverage gate (`pnpm run coverage`).                                                      |
+| `antlr-ng`, `antlr4ng`                                       | Generates the parser from `grammar/*.g4` into `src/generated/` (`pnpm run gen:parser`, no Java); `antlr4ng` is the runtime the generated parser uses.                        |
+| `eslint`, `@eslint/js`, `typescript-eslint`, `jiti`          | TypeScript lint (`pnpm run lint:ts`); `jiti` loads `eslint.config.ts`.                                                                                                       |
+| `prettier`                                                   | Formatter (`pnpm run format`, `pnpm run format:check`); `.prettierignore` skips generated and fixture files.                                                                 |
+| `markdownlint-cli2`                                          | Markdown style lint of every `*.md` (`pnpm run lint:md`), config in `.markdownlint-cli2.jsonc`.                                                                              |
+| `@ls-lint/ls-lint`                                           | File and folder name rules (`pnpm run lint:names`), config in `.ls-lint.yml`.                                                                                                |
+| `secretlint`, `@secretlint/secretlint-rule-preset-recommend` | Secret scan of all files (`pnpm run lint:secrets`), config in `.secretlintrc.json` and `.secretlintignore`.                                                                  |
+| `husky`, `lint-staged`                                       | Git hooks (`prepare` installs them) and the staged-file runner. See the hooks table below.                                                                                   |
+| `@commitlint/cli`, `@commitlint/config-conventional`         | Conventional Commits check on the commit message (`.commitlintrc.ts`).                                                                                                       |
+| `@types/node`                                                | Node type definitions for the sources and scripts.                                                                                                                           |
+| `yaml`                                                       | Runtime dependency: parses frontmatter and the per-project `md-template-lint.yml`.                                                                                           |
+| `mdtl` / `md-template-lint` (`node dist/cli.js`)             | The product itself, used as a dogfood gate: lints this repository's docs against `templates/generic/` and the CHANGELOG variant in `templates/` with `md-template-lint.yml`. |
 
 Git hooks (`.husky/`, installed by `pnpm run prepare`; never skip with `--no-verify`):
 
@@ -117,7 +117,7 @@ Files in `scripts/` that `package.json` does not name directly:
 | `scripts/syntax-doc/generate.ts` | Generator behind `gen:syntax-doc` and `check:syntax-doc`.                                                                                                                                                                          |
 | `scripts/syntax-doc/notes.ts`    | Hand-written `FIX_NOTES`, `TAG_NOTES` and `TAG_FIXTURES` for the syntax reference (`check:rules` fails on a missing or orphan entry).                                                                                              |
 
-## MCP Servers
+## MCP servers
 
 Declared in `opencode.jsonc`.
 
@@ -148,7 +148,7 @@ the secret guard stays last:
 A local, git-ignored `.opencode/opencode.jsonc` adds personal rules (nested shell and global install
 asks); it is not part of the repository.
 
-## Global Capabilities
+## Global capabilities
 
 Global agents, skills, commands and MCPs are configured per user, outside this repository, and are not duplicated here. If you keep a global inventory, see that one.
 

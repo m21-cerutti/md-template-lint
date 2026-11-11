@@ -1,4 +1,5 @@
 ---
+# [unique-headings-names]
 last_updated: 2026-11-11 # [presence:required] [format:date] [date]
 ---
 
@@ -14,7 +15,11 @@ the generation tool and its version].
 Scope: [runtime dependencies only, runtime and bundled, or all]. Not listed:
 [non-bundled build tools]. They are not shipped in the package.
 
-## Summary [content:table]
+## Summary [presence:optional] [content:non-empty]
+
+- Table of contents: one link per section.
+
+## Packages [content:table]
 
 | Package | Version | License (SPDX) | Scope                       |
 | ------- | ------- | -------------- | --------------------------- |
@@ -59,8 +64,12 @@ Review the diff by hand before committing.
   `Package` is only a label, and every consecutive heading of the same level
   that matches `{text} {semver}` is checked against it. The package blocks
   are optional, so a file with none is valid.
-- Keep the order: Summary, the package blocks, Generated or derived material,
-  Regeneration.
+- The `Summary` block with its `omit in toc` markers is optional. Its list is
+  maintained by the Markdown All in One extension, not by hand.
+- Headings are matched by exact level and exact text, in template order: Packages,
+  the package blocks, Generated or derived material, Regeneration. Insert no
+  section between them; add your own after `Regeneration` (a warning, not an
+  error). Delete the optional sections you do not need.
 - Every block carries the four bullets Upstream, License, Copyright and Used
   as, and the full license text. Public-domain items carry the URL of the
   statement and no license text.

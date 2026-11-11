@@ -1,18 +1,19 @@
 ---
+# [unique-headings-names]
 title: AGENTS.md # [presence:required]
 last_updated: 2026-10-30 # [presence:required] [format:date] [date]
 ---
 
 # AGENTS.md
 
-## Mandatory Instructions [content:list]
+## Mandatory instructions [content:list]
 
 - [Project rule: the one rule every change must respect.]
 - [Security rule: what must never be committed or exposed.]
 - [Session rule: what to run or record before ending a task.]
 - [Escalation rule: when to stop and ask a human or a stronger model.]
 
-## Behavioral Principles [content:list]
+## Behavioral principles [content:list]
 
 - **Think Before Coding.** Don't assume. If a requirement has multiple
   interpretations, list them. If a simpler approach exists, say so.
@@ -29,11 +30,11 @@ last_updated: 2026-10-30 # [presence:required] [format:date] [date]
 - Do NOT [second forbidden action specific to this project].
 - Do NOT commit credentials, `.env` files, keys or tokens.
 
-## Project Purpose [content:non-empty]
+## Project purpose [content:non-empty]
 
 [One paragraph: what the project does, who uses it, and what it is not.]
 
-## Tech Stack and Key Tools [content:list]
+## Tech stack and key tools [content:list]
 
 - **Language:** [language and minimum runtime version]
 - **Package manager:** [tool name]
@@ -41,11 +42,11 @@ last_updated: 2026-10-30 # [presence:required] [format:date] [date]
 - **Linter/Formatter:** [linter and formatter names]
 - **Type checker:** [type checker name, or "none"]
 
-## Project Structure [presence:optional] [content:non-empty]
+## Project structure [presence:optional] [content:non-empty]
 
 [Top-level folders and what each one holds, one line per folder.]
 
-## How to Build and Test [content:non-empty]
+## How to build and test [content:non-empty]
 
 ```bash
 [install command]
@@ -54,7 +55,7 @@ last_updated: 2026-10-30 # [presence:required] [format:date] [date]
 [test command]
 ```
 
-## Acceptance Criteria and Quality Gates [content:list]
+## Acceptance criteria and quality gates [content:list]
 
 - All tests pass.
 - Format and lint checks pass.
@@ -62,14 +63,14 @@ last_updated: 2026-10-30 # [presence:required] [format:date] [date]
 - Commit message follows Conventional Commits.
 - No credentials committed (`.env`, keys, tokens).
 
-## Error Handling and Recovery [content:list]
+## Error handling and recovery [content:list]
 
 - **Test failure:** find the root cause, fix, re-run before moving on.
 - **Type or lint error:** fix at the source; do not silence the checker.
 - **Missing information:** ask the user before guessing.
 - **Same error twice:** escalate to a higher-tier model instead of retrying.
 
-## Agent Workflow [presence:optional] [content:list]
+## Agent workflow [presence:optional] [content:list]
 
 1. **Plan:** break multi-step work into small tracked items.
 2. **Execute:** one item at a time; commit only after verification passes.
@@ -90,6 +91,8 @@ last_updated: 2026-10-30 # [presence:required] [format:date] [date]
 - Keep the file short. Link long material from References instead of pasting it.
 - Do not list agents, skills, commands or tools here. Put them in
   `docs/ai-capabilities.md`.
-- Keep the section order. Optional sections may be dropped.
+- Headings are matched by exact level and exact text, in template order. Insert
+  no section between two template sections; add your own after `References`
+  (a warning, not an error). Delete the optional sections you do not need.
 - No credentials and no personal paths.
 - Delete this section and every `[tag:...]` marker before saving.

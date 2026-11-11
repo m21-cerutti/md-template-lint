@@ -70,17 +70,17 @@ src/                        # sources of the tool
   reporters/                # text and JSON output
   io/                       # file, http and https probes ([io:exists])
   cli/                      # argument parsing and the mdtl command
-tests/                      # vitest suites (see tests/README.md)
+tests/                      # vitest suites (see tests/INDEX.md)
   target/                   # one test file per rule (template + target)
   syntax/                   # one test file per template syntax code
   consistency/              # check:rules: grammar, rules, fixtures and spec agree
   unit/                     # config, runner, reporters, io, CLI, smoke
   fixtures/                 # one folder or file per case
-docs/                       # spec, architecture, guides, ADRs (index: docs/README.md)
+docs/                       # spec, architecture, guides, ADRs (index: docs/INDEX.md)
   adr/                      # architecture decision records
   guides/                   # adding a rule or a tag, testing, grammar
-templates/                  # this repository's own template variants, also linted against
-  generic/                  # reusable templates, copy and adapt (see templates/README.md)
+templates/                  # this repository's own template variants (CHANGELOG, README, research-note, spec-technical), also linted against
+  generic/                  # reusable templates, copy and adapt (see templates/INDEX.md)
 scripts/                    # TypeScript scripts run with tsx (parser, syntax doc, pack smoke)
 .github/                    # CI and release workflows, issue forms
 .husky/                     # git hooks: pre-commit and commit-msg
@@ -95,7 +95,7 @@ dist/                       # build output (git-ignored)
 tmp/                        # scratch space (git-ignored)
 ```
 
-Start with [docs/architecture.md](docs/architecture.md) and the contract [docs/spec.md](docs/spec.md). When code and spec disagree, fix one of them in the same change. The index of all the docs is [docs/README.md](docs/README.md).
+Start with [docs/architecture.md](docs/architecture.md) and the contract [docs/spec.md](docs/spec.md). When code and spec disagree, fix one of them in the same change. The index of all the docs is [docs/INDEX.md](docs/INDEX.md).
 
 ## Setup
 
@@ -174,7 +174,7 @@ The repository also lints its own docs against `templates/` and `templates/gener
 
 ### Tests
 
-Review of the tests happens in the pull request. The map of the test families and fixtures is [tests/README.md](tests/README.md); the how-to is [docs/guides/testing.md](docs/guides/testing.md). Test and fixture layout:
+Review of the tests happens in the pull request. The map of the test families and fixtures is [tests/INDEX.md](tests/INDEX.md); the how-to is [docs/guides/testing.md](docs/guides/testing.md). Test and fixture layout:
 
 | Path                                              | Content                                                             |
 | ------------------------------------------------- | ------------------------------------------------------------------- |
@@ -224,7 +224,7 @@ Existing records start at [0001-genesis](docs/adr/0001-genesis.md). A change to 
 
 Update the docs in the same change as the code: the README (usage, rule tables, config reference), [docs/spec.md](docs/spec.md) (contract), [docs/architecture.md](docs/architecture.md), and [ADR 0014](docs/adr/0014-legacy-behaviour-catalogue.md) when behaviour changes for users of the legacy tools. Keep `docs/ai-capabilities.md` in sync when you add or change an AI agent, skill, command or tool.
 
-- Document templates: `templates/generic/` holds the reusable ones (copy and adapt); `templates/` holds this repository's own variants. See [templates/README.md](templates/README.md).
+- Document templates: `templates/generic/` holds the reusable ones (copy and adapt); `templates/` holds this repository's own four variants (CHANGELOG, README, research-note and spec-technical). See [templates/INDEX.md](templates/INDEX.md).
 - The list under a `Summary` heading marked `<!-- omit in toc -->` is a table of contents of levels 2 to 3. Do not edit it by hand: it is maintained with the VS Code extension [Markdown All in One](https://marketplace.visualstudio.com/items?itemName=yzhang.markdown-all-in-one) (recommended in `.vscode/extensions.json`), command "Markdown All in One: Update Table of Contents", with the levels (`markdown.extension.toc.levels`: `2..3`) and update on save set in the tracked `.vscode/settings.json`.
 
 ## Generated code
@@ -253,6 +253,8 @@ Add an `Assisted-by: <tool>` trailer when an AI tool helped.
 ## AI-assisted contributions
 
 Issues and pull requests created automatically by a bot, a script or an AI agent are rejected. AI tools are allowed to help a person: you must understand every line you submit, be able to explain it without the tool, and disclose the tool and the extent of its use. Read [AI_GUIDELINE.md](AI_GUIDELINE.md) for the full rules.
+
+Optional tool setup (plugins, settings, terse-output tool) is in [Recommended opencode setup](AI_GUIDELINE.md#recommended-opencode-setup). It is not required to contribute.
 
 ## Review and response time
 

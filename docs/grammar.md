@@ -9,7 +9,7 @@ How the linter reads the headings of a Markdown file and how a template heading 
 target headings it checks. This page explains the words the heading rules use (parent, scope,
 sequence, match, extra, checked). The tags themselves, the rule codes and their messages are in
 the [spec](spec.md), section [2.6](spec.md#26-heading-suffix-tags-body-sections) and section
-[2.10](spec.md#210-heading-patterns-repeat-rules-and-order). Back to the [docs index](README.md).
+[2.10](spec.md#210-heading-patterns-repeat-rules-and-order). Back to the [docs index](INDEX.md).
 
 <!-- prettier-ignore-start -->
 <!-- omit in toc -->

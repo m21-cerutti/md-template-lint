@@ -275,7 +275,7 @@ On Windows, a UNC path (`\\server\share`) in any config path value makes the ope
 
 ## This repository lints its own docs
 
-This repository checks its own Markdown against the templates in [`templates/`](templates/) (this repository's variants) and [`templates/generic/`](templates/generic/) (the reusable ones, copy and adapt). The root [`md-template-lint.yml`](md-template-lint.yml) lists the pairs (the ADRs, `docs/architecture.md` and `AGENTS.md`). The pre-commit hook runs lint-staged ([`.lintstagedrc.json`](.lintstagedrc.json)), which lints the staged Markdown files with the built CLI.
+This repository checks its own Markdown against the templates in [`templates/generic/`](templates/generic/) (the reusable ones, copy and adapt) and the four variants in [`templates/`](templates/) (CHANGELOG, README, research-note and spec-technical). The root [`md-template-lint.yml`](md-template-lint.yml) lists the pairs (the ADRs, `docs/architecture.md`, `AGENTS.md` and the other root documents). The pre-commit hook runs lint-staged ([`.lintstagedrc.json`](.lintstagedrc.json)), which lints the staged Markdown files with the built CLI.
 
 To check all pairs by hand from a clone, build first. The `mdtl` command is not on the PATH in a clone, so `node dist/cli.js` stands for `mdtl` there:
 
@@ -287,7 +287,7 @@ node dist/cli.js
 
 ## Documentation
 
-- [docs/README.md](docs/README.md): index of everything under `docs/`.
+- [docs/INDEX.md](docs/INDEX.md): index of everything under `docs/`.
 - [docs/cli.md](docs/cli.md): flags, exit codes, output formats, `--verify`, paths.
 - [docs/configuration.md](docs/configuration.md): the `md-template-lint.yml` file.
 - [docs/syntax-reference.md](docs/syntax-reference.md): how to write a template, and the error codes.
@@ -307,6 +307,8 @@ pnpm install --frozen-lockfile
 pnpm run build
 pnpm test
 ```
+
+Optional AI tool setup: [Recommended opencode setup](AI_GUIDELINE.md#recommended-opencode-setup).
 
 ## License
 

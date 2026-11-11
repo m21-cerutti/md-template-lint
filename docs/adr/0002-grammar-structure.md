@@ -8,7 +8,7 @@ deciders: [owner]
 
 > Accepted. The owner asked for a grammar based on Markdown that separates frontmatter rules from body rules. On 2026-10-29 the owner approved lexer modes ("You can use lexer modes"), multiple grammar files ("You can also use multiple grammar files") and per-rule visitors and listeners ("You should split Listeners and Visitors per rules"). An earlier combined-grammar draft (region by position, TypeScript fence predicates) was replaced before commit.
 
-# ADR
+# ADR 0002: Split lexer and parser grammars
 
 The tag grammar is two ANTLR files, a lexer with modes and a parser. The parser has a frontmatter rule family (`fm*`) and a body rule family (`body*`). The parse tree is walked by one small visitor or listener per tag family.
 
