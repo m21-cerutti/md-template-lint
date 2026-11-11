@@ -21,6 +21,10 @@ const CASES: readonly VerifyCase[] = [
   { name: "fail-frontmatter-after-blank-line", ...BROKEN },
   // An opening `---` without a closing one.
   { name: "fail-frontmatter-never-closed", ...BROKEN },
+  // ADR 0015: `[frontmatter:optional]` in the body of a template without a block does not help.
+  { name: "fail-template-without-frontmatter-with-optional-tag-in-body", ...BROKEN },
+  // Spec 2.12: a comment on the opening delimiter makes it body text, so there is no block.
+  { name: "fail-frontmatter-optional-on-opening-delimiter", ...BROKEN },
 ];
 
 describe("MTL001 frontmatter-missing (--verify)", { tags: ["MTL001", "syntax"] }, () => {

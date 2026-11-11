@@ -7,7 +7,7 @@
  */
 import { readFile } from "node:fs/promises";
 import { isAlias, isCollection, isMap, isScalar, isSeq, LineCounter, parseDocument as parseYaml, visit, type Document } from "yaml";
-import type { BodyHeading, FrontmatterComment, TagFinding } from "../tags/ast.js";
+import type { BodyHeading, FrontmatterComment, FrontmatterOptionalPlacement, MarkdownDocument, Region, TagFinding } from "../tags/ast.js";
 import { analyzeDocument, InternalParseError, normalizeLineEnds } from "../tags/parser.js";
 import { inferType } from "./infer.js";
 import type { DocumentModel, Field, HeadingLevel, LoadResult, ParseFailure, Section, YamlValue } from "./model.js";
@@ -27,6 +27,11 @@ function toValue(node: unknown, doc: Document): YamlValue {
     return map;
   }
   return "";
+}
+
+/** A tag finding or a directive written in the body (kept as is by every filter). */
+function isBodyRegion(item: { readonly region: Region }): boolean {
+  return item.region === "body";
 }
 
 function keyName(key: unknown): string {
@@ -84,16 +89,48 @@ function buildSections(headings: readonly BodyHeading[], fileLines: readonly str
   });
 }
 
+/** The model parts read from the frontmatter (or their empty values for a body-only target). */
+type FrontmatterParts = Omit<DocumentModel, "document" | "sections">;
+
+/** The shared tail of `loadDocument`: sections from the body headings, then the model. */
+function withSections(text: string, document: MarkdownDocument, parts: FrontmatterParts): LoadResult {
+  const headings = document.body.filter((block): block is BodyHeading => block.kind === "heading");
+  const fileLines = normalizeLineEnds(text).split("\n");
+  return { ok: true, model: { document, sections: buildSections(headings, fileLines), ...parts } };
+}
+
+/** Options of `loadDocument`. */
+export interface LoadOptions {
+  /**
+   * The template carries `[frontmatter:optional]` (ADR 0015): a document with no frontmatter
+   * block loads as a body-only model instead of failing with `frontmatter-missing`. An
+   * unclosed `---` still fails.
+   */
+  readonly frontmatterOptional?: boolean;
+}
+
 /**
  * Parse `text` into a DocumentModel, or a parse failure (MTL001 to MTL003).
  * A grammar bug throws InternalParseError (never a user diagnostic).
  */
-export function loadDocument(text: string): LoadResult {
+export function loadDocument(text: string, options?: LoadOptions): LoadResult {
   const analysis = analyzeDocument(text);
   if (analysis.document === null) throw InternalParseError.of(analysis.grammarErrors);
   const document = analysis.document;
   const frontmatter = document.frontmatter;
-  if (frontmatter === null) return fail("frontmatter-missing");
+  if (frontmatter === null) {
+    if (options?.frontmatterOptional !== true || document.frontmatterUnclosed) return fail("frontmatter-missing");
+    // ADR 0015: a body-only target; its body findings and body directives only.
+    return withSections(text, document, {
+      fields: new Map(),
+      filename: null,
+      uniqueHeadingNames: false,
+      frontmatterOptional: false,
+      findings: analysis.findings.filter(isBodyRegion),
+      optionalTags: [],
+      directives: document.directives.filter(isBodyRegion),
+    });
+  }
 
   const lineCounter = new LineCounter();
   const yaml = parseYaml(frontmatter.yaml, { schema: "failsafe", uniqueKeys: false, lineCounter });
@@ -107,8 +144,8 @@ export function loadDocument(text: string): LoadResult {
   const commentLines = new Set<number>();
   for (const line of frontmatter.lines) {
     if (line.kind === "key") comments.set(line.line, line.comment);
-    else if (line.kind === "filename" || line.kind === "unique-names") filenameLines.add(line.line);
-    if (line.kind === "comment" || line.kind === "filename" || line.kind === "unique-names") {
+    else if (line.kind === "filename" || line.kind === "unique-names" || line.kind === "frontmatter-optional") filenameLines.add(line.line);
+    if (line.kind === "comment" || line.kind === "filename" || line.kind === "unique-names" || line.kind === "frontmatter-optional") {
       commentLines.add(line.line);
     }
   }
@@ -129,24 +166,32 @@ export function loadDocument(text: string): LoadResult {
   // Spec 2.1: field-tag findings only on lines that are YAML top-level keys, plus the
   // filename / unique-names lines and the standalone comment lines outside a multi-line value.
   const interior = valueInteriorLines(yaml, lineCounter, frontmatter.startLine);
-  const findings = analysis.findings.filter(
-    (finding: TagFinding) => finding.region === "body" || keyLines.has(finding.position.line) || filenameLines.has(finding.position.line) || (commentLines.has(finding.position.line) && !interior.has(finding.position.line)),
-  );
+  /** A YAML top-level key line, or a whole-line comment outside a multi-line value. */
+  const bindsTags = (line: number) => keyLines.has(line) || (commentLines.has(line) && !interior.has(line));
+  const findings = analysis.findings.filter((finding: TagFinding) => isBodyRegion(finding) || filenameLines.has(finding.position.line) || bindsTags(finding.position.line));
+  // Spec 2.1: a `[frontmatter:optional]` inside a multi-line value is inert, so it neither sets
+  // the switch nor counts as the first standalone line (ADR 0015, MTL031).
+  let firstLine: number | null = null;
+  const optionalTags = frontmatter.optionalTags
+    .filter((entry) => bindsTags(entry.line))
+    .map((entry): FrontmatterOptionalPlacement => {
+      if (entry.placement !== "alone") return entry;
+      const placed = { ...entry, firstLine };
+      firstLine ??= entry.line;
+      return placed;
+    });
   // Spec 4.4 DIR3: frontmatter directives on YAML top-level key lines and on
   // whole-line comments outside a multi-line value; every body directive.
-  const directives = document.directives.filter((directive) => directive.region === "body" || keyLines.has(directive.line) || (commentLines.has(directive.line) && !interior.has(directive.line)));
-  const headings = document.body.filter((block): block is BodyHeading => block.kind === "heading");
-  const fileLines = normalizeLineEnds(text).split("\n");
-  const model: DocumentModel = {
-    document,
+  const directives = document.directives.filter((directive) => isBodyRegion(directive) || bindsTags(directive.line));
+  return withSections(text, document, {
     fields,
-    sections: buildSections(headings, fileLines),
     filename: frontmatter.filename,
     uniqueHeadingNames: frontmatter.uniqueHeadingNames,
+    frontmatterOptional: firstLine !== null,
     findings,
+    optionalTags,
     directives,
-  };
-  return { ok: true, model };
+  });
 }
 
 /** Read `path` as strict UTF-8 and load it; read or decode errors are MTL004. */

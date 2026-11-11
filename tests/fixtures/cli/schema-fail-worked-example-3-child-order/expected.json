@@ -4,6 +4,7 @@
     "status": "fail",
     "filenameCase": null,
     "uniqueHeadingNames": false,
+    "frontmatterOptional": false,
     "fields": [{ "name": "title", "type": "string", "rules": ["presence:required"] }],
     "headings": [
       { "level": 1, "text": "Guide", "rules": ["presence:required"] },

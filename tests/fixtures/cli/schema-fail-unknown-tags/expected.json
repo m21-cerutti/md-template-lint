@@ -4,6 +4,7 @@
     "status": "ok",
     "filenameCase": null,
     "uniqueHeadingNames": false,
+    "frontmatterOptional": false,
     "fields": [
       { "name": "owner", "type": "string", "rules": ["presence:required"] },
       { "name": "title", "type": "string", "rules": ["presence:optional"] }

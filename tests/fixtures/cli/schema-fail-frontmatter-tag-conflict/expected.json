@@ -1,0 +1,37 @@
+[
+  {
+    "path": "template.md",
+    "status": "ok",
+    "filenameCase": null,
+    "uniqueHeadingNames": false,
+    "frontmatterOptional": true,
+    "fields": [{ "name": "title", "type": "string", "rules": ["presence:required"] }],
+    "headings": [{ "level": 1, "text": "Guide", "rules": ["presence:required"] }],
+    "diagnostics": [
+      {
+        "code": "MTL031",
+        "severity": "warning",
+        "message": "Field 'title': tag [frontmatter:optional] has no effect (it must be alone on its comment line)",
+        "line": 3,
+        "column": 19,
+        "sourceLine": "title: \"string\" # [frontmatter:optional]"
+      },
+      {
+        "code": "MTL031",
+        "severity": "warning",
+        "message": "Comment line 4: tag [frontmatter:optional] has no effect (it must be alone on its comment line)",
+        "line": 4,
+        "column": 8,
+        "sourceLine": "# note [frontmatter:optional]"
+      },
+      {
+        "code": "MTL031",
+        "severity": "warning",
+        "message": "Comment line 5: tag [frontmatter:optional] has no effect (already set on line 2)",
+        "line": 5,
+        "column": 3,
+        "sourceLine": "# [frontmatter:optional]"
+      }
+    ]
+  }
+]

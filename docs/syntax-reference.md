@@ -105,6 +105,7 @@ written `[a:b:c]`, every colon part is a literal keyword.
 | frontmatter | `format` | `[format:elements:semver]` | " | " | [MTL301 pass](../tests/fixtures/pairs/MTL301/pass-value-equals-constant/template.md) |
 | frontmatter | `format` | `[format:elements:date]` | " | " | [MTL301 pass](../tests/fixtures/pairs/MTL301/pass-value-equals-constant/template.md) |
 | frontmatter | `format` | `[format:scheme:<schemes>]` | " | " | [MTL301 pass](../tests/fixtures/pairs/MTL301/pass-value-equals-constant/template.md) |
+| frontmatter | `frontmatter` | `[frontmatter:optional]` | Standalone comment line: a target may omit its frontmatter block; field rules are then skipped, heading and content rules still run. | `# [frontmatter:optional]` | [fixture pass](../tests/fixtures/optional-frontmatter/pass-target-without-frontmatter/template.md) |
 | frontmatter | `io` | `[io:exists]` ⚠️ | Opt-in existence or reachability check of a path or URL value; findings are warnings. | `home: https://example.org # [io:exists]` | [MTL804 pass](../tests/fixtures/pairs/MTL804/pass-existing-paths-or-not-checked/template.md) |
 | frontmatter | `order` | `[order:ascending]` | A list of dates must be in ascending order. | `milestones: [2026-01] # [order:ascending]` | [MTL407 pass](../tests/fixtures/pairs/MTL407/pass-dates-ascending-and-other-values-stay-silent/template.md) |
 | frontmatter | `presence` | `[presence:required]` | Required (default), optional, or conditional (documentation only, behaves like optional). | `owner: x # [presence:optional]` | [MTL201 pass](../tests/fixtures/pairs/MTL201/pass-all-required-present/template.md) |
@@ -355,7 +356,7 @@ Run codes (`MTL9xx`) are not rules; they report problems of the run itself.
 <!-- BEGIN GENERATED: families -->
 | Family | Code range | Count | Severities |
 | ------ | ---------- | ----- | ---------- |
-| `syntax` | `MTL001`–`MTL030` | 21 | error, warning |
+| `syntax` | `MTL001`–`MTL031` | 22 | error, warning |
 | `filename` | `MTL101`–`MTL102` | 2 | error |
 | `presence` | `MTL201`–`MTL202` | 2 | error, warning |
 | `format` | `MTL301`–`MTL309` | 9 | error |
@@ -393,6 +394,7 @@ Run codes (`MTL9xx`) are not rules; they report problems of the run itself.
 | `MTL024` | directive-begin-unclosed | warning | syntax | implemented | `Directive on line {line}: 'begin disable {code}' is never closed, it runs to the end of the file` | Add `end disable` for the code, or use `disable`. |
 | `MTL025` | directive-already-disabled | warning | syntax | implemented | `Directive on line {line}: '{directive} {code}' while {code} is already disabled since line {open}` | Remove the redundant directive. |
 | `MTL030` | heading-order-without-repeat | error | syntax | implemented | `Heading '{text}': tag {tag} needs [repeat-rules:same-level] (an order compares the repeats of one heading)` | Add a `[repeat-rules:...]` tag or remove the `[order:...]` tag. |
+| `MTL031` | frontmatter-tag-conflict | warning | syntax | implemented | `Comment line {line}: tag [frontmatter:optional] has no effect (already set on line {first})`, `Field '{key}': tag [frontmatter:optional] has no effect (it must be alone on its comment line)` or `Comment line {line}: tag [frontmatter:optional] has no effect (it must be alone on its comment line)` | Keep one `# [frontmatter:optional]` alone on its own comment line; remove the others. |
 | `MTL101` | filename-case | error | filename | implemented | `Filename '{stem}' does not match required case [filename:case:{convention}]` | Rename the file to the required case. |
 | `MTL102` | value-filename | error | filename | implemented | `Field '{key}': expected value to equal filename '{stem}' ([value:filename]), got '{value}'` | Set the field to the file name without its extension. |
 | `MTL201` | required-missing | error | presence | implemented | `Field '{key}': required but empty or missing` | Fill the field, or tag it `[presence:optional]` in the template. |

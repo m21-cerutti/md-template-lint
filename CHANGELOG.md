@@ -62,6 +62,10 @@ PowerShell wrappers (see [ADR 0014](docs/adr/0014-legacy-behaviour-catalogue.md)
 - Template warnings, shown by `--verify` only and never changing an exit code: `MTL015`
   (heading-tag-conflict: a heading tag has no effect) and `MTL016` (date-format-missing: a
   `date` or `list-of-date` field without `[format:date]` or `[format:elements:date]`).
+- Template warning `MTL031` (frontmatter-tag-conflict): a copy of `[frontmatter:optional]`
+  that has no effect (a later duplicate line, the tag after a key, or the tag in mixed comment
+  text). `--verify` lists it in the section `Conflicting frontmatter tags:`; it never changes
+  the exit code.
 - `MTL010` warning `Comment line {line}: unknown tag {tag}` for an unknown `[tag]` in a
   standalone comment line of the template frontmatter (for example `# [todo]`). `--verify` only,
   never changes the exit code. There is no escape: write the note without square brackets. See
@@ -78,6 +82,13 @@ PowerShell wrappers (see [ADR 0014](docs/adr/0014-legacy-behaviour-catalogue.md)
   `[order:first:number|date|semver:...]`.
 - Sub-heading tags `[content:subheadings:disallow]` and `[content:subheadings:no-extra]`.
 - Tag `[unique-headings-names]`.
+- Tag `[frontmatter:optional]`, written as the comment line `# [frontmatter:optional]` in the
+  template frontmatter: a target may then omit its frontmatter block. Such a target gets no
+  `MTL001` and no field rule; filename, heading and content rules and body disable directives
+  still run. A target with frontmatter is checked as before, and an unclosed `---` is still
+  `MTL001`. `--verify` prints `Frontmatter: [frontmatter:optional]` and the JSON key
+  `frontmatterOptional`. The loader `loadDocument(text, options?)` takes the option
+  `frontmatterOptional`. See [ADR 0015](docs/adr/0015-optional-frontmatter.md).
 
 #### Reporting
 

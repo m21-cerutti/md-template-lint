@@ -4,6 +4,7 @@
     "status": "ok",
     "filenameCase": "snake_case",
     "uniqueHeadingNames": false,
+    "frontmatterOptional": false,
     "fields": [
       {
         "name": "id",

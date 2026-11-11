@@ -143,7 +143,7 @@ const item = (diagnostic: VerifyDiagnostic): string[] => {
 };
 
 describe("MTL030 heading-order-without-repeat (--verify)", { tags: ["MTL030", "syntax"] }, () => {
-  it("is registered in category syntax, error, phase template, last of the category", () => {
+  it("is registered in category syntax, error, phase template", () => {
     expect(registry.byCode.get(CODE)).toMatchObject({
       name: "heading-order-without-repeat",
       category: "syntax",
@@ -152,7 +152,6 @@ describe("MTL030 heading-order-without-repeat (--verify)", { tags: ["MTL030", "s
     });
     const codes = registry.byCategory.get("syntax")?.map((rule) => rule.code) ?? [];
     expect(codes.indexOf(CODE)).toBe(codes.indexOf("MTL025") + 1);
-    expect(codes.at(-1)).toBe(CODE);
   });
 
   it("has at least 1 pass- and 1 fail- case, one fixture file each; MTL030 in fail- only", () => {

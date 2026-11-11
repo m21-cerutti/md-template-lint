@@ -16,7 +16,7 @@ Conventions in this file:
   a template.
 - Behaviour is fixed byte for byte (messages, order, defaults) unless a section says
   "changed". Every change has an id: defects D01 to D18 (section 5), assumptions AS1 to AS17
-  (section 10), kept quirks Q01 to Q08 and other changes C01 to C13 (section 11). The
+  (section 10), kept quirks Q01 to Q08 and other changes C01 to C14 (section 11). The
   catalogue of these ids is [ADR 0014](adr/0014-legacy-behaviour-catalogue.md).
 - `AS<n>` is an assumption, `Q<nn>` a kept quirk, `C<nn>` a change beyond the defect list,
   `DIR<n>` a decision of the disable directives section (4.4).
@@ -43,6 +43,7 @@ Conventions in this file:
   - [2.9 Field formats (`[format:semver]`, `[format:date]`)](#29-field-formats-formatsemver-formatdate)
   - [2.10 Heading patterns, repeat rules and order](#210-heading-patterns-repeat-rules-and-order)
   - [2.11 Unique heading names (`[unique-headings-names]`)](#211-unique-heading-names-unique-headings-names)
+  - [2.12 Optional frontmatter (`[frontmatter:optional]`)](#212-optional-frontmatter-frontmatteroptional)
 - [3. Types](#3-types)
   - [3.1 The 17 types](#31-the-17-types)
   - [3.2 Inference order](#32-inference-order)
@@ -117,7 +118,8 @@ A template is a Markdown file, and it IS the schema. There is no separate schema
   frontmatter pattern matches `\n` only). Messages never contain a CR.
 
 A target is a Markdown file linted against one template. It must have the same frontmatter
-shape. Tags in a target are inert (2.7), with one exception: recognized trailing heading tags
+shape. A target may omit its frontmatter block only when the template carries the standalone
+frontmatter comment line `# [frontmatter:optional]` (2.12, ADR 0015). Tags in a target are inert (2.7), with one exception: recognized trailing heading tags
 are stripped from the target heading text before comparison. A target may carry disable
 directives, comments that silence rule codes locally (4.4). A template never does.
 
@@ -134,7 +136,9 @@ and `~` stay strings, never a bool, date, number or null.
 - With a duplicate key, the last one wins. This is not an error.
 - A file without frontmatter is `MTL001`, invalid YAML is `MTL002`, and a frontmatter that is
   not a mapping is `MTL003`. These are parse errors. A file that cannot be read or is not valid
-  UTF-8 is `MTL004`.
+  UTF-8 is `MTL004`. One exception: a TARGET without a frontmatter block is not `MTL001` when
+  its template carries `# [frontmatter:optional]` (2.12). A `---` block that is never closed
+  stays `MTL001`, and a template without a frontmatter block stays `MTL001` in every case.
 - An empty frontmatter block loads as an empty mapping and is valid.
 
 An "empty value" (used by presence) is the empty or blank string, or an empty list. A mapping is
@@ -161,6 +165,12 @@ Three syntaxes carry tags:
 | Filename comment | a standalone `#` comment line in the frontmatter    | the template | `fmFilenameLine` (family `fm*`)                |
 | Heading suffix   | bracket tags after the text of a heading (H1 to H6) | that heading | `bodyHeading` (family `body*`)                 |
 
+The standalone comment line of the second row carries three template-wide switches, each
+alone on its line: `# [filename:case:<convention>]` (2.5), `# [unique-headings-names]` (2.11)
+and `# [frontmatter:optional]` (2.12, ADR 0015). The last one parses as `fmFilenameLine` too:
+the family keyword `frontmatter` and one tag alternative are the only grammar additions
+(2.12 "Grammar at spec level").
+
 The parser has two rule families: `fm*` for the frontmatter and `body*` for the body. Lexer
 modes decide the region: the `FM*` modes cover the leading `---` block, and the `BODY` and fence
 modes cover the rest (ADR 0002). A known tag in the wrong region is a located warning (`MTL013`,
@@ -177,6 +187,7 @@ typeHint       = "[" typeToken "]"                  ; tagBareBracket: one word, 
 hintWord       = "YYYY-MM-DD" | "iso" | "url" | "lien" | "path" | "@" name "/"   ; fmHintWord (2.4)
 inlineComment  = (text | tag | typeHint | hintWord)*
 filenameLine   = "#" WS "[filename:case:" convention "]" WS EOL
+optionalLine   = "#" WS "[frontmatter:optional]" WS EOL ; the switch of 2.12
 headingSuffix  = headingText (WS tag)*              ; recognized tags peeled right to left
 convention     = "snake_case" | "kebab-case" | "camelCase" | "PascalCase"
 patternTag     = "[pattern:" '"' patternText '"' "]" ; heading only, 2.10
@@ -217,8 +228,9 @@ The heading patterns of 2.10 (change C12) bring two exceptions to `tag`:
     written, rendered like the key-line form.
   - There is one finding per unknown tag, in source order.
   - Known tags on a standalone line keep their meaning and give no unknown warning. The
-    filename tag alone on a line (2.5) and `[unique-headings-names]` alone on a line (2.11) are
-    switches; other known tags there stay inert.
+    filename tag alone on a line (2.5), `[unique-headings-names]` alone on a line (2.11) and
+    `[frontmatter:optional]` alone on a line (2.12) are switches; other known tags there stay
+    inert.
   - A malformed form alone on the line (`[unique-headings-names:x]`) keeps its `MTL012`
     behaviour. A malformed or misplaced known-family tag mixed with text
     (`# note [count:min:abc]`) gives no finding.
@@ -1062,8 +1074,25 @@ with `Errors:       1` in the summary, exit 1.
   the template key line, column 1. It has no effect on linting (the default date shapes of 3.3
   apply) and is never suppressible (DIR6). New code (change C11). Details and rationale are in
   2.9.
+- A FRONTMATTER TAG CONFLICT is a well-formed `[frontmatter:optional]` (2.12) that has no
+  effect: a later standalone comment line (the first one stays effective), the tag after a
+  `key:` or the tag beside other comment text. It gives the warning `MTL031` with the line and
+  column of the tag's `[`, has no effect on linting and is never suppressible (DIR6). New code
+  (change C14, ADR 0015). One finding per such tag, in source order. The messages (rule
+  `frontmatter-tag-conflict`, `src/rules/syntax.ts`) are:
+  - a duplicate standalone line: `Comment line {line}: tag [frontmatter:optional] has no effect (already set on line {first})`, `{first}` the line of the first standalone line;
+  - the tag after a key: `Field '{key}': tag [frontmatter:optional] has no effect (it must be alone on its comment line)`;
+  - the tag in mixed comment text (`# note [frontmatter:optional]`): `Comment line {line}: tag [frontmatter:optional] has no effect (it must be alone on its comment line)`.
+
+  The tag is printed as the code writes it in the message (`[frontmatter:optional]`, lower
+  case) whatever the case in the template. Why a warning and not silence (as for the filename
+  and unique-names tags on a key line): the author opted in to a file-level switch, and a
+  switch that silently does nothing hides the mistake. A tag in a heading is `MTL013`, a
+  malformed one `MTL012`, a typo `MTL010`; none of them is `MTL031`.
+
 - Template WARNINGS (unknown, malformed, misplaced and conflicting tags, invalid patterns,
-  missing date formats: `MTL010` to `MTL016`) are shown by `--verify` alone. A lint run does
+  missing date formats, conflicting frontmatter tags: `MTL010` to `MTL016` and `MTL031`) are
+  shown by `--verify` alone. A lint run does
   not print them, and they change neither its findings nor its exit code. Template ERRORS
   (`MTL017`, `MTL018`, `MTL019`, `MTL030`) are shown by both modes (above).
 - The parser layer reports only a region, a reason (unknown, malformed, wrong-region), a
@@ -2949,6 +2978,180 @@ Why this design:
 - The code `MTL613` was reserved for this rule (4.2). Its row is in 4.3, and it is listed in
   DIR6.
 
+### 2.12 Optional frontmatter (`[frontmatter:optional]`)
+
+One opt-in template tag, written as a standalone comment line in the template frontmatter,
+lets a target omit its frontmatter block (ADR 0015, change C14). Why: a file such as a
+`README.md` or a `TODO.md` usually has no frontmatter, and could not be linted for its name,
+headings and content. Every other rule is unchanged by it. The rule `MTL031` reports a copy of
+the tag that has no effect. Its fixtures are listed below.
+
+The switch is `# [frontmatter:optional]`: a comment line of the template frontmatter block that
+holds only this tag, in the placement family of the filename comment (2.5) and of
+`# [unique-headings-names]` (2.11). It binds to no key. It may sit anywhere in the block, before
+or after the keys and the other comments. Written on several lines, the first line is the
+switch and every later line is `MTL031`. Keywords are case-insensitive (section 2), so
+`# [FRONTMATTER:OPTIONAL]` is the same switch.
+
+The comment on the opening delimiter (`--- # [frontmatter:optional]`) is NOT accepted. Only
+spaces or tabs may follow the dashes of an opening delimiter (1.1), so such a line is body
+text, the template has no frontmatter block and is `MTL001`. Accepting it would change what
+opens frontmatter, in templates and in targets, and would not be additive (ADR 0015).
+
+Placement cases (one answer per case):
+
+| Written as                                                                   | Where                             | Result                                                                                                                                                                          |
+| ---------------------------------------------------------------------------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `# [frontmatter:optional]` alone on a line                                   | template frontmatter              | the switch (the first such line)                                                                                                                                                |
+| a second or later `# [frontmatter:optional]` alone on a line                 | template frontmatter              | the first line stays effective; the later line gives `MTL031` `Comment line {line}: tag [frontmatter:optional] has no effect (already set on line {first})`, one per later line |
+| `title: "x" # [frontmatter:optional]`                                        | template frontmatter key line     | inert; `MTL031` `Field 'title': tag [frontmatter:optional] has no effect (it must be alone on its comment line)`                                                                |
+| `# note [frontmatter:optional]` (other text or tags on the line)             | template frontmatter comment line | inert; `MTL031` `Comment line {line}: tag [frontmatter:optional] has no effect (it must be alone on its comment line)`                                                          |
+| `## Notes [frontmatter:optional]`                                            | template BODY, a heading          | inert; `MTL013` `Heading 'Notes [frontmatter:optional]': tag [frontmatter:optional] is not valid in a heading` (the tag is frontmatter-only, 2.7)                               |
+| `# [frontmatter:optional:x]`, `# [frontmatter:required]` alone on a line     | template frontmatter              | malformed; `MTL012` `Filename comment: malformed tag {tag}` (the message of the standalone line, as `# [filename:case:bogus]`); no switch                                       |
+| `# [frontmater:optional]` (typo)                                             | template frontmatter              | unknown tag; `MTL010` `Comment line {line}: unknown tag {tag}` (2.1); no switch                                                                                                 |
+| any form                                                                     | a target file                     | inert (tags in a target are inert, 2.7); a target never carries the switch, and no `MTL031` is reported for it                                                                  |
+| the tag, in a template without a frontmatter block (for example in its body) | template                          | the tag cannot be written: the template is broken, `MTL001` (the loader of a template never takes the option below)                                                             |
+
+Behaviour matrix (the target, for a template that carries the switch unless said otherwise):
+
+| Target                                              | Result                                                                                                                                                                                                                                                            |
+| --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| no frontmatter block                                | No `MTL001`. No field rule runs (4.1 step 3): no `MTL201` even for a required field, and no `MTL102`. No unknown key is found (`MTL202`, nothing to find). Filename case (`MTL101`), heading and content rules and body disable directives run as for any target. |
+| frontmatter block                                   | Checked exactly as without the switch (the template fields, 4.1 step 3, and the unknown keys, step 4).                                                                                                                                                            |
+| frontmatter block, YAML invalid or not a mapping    | `MTL002` or `MTL003`, as without the switch.                                                                                                                                                                                                                      |
+| `---` opened and never closed                       | `MTL001`, as without the switch: a half-written block is an authoring error, not an absent block.                                                                                                                                                                 |
+| empty file, or a body without the template headings | Every required template heading is `MTL601`, one per heading (a body-only target is a target like any other).                                                                                                                                                     |
+| no frontmatter block, template WITHOUT the switch   | `MTL001` `Parse error: File must have YAML frontmatter (---...---)`, as today.                                                                                                                                                                                    |
+
+Engine contract (the code is the detail; this is the part that is stable):
+
+- The loader of a parsed text takes an optional parameter:
+  `loadDocument(text, options?: { frontmatterOptional?: boolean })`
+  (`src/engine/load.ts`, exported by `src/index.ts`). Without the option, or with `false`, it
+  behaves as before: no frontmatter block is `frontmatter-missing` (`MTL001`). With the option
+  and no frontmatter block that is not unclosed, it returns a body-only model: no fields, no
+  filename tag, the sections and the findings and directives of the body.
+- Only the target path passes the option, from the flag of the parsed template
+  (`lintTarget`, `src/engine/pipeline.ts`). The template path (`checkTemplate`) and the file
+  loader never pass it, so a template without a frontmatter block stays broken (`MTL001`).
+- In the target steps of 4.1, step 3 (the template fields) is skipped when the target has no
+  frontmatter block; it is reachable only through the option above. Steps 2, 4 (silent: the
+  target has no keys), 5, 6, 7 and 8 run as for any target.
+- The switch is `frontmatterOptional: boolean` on the template `Frontmatter` and on the loaded
+  document model (true when a well-formed standalone line exists; false in a body-only target
+  model). It is printed by `--verify` (8.3, 8.5).
+
+`--verify` output (8.3, 8.5):
+
+- The template-wide switch prints the line `Frontmatter: [frontmatter:optional]` right after
+  `Unique heading names:` (or after `Filename:`, or first when neither is printed), followed by
+  the one blank line before the table, as the other two lines are.
+- The warning section `Conflicting frontmatter tags:` lists the `MTL031` findings with line and
+  column and the template excerpt, after `Date fields without format:` and before the error
+  sections (`src/cli/verify-report.ts`).
+- JSON verify: each template gains `frontmatterOptional` (boolean, always present, `false`
+  without the switch) right after `uniqueHeadingNames`; additive, `schemaVersion` stays 1.
+
+Grammar at spec level (these names are normative; `grammar/*.g4` stays normative for the
+shape):
+
+- Lexer `grammar/MdTemplateLexer.g4`, mode `TAG_STRICT` only: the keyword token
+  `FRONTMATTER : 'frontmatter' ;` (case-insensitive by the grammar option, like
+  `REPEAT_RULES`). The word `optional` is the existing token `OPTIONAL`.
+- The tag has the shape of section 2: `frontmatterTag = "[frontmatter:optional]"`.
+- Parser `grammar/MdTemplateParser.g4`:
+  - `tagFamily` gains `FRONTMATTER`.
+  - `fmTagBody` gains the alternative `fmFrontmatterTag : FRONTMATTER COLON OPTIONAL ;`.
+  - There is NO new `fmLine` alternative: a standalone `# [frontmatter:optional]` already
+    parses as `fmFilenameLine` (`FM_LINE_HASH WS? tagCandidate WS? NL`), and the family of the
+    candidate decides what the line is (the filename switch, or this switch).
+  - `bodyTagBody` has no alternative for it: in a heading the tag is the wrong region
+    (`MTL013`).
+- AST kind `frontmatter-optional`, frontmatter only (`FRONTMATTER_KIND_SET`); after a key it is
+  an inert tag, like the filename tag. The visitor is `src/tags/visitors/frontmatter.ts`.
+- The switch is `frontmatterOptional: boolean` on `Frontmatter` and on the loaded document
+  model; `Frontmatter.optionalTags` holds every well-formed copy of the tag (placement
+  `alone`, `key` or `mixed`, with its position) for `MTL031`.
+- A standalone `# [frontmatter:optional:x]` is malformed (`MTL012`), like the filename line.
+
+Worked example 1, a target without frontmatter (file `notes/guide.md`, a pair of the config
+with `include: notes/*.md`). Template:
+
+```text
+1  ---
+2  # [frontmatter:optional]
+3  title: "string" # [presence:required]
+4  ---
+5
+6  # Guide
+7
+8  ## Context
+9
+10 ## Usage
+```
+
+Target:
+
+```text
+1  # Guide
+2
+3  ## Usage
+4
+5  Run the tool.
+```
+
+- No frontmatter block: no `MTL001`, and the required `title` is not checked (no `MTL201`).
+- Headings: `# Guide` and `## Usage` match; `## Context` has no match.
+- Expected text output (exit 1):
+
+```text
+  FAIL notes/guide.md
+      error MTL601 Heading: Missing required heading: 'Context'
+```
+
+- Variant, the target adds `Context`: `## Context` between lines 1 and 3 gives no finding at
+  all: `PASS notes/guide.md`.
+- Variant, the target has a block without `title` (`---`, `author: x`, `---` before line 1):
+  checked as without the switch, `MTL201` `Field 'title': required but empty or missing`.
+- Variant, no switch: template line 2 removed: the target gets `MTL001` with the text `Parse error: File must have YAML frontmatter (---...---)` and no other diagnostic.
+- Variant, empty target: `MTL601` for `Guide`, `Context` and `Usage` (a body-only target is
+  a target like any other; this is intended).
+- Variant, template line 2 written as `title: "string" # [frontmatter:optional]` instead:
+  the tag is inert after a key, so the switch is not set and the target is `MTL001`; `--verify` prints the `MTL031` warning `Field 'title': tag [frontmatter:optional] has no effect (it must be alone on its comment line)`.
+
+Fixtures (template fixtures under `tests/fixtures/templates/<code>/`, test
+`tests/syntax/syntax/MTL031-frontmatter-tag-conflict.test.ts`; pair fixtures
+`tests/fixtures/optional-frontmatter/<case>/template.md` and `target.md`, test
+`tests/unit/optional-frontmatter.test.ts`; CLI fixtures
+`tests/fixtures/cli/schema-pass-frontmatter-optional` and
+`schema-fail-frontmatter-tag-conflict`):
+
+- `MTL031`: `pass-single-standalone-line`, `pass-standalone-line-after-other-comments`,
+  `pass-tag-uppercase`, `fail-duplicate-standalone-line`, `fail-tag-after-key`,
+  `fail-tag-on-mixed-comment-line`, `fail-three-lines-two-findings`;
+- other codes: `MTL012/fail-frontmatter-optional-with-argument`,
+  `MTL013/fail-frontmatter-optional-in-heading`, `MTL010/fail-frontmatter-optional-typo`,
+  `MTL001/fail-template-without-frontmatter-with-optional-tag-in-body`;
+- pairs: `pass-target-without-frontmatter`, `pass-target-with-frontmatter`,
+  `pass-body-directive-without-frontmatter`, `fail-target-with-frontmatter-missing-required-field`,
+  `fail-target-with-invalid-frontmatter-value`, `fail-target-without-frontmatter-heading-missing`,
+  `fail-target-without-frontmatter-content-rule`,
+  `fail-target-without-frontmatter-filename-case`, `fail-unclosed-frontmatter`,
+  `fail-invalid-yaml-frontmatter`, `fail-untagged-template-target-without-frontmatter`,
+  `fail-empty-target`.
+
+Why this design:
+
+- A standalone comment line is the one placement that is additive: it parses as a line that
+  already exists (`fmFilenameLine`), so a template without the tag, and every target, keep
+  their findings.
+- Skipping the template fields, not only the missing values, is required: an empty field map
+  would still give `MTL201` for each required field.
+- The filename check (`MTL101`) still runs, because it reads the file name, not the
+  frontmatter. `MTL102` (`[value:filename]`) is a field rule and does not run.
+- An unclosed `---` keeps `MTL001`: the author started a block.
+- The warning `MTL031` exists because a misplaced switch would otherwise silently do nothing.
+
 ## 3. Types
 
 ### 3.1 The 17 types
@@ -3094,9 +3297,13 @@ List text in messages (Q02): messages print a list in bracket form with quoted i
 ### 4.1 Order of checks for one target
 
 1. Parse the target. A parse failure (`MTL001` to `MTL004`) is the only diagnostic; the file
-   is not checked further. Message prefix: `Parse error: `.
+   is not checked further. Message prefix: `Parse error: `. A target without a frontmatter
+   block is not a parse failure when its template carries `# [frontmatter:optional]` (2.12);
+   a `---` block that is never closed still is.
 2. Filename case (`MTL101`).
-3. For each template field, in template order. If the target value is missing or empty:
+3. For each template field, in template order. A target that has no frontmatter block (only
+   possible under `[frontmatter:optional]`, 2.12) skips this whole step. Otherwise, if the
+   target value of the field is missing or empty:
    required gives `MTL201`; optional and conditional are silent; then go to the next field.
    Otherwise run, in this order: constant (`MTL301`), count (`MTL401`, `MTL402`), range
    (`MTL403` to `MTL406`), order (`MTL407`), scheme (`MTL304`, `MTL305`), `[io:exists]`
@@ -3122,12 +3329,12 @@ to 6 stay valid. A target without directives gives the same diagnostics and the 
 output as without directive support; JSON only gains the always present `summary.suppressed` key (8.5).
 Errors are printed first, then warnings, each list in emission order.
 
-Template-side diagnostics (`MTL001` to `MTL004` fatal, `MTL010` to `MTL016` warnings,
+Template-side diagnostics (`MTL001` to `MTL004` fatal, `MTL010` to `MTL016` and `MTL031` warnings,
 `MTL017` to `MTL019` and `MTL030` errors) come from the template parse, once per template, before any
 target. `MTL017`, `MTL018`, `MTL019` and `MTL030` are the non-fatal TEMPLATE ERRORS (2.7): a lint run prints
 them on the template file and exits 1, and still runs steps 1 to 8 on every target with
 the template as written; `--verify` fails the template, exit 1 (7.3, 7.5, 8.2). The
-template warnings `MTL010` to `MTL016` stay `--verify` output.
+template warnings `MTL010` to `MTL016` and `MTL031` stay `--verify` output.
 
 ### 4.2 Code ranges
 
@@ -3151,8 +3358,8 @@ tag diagnostics (`MTL014` used by C12; `MTL015` used by C10; `MTL016` used by C1
 heading-optional-min-conflict; `MTL019` the template error heading-child-order-conflict;
 the sub-range is full), `MTL020`-`029` target directive warnings (4.4; `MTL026`-`029` free,
 kept for directives), `MTL030`-`039` template tag diagnostics, continued (`MTL030`
-heading-order-without-repeat, a template error, AS17; `MTL031`-`039` free), `MTL040`-`099`
-free. Inside `format`: `MTL301`-`305` the original codes, `MTL306`-`309` field formats
+heading-order-without-repeat, a template error, AS17; `MTL031` frontmatter-tag-conflict, a
+template warning, C14, ADR 0015; `MTL032`-`039` free), `MTL040`-`099` free. Inside `format`: `MTL301`-`305` the original codes, `MTL306`-`309` field formats
 (C11). Inside `heading`: `MTL601`-`604` the original codes (`MTL602` heading-level-missing
 is RETIRED with the dropped `exist` tag: reserved, never reused; it has no 4.3 row and no
 rule, and stays reserved here), `MTL605`-`609` heading patterns, repeat rules and order
@@ -3198,10 +3405,12 @@ after the code in the output; codes that keep the text of the earlier linter are
 | `MTL024` | directive-begin-unclosed        | warning  | `Directive on line {line}: 'begin disable {code}' is never closed, it runs to the end of the file`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | new (C08)                                               |
 | `MTL025` | directive-already-disabled      | warning  | `Directive on line {line}: '{directive} {code}' while {code} is already disabled since line {open}`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | new (C08)                                               |
 | `MTL030` | heading-order-without-repeat    | error    | `Heading '{text}': tag {tag} needs [repeat-rules:same-level] (an order compares the repeats of one heading)` (`{text}` the template heading label, `{tag}` the effective order tag as written; phase `template`, template line of the heading and column of that tag's `[`; an order tag on a pattern heading without any repeat tag; template error like `MTL017`; 2.7)                                                                                                                                                                                                                                                         | new (AS17, second revision)                             |
+| `MTL031` | frontmatter-tag-conflict        | warning  | `Comment line {line}: tag [frontmatter:optional] has no effect (already set on line {first})`, `Field '{key}': tag [frontmatter:optional] has no effect (it must be alone on its comment line)` or `Comment line {line}: tag [frontmatter:optional] has no effect (it must be alone on its comment line)` (`{first}` the line of the first standalone `# [frontmatter:optional]` line; phase `template`, template line and column of the tag's `[`; one per offending tag; template warning, `--verify` output; 2.7, 2.12)                                                                                                       | new (C14, ADR 0015)                                     |
 
 `MTL020` to `MTL025` are the target directive warnings; their placeholders and rules are
-under "Directive warnings" below (4.3) and in 4.4. `MTL030` is a template tag
-diagnostic like `MTL010` to `MTL019`, numbered after the directive sub-range (4.2).
+under "Directive warnings" below (4.3) and in 4.4. `MTL030` and `MTL031` are
+template tag diagnostics like `MTL010` to `MTL019`, numbered after the directive sub-range
+(4.2).
 
 `MTL001` to `MTL004` on a target print `Parse error: <message>`. On a template the same
 diagnostic makes the template "broken" and is printed in ONE form everywhere (text, verify and
@@ -3651,7 +3860,7 @@ suppressible, and named in a directive they give `MTL022`:
 
 - `MTL001` to `MTL004`, on a target or a template: a file that does not parse is not linted
   and its directives are not read; a broken template is never suppressed;
-- `MTL010` to `MTL019` and `MTL030`: template tag diagnostics (warnings, and the template
+- `MTL010` to `MTL019`, `MTL030` and `MTL031`: template tag diagnostics (warnings, and the template
   errors `MTL017`, `MTL018`, `MTL019` and `MTL030`); they are never
   emitted for a target (tags in a target are inert, 2.7; in a lint run the template errors
   are printed on the template file, not on a target, 8.2), and the template cannot carry
@@ -3675,7 +3884,7 @@ which removes the whole finding), `MTL607` per
 heading line when it has an anchor, `MTL605` and an anchorless `MTL607` (no instance) only
 by `disable-file`. `MTL613` (2.11) is suppressible per later duplicate heading line
 (`disable-line`, `disable-next-line`, a range over it, or `disable-file MTL613`); `MTL014`,
-`MTL017`, `MTL018`, `MTL019` and `MTL030` are not suppressible. `MTL601` with its
+`MTL017`, `MTL018`, `MTL019`, `MTL030` and `MTL031` (C14) are not suppressible. `MTL601` with its
 "found later" hint stays anchorless (DIR7). The retired `MTL602` (its rule is removed) is
 no registered code and has no 4.3 row, so a directive naming it
 gives `MTL021` (DIR2).
@@ -4205,7 +4414,7 @@ lint-staged config:
   unknown and malformed tags). No target file is read, no `[io:exists]` check runs, no
   network access.
 - Exit 0 when every template parses and has no template error (warnings `MTL010` to
-  `MTL016` do not fail). A template that does not parse or cannot be read (`MTL001` to
+  `MTL016` and `MTL031` do not fail). A template that does not parse or cannot be read (`MTL001` to
   `MTL004`, including a file that is not UTF-8) is broken: exit 1, as before. A template
   that parses but has a template ERROR (`MTL017` heading-pattern-duplicate;
   `MTL018` heading-optional-min-conflict; `MTL019` heading-child-order-conflict;
@@ -4275,7 +4484,7 @@ the first listed tail heading and for `MTL615` the text of the undeclared child 
 for `MTL616` the text of the first listed tail heading, for `MTL617` the text of the first
 listed instance without order key, for `MTL613` the text of the later duplicate heading
 (2.11); for `MTL601` it stays the text of the missing template heading, with or without the
-hint. The template diagnostics `MTL010` to `MTL019` and `MTL030` carry no `heading` member.
+hint. The template diagnostics `MTL010` to `MTL019`, `MTL030` and `MTL031` carry no `heading` member.
 A `field` member is NOT emitted (change C07). `message` is the message text of 4.3 without
 the code. Comparisons with the output of the earlier linter (ADR 0014) use
 `(path, severity, code, message)` after normalizing separators (D18). The directive warnings `MTL020` to `MTL025` carry `line` and `column` of
@@ -4293,7 +4502,7 @@ resolved once per diagnostic, by the runner, in this order:
 
 The source file is the file the diagnostic belongs to: the TARGET file for a target
 diagnostic (the field, filename, heading, content and directive codes), the TEMPLATE file for
-a template-phase diagnostic (`MTL010` to `MTL019` and `MTL030`, shown by `--verify`, 8.3;
+a template-phase diagnostic (`MTL010` to `MTL019`, `MTL030` and `MTL031`, shown by `--verify`, 8.3;
 the template errors `MTL017`, `MTL018`, `MTL019` and `MTL030` also in a lint run, 8.2). `MTL001` to
 `MTL004` (no position, no anchor) and the run diagnostics `MTL9xx` have no source line. A line
 number outside the file (below 1 or above its line count) gives no source line. Line numbers
@@ -4399,7 +4608,7 @@ Rules:
   broken: the files of the pair are then linted and printed as usual. The entry is printed
   in every block of a pair that uses the template; the template is counted once in
   `Templates:` `checked` (not in `broken`, not in `Total files`, `Passed` or `Failed`) and
-  listed once, by path, under `Failed templates:`. Template warnings (`MTL010` to `MTL016`)
+  listed once, by path, under `Failed templates:`. Template warnings (`MTL010` to `MTL016`, `MTL031`)
   are never printed in a lint run. Worked example 5 of 2.10.
 - `Run errors:` and `Run warnings:` are shown only when greater than 0 (never as `0`).
   `Broken templates:`, `Failed templates:` and `Failed files:` lists appear only when
@@ -4531,7 +4740,9 @@ Unknown tags found (typo or unimplemented feature):
   rule line (`========================`).
 - The `Filename:` line only when the template declares it. The line
   `Unique heading names: [unique-headings-names]` (2.11) only under the template-wide switch, right after
-  `Filename:` (or in its place), then the one blank line before the table. Columns are padded
+  `Filename:` (or in its place). The line `Frontmatter: [frontmatter:optional]` (2.12) only
+  when the template carries that switch, right after `Unique heading names:` (or after
+  `Filename:`, or first). Then the one blank line before the table. Columns are padded
   to the widest name and type, the rule line is a run of `-` of the header length.
 - Rule order per field: presence, constant, case, elements case, shape, elements shape,
   value-filename, count min, count max, range min, range max, order, scheme (sorted), io, enum
@@ -4554,7 +4765,10 @@ Unknown tags found (typo or unimplemented feature):
   `Misplaced tags:` (sections follow code order). Tags without effect (`MTL015`,
   2.7) are listed in a section `Conflicting tags:` with line and column. Missing date formats
   (`MTL016`, 2.9, change C11) are listed in a section `Date fields without format:`
-  with line and column (worked example 2 of 2.9). Duplicate patterns (`MTL017`, 2.10)
+  with line and column (worked example 2 of 2.9). Frontmatter tags without effect
+  (`MTL031`, 2.12, change C14) are listed in a section `Conflicting frontmatter tags:` with
+  line and column, after `Date fields without format:` (and so before the error sections).
+  Duplicate patterns (`MTL017`, 2.10)
   follow, in a section `Duplicate patterns:`, one item per finding,
   `  - <message> (line L, column C)` with its excerpt, like the other sections (worked
   example 3 of 2.10). Contradictory minimums (`MTL018`, 2.10) follow, in a section
@@ -4578,7 +4792,7 @@ Unknown tags found (typo or unimplemented feature):
   (2.11; once, however often the tag is written).
 - A broken template prints `TEMPLATE ERROR: <template> - <message>` instead of its table.
 - Source excerpt (change C09, AS14). Every item of the tag sections above is followed by
-  the excerpt of its TEMPLATE line (the tag diagnostics `MTL010` to `MTL019` and `MTL030` all carry line
+  the excerpt of its TEMPLATE line (the tag diagnostics `MTL010` to `MTL019`, `MTL030` and `MTL031` all carry line
   and column), with the rules EX2 to EX6 of 8.2 except that the rows are indented 6 spaces
   instead of 8 (the item text starts at column 5, the excerpt sits 2 columns to the right of
   it, as in 8.2). The caret is under the character the `column` names (for a malformed tag,
@@ -4672,10 +4886,13 @@ lists are complete), so the counts above also include the two passing files of t
 sample.
 
 - `mode` is `lint` or `verify`. In verify mode `results` is replaced by `templates`: for each
-  template `{ path, status, filenameCase, uniqueHeadingNames, fields: [{ name, type, rules }], headings: [{ level, text, rules }], diagnostics }`.
+  template `{ path, status, filenameCase, uniqueHeadingNames, frontmatterOptional, fields: [{ name, type, rules }], headings: [{ level, text, rules }], diagnostics }`.
   `uniqueHeadingNames` (2.11) is a boolean, always present, `false` without the
   template-wide `# [unique-headings-names]` switch, right after `filenameCase`; additive,
   pinned by the template key-order test of `tests/unit/reporters/json.test.ts`.
+  `frontmatterOptional` (2.12, change C14) is a boolean, always present, `false` without the
+  `# [frontmatter:optional]` switch, right after `uniqueHeadingNames`; additive, same pin;
+  `schemaVersion` stays 1.
   A verify template `status` is `ok`, `broken`, or `fail` (`fail`: it parses and has a
   template error, `MTL017`, `MTL018`, `MTL019` or `MTL030`, in its `diagnostics` with
   `severity` `error`). The verify
@@ -4745,17 +4962,17 @@ pending, ADR 0002). A negated-set lexer token needs a `TOKEN_SAMPLES` entry in
 `tests/consistency/consistency.ts`. Each registered code needs a pass and a fail fixture, and
 the tests of a rule are written by someone other than its author.
 
-| File                    | Codes                                                             | Tags and checks                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| ----------------------- | ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/rules/syntax.ts`   | `MTL001`-`MTL004`, `MTL010`-`MTL019`, `MTL020`-`MTL025`, `MTL030` | Frontmatter and YAML parse errors, unknown, malformed, misplaced and conflicting tags, invalid heading patterns, date fields without format, duplicate heading patterns, optional repeat headings with a minimum, child headings out of level order, order tags without repeat; target disable directive warnings (4.4).                                                                                                                             |
-| `src/rules/filename.ts` | `MTL101`, `MTL102`                                                | `[filename:case:<convention>]`, `[value:filename]`.                                                                                                                                                                                                                                                                                                                                                                                                  |
-| `src/rules/presence.ts` | `MTL201`, `MTL202`                                                | `[presence:required]`, `[presence:optional]`, `[presence:conditional:<text>]` on fields; unknown keys.                                                                                                                                                                                                                                                                                                                                               |
-| `src/rules/format.ts`   | `MTL301`-`MTL309`                                                 | `[format:constant:...]`, `[format:snake_case]`, `[format:kebab-case]`, `[format:elements:...]`, `[format:scheme:...]`, `[format:semver]`, `[format:date]`, `[format:elements:semver]`, `[format:elements:date]`.                                                                                                                                                                                                                                     |
-| `src/rules/bounds.ts`   | `MTL401`-`MTL407`                                                 | `[count:min:N]`, `[count:max:N]`, `[range:min:N]`, `[range:max:N]`, `[order:ascending]`.                                                                                                                                                                                                                                                                                                                                                             |
-| `src/rules/type.ts`     | `MTL501`-`MTL517`                                                 | The 17 types and enum membership; type inference lives in the engine core.                                                                                                                                                                                                                                                                                                                                                                           |
-| `src/rules/heading.ts`  | `MTL601`-`MTL617` (`MTL602` retired: no rule, reserved)           | Heading suffix presence tags (required, optional, conditional, template-only) and order, at every level and per parent section, on the positional match; `[content:subheadings:disallow]`, `[content:subheadings:no-extra]`; `[pattern:"..."]`, `[repeat-rules:same-level...]` and the eight `[order:...]` forms on headings (2.10); the extra-heading warning of every run's tail; `[unique-headings-names]`, template-wide and per heading (2.11). |
-| `src/rules/content.ts`  | `MTL701`-`MTL705`                                                 | `[content:non-empty]`, `[content:table]`, `[content:list]`, `[content:min-lines:N]`, `[content:max-lines:N]`.                                                                                                                                                                                                                                                                                                                                        |
-| `src/rules/io.ts`       | `MTL801`-`MTL805`                                                 | `[io:exists]`.                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| File                    | Codes                                                                      | Tags and checks                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| ----------------------- | -------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/rules/syntax.ts`   | `MTL001`-`MTL004`, `MTL010`-`MTL019`, `MTL020`-`MTL025`, `MTL030`-`MTL031` | Frontmatter and YAML parse errors, unknown, malformed, misplaced and conflicting tags, invalid heading patterns, date fields without format, duplicate heading patterns, optional repeat headings with a minimum, child headings out of level order, order tags without repeat, `[frontmatter:optional]` copies without effect (2.12); target disable directive warnings (4.4).                                                                      |
+| `src/rules/filename.ts` | `MTL101`, `MTL102`                                                         | `[filename:case:<convention>]`, `[value:filename]`.                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `src/rules/presence.ts` | `MTL201`, `MTL202`                                                         | `[presence:required]`, `[presence:optional]`, `[presence:conditional:<text>]` on fields; unknown keys.                                                                                                                                                                                                                                                                                                                                               |
+| `src/rules/format.ts`   | `MTL301`-`MTL309`                                                          | `[format:constant:...]`, `[format:snake_case]`, `[format:kebab-case]`, `[format:elements:...]`, `[format:scheme:...]`, `[format:semver]`, `[format:date]`, `[format:elements:semver]`, `[format:elements:date]`.                                                                                                                                                                                                                                     |
+| `src/rules/bounds.ts`   | `MTL401`-`MTL407`                                                          | `[count:min:N]`, `[count:max:N]`, `[range:min:N]`, `[range:max:N]`, `[order:ascending]`.                                                                                                                                                                                                                                                                                                                                                             |
+| `src/rules/type.ts`     | `MTL501`-`MTL517`                                                          | The 17 types and enum membership; type inference lives in the engine core.                                                                                                                                                                                                                                                                                                                                                                           |
+| `src/rules/heading.ts`  | `MTL601`-`MTL617` (`MTL602` retired: no rule, reserved)                    | Heading suffix presence tags (required, optional, conditional, template-only) and order, at every level and per parent section, on the positional match; `[content:subheadings:disallow]`, `[content:subheadings:no-extra]`; `[pattern:"..."]`, `[repeat-rules:same-level...]` and the eight `[order:...]` forms on headings (2.10); the extra-heading warning of every run's tail; `[unique-headings-names]`, template-wide and per heading (2.11). |
+| `src/rules/content.ts`  | `MTL701`-`MTL705`                                                          | `[content:non-empty]`, `[content:table]`, `[content:list]`, `[content:min-lines:N]`, `[content:max-lines:N]`.                                                                                                                                                                                                                                                                                                                                        |
+| `src/rules/io.ts`       | `MTL801`-`MTL805`                                                          | `[io:exists]`.                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 
 Outside `src/rules/`: the engine core (frontmatter and heading extraction, comment
 binding, type inference), config loader, runner, reporters and CLI own `MTL9xx`.
@@ -5185,6 +5402,39 @@ heading-unique-names (the 4.3 table then holds 84 codes, pinned by
   `fail-template-only-with-unique-headings-names.md`; CLI fixtures for worked example 1
   (`plain`, JSON) and for `--verify` of both switches (`schema-pass-unique-headings-names-switches`).
 
+Optional frontmatter (2.12, ADR 0015, change C14, decisions of 2026-11-11). It adds the code
+`MTL031` frontmatter-tag-conflict (the 4.3 table then holds 85 codes, pinned by
+`tests/consistency/rules.test.ts`).
+
+- Grammar and tags. Lexer `grammar/MdTemplateLexer.g4`, mode `TAG_STRICT`: the keyword
+  `FRONTMATTER` (`frontmatter`; `OPTIONAL` exists). Parser `grammar/MdTemplateParser.g4`:
+  `tagFamily` has `FRONTMATTER`, `fmTagBody` has `fmFrontmatterTag`; no new `fmLine` rule, the
+  standalone line is an `fmFilenameLine` (2.12 "Grammar at spec level"). AST `src/tags/ast.ts`:
+  the kind `frontmatter-optional` in `FRONTMATTER_KIND_SET`, `Frontmatter.frontmatterOptional`
+  and `Frontmatter.optionalTags`, and the boolean on the document model
+  (`src/engine/model.ts`); visitor `src/tags/visitors/frontmatter.ts`, registered in
+  `visitors/index.ts`; parsing in `src/tags/parser.ts`. The generated parser is rebuilt
+  with `pnpm run gen:parser`.
+- Engine. `loadDocument(text, options?: { frontmatterOptional?: boolean })`
+  (`src/engine/load.ts`): a body-only model for a text with no frontmatter block (not an
+  unclosed one) under the option. `lintTarget` passes the template flag; `checkTemplate` and
+  the file loader do not (`src/engine/pipeline.ts`). `runTargetRules` skips the template field
+  loop (4.1 step 3) when the target has no frontmatter block.
+- `MTL031` frontmatter-tag-conflict: the rule in `src/rules/syntax.ts` (phase `template`,
+  severity `warning`), one finding per duplicate standalone line, tag after a key or tag in
+  mixed comment text, at the tag's `[`; never suppressible (DIR6). `--verify`: the
+  `Frontmatter: [frontmatter:optional]` line and the `Conflicting frontmatter tags:` section
+  in `src/runner/schema.ts` and `src/cli/verify-report.ts`; JSON verify key
+  `frontmatterOptional` after `uniqueHeadingNames` (the `schema-*` `expected.json` fixtures
+  and the key-order list of `tests/unit/reporters/json.test.ts` pin it). The spec text that
+  names `MTL031`: 1.1, 1.2, 2, 2.1, 2.7, 4.1, 4.2, 4.3 (row and DIR6), 7.3, 8.3, 8.5, the file
+  table above (section 9), AS12, AS14. Additive release: no existing template or target
+  changes its findings.
+- Tests: the fixture list of 2.12, `tests/fixtures/templates/MTL031/` and
+  `tests/syntax/syntax/MTL031-frontmatter-tag-conflict.test.ts`, the pair fixtures of
+  `tests/fixtures/optional-frontmatter/` with `tests/unit/optional-frontmatter.test.ts`, the CLI
+  fixtures `schema-pass-frontmatter-optional` and `schema-fail-frontmatter-tag-conflict`.
+
 Coverage check (read by `pnpm run check:rules`): every code of 4.3 appears in exactly one
 category row, except the `MTL9xx` run diagnostics, which belong to the engine and have no
 rule file. Tags map to the categories by the codes they emit: presence tags emit codes in
@@ -5235,7 +5485,7 @@ in the ADR that records them; do not confuse them with the kept quirks Q01 to Q0
 - AS12: Suppressible set (DIR6): `MTL101` to `MTL899` only, the heading warning `MTL616` and
   `MTL617` included. `MTL001` to `MTL004`, `MTL010` to `MTL013`, `MTL014` (since C12),
   `MTL015` (since C10), `MTL016` (since C11), `MTL017`, `MTL018`, `MTL019`, `MTL020` to
-  `MTL025`, `MTL030` and `MTL9xx` are not (`MTL022` when named). Rationale: only findings
+  `MTL025`, `MTL030`, `MTL031` (since C14) and `MTL9xx` are not (`MTL022` when named). Rationale: only findings
   about one parsed target's content are local to that file.
 - AS13: Reporting (DIR9): suppressed findings are dropped before counting and the exit code;
   only a count is shown (text `Suppressed:` when greater than 0, JSON `summary.suppressed`
@@ -5249,7 +5499,8 @@ in the ADR that records them; do not confuse them with the kept quirks Q01 to Q0
   `line` (an anchor-only excerpt is text-only, so JSON never carries a quoted line without
   its number and DIR5 stays true); (d) the line is cut at 100 characters, with `...`;
   (e) `--verify` quotes the template line of `MTL010` to `MTL013` (and `MTL015` since C10,
-  `MTL016` since C11, `MTL014` since C12, `MTL017`, `MTL018`, `MTL019` and `MTL030`), and a
+  `MTL016` since C11, `MTL014` since C12, `MTL017`, `MTL018`, `MTL019`, `MTL030` and `MTL031`
+  since C14), and a
   lint run quotes the template line of the template errors `MTL017`, `MTL018`, `MTL019` and
   `MTL030`. Rationale: see 8.1 and 8.2.
 - AS15: All heading levels (2.6, change C10, ADR 0009). Decisions of 2026-10-30 (numbered as
@@ -5421,7 +5672,7 @@ in the ADR that records them; do not confuse them with the kept quirks Q01 to Q0
     before the files, with template-line excerpts; listed once under `Failed templates:`;
     not counted as files; no `All files passed!`; kept by `--quiet`; JSON
     `template.status` `fail` with `diagnostics`, no new summary key; the template warnings
-    `MTL010` to `MTL016` stay `--verify` output.
+    `MTL010` to `MTL016` (and `MTL031` since C14) stay `--verify` output.
 
   Decisions of the first revision (2026-11-03; recorded in the "Revision 2026-11-03"
   sections of ADR 0011 and ADR 0012):
@@ -5766,4 +6017,13 @@ Behaviour that differs from before and is not one of the numbered defects.
   heading (its subtree), and the error `MTL613` heading-unique-names on each later
   duplicate (case-insensitive, any level). The bracket is a known tag (grammar and tag
   parsing). Compatibility: a template without the tag gives the same findings on every
+  target. Not breaking, minor release.
+- C14: optional frontmatter (2.12, 1.1, 1.2, 4.1, 4.3, ADR 0015). Implemented. Before, every
+  target needed a frontmatter block (`MTL001`) and `README.md` or `TODO.md` files could not
+  be linted. md-template-lint adds the opt-in template tag `[frontmatter:optional]`, a
+  standalone comment line in the template frontmatter: a target without a frontmatter block
+  then gets no `MTL001` and no field rule, while the filename, heading, content rules and body
+  directives still run. A target with a block is checked as before; an unclosed `---` stays
+  `MTL001`. The warning `MTL031` frontmatter-tag-conflict reports a copy of the tag that has
+  no effect. Compatibility: a template without the tag gives the same findings on every
   target. Not breaking, minor release.

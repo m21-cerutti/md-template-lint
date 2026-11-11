@@ -9,7 +9,7 @@
  * 3. for each TEMPLATE field in template order: when the target value is
  *    missing or empty, the `field` rules of step `presence` only (the one
  *    shared guard); otherwise the `field` rules of every other step, in
- *    FIELD_STEPS order;
+ *    FIELD_STEPS order; skipped for a target without frontmatter (ADR 0015);
  * 4. `target` rules of steps `unknown-keys`, `headings`, `content`;
  * 5. `target` rules of step `directives` (MTL020 to MTL025, spec 4.4);
  * inside one step, registry order (category file order, then file order);
@@ -31,7 +31,7 @@
  * in-memory one for tests; the production runner builds the real one).
  *
  * `checkTemplate` splits the template-phase diagnostics by severity: tag
- * WARNINGS (MTL010 to MTL016) and template ERRORS (MTL017, MTL018, MTL019 and
+ * WARNINGS (MTL010 to MTL016, MTL031) and template ERRORS (MTL017, MTL018, MTL019 and
  * MTL030, spec 2.7). A template with errors is still ok (not broken): the
  * runner fails it (exit 1) and still lints its targets. Both lists are sorted
  * by source position (line, then column) across rules, ties in registry order.
@@ -50,7 +50,7 @@ export type TemplateStatus =
   | {
       readonly status: "ok";
       readonly model: DocumentModel;
-      /** Template WARNINGS (`MTL010` to `MTL016`), source order. */
+      /** Template WARNINGS (`MTL010` to `MTL016`, `MTL031`), source order. */
       readonly warnings: Diagnostic[];
       /**
        * Template ERRORS (spec 2.7: `MTL017`, `MTL018`, `MTL019`, `MTL030`), source order.
@@ -73,7 +73,7 @@ function bySourcePosition(diagnostics: readonly Diagnostic[]): Diagnostic[] {
 
 /**
  * Parse a template. Broken (MTL001 to MTL004) or ok with its tag warnings
- * (MTL010 to MTL016) and its template errors (MTL017, MTL018, MTL019, MTL030, spec 2.7)
+ * (MTL010 to MTL016, MTL031) and its template errors (MTL017, MTL018, MTL019, MTL030, spec 2.7)
  * apart, each sorted by source position across rules (spec 4.1, 8.4).
  */
 export async function checkTemplate(registry: RuleRegistry, text: string): Promise<TemplateStatus> {
@@ -191,7 +191,7 @@ export interface TargetResult {
  * a pure output filter by code and anchor line; every rule still ran in full.
  */
 export async function lintTarget(registry: RuleRegistry, template: DocumentModel, text: string, targetPath: string, env: RuleEnv): Promise<TargetResult> {
-  const loaded = loadDocument(text);
+  const loaded = loadDocument(text, { frontmatterOptional: template.frontmatterOptional });
   if (!loaded.ok) {
     const context = { phase: "parse", role: "target", failure: loaded.failure } as const;
     return { diagnostics: errorsFirst(await runPhase(registry, "parse", context)), suppressed: 0 };
@@ -223,7 +223,9 @@ async function runTargetRules(registry: RuleRegistry, template: DocumentModel, t
   };
   const [first, ...after] = TARGET_STEPS;
   const out = await runRules(byStep(targetRules, TARGET_STEPS, first), context);
-  for (const templateField of template.fields.values()) {
+  // ADR 0015: a target without frontmatter (only loaded under `[frontmatter:optional]`) runs no field rules.
+  const templateFields = target.document.frontmatter === null ? [] : template.fields.values();
+  for (const templateField of templateFields) {
     const value = target.fields.get(templateField.key)?.value ?? null;
     const missing = value === null || isEmptyValue(value);
     const steps = missing ? ["presence"] : FIELD_STEPS.filter((step) => step !== "presence");

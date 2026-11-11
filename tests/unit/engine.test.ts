@@ -41,6 +41,42 @@ describe("loadDocument: parse failures", () => {
   });
 });
 
+describe("loadDocument: the frontmatterOptional option (ADR 0015)", () => {
+  it("no frontmatter with the option -> ok, a body-only model", () => {
+    const result = loadDocument("# Title\n\ntext\n", { frontmatterOptional: true });
+    expect(result).toMatchObject({ ok: true });
+    if (!result.ok) throw new Error("load failed");
+    expect(result.model.fields.size).toBe(0);
+    expect(result.model.filename).toBeNull();
+    expect(result.model.uniqueHeadingNames).toBe(false);
+    expect(result.model.frontmatterOptional).toBe(false);
+    expect(result.model.sections.map((s) => [s.level, s.text, s.line])).toEqual([[1, "Title", 1]]);
+  });
+
+  it("unclosed frontmatter with the option -> frontmatter-missing", () => {
+    expect(loadDocument("---\na: b\n", { frontmatterOptional: true })).toMatchObject({
+      ok: false,
+      failure: { reason: "frontmatter-missing" },
+    });
+  });
+
+  it("no frontmatter with the option off -> frontmatter-missing", () => {
+    expect(loadDocument("# Title\n", { frontmatterOptional: false })).toEqual({
+      ok: false,
+      failure: { reason: "frontmatter-missing", detail: "" },
+    });
+  });
+
+  it("invalid YAML with the option -> yaml-invalid, as without it", () => {
+    expect(loadDocument("---\na: [b\n---\n", { frontmatterOptional: true })).toMatchObject({ ok: false, failure: { reason: "yaml-invalid" } });
+  });
+
+  it("frontmatterOptional on the model comes from the template frontmatter line", () => {
+    expect(load("---", "# [frontmatter:optional]", "a: b", "---").frontmatterOptional).toBe(true);
+    expect(load("---", "a: b", "---").frontmatterOptional).toBe(false);
+  });
+});
+
 describe("loadDocument: values and binding", () => {
   it("keeps every scalar a string (failsafe) and the last duplicate value", () => {
     const model = load("---", "flag: yes", "when: 2026-08-10", "num: 1.0", "nil: ~", "empty:", "dup: first", "dup: last", "tags: [a, b]", "meta:", "  sub: x", "---");

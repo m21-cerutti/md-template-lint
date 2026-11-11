@@ -184,6 +184,15 @@ const CASES: readonly VerifyCase[] = [
       heading("R [unique-headings-names:x]", 5, 28, "## R [unique-headings-names:x]"),
     ],
   },
+  // ADR 0015: `[frontmatter:optional]` with an argument, or another word than `optional`, on
+  // the standalone line is malformed (reported like the filename line), no switch. Column of
+  // the first token that does not fit.
+  {
+    name: "fail-frontmatter-optional-with-argument",
+    exitCode: 0,
+    status: "ok",
+    diagnostics: [warning("Filename comment: malformed tag [frontmatter:optional:x]", 2, 24, "# [frontmatter:optional:x]"), warning("Filename comment: malformed tag [frontmatter:required]", 3, 16, "# [frontmatter:required]")],
+  },
 ];
 
 describe("MTL012 malformed-tag (--verify)", { tags: ["MTL012", "syntax"] }, () => {

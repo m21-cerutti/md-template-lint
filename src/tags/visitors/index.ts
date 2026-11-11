@@ -9,6 +9,7 @@ import { ContentVisitor } from "./content.js";
 import { CountVisitor } from "./count.js";
 import { FilenameVisitor } from "./filename.js";
 import { FormatVisitor } from "./format.js";
+import { FrontmatterOptionalVisitor } from "./frontmatter.js";
 import { IoVisitor } from "./io.js";
 import { BodyOrderVisitor, OrderVisitor } from "./order.js";
 import { PatternVisitor } from "./pattern.js";
@@ -28,6 +29,7 @@ export const FRONTMATTER_TAG_VISITORS: readonly FamilyVisitor<FrontmatterTagData
   new IoVisitor(),
   new FilenameVisitor(),
   new FrontmatterUniqueNamesVisitor(),
+  new FrontmatterOptionalVisitor(),
 ];
 
 export const BODY_TAG_VISITORS: readonly FamilyVisitor<BodyTagData>[] = [new BodyPresenceVisitor(), new ContentVisitor(), new PatternVisitor(), new RepeatVisitor(), new BodyOrderVisitor(), new BodyUniqueNamesVisitor()];

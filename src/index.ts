@@ -5,6 +5,7 @@ export { analyzeDocument, InternalParseError, parseDocument } from "./tags/parse
 export type { DocumentAnalysis } from "./tags/parser.js";
 export type { GrammarError, SyntaxEvent } from "./tags/listeners.js";
 export { loadDocument, loadFile } from "./engine/load.js";
+export type { LoadOptions } from "./engine/load.js";
 export { inferType } from "./engine/infer.js";
 export { createRegistry, runPhase } from "./engine/registry.js";
 export type { RuleRegistry } from "./engine/registry.js";
@@ -81,6 +82,8 @@ export type {
   FrontmatterFilenameTag,
   FrontmatterInertTag,
   FrontmatterLine,
+  FrontmatterOptionalPlacement,
+  FrontmatterOptionalTag,
   FrontmatterPresenceTag,
   FrontmatterTag,
   FrontmatterUniqueNamesTag,

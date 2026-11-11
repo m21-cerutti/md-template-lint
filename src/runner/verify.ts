@@ -6,7 +6,7 @@
  * - From paths: those files are the templates, no config needed.
  * - A template that does not parse or is not UTF-8 is broken (exit 1); one that does
  *   not exist is `MTL910` and one that is not a regular file `MTL911` (exit 2).
- *   Tag warnings (`MTL010` to `MTL016`) do not fail and carry their template line
+ *   Tag warnings (`MTL010` to `MTL016`, `MTL031`) do not fail and carry their template line
  *   (spec 8.3, C09). Template errors (`MTL017`, `MTL018`, `MTL019` and `MTL030`, spec 2.7)
  *   are counted apart (`summary.errors`): the template FAILS (exit 1) without being
  *   broken, and its schema is still described. A run error outranks a broken or failed

@@ -1,12 +1,9 @@
 /**
- * Category `syntax` (docs/spec.md 4.3, codes MTL001-MTL099): parse failures (MTL001-MTL004),
- * template tag findings (MTL010-MTL013, MTL014 invalid heading patterns, MTL015, MTL016), the
- * template errors MTL017 (duplicate heading patterns), MTL018 (optional heading with a
- * minimum), MTL019 (child headings out of level order) and MTL030 (order tag without repeat
- * tag), and target directive warnings (MTL020-MTL025, spec 4.4). The parser layer reports only
- * region, reason, location and subject (src/tags/listeners.ts) and the pattern pieces with
- * their first problem (src/tags/visitors/pattern.ts); this file owns the code, the severity
- * and the message (ADR 0002).
+ * Category `syntax` (codes MTL001-MTL099, the list is docs/spec.md 4.3): parse failures,
+ * template tag findings and template checks, and target directive warnings (spec 4.4). The
+ * parser layer reports only region, reason, location and subject (src/tags/listeners.ts) and
+ * the pattern pieces with their first problem (src/tags/visitors/pattern.ts); this file owns
+ * the code, the severity and the message (ADR 0002).
  *
  * The six directive rules share one analysis of the target directives
  * (src/engine/directives.ts) and each keeps its own problems (`directiveDiagnostics`); each
@@ -17,13 +14,13 @@ import { directiveDiagnostics } from "../engine/directives.js";
 import { defineRule, report, type AnyRule, type TemplateContext } from "../engine/rule.js";
 import { hasInvalidPattern, headingPattern, headingPresence, isFileScope, isRepeatHeading, type Diagnostic, type DocumentModel, type Section } from "../engine/model.js";
 import { formatName } from "../engine/pattern.js";
-import type { BodyTag, PatternPiece, TagFinding, TagFindingReason } from "../tags/ast.js";
+import type { BodyTag, PatternPiece, TagFinding, TagFindingReason, TagSubject } from "../tags/ast.js";
 
 /**
  * `Field '<key>'`, `Heading '<text>'`, `Comment line <n>`, or the filename comment (no subject).
  */
-function label(finding: TagFinding): string {
-  const subject = finding.subject;
+function label(item: { readonly subject: TagSubject | null }): string {
+  const subject = item.subject;
   if (subject === null) return "Filename comment";
   if ("field" in subject) return `Field '${subject.field}'`;
   if ("heading" in subject) return `Heading '${subject.heading}'`;
@@ -454,6 +451,29 @@ const headingOrderWithoutRepeat = defineRule({
     }),
 });
 
+const ALONE_REASON = "it must be alone on its comment line";
+
+/**
+ * A `[frontmatter:optional]` with no effect (ADR 0015): a later standalone comment line (the
+ * first one stays effective), the tag after a key, or the tag in mixed comment text. One
+ * finding per such tag, at its `[`, in source order. A warning; never suppressible.
+ */
+const frontmatterTagConflict = defineRule({
+  code: "MTL031",
+  name: "frontmatter-tag-conflict",
+  severity: "warning",
+  category: "syntax",
+  phase: "template",
+  check: (context): Diagnostic[] =>
+    context.template.optionalTags.flatMap((entry) => {
+      const position = { line: entry.line, column: entry.column };
+      const effect = `${label(entry)}: tag [frontmatter:optional] has no effect`;
+      if (entry.placement !== "alone") return [report(frontmatterTagConflict, `${effect} (${ALONE_REASON})`, position)];
+      if (entry.firstLine === null) return [];
+      return [report(frontmatterTagConflict, `${effect} (already set on line ${entry.firstLine})`, position)];
+    }),
+});
+
 export const rules: readonly AnyRule[] = [
   frontmatterMissing,
   yamlInvalid,
@@ -476,5 +496,6 @@ export const rules: readonly AnyRule[] = [
   directiveBeginUnclosed,
   directiveAlreadyDisabled,
   headingOrderWithoutRepeat,
+  frontmatterTagConflict,
   // new:rule inserts above this line
 ];

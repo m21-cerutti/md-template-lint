@@ -21,6 +21,10 @@ export const TAG_NOTES: Readonly<Record<string, TagNote>> = {
     description: "Template-wide file name case; a standalone comment line, binds to no key, read from the template only.",
     example: "`# [filename:case:kebab-case]`",
   },
+  "frontmatter:frontmatter": {
+    description: "Standalone comment line: a target may omit its frontmatter block; field rules are then skipped, heading and content rules still run.",
+    example: "`# [frontmatter:optional]`",
+  },
   "frontmatter:format": {
     description: "Shape of a value: constant, case style, semver, ISO date, URL scheme allow-list; `elements:` checks each list item.",
     example: "`slug: x # [format:kebab-case]`",
@@ -82,6 +86,7 @@ export const TAG_NOTES: Readonly<Record<string, TagNote>> = {
 export const TAG_FIXTURES: Readonly<Record<string, string>> = {
   "frontmatter:count": "tests/fixtures/pairs/MTL401/pass-lengths-meet-minimum-and-other-values-stay-silent/template.md",
   "frontmatter:filename": "tests/fixtures/pairs/MTL101/pass-stem-matches-template-case-and-inert-tags-stay-silent/template.md",
+  "frontmatter:frontmatter": "tests/fixtures/optional-frontmatter/pass-target-without-frontmatter/template.md",
   "frontmatter:format": "tests/fixtures/pairs/MTL301/pass-value-equals-constant/template.md",
   "frontmatter:io": "tests/fixtures/pairs/MTL804/pass-existing-paths-or-not-checked/template.md",
   "frontmatter:order": "tests/fixtures/pairs/MTL407/pass-dates-ascending-and-other-values-stay-silent/template.md",
@@ -120,6 +125,7 @@ export const FIX_NOTES: Readonly<Record<string, string>> = {
   MTL024: "Add `end disable` for the code, or use `disable`.",
   MTL025: "Remove the redundant directive.",
   MTL030: "Add a `[repeat-rules:...]` tag or remove the `[order:...]` tag.",
+  MTL031: "Keep one `# [frontmatter:optional]` alone on its own comment line; remove the others.",
   MTL101: "Rename the file to the required case.",
   MTL102: "Set the field to the file name without its extension.",
   MTL201: "Fill the field, or tag it `[presence:optional]` in the template.",

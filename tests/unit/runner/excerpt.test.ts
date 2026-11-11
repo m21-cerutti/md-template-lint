@@ -477,7 +477,7 @@ describe("excerpt: --verify quotes the template line", () => {
           template: { path: "t.md", status: "ok" },
           warnings: withExcerpts([tag], "---\nn: x\n---\n"),
           errors: [],
-          schema: { filenameCase: null, uniqueHeadingNames: false, fields: [], headings: [] },
+          schema: { filenameCase: null, uniqueHeadingNames: false, frontmatterOptional: false, fields: [], headings: [] },
         },
       ],
       runErrors: [],
@@ -488,6 +488,45 @@ describe("excerpt: --verify quotes the template line", () => {
     const json = reportVerify(result, { format: "json", version: VERSION }).stdout;
     expect(json).toContain('"line": 99');
     expect(json).not.toContain("sourceLine");
+  });
+
+  it("fail: MTL031 prints under `Conflicting frontmatter tags:` with its excerpt (ADR 0015)", () => {
+    const text = "---\n# [frontmatter:optional]\n# [frontmatter:optional]\nn: x\n---\n";
+    const tag: Diagnostic = {
+      code: "MTL031",
+      severity: "warning",
+      message: "Comment line 3: tag [frontmatter:optional] has no effect (already set on line 2)",
+      position: { line: 3, column: 3 },
+    };
+    const result: VerifyResult = {
+      mode: "verify",
+      config: null,
+      templates: [
+        {
+          template: { path: "t.md", status: "ok" },
+          warnings: withExcerpts([tag], text),
+          errors: [],
+          schema: { filenameCase: null, uniqueHeadingNames: false, frontmatterOptional: true, fields: [], headings: [] },
+        },
+      ],
+      runErrors: [],
+      summary: { templates: 1, broken: 0, errors: 0, warnings: 1, runErrors: 0, exitCode: 0 },
+    };
+    const plain = reportVerify(result, { format: "plain", version: VERSION }).stdout;
+    expect(plain).toContain(block("  PASS t.md", "Frontmatter: [frontmatter:optional]", "", "Field  Type  Rules"));
+    expect(plain).toContain(block("Conflicting frontmatter tags:", "  - Comment line 3: tag [frontmatter:optional] has no effect (already set on line 2) (line 3, column 3)", "      3 | # [frontmatter:optional]", "        |   ^", ""));
+    const json = JSON.parse(reportVerify(result, { format: "json", version: VERSION }).stdout) as { templates: Record<string, unknown>[] };
+    expect(json.templates[0]?.["frontmatterOptional"]).toBe(true);
+    expect(json.templates[0]?.["diagnostics"]).toEqual([
+      {
+        code: "MTL031",
+        severity: "warning",
+        message: "Comment line 3: tag [frontmatter:optional] has no effect (already set on line 2)",
+        line: 3,
+        column: 3,
+        sourceLine: "# [frontmatter:optional]",
+      },
+    ]);
   });
 });
 

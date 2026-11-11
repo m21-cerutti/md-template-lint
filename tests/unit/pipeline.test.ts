@@ -5,7 +5,7 @@
  * and 1 failing case.
  */
 import { describe, expect, it } from "vitest";
-import { checkTarget, checkTemplate } from "../../src/engine/pipeline.js";
+import { checkTarget, checkTemplate, lintTarget } from "../../src/engine/pipeline.js";
 import { createRegistry, type RuleRegistry } from "../../src/engine/registry.js";
 import {
   CATEGORIES,
@@ -445,6 +445,62 @@ describe("target pipeline: heading of a content finding comes only from a record
     });
     const found = await run([far]);
     expect(found.map((d) => d.heading)).toEqual([undefined]);
+  });
+});
+
+describe("target pipeline: optional frontmatter (ADR 0015)", () => {
+  const real = createRegistry();
+  const lines = (...text: string[]) => text.join("\n");
+  const tagged = lines("---", "# [frontmatter:optional]", 'title: "x" # [presence:required]', "---", "## Alpha", "## Omega");
+  const untagged = lines("---", 'title: "x" # [presence:required]', "---", "## Alpha", "## Omega");
+  const diagnostics = async (templateText: string, targetText: string, targetPath = "t.md") => {
+    const status = await checkTemplate(real, templateText);
+    if (status.status !== "ok") throw new Error("template broken");
+    const result = await lintTarget(real, status.model, targetText, targetPath, env);
+    return result.diagnostics.map(({ code, message }) => ({ code, message }));
+  };
+  const codes = async (templateText: string, targetText: string, targetPath = "t.md") => (await diagnostics(templateText, targetText, targetPath)).map((d) => d.code);
+
+  it("passes: the template model carries the switch", async () => {
+    const status = await checkTemplate(real, tagged);
+    if (status.status !== "ok") throw new Error("template broken");
+    expect(status.model.frontmatterOptional).toBe(true);
+    expect(status.warnings).toEqual([]);
+  });
+
+  it("passes: a tagged template, a target without frontmatter: no MTL001, no field rule", async () => {
+    expect(await codes(tagged, lines("## Alpha", "## Omega"))).toEqual([]);
+  });
+
+  it("fails: a tagged template, a target without frontmatter: heading rules still run (MTL601)", async () => {
+    const found = await codes(tagged, lines("## Alpha"));
+    expect(found).toEqual(["MTL601"]);
+  });
+
+  it("fails: a tagged template, a target with frontmatter is checked as today (MTL201)", async () => {
+    const found = await diagnostics(tagged, lines("---", "other: y", "---", "## Alpha", "## Omega"));
+    // Spec 4.1 steps 3 and 4 both run: the missing field, then the unknown key.
+    expect(found).toEqual([
+      { code: "MTL201", message: "Field 'title': required but empty or missing" },
+      { code: "MTL202", message: "Unknown key 'other' not present in template" },
+    ]);
+  });
+
+  it("passes: a tagged template, a BOM and CRLF target without frontmatter: no diagnostic", async () => {
+    expect(await diagnostics(tagged, "\uFEFF## Alpha\r\n## Omega\r\n")).toEqual([]);
+  });
+
+  it("fails: a tagged template, a target whose `---` is never closed keeps MTL001", async () => {
+    expect(await codes(tagged, lines("---", "title: y", "## Alpha", "## Omega"))).toEqual(["MTL001"]);
+  });
+
+  it("fails: a tagged template with a filename case still checks the file name (MTL101)", async () => {
+    const template = lines("---", "# [frontmatter:optional]", "# [filename:case:snake_case]", "a: x", "---", "## Alpha");
+    expect(await codes(template, "## Alpha\n", "Bad-Name.md")).toEqual(["MTL101"]);
+  });
+
+  it("fails: an untagged template, a target without frontmatter: MTL001 as today", async () => {
+    expect(await codes(untagged, lines("## Alpha", "## Omega"))).toEqual(["MTL001"]);
   });
 });
 

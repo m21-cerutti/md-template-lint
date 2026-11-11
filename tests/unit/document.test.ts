@@ -360,3 +360,93 @@ describe("DocumentModel.uniqueHeadingNames (spec 2.11)", () => {
     expect(found.filter((d) => d.code === "MTL601").map((d) => d.message)).toEqual(["Heading: Missing required heading: ''"]);
   });
 });
+
+/** The optional-frontmatter switch on the loaded model and the body-only load (ADR 0015). */
+describe("DocumentModel.frontmatterOptional (ADR 0015)", () => {
+  const load = (...lines: string[]): DocumentModel => {
+    const result = loadDocument(lines.join("\n"));
+    if (!result.ok) throw new Error(`load failed: ${result.failure.reason}`);
+    return result.model;
+  };
+  const loadOptional = (...lines: string[]): DocumentModel => {
+    const result = loadDocument(lines.join("\n"), { frontmatterOptional: true });
+    if (!result.ok) throw new Error(`load failed: ${result.failure.reason}`);
+    return result.model;
+  };
+
+  it("is true with a standalone `# [frontmatter:optional]` frontmatter line", () => {
+    const model = load("---", "# [frontmatter:optional]", 'title: "string"', "---", "# Guide");
+    expect(model.frontmatterOptional).toBe(true);
+    expect(model.findings).toEqual([]);
+  });
+
+  it("is true once when the line is written twice", () => {
+    expect(load("---", "# [frontmatter:optional]", "a: x", "# [FRONTMATTER:OPTIONAL]", "---").frontmatterOptional).toBe(true);
+  });
+
+  it.each([
+    ["no tag at all", ["---", "a: x", "---", "# Guide"]],
+    ["the tag after a key", ["---", 'title: "x" # [frontmatter:optional]', "---"]],
+    ["an argument on the line", ["---", "# [frontmatter:optional:x]", "a: x", "---"]],
+    ["another mode on the line", ["---", "# [frontmatter:required]", "a: x", "---"]],
+    ["the tag on a heading only", ["---", "a: x", "---", "## Usage [frontmatter:optional]"]],
+  ])("is false with %s", (_label, lines) => {
+    expect(load(...lines).frontmatterOptional).toBe(false);
+  });
+
+  it("a body-only text with the option loads as a body-only model", () => {
+    const model = loadOptional("# Guide", "", "Intro.", "", "## Usage [presence:sometimes]", "text");
+    expect(model.fields.size).toBe(0);
+    expect(model.filename).toBeNull();
+    expect(model.uniqueHeadingNames).toBe(false);
+    expect(model.frontmatterOptional).toBe(false);
+    expect(model.document.frontmatter).toBeNull();
+    expect(model.sections).toMatchObject([
+      { level: 1, text: "Guide", line: 1, parent: null },
+      { level: 2, text: "Usage [presence:sometimes]", line: 5, parent: 0, body: "text" },
+    ]);
+    // Body findings are kept: the malformed heading tag (MTL012) of line 5.
+    expect(model.findings).toMatchObject([{ region: "body", reason: "malformed", tag: "[presence:sometimes]", position: { line: 5 } }]);
+  });
+
+  it("a body-only text with the option keeps its body directives", () => {
+    const model = loadOptional("<!-- md-template-lint disable MTL601 -- no usage here -->", "# Guide");
+    expect(model.directives).toMatchObject([{ region: "body", line: 1, verb: "disable", items: [{ text: "MTL601" }] }]);
+    expect(model.sections).toMatchObject([{ text: "Guide", line: 2 }]);
+  });
+
+  it("an empty text with the option loads with no section", () => {
+    const model = loadOptional("");
+    expect(model.fields.size).toBe(0);
+    expect(model.sections).toEqual([]);
+  });
+
+  it("an unclosed `---` stays frontmatter-missing, even with the option", () => {
+    expect(loadDocument("---\na: x\n# Guide\n", { frontmatterOptional: true })).toEqual({
+      ok: false,
+      failure: { reason: "frontmatter-missing", detail: "" },
+    });
+  });
+
+  it("a body-only text without the option, or with it off, stays frontmatter-missing", () => {
+    const failure = { ok: false, failure: { reason: "frontmatter-missing", detail: "" } };
+    expect(loadDocument("# Guide\n")).toEqual(failure);
+    expect(loadDocument("# Guide\n", {})).toEqual(failure);
+    expect(loadDocument("# Guide\n", { frontmatterOptional: false })).toEqual(failure);
+  });
+
+  it("a text with frontmatter loads the same whatever the option", () => {
+    const text = ["---", "# [unique-headings-names]", 'title: "x" # [presence:required]', "---", "# Guide"].join("\n");
+    const plain = loadDocument(text);
+    const optional = loadDocument(text, { frontmatterOptional: true });
+    expect(optional).toEqual(plain);
+    if (!optional.ok) throw new Error("load failed");
+    expect(optional.model.fields.get("title")?.value).toBe("x");
+    expect(optional.model.uniqueHeadingNames).toBe(true);
+  });
+
+  it("checkTemplate keeps MTL001 for a template with no frontmatter block", async () => {
+    const status = await checkTemplate(createRegistry(), ["# [frontmatter:optional]", "# Guide"].join("\n"));
+    expect(status).toMatchObject({ status: "broken", diagnostics: [{ code: "MTL001" }] });
+  });
+});

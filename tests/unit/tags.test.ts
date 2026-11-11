@@ -476,6 +476,89 @@ describe("unique heading names tag (spec 2.11)", () => {
   });
 });
 
+/**
+ * `[frontmatter:optional]` (ADR 0015): a standalone template-frontmatter comment line, at tag
+ * level. The rule MTL031 (misplaced copies) and the target behaviour are tested elsewhere.
+ */
+describe("frontmatter optional tag (ADR 0015)", () => {
+  const lines = (...text: string[]) => text.join("\n");
+  const loadedFindings = (text: string) => {
+    const result = loadDocument(text);
+    if (!result.ok) throw new Error(`load failed: ${result.failure.reason}`);
+    return result.model.findings;
+  };
+  const kinds = (fmLines: readonly FrontmatterLine[] | undefined) => (fmLines ?? []).map((l) => l.kind);
+
+  it("a standalone comment line holding only the tag sets the switch, with no finding", () => {
+    const text = lines("---", "# [frontmatter:optional]", 'title: "string"', "---", "# T");
+    const fm = parseDocument(text).frontmatter;
+    expect(fm?.frontmatterOptional).toBe(true);
+    expect(fm?.lines[0]).toMatchObject({
+      kind: "frontmatter-optional",
+      line: 2,
+      tag: { region: "frontmatter", kind: "frontmatter-optional" },
+    });
+    expect(loadedFindings(text)).toEqual([]);
+  });
+
+  it("is case-insensitive and tolerates the spacing of a comment line", () => {
+    for (const written of ["# [FRONTMATTER:OPTIONAL]", "#[Frontmatter:Optional]  "]) {
+      const fm = parseDocument(lines("---", written, "a: x", "---")).frontmatter;
+      expect(fm?.frontmatterOptional).toBe(true);
+      expect(kinds(fm?.lines)).toEqual(["frontmatter-optional", "key"]);
+    }
+  });
+
+  it("is accepted anywhere in the block, after other comment and key lines", () => {
+    const text = lines("---", "# a note", "a: x", "# [frontmatter:optional]", "b: y", "---");
+    expect(parseDocument(text).frontmatter?.frontmatterOptional).toBe(true);
+    expect(loadedFindings(text)).toEqual([]);
+  });
+
+  it("written on two lines counts once", () => {
+    const text = lines("---", "# [frontmatter:optional]", "a: x", "# [frontmatter:optional]", "---");
+    const fm = parseDocument(text).frontmatter;
+    expect(fm?.frontmatterOptional).toBe(true);
+    expect(kinds(fm?.lines)).toEqual(["frontmatter-optional", "key", "frontmatter-optional"]);
+  });
+
+  it("is false without the tag", () => {
+    expect(parseDocument(lines("---", "a: x", "---", "# T")).frontmatter?.frontmatterOptional).toBe(false);
+  });
+
+  it("after a key it is an inert tag: no switch, no field tag", () => {
+    const text = lines("---", 'title: "x" # [frontmatter:optional]', "---");
+    const fm = parseDocument(text).frontmatter;
+    expect(fm?.frontmatterOptional).toBe(false);
+    expect(fm?.lines[0]).toMatchObject({
+      kind: "key",
+      comment: { tags: [], inertTags: [{ kind: "frontmatter-optional" }] },
+    });
+  });
+
+  it("a standalone line with an argument or another mode is malformed (MTL012) and sets no switch", () => {
+    for (const written of ["[frontmatter:optional:x]", "[frontmatter:required]"]) {
+      const text = lines("---", `# ${written}`, "a: x", "---");
+      expect(parseDocument(text).frontmatter?.frontmatterOptional).toBe(false);
+      expect(loadedFindings(text)).toMatchObject([{ region: "frontmatter", reason: "malformed", tag: written, position: { line: 2 } }]);
+      expect(loadedFindings(text)).toHaveLength(1);
+    }
+  });
+
+  it("on a heading it is a wrong-region tag (MTL013) and stays in the heading text", () => {
+    const result = parseHeadingSuffix("Notes [frontmatter:optional]", { line: 5, column: 4 });
+    expect(result.text).toBe("Notes [frontmatter:optional]");
+    expect(result.tags).toEqual([]);
+    expect(result.findings).toMatchObject([{ region: "body", reason: "wrong-region", tag: "[frontmatter:optional]", position: { line: 5, column: 10 } }]);
+  });
+
+  it("a family typo on a standalone line stays an unknown tag (MTL010)", () => {
+    const text = lines("---", "# [frontmater:optional]", "a: x", "---");
+    expect(parseDocument(text).frontmatter?.frontmatterOptional).toBe(false);
+    expect(loadedFindings(text)).toMatchObject([{ region: "frontmatter", reason: "unknown", tag: "[frontmater:optional]", subject: { commentLine: 2 } }]);
+  });
+});
+
 /** Unknown tags on standalone template-frontmatter comment lines (spec 2.1, MTL010). */
 describe("unknown tags on frontmatter comment lines (spec 2.1)", () => {
   const lines = (...text: string[]) => text.join("\n");
@@ -531,6 +614,12 @@ describe("unknown tags on frontmatter comment lines (spec 2.1)", () => {
   it("keeps `# [unique-headings-names]` as the switch, with no finding", () => {
     const text = lines("---", "# [unique-headings-names]", "a: x", "---");
     expect(parseDocument(text).frontmatter?.uniqueHeadingNames).toBe(true);
+    expect(loadedFindings(text)).toEqual([]);
+  });
+
+  it("keeps `# [frontmatter:optional]` as the switch, not an unknown tag (no MTL010)", () => {
+    const text = lines("---", "# [frontmatter:optional]", "a: x", "---");
+    expect(parseDocument(text).frontmatter?.frontmatterOptional).toBe(true);
     expect(loadedFindings(text)).toEqual([]);
   });
 

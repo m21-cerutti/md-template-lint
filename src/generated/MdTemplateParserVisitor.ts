@@ -60,6 +60,7 @@ import { FmSignedNumberContext } from "./MdTemplateParser.js";
 import { FmOrderTagContext } from "./MdTemplateParser.js";
 import { FmIoTagContext } from "./MdTemplateParser.js";
 import { FmFilenameTagContext } from "./MdTemplateParser.js";
+import { FmFrontmatterTagContext } from "./MdTemplateParser.js";
 import { FmConventionContext } from "./MdTemplateParser.js";
 import { FmUniqueNamesTagContext } from "./MdTemplateParser.js";
 import { BodyTagEntryContext } from "./MdTemplateParser.js";
@@ -448,6 +449,12 @@ export class MdTemplateParserVisitor<Result> extends AbstractParseTreeVisitor<Re
      * @return the visitor result
      */
     visitFmFilenameTag?: (ctx: FmFilenameTagContext) => Result;
+    /**
+     * Visit a parse tree produced by `MdTemplateParser.fmFrontmatterTag`.
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    visitFmFrontmatterTag?: (ctx: FmFrontmatterTagContext) => Result;
     /**
      * Visit a parse tree produced by `MdTemplateParser.fmConvention`.
      * @param ctx the parse tree

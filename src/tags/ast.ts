@@ -80,11 +80,17 @@ export type FrontmatterFilenameTag = Fm<{
  */
 export type FrontmatterUniqueNamesTag = Fm<{ readonly kind: "unique-names" }>;
 
+/**
+ * ADR 0015: `[frontmatter:optional]`. Effective only on a standalone comment line of a template
+ * frontmatter (the target may omit its frontmatter); inert after a key or in mixed comment text.
+ */
+export type FrontmatterOptionalTag = Fm<{ readonly kind: "frontmatter-optional" }>;
+
 /** Tags that take effect on the field whose key line carries them. */
 export type FrontmatterFieldTag = FrontmatterPresenceTag | FrontmatterValueTag;
 
-/** Tags that are well-formed after a key but take no effect there (spec 2.5, 2.11). */
-export type FrontmatterInertTag = FrontmatterFilenameTag | FrontmatterUniqueNamesTag;
+/** Tags that are well-formed after a key but take no effect there (spec 2.5, 2.11, ADR 0015). */
+export type FrontmatterInertTag = FrontmatterFilenameTag | FrontmatterUniqueNamesTag | FrontmatterOptionalTag;
 
 /** Every well-formed frontmatter tag. */
 export type FrontmatterTag = FrontmatterFieldTag | FrontmatterInertTag;
@@ -204,6 +210,7 @@ const FRONTMATTER_KIND_SET = {
   "io-exists": true,
   "filename-case": true,
   "unique-names": true,
+  "frontmatter-optional": true,
 } satisfies Record<FrontmatterTag["kind"], true>;
 
 const BODY_KIND_SET = {
@@ -267,9 +274,9 @@ export interface FrontmatterComment {
   /** Well-formed field tags in source order. */
   readonly tags: readonly FrontmatterFieldTag[];
   /**
-   * Well-formed `[filename:case:...]` and `[unique-headings-names]` tags written after a
-   * key. Inert by spec 2.5 and 2.11 (only a standalone comment line takes effect) and not
-   * findings.
+   * Well-formed `[filename:case:...]`, `[unique-headings-names]` and `[frontmatter:optional]`
+   * tags written after a key. Inert by spec 2.5, 2.11 and ADR 0015 (only a standalone comment
+   * line takes effect) and not tag findings.
    */
   readonly inertTags: readonly FrontmatterInertTag[];
   readonly hints: readonly TypeHint[];
@@ -299,7 +306,41 @@ export type FrontmatterLine =
       /** The tag, or null when it is malformed (`# [unique-headings-names:x]`, MTL012). */
       readonly tag: FrontmatterUniqueNamesTag | null;
     }
+  | {
+      readonly kind: "frontmatter-optional";
+      readonly line: number;
+      readonly raw: string;
+      /** The tag, or null when it is malformed (`# [frontmatter:optional:x]`, MTL012). */
+      readonly tag: FrontmatterOptionalTag | null;
+    }
   | { readonly kind: "comment" | "blank" | "other"; readonly line: number; readonly raw: string };
+
+/**
+ * One well-formed `[frontmatter:optional]` in the frontmatter (ADR 0015), for MTL031:
+ * - `alone`: on a standalone comment line. `firstLine` is null on the first such line (the
+ *   effective one) and holds that first line on every later one (a duplicate);
+ * - `key`: after a key (inert); `subject` is the `field` subject of the key;
+ * - `mixed`: in comment text beside other text (inert).
+ * `line` and `column` are the position of the tag's `[`; `subject` is `field` for `key` and
+ * `commentLine` for `alone` and `mixed`. Parser data: no YAML knowledge (the line filter of
+ * spec 2.1 is applied by src/engine/load.ts, `DocumentModel.optionalTags`).
+ */
+export type FrontmatterOptionalPlacement =
+  | {
+      readonly placement: "alone";
+      readonly line: number;
+      readonly column: number;
+      readonly subject: TagSubject;
+      readonly firstLine: number | null;
+      readonly tag: FrontmatterOptionalTag;
+    }
+  | {
+      readonly placement: "key" | "mixed";
+      readonly line: number;
+      readonly column: number;
+      readonly subject: TagSubject;
+      readonly tag: FrontmatterOptionalTag;
+    };
 
 export interface Frontmatter {
   /** Line of the opening `---`. */
@@ -316,6 +357,17 @@ export interface Frontmatter {
    * the template-wide switch). Written on several lines, it counts once.
    */
   readonly uniqueHeadingNames: boolean;
+  /**
+   * True when a well-formed standalone `# [frontmatter:optional]` line is present (ADR 0015).
+   * Written on several lines, it counts once (the first line is the effective one). Parser
+   * view: the effective switch is `DocumentModel.frontmatterOptional` (spec 2.1 line filter).
+   */
+  readonly frontmatterOptional: boolean;
+  /**
+   * Every well-formed `[frontmatter:optional]` of the block, in source order, before the spec
+   * 2.1 line filter; MTL031 reads the filtered `DocumentModel.optionalTags`.
+   */
+  readonly optionalTags: readonly FrontmatterOptionalPlacement[];
 }
 
 // ---------------------------------------------------------------------------

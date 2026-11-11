@@ -142,7 +142,10 @@ the whole text, stage-2 parse of each tag bracket and each directive comment). `
 YAML values (`yaml`, failsafe schema), binds the inline comment of key line N to the key on line N
 (spec 2.1), keeps the findings of YAML key lines, filename lines and the body, and builds one `Section`
 per heading of any level with its parent. A document that cannot load is a `ParseFailure`, which only
-the `parse` rules (`MTL001` to `MTL004`) see. Rules return `Diagnostic` values; the pipeline drops the
+the `parse` rules (`MTL001` to `MTL004`) see. A text without a frontmatter block is such a failure
+(`MTL001`), except when `lintTarget` passes the option `loadDocument(text, { frontmatterOptional: true })`,
+which it does only for a template that carries `# [frontmatter:optional]` (spec 2.12, ADR 0015): the
+loader then returns a body-only model. Rules return `Diagnostic` values; the pipeline drops the
 ones the target directives cover, and the runner adds a bounded source excerpt before the reporters
 print them.
 
@@ -299,12 +302,12 @@ mirror ([consistency check](#consistency-check)).
 - Findings (`unknown`, `malformed`, `wrong-region`) reach `DocumentModel.findings`; the `template` rules
   of `src/rules/syntax.ts` turn them into `MTL010` to `MTL013`. `MTL014`, `MTL015` and the template
   errors `MTL017`, `MTL018`, `MTL019`, `MTL030` are read from the template headings, `MTL016` from the
-  template fields.
+  template fields and `MTL031` from the template frontmatter (`Frontmatter.optionalTags`).
 
 #### Pipeline
 
 `checkTemplate(registry, text)` loads a template and runs the `parse` or `template` rules; it returns
-the tag warnings (`MTL010` to `MTL016`) and, apart, the template errors, each sorted by source position.
+the tag warnings (`MTL010` to `MTL016`, `MTL031`) and, apart, the template errors, each sorted by source position.
 `lintTarget(registry, template, text, targetPath, env)` loads the target, runs the rules in the order
 below and returns `{ diagnostics, suppressed }`; `checkTarget` is the same without the count. Both are
 async and await each check before the next, so io timing never changes the order. The registry
@@ -317,7 +320,8 @@ does not match its file, a code outside the range, or a missing, unknown or unex
 2. `target` rules of step `filename`.
 3. For each template field in template order: when the target value is missing or empty, only the
    `field` rules of step `presence`; otherwise the steps `constant`, `count`, `range`, `order`, `scheme`,
-   `io`, `value-filename`, `case`, `elements`, `type`, `shape` (`FIELD_STEPS`).
+   `io`, `value-filename`, `case`, `elements`, `type`, `shape` (`FIELD_STEPS`). The whole step is skipped
+   when the target has no frontmatter block, which only `[frontmatter:optional]` allows.
 4. `target` rules of steps `unknown-keys`, `headings`, `content`, then `directives` (`TARGET_STEPS`).
 5. Suppression: the target directives give a plan (`analyzeDirectives`), and every diagnostic it covers
    (`isCovered`: code and anchor line) is removed and counted. `MTL020` to `MTL025` are never removed.
@@ -566,6 +570,7 @@ Every arrow, solid or dotted, points down the layer order of the [Layering rules
 - Heading patterns: [ADR 0011](adr/0011-heading-patterns.md).
 - Positional heading matching: [ADR 0012](adr/0012-positional-heading-matching.md).
 - Unique heading names: [ADR 0013](adr/0013-unique-headings-names.md).
+- Optional frontmatter: [ADR 0015](adr/0015-optional-frontmatter.md).
 
 ## Known limits
 

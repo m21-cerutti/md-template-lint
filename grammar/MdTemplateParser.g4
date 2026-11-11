@@ -301,6 +301,7 @@ tagFamily
     | PATTERN
     | REPEAT_RULES
     | UNIQUE_HEADINGS_NAMES
+    | FRONTMATTER
     ;
 
 tagFreeText
@@ -323,6 +324,7 @@ fmTagBody
     | fmIoTag
     | fmFilenameTag
     | fmUniqueNamesTag
+    | fmFrontmatterTag
     ;
 
 fmPresenceTag
@@ -386,6 +388,11 @@ fmIoTag
 // spec 2.5, case-sensitive. Only a standalone comment line gives it effect.
 fmFilenameTag
     : FILENAME_CS COLON CASE_CS COLON fmConvention
+    ;
+
+// ADR 0015. Effective only on a standalone comment line of a template; inert after a key.
+fmFrontmatterTag
+    : FRONTMATTER COLON OPTIONAL
     ;
 
 fmConvention

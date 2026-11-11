@@ -228,8 +228,9 @@ The unit tests of section 1 pass now, and so does the test of the rule. `pnpm ru
 
 For a new FAMILY (a new alternative of `fmTagBody` or `bodyTagBody`, a new keyword in `tagFamily`)
 `tests/consistency/rules.test.ts` also pins counts in the test "reads non-empty inputs":
-`firstSymbols(atn, MdTemplateParser.RULE_tagFamily).tokens.size` (11),
-`...RULE_fmTagBody).rules.size` (8) and `...RULE_bodyTagBody).rules.size` (5). Raise the one you
+`firstSymbols(atn, MdTemplateParser.RULE_tagFamily).tokens.size` (13),
+`...RULE_fmTagBody).rules.size` (10) and `...RULE_bodyTagBody).rules.size` (6). The same test pins
+`...RULE_tagWord).tokens.size` (9), which a new family does not change. Raise the one you
 changed by one. A new argument of an existing family, as in the example, changes none of them.
 
 ## 8. Docs, syntax reference and gates
@@ -252,7 +253,7 @@ changed by one. A new argument of an existing family, as in the example, changes
   example, needs no new `TAG_NOTES` entry; the `FIX_NOTES` entry of the rule is in
   [Adding a rule](adding-a-rule.md).
 - Parser tests: the two tests of section 1. A tag problem of a template (the warnings `MTL010` to
-  `MTL016` and the template errors `MTL017`, `MTL018`, `MTL019` and `MTL030`) is tested through
+  `MTL016`, `MTL031` and the template errors `MTL017`, `MTL018`, `MTL019` and `MTL030`) is tested through
   `--verify` in `tests/syntax/syntax/` ([Testing](testing.md)).
 - Gates, in this order, one at a time: `pnpm run check:parser`, `pnpm run check:rules`,
   `pnpm run check:syntax-doc`, `pnpm run typecheck`, `pnpm run lint`, `pnpm run format:check`, `pnpm run build`, `pnpm test`.

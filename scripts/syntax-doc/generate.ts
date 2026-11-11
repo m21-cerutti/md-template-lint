@@ -231,6 +231,7 @@ const FRONTMATTER_FAMILY = {
   "io-exists": "io",
   "filename-case": "filename",
   "unique-names": "unique-headings-names",
+  "frontmatter-optional": "frontmatter",
 } satisfies Record<FrontmatterTag["kind"], string>;
 
 const BODY_FAMILY = {
@@ -246,7 +247,7 @@ const BODY_FAMILY = {
 /**
  * Families of the well-formed tags of a template, per region (`heading` is the `body` region of the AST),
  * as parsed by src/tags/parser.ts. A malformed or misplaced bracket, a standalone comment line other than
- * the filename and unique-names switches, a fenced heading and body prose give no tag.
+ * the filename, unique-names and frontmatter-optional switches, a fenced heading and body prose give no tag.
  */
 export function documentTagFamilies(text: string): Record<TagForm["region"], ReadonlySet<string>> {
   const document = parseDocument(text);
@@ -254,7 +255,7 @@ export function documentTagFamilies(text: string): Record<TagForm["region"], Rea
   for (const line of document.frontmatter?.lines ?? []) {
     if (line.kind === "key") {
       for (const tag of [...(line.comment?.tags ?? []), ...(line.comment?.inertTags ?? [])]) frontmatter.add(FRONTMATTER_FAMILY[tag.kind]);
-    } else if ((line.kind === "filename" || line.kind === "unique-names") && line.tag !== null) {
+    } else if ((line.kind === "filename" || line.kind === "unique-names" || line.kind === "frontmatter-optional") && line.tag !== null) {
       frontmatter.add(FRONTMATTER_FAMILY[line.tag.kind]);
     }
   }

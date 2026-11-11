@@ -222,6 +222,22 @@ family(
   ],
 );
 
+family(
+  "frontmatter.ts (FrontmatterOptionalVisitor)",
+  [
+    // ADR 0015: after a key the tag is well-formed and inert (an inert tag, no tag finding).
+    ["after a key, inert", fm, "[frontmatter:optional]", { region: "frontmatter", kind: "frontmatter-optional" }],
+    ["upper case after a key", fm, "[FRONTMATTER:OPTIONAL]", { region: "frontmatter", kind: "frontmatter-optional", raw: "[FRONTMATTER:OPTIONAL]" }],
+  ],
+  [
+    ["argument after a key", fm, "[frontmatter:optional:x]", "malformed"],
+    ["required mode", fm, "[frontmatter:required]", "malformed"],
+    ["empty argument", fm, "[frontmatter:]", "malformed"],
+    ["on a heading", body, "[frontmatter:optional]", "wrong-region"],
+    ["family typo", fm, "[frontmater:optional]", "unknown"],
+  ],
+);
+
 describe("hints.ts (TypeHintListener)", () => {
   const kinds = (text: string) => parseInlineComment(text).hints.map((h) => ("name" in h ? `${h.kind}:${h.name}` : h.kind));
   it.each([["every hint form", "[INT] [Date] YYYY-MM-DD iso lien @gen/", ["bracket:int", "bracket:date", "date-placeholder", "iso-word", "url-word", "alias-marker:gen"]]])("passes: %s", (_label, text, expected) => {

@@ -222,6 +222,27 @@ const CASES: readonly Case[] = [
     shows: ["Filename: [filename:case:kebab-case]", "Field  Type  Rules\n------------------\n\nHeadings:"],
     lacks: ["\n\n\n"],
   },
+  {
+    // The template-wide `[frontmatter:optional]` switch prints its line right after the
+    // `PASS` header, then one blank line; the field itself stays `presence:required`.
+    name: "pass-frontmatter-optional",
+    shows: ["PASS template.md\nFrontmatter: [frontmatter:optional]\n\nField  Type    Rules", "title  string  presence:required"],
+    lacks: ["Conflicting frontmatter tags", "Filename:", "Unknown tags"],
+  },
+  {
+    // The switch on a field line, in a comment that is not alone on its line, and a second
+    // switch: each has no effect and is listed in `Conflicting frontmatter tags:` (warnings, exit 0).
+    name: "fail-frontmatter-tag-conflict",
+    shows: [
+      "Frontmatter: [frontmatter:optional]",
+      "Conflicting frontmatter tags:",
+      "  - Field 'title': tag [frontmatter:optional] has no effect (it must be alone on its comment line) (line 3, column 19)",
+      "  - Comment line 4: tag [frontmatter:optional] has no effect (it must be alone on its comment line) (line 4, column 8)",
+      "  - Comment line 5: tag [frontmatter:optional] has no effect (already set on line 2) (line 5, column 3)",
+      "Warnings:     3",
+    ],
+    lacks: ["Filename:", "Unknown tags", "Misplaced tags"],
+  },
 ];
 
 const dir = (name: string): string => fixturePath("cli", `${GROUP}${name}`);

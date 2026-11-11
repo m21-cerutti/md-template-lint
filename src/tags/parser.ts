@@ -39,6 +39,8 @@ import type {
   FrontmatterFilenameTag,
   FrontmatterInertTag,
   FrontmatterLine,
+  FrontmatterOptionalPlacement,
+  FrontmatterOptionalTag,
   FrontmatterTag,
   HeadingSuffix,
   MarkdownDocument,
@@ -148,12 +150,13 @@ class ParseSession {
   }
 
   /** Family of a `[word:` candidate, or null when the family is unknown. */
-  family(bracket: ParserRuleContext): "filename" | "unique-names" | "other" | null {
+  family(bracket: ParserRuleContext): "filename" | "unique-names" | "frontmatter" | "other" | null {
     const { parser, log } = this.strict(bracket);
     const probe = parser.tagFamilyEntry();
     if (!log.isEmpty) return null;
     const family = probe.tagFamily();
     if (family.FILENAME_CS() !== null) return "filename";
+    if (family.FRONTMATTER() !== null) return "frontmatter";
     return family.UNIQUE_HEADINGS_NAMES() !== null ? "unique-names" : "other";
   }
 
@@ -346,7 +349,7 @@ function buildComment(session: ParseSession, items: readonly ParserRuleContext[]
     const result = session.classifyFrontmatter(item);
     if (result !== null) {
       if ("finding" in result) findings.push(result.finding);
-      else if (result.tag.kind === "filename-case" || result.tag.kind === "unique-names") {
+      else if (result.tag.kind === "filename-case" || result.tag.kind === "unique-names" || result.tag.kind === "frontmatter-optional") {
         inertTags.push(result.tag);
       } else tags.push(result.tag);
     }
@@ -415,6 +418,9 @@ function buildFrontmatter(session: ParseSession, ctx: FrontmatterContext, direct
   const lines: FrontmatterLine[] = [];
   let filename: FrontmatterFilenameTag | null = null;
   let uniqueHeadingNames = false;
+  const optionalTags: FrontmatterOptionalPlacement[] = [];
+  let firstOptionalLine: number | null = null;
+  const at = (tag: FrontmatterOptionalTag) => ({ line: tag.position.line, column: tag.position.column });
   const collect = (directive: Directive | null) => {
     if (directive !== null) directives.push(directive);
   };
@@ -435,11 +441,22 @@ function buildFrontmatter(session: ParseSession, ctx: FrontmatterContext, direct
       collect(directive);
       isDirective = directive !== null;
     }
-    if (body instanceof FmFilenameLineContext && session.family(body.tagCandidate()) === "unique-names") {
+    const family = body instanceof FmFilenameLineContext ? session.family(body.tagCandidate()) : null;
+    if (body instanceof FmFilenameLineContext && family === "unique-names") {
       // `# [unique-headings-names:x]` alone: the template-wide switch with an argument (MTL012).
       const result = session.frontmatterTag(body.tagCandidate());
       session.collector.report("finding" in result ? withSubject([result.finding], null) : []);
       lines.push({ kind: "unique-names", line, raw, tag: null });
+    } else if (body instanceof FmFilenameLineContext && family === "frontmatter") {
+      // `# [frontmatter:optional]` alone (ADR 0015): the switch; malformed is MTL012.
+      const result = session.frontmatterTag(body.tagCandidate());
+      session.collector.report("finding" in result ? withSubject([result.finding], null) : []);
+      const tag = "tag" in result && result.tag.kind === "frontmatter-optional" ? result.tag : null;
+      if (tag !== null) {
+        optionalTags.push({ placement: "alone", ...at(tag), subject: { commentLine: line }, firstLine: firstOptionalLine, tag });
+        firstOptionalLine ??= line;
+      }
+      lines.push({ kind: "frontmatter-optional", line, raw, tag });
     } else if (body instanceof FmFilenameLineContext) {
       const result = buildFilename(session, body.tagCandidate());
       session.collector.report(result.findings);
@@ -464,10 +481,14 @@ function buildFrontmatter(session: ParseSession, ctx: FrontmatterContext, direct
       } else lines.push({ kind: "unique-names", line, raw, tag });
     } else if (body instanceof FmCommentLineContext) {
       if (!isDirective) {
-        reportUnknown(
-          line,
-          body.fmCommentItem().map((item) => session.classifyFrontmatter(item)),
-        );
+        const results = body.fmCommentItem().map((item) => session.classifyFrontmatter(item));
+        reportUnknown(line, results);
+        // ADR 0015: the switch beside other comment text is inert (MTL031 reports it).
+        for (const result of results) {
+          if (result !== null && "tag" in result && result.tag.kind === "frontmatter-optional") {
+            optionalTags.push({ placement: "mixed", ...at(result.tag), subject: { commentLine: line }, tag: result.tag });
+          }
+        }
       }
       lines.push({ kind: "comment", line, raw });
     } else if (body instanceof FmKeyLineContext) {
@@ -485,6 +506,9 @@ function buildFrontmatter(session: ParseSession, ctx: FrontmatterContext, direct
           .map((item) => item.getText())
           .join("");
         collect(frontmatterDirective(session, hash, content, false));
+        for (const tag of comment.inertTags) {
+          if (tag.kind === "frontmatter-optional") optionalTags.push({ placement: "key", ...at(tag), subject: keySubject(key), tag });
+        }
       }
       lines.push({ kind: "key", line, raw, key, comment });
     } else {
@@ -501,6 +525,8 @@ function buildFrontmatter(session: ParseSession, ctx: FrontmatterContext, direct
     lines,
     filename,
     uniqueHeadingNames,
+    frontmatterOptional: firstOptionalLine !== null,
+    optionalTags,
   };
 }
 

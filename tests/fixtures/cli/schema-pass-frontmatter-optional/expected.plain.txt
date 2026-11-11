@@ -1,0 +1,24 @@
+mdtl 9.9.9
+Config: (none)
+Template syntax reference: https://github.com/m21-cerutti/md-template-lint/blob/main/docs/syntax-reference.md
+========================
+
+  PASS template.md
+Frontmatter: [frontmatter:optional]
+
+Field  Type    Rules
+--------------------
+title  string  presence:required
+
+Headings:
+  # Guide (presence:required)
+  ## Usage (presence:required, content:non-empty)
+
+========================
+Summary
+========================
+Templates:    1 checked, 0 broken
+Warnings:     0
+
+All templates passed!
+========================

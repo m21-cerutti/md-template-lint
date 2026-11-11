@@ -3,7 +3,7 @@
  * target, its fields (top-level frontmatter keys) and sections (every
  * heading level, H1 to H6, each with its parent).
  */
-import type { BodyTag, Directive, FrontmatterComment, FrontmatterFilenameTag, MarkdownDocument, PatternPiece, SourcePosition, TagFinding } from "../tags/ast.js";
+import type { BodyTag, Directive, FrontmatterComment, FrontmatterFilenameTag, FrontmatterOptionalPlacement, MarkdownDocument, PatternPiece, SourcePosition, TagFinding } from "../tags/ast.js";
 import { matchPattern } from "./pattern.js";
 
 /** A frontmatter value loaded with the `failsafe` schema (spec 1.2): strings, lists, mappings. */
@@ -402,11 +402,24 @@ export interface DocumentModel {
    */
   readonly uniqueHeadingNames: boolean;
   /**
+   * True when a standalone `# [frontmatter:optional]` line outside a multi-line YAML value is
+   * present (ADR 0015, spec 2.1): a target of this template may omit its frontmatter. Always
+   * false for a body-only target.
+   */
+  readonly frontmatterOptional: boolean;
+  /**
    * Syntax-level tag findings collected by the parser listeners, kept only
    * for YAML top-level key lines, filename comment lines and the body
    * (spec 2.1, 2.7). Read by src/rules/syntax.ts.
    */
   readonly findings: readonly TagFinding[];
+  /**
+   * Every well-formed `[frontmatter:optional]` of the frontmatter (ADR 0015) on a YAML
+   * top-level key line or a comment line outside a multi-line value (spec 2.1: a tag inside a
+   * multi-line value is inert), in source order. `firstLine` of an `alone` entry is
+   * recomputed over this list. Empty for a body-only target. Read by MTL031.
+   */
+  readonly optionalTags: readonly FrontmatterOptionalPlacement[];
   /**
    * Disable directives in source order (spec 4.4, DIR3): every body one-line
    * HTML comment outside fences and code spans, and frontmatter YAML comments

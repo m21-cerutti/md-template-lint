@@ -8,7 +8,7 @@
  * parses but has template errors (MTL017, MTL018, MTL019, MTL030, spec 2.7), failed: not
  * broken, and the run exits 1. In a lint run its report has status `fail` and its files are
  * still linted; in `--verify` the errors are in `VerifyTemplate.errors` (JSON status `fail`).
- * Template warnings (MTL010 to MTL016) never fail and are printed by `--verify` only.
+ * Template warnings (MTL010 to MTL016, MTL031) never fail and are printed by `--verify` only.
  */
 import type { Diagnostic, HeadingLevel } from "../engine/model.js";
 import type { RunDiagnostic } from "../config/types.js";
@@ -165,6 +165,8 @@ export interface TemplateSchema {
   readonly filenameCase: string | null;
   /** The template-wide `# [unique-headings-names]` switch (spec 2.11); false without it. */
   readonly uniqueHeadingNames: boolean;
+  /** The template-wide `# [frontmatter:optional]` switch (ADR 0015); false without it. */
+  readonly frontmatterOptional: boolean;
   readonly fields: readonly SchemaField[];
   readonly headings: readonly SchemaHeading[];
 }
@@ -173,7 +175,7 @@ export interface TemplateSchema {
 export interface VerifyTemplate {
   readonly template: TemplateReport;
   /**
-   * Tag warnings `MTL010` to `MTL016` of an ok template, in source order, each with its
+   * Tag warnings `MTL010` to `MTL016` and `MTL031` of an ok template, in source order, each with its
    * template line (spec 8.3, C09); empty when broken.
    */
   readonly warnings: readonly ReportedDiagnostic[];

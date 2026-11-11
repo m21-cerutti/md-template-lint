@@ -4,6 +4,7 @@
     "status": "ok",
     "filenameCase": "kebab-case",
     "uniqueHeadingNames": false,
+    "frontmatterOptional": false,
     "fields": [],
     "headings": [
       {

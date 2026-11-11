@@ -220,6 +220,7 @@ describe("cli --verify: details", () => {
         status: "ok",
         filenameCase: null,
         uniqueHeadingNames: false,
+        frontmatterOptional: false,
         fields: field,
         headings,
         diagnostics: [],
@@ -229,6 +230,7 @@ describe("cli --verify: details", () => {
         status: "ok",
         filenameCase: null,
         uniqueHeadingNames: false,
+        frontmatterOptional: false,
         fields: field,
         headings,
         diagnostics: [
@@ -255,6 +257,7 @@ describe("cli --verify: details", () => {
       error: { code: "MTL001", severity: "error", message: NO_FRONTMATTER },
       filenameCase: null,
       uniqueHeadingNames: false,
+      frontmatterOptional: false,
       fields: [],
       headings: [],
       diagnostics: [],
@@ -382,6 +385,7 @@ describe("cli --verify: a template that is not UTF-8", () => {
         error: { code: "MTL004", severity: "error", message: "file is not valid UTF-8" },
         filenameCase: null,
         uniqueHeadingNames: false,
+        frontmatterOptional: false,
         fields: [],
         headings: [],
         diagnostics: [],
@@ -456,5 +460,58 @@ describe("cli --verify: every heading level (spec 8.3, change C10)", () => {
       { level: 5, text: "Deep", rules: ["presence:required", "content:min-lines:2"] },
       { level: 6, text: "Deepest", rules: ["presence:template-only"] },
     ]);
+  });
+});
+
+describe("cli --verify: [frontmatter:optional] (ADR 0015, spec 8.3, 8.5)", () => {
+  let folder = "";
+  const DUPLICATE = "Comment line 7: tag [frontmatter:optional] has no effect (already set on line 4)";
+
+  beforeAll(() => {
+    folder = mkdtempSync(join(tmpdir(), "mtl-cli-verify-optional-"));
+    // Built here, not stored as a fixture: the three template-wide switches, a list-of-date
+    // field (MTL016) and a second standalone line of the tag (MTL031, the first stays effective).
+    writeFileSync(
+      join(folder, "switches.template.md"),
+      ["---", "# [filename:case:kebab-case]", "# [unique-headings-names]", "# [frontmatter:optional]", 'title: "string"', 'when: ["2026-01"]', "# [frontmatter:optional]", "---", "", "## Summary", ""].join("\n"),
+    );
+    writeFileSync(join(folder, "plain.template.md"), ["---", 'title: "string"', "---", "", "## Summary", ""].join("\n"));
+  });
+
+  afterAll(() => {
+    if (folder !== "") rmSync(folder, { recursive: true, force: true });
+  });
+
+  const run = (args: readonly string[]) => runCliIn("usage-no-config", args, { cwd: foldPath(folder), boundary: foldPath(folder) });
+
+  it("text prints `Frontmatter:` right after `Unique heading names:`, then one blank line", async () => {
+    const result = await run(["--verify", "--format", "plain", "switches.template.md"]);
+    expect(result.exitCode).toBe(0);
+    expect(result.stdout).toContain(["  PASS switches.template.md", "Filename: [filename:case:kebab-case]", "Unique heading names: [unique-headings-names]", "Frontmatter: [frontmatter:optional]", "", "Field  Type          Rules"].join("\n"));
+  });
+
+  it("text has no `Frontmatter:` line without the tag", async () => {
+    const result = await run(["--verify", "--format", "plain", "plain.template.md"]);
+    expect(result.stdout).not.toContain("Frontmatter:");
+    expect(result.stdout).toContain("  PASS plain.template.md\nField  Type    Rules");
+  });
+
+  it("MTL031 is in `Conflicting frontmatter tags:` with its excerpt, after the MTL016 section", async () => {
+    const result = await run(["--verify", "--format", "plain", "switches.template.md"]);
+    const section = ["Conflicting frontmatter tags:", `  - ${DUPLICATE} (line 7, column 3)`, "      7 | # [frontmatter:optional]", "        |   ^", "", ""].join("\n");
+    expect(result.stdout).toContain(section);
+    expect(result.stdout.indexOf("Date fields without format:")).toBeGreaterThanOrEqual(0);
+    expect(result.stdout.indexOf("Date fields without format:")).toBeLessThan(result.stdout.indexOf("Conflicting frontmatter tags:"));
+    expect(result.stdout).toContain("Warnings:     2");
+  });
+
+  it("JSON: frontmatterOptional right after uniqueHeadingNames, true with the tag, false without", async () => {
+    const tagged = parseJson((await run(["--verify", "--format", "json", "switches.template.md"])).stdout);
+    const entry = tagged.templates?.[0];
+    expect(entry?.frontmatterOptional).toBe(true);
+    expect(Object.keys(entry ?? {})).toEqual(["path", "status", "filenameCase", "uniqueHeadingNames", "frontmatterOptional", "fields", "headings", "diagnostics"]);
+    expect(entry?.diagnostics.map((diagnostic) => diagnostic.code)).toEqual(["MTL016", "MTL031"]);
+    const plain = parseJson((await run(["--verify", "--format", "json", "plain.template.md"])).stdout);
+    expect(plain.templates?.[0]?.frontmatterOptional).toBe(false);
   });
 });

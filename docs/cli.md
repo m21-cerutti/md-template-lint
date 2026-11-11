@@ -102,7 +102,11 @@ and the template errors). No target is read.
 - With neither a config nor a template path the run fails with `MTL923` (exit 2).
 - A broken template (`MTL001` to `MTL004` on the template) exits 1, and so does a template with a template
   error. A missing template path exits 2.
-- The template warnings `MTL010` to `MTL016` are shown by `--verify` only and never change the exit code.
+- The template warnings `MTL010` to `MTL016` and `MTL031` are shown by `--verify` only and never change the exit code.
+- A template that carries `# [frontmatter:optional]` (spec [2.12](spec.md#212-optional-frontmatter-frontmatteroptional))
+  prints the line `Frontmatter: [frontmatter:optional]` before its table; the JSON template object then has
+  `frontmatterOptional: true` (`false` without the tag). A copy of the tag that has no effect is `MTL031`, listed
+  in the section `Conflicting frontmatter tags:`.
 
 ```bash
 mdtl --verify

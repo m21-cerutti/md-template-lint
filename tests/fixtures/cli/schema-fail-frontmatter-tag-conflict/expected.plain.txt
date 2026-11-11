@@ -1,0 +1,34 @@
+mdtl 9.9.9
+Config: (none)
+Template syntax reference: https://github.com/m21-cerutti/md-template-lint/blob/main/docs/syntax-reference.md
+========================
+
+  PASS template.md
+Frontmatter: [frontmatter:optional]
+
+Field  Type    Rules
+--------------------
+title  string  presence:required
+
+Headings:
+  # Guide (presence:required)
+
+Conflicting frontmatter tags:
+  - Field 'title': tag [frontmatter:optional] has no effect (it must be alone on its comment line) (line 3, column 19)
+      3 | title: "string" # [frontmatter:optional]
+        |                   ^
+  - Comment line 4: tag [frontmatter:optional] has no effect (it must be alone on its comment line) (line 4, column 8)
+      4 | # note [frontmatter:optional]
+        |        ^
+  - Comment line 5: tag [frontmatter:optional] has no effect (already set on line 2) (line 5, column 3)
+      5 | # [frontmatter:optional]
+        |   ^
+
+========================
+Summary
+========================
+Templates:    1 checked, 0 broken
+Warnings:     3
+
+All templates passed!
+========================

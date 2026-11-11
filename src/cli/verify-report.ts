@@ -5,10 +5,11 @@
  *
  * Text, per template: a header line (`✓ <path>`, `PASS` in plain), then the spec 8.3 schema:
  * the `Filename:` line when declared, the `Unique heading names:` line under the template-wide
- * switch (spec 2.11), the `Field  Type  Rules` table, the `Headings:` list and
- * the sections `Unknown tags found`, `Malformed tags:`, `Misplaced tags:`, `Invalid
- * patterns:`, `Conflicting tags:` and, last, `Date fields without format:` (from the template
- * warnings `MTL010` to `MTL016`, each item followed by the excerpt of its template line, spec
+ * switch (spec 2.11), the `Frontmatter:` line under `# [frontmatter:optional]` (ADR 0015), the
+ * `Field  Type  Rules` table, the `Headings:` list and the sections `Unknown tags found`,
+ * `Malformed tags:`, `Misplaced tags:`, `Invalid patterns:`, `Conflicting tags:`, `Date fields
+ * without format:` and, last, `Conflicting frontmatter tags:` (from the template warnings
+ * `MTL010` to `MTL016` and `MTL031`, each item followed by the excerpt of its template line, spec
  * 8.3), then the template error sections `Duplicate patterns:` (`MTL017`), `Optional headings
  * with a minimum:` (`MTL018`), `Child headings out of level order:` (`MTL019`) and `Order tags
  * without repeat:` (`MTL030`). A template with a template error has the fail header
@@ -97,6 +98,8 @@ function templateJson(item: VerifyTemplate): Record<string, unknown> {
   out["filenameCase"] = schema?.filenameCase ?? null;
   // Spec 2.11, 8.5 (A80c): always present, right after `filenameCase`.
   out["uniqueHeadingNames"] = schema?.uniqueHeadingNames ?? false;
+  // ADR 0015: always present, right after `uniqueHeadingNames`.
+  out["frontmatterOptional"] = schema?.frontmatterOptional ?? false;
   out["fields"] = (schema?.fields ?? []).map((field) => ({
     name: cleanText(field.name),
     type: cleanText(field.type),
@@ -213,7 +216,8 @@ function schemaLines(schema: TemplateSchema, warnings: readonly ReportedDiagnost
   }
   // Spec 2.11, 8.3: right after `Filename:` (or in its place), then the blank line.
   if (schema.uniqueHeadingNames) text.push("Unique heading names: [unique-headings-names]");
-  if (schema.filenameCase !== null || schema.uniqueHeadingNames) text.push("");
+  if (schema.frontmatterOptional) text.push("Frontmatter: [frontmatter:optional]");
+  if (schema.filenameCase !== null || schema.uniqueHeadingNames || schema.frontmatterOptional) text.push("");
   text.push(...tableLines(schema), "");
   if (schema.headings.length > 0) {
     text.push("Headings:");
@@ -244,6 +248,7 @@ function schemaLines(schema: TemplateSchema, warnings: readonly ReportedDiagnost
   section("Invalid patterns:", of("MTL014", true));
   section("Conflicting tags:", of("MTL015", true));
   section("Date fields without format:", of("MTL016", true));
+  section("Conflicting frontmatter tags:", of("MTL031", true));
   return { text, warn };
 }
 

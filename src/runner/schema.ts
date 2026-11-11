@@ -126,6 +126,7 @@ export function describeTemplate(model: DocumentModel): TemplateSchema {
   return {
     filenameCase: model.filename?.convention ?? null,
     uniqueHeadingNames: model.uniqueHeadingNames,
+    frontmatterOptional: model.frontmatterOptional,
     fields,
     headings,
   };

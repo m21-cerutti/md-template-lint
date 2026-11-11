@@ -68,6 +68,13 @@ const CASES: readonly VerifyCase[] = [
       ["m", '[pattern:"a]b \\"c\\""]'],
     ].map(([key = "", tag = ""], index) => warning(`Field '${key}': tag ${tag} is not valid in frontmatter`, index + 2, 8, `${key}: x # ${tag}`)),
   },
+  // ADR 0015: the frontmatter-only `[frontmatter:optional]` on a heading, inert.
+  {
+    name: "fail-frontmatter-optional-in-heading",
+    exitCode: 0,
+    status: "ok",
+    diagnostics: [warning("Heading 'Notes [frontmatter:optional]': tag [frontmatter:optional] is not valid in a heading", 4, 10, "## Notes [frontmatter:optional]")],
+  },
 ];
 
 describe("MTL013 misplaced-tag (--verify)", { tags: ["MTL013", "syntax"] }, () => {

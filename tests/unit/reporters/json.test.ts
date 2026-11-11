@@ -65,8 +65,8 @@ describe("json reporter", () => {
     expect(Object.keys(document.summary)).toEqual(["templates", "broken", "errors", "warnings", "suppressed", "runErrors", "exitCode"]);
   });
 
-  it("verify: template keys in the order of spec 8.5, uniqueHeadingNames after filenameCase", () => {
-    const schema = { filenameCase: null, uniqueHeadingNames: true, fields: [], headings: [] };
+  /** The JSON template object of `--verify` for one schema (spec 8.5). */
+  const verifyTemplate = (schema: NonNullable<VerifyResult["templates"][number]["schema"]>): Record<string, unknown> => {
     const result: VerifyResult = {
       mode: "verify",
       config: null,
@@ -75,9 +75,20 @@ describe("json reporter", () => {
       summary: { templates: 1, broken: 0, errors: 0, warnings: 0, runErrors: 0, exitCode: 0 },
     };
     const document = JSON.parse(reportVerify(result, { format: "json", version: VERSION }).stdout) as { templates: Record<string, unknown>[] };
-    const template = document.templates[0] as Record<string, unknown>;
-    expect(Object.keys(template)).toEqual(["path", "status", "filenameCase", "uniqueHeadingNames", "fields", "headings", "diagnostics"]);
+    return document.templates[0] as Record<string, unknown>;
+  };
+
+  it("verify: template keys in the order of spec 8.5, uniqueHeadingNames then frontmatterOptional after filenameCase", () => {
+    const template = verifyTemplate({ filenameCase: null, uniqueHeadingNames: true, frontmatterOptional: false, fields: [], headings: [] });
+    expect(Object.keys(template)).toEqual(["path", "status", "filenameCase", "uniqueHeadingNames", "frontmatterOptional", "fields", "headings", "diagnostics"]);
     expect(template["uniqueHeadingNames"]).toBe(true);
+    expect(template["frontmatterOptional"]).toBe(false);
+  });
+
+  it("verify: frontmatterOptional is true for a template with `# [frontmatter:optional]` (ADR 0015)", () => {
+    const template = verifyTemplate({ filenameCase: null, uniqueHeadingNames: false, frontmatterOptional: true, fields: [], headings: [] });
+    expect(template["frontmatterOptional"]).toBe(true);
+    expect(Object.keys(template).indexOf("frontmatterOptional")).toBe(Object.keys(template).indexOf("uniqueHeadingNames") + 1);
   });
 
   it("report-multi-root-warnings: warnings count diagnostics, filesWithWarnings counts files", async () => {

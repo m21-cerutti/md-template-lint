@@ -292,6 +292,8 @@ REPEAT_RULES : 'repeat-rules' ;
 // Colon-less, argument-less tag `[unique-headings-names]` (spec 2.11). Stage 1 reads it as a bare
 // bracket; the stage-2 parse of that bracket (bodyTagEntry / fmTagEntry) makes it a known tag.
 UNIQUE_HEADINGS_NAMES : 'unique-headings-names' ;
+// `[frontmatter:optional]` (ADR 0015): effective on a standalone template frontmatter comment line.
+FRONTMATTER : 'frontmatter' ;
 
 // Arguments.
 REQUIRED      : 'required' ;

@@ -52,6 +52,13 @@ const CASES: readonly VerifyCase[] = [
     status: "ok",
     diagnostics: [warning("Comment line 2: unknown tag [todo]", 2, 3, "# [todo]"), warning("Comment line 4: unknown tag [x]", 4, 8, "# note [x]"), warning("Comment line 6: unknown tag [unique-heading-names]", 6, 3, "# [unique-heading-names]")],
   },
+  // ADR 0015: a typo of the family `frontmatter` on the standalone line stays unknown.
+  {
+    name: "fail-frontmatter-optional-typo",
+    exitCode: 0,
+    status: "ok",
+    diagnostics: [warning("Comment line 2: unknown tag [frontmater:optional]", 2, 3, "# [frontmater:optional]")],
+  },
 ];
 
 describe("MTL010 unknown-field-tag (--verify)", { tags: ["MTL010", "syntax"] }, () => {

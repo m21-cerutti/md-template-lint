@@ -170,7 +170,7 @@ flowchart TD
   finding --> coll
   coll --> out["DocumentAnalysis: document, grammarErrors, findings"]
   out -->|"grammarErrors not empty"| boom["parseDocument and loadDocument throw InternalParseError"]
-  out -->|"findings"| rules["template phase rules MTL010 to MTL013 (MTL014, MTL015, MTL017, MTL018, MTL019 and MTL030 read the headings, MTL016 the fields)"]
+  out -->|"findings"| rules["template phase rules MTL010 to MTL013 (MTL014, MTL015, MTL017, MTL018, MTL019 and MTL030 read the headings, MTL016 the fields, MTL031 the frontmatter tags)"]
 ```
 
 - `createRecognizers` (`src/tags/listeners.ts`) builds a lexer and a parser over a text, removes the
@@ -193,7 +193,8 @@ flowchart TD
   pattern), `MTL015` (a heading tag with no effect) and `MTL016` (a date field without a format tag),
   and the template errors `MTL017`, `MTL018`, `MTL019` and `MTL030` (heading pattern, minimum, child
   order and order-tag conflicts), are not findings: the same file reads them from the template headings
-  and fields.
+  and fields. The template warning `MTL031` (a `[frontmatter:optional]` copy with no effect) is read
+  from `Frontmatter.optionalTags`.
 
 Run the whole parser on a small target. Create `tmp/analyze.ts`:
 
