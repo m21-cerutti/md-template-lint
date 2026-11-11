@@ -8,8 +8,8 @@ deciders: [owner]
 
 # ADR 0005: Packaging, CI and release
 
-The npm package holds `dist/`, `LICENSE`, `CHANGELOG.md`, `THIRD_PARTY_NOTICES.md` and
-`README.md` (plus the always-included `package.json`). CI runs every gate on three operating systems and three Node
+The npm package holds `dist/`, `LICENSE`, `CHANGELOG.md`, `THIRD_PARTY_NOTICES.md`, `README.md`,
+`CONTRIBUTING.md` and `AI_GUIDELINE.md` (plus the always-included `package.json`). CI runs every gate on three operating systems and three Node
 versions. A tag `X.Y.Z` (no `v` prefix) publishes the tarball that the smoke test installed, with npm Trusted
 Publishing and provenance. No secret is used.
 
@@ -42,7 +42,7 @@ The first release needs a packaging and release design. Facts that shape the dec
 ## Decision
 
 - **`files` whitelist** in `package.json`: `dist`, `!dist/**/*.map`, `LICENSE`,
-  `CHANGELOG.md`, `THIRD_PARTY_NOTICES.md`, `README.md`. Source maps are left out because their sources are not
+  `CHANGELOG.md`, `THIRD_PARTY_NOTICES.md`, `README.md`, `CONTRIBUTING.md`, `AI_GUIDELINE.md`. Source maps are left out because their sources are not
   shipped. `main`, `types`, `bin` and a new `exports` map (`.` and `./package.json`) all point
   into `dist`. `exports` closes deep imports into `dist/`: the public API is `dist/index.js`.
   A unit test (`tests/unit/smoke/workflows.test.ts`) pins these fields.
@@ -54,7 +54,7 @@ The first release needs a packaging and release design. Facts that shape the dec
   `tar -tzf` (no shell) and checks the listing, installs the tarball with `pnpm add` into an empty
   temp project outside the repository, then runs the installed `bin`. Tarball check: required
   `package.json`, `README.md`, `LICENSE`, `CHANGELOG.md`, `THIRD_PARTY_NOTICES.md`,
-  `dist/cli.js`, `dist/index.js`; forbidden any `.map`, any file outside `dist/` and those five root files, and
+  `CONTRIBUTING.md`, `AI_GUIDELINE.md`, `dist/cli.js`, `dist/index.js`; forbidden any `.map`, any file outside `dist/` and those seven root files, and
   anything under `tests/`, `scripts/`, `src/`, `tmp/`. CLI check, through the real shim
   of `node_modules/.bin` (`.cmd` on Windows, started with quoted arguments, never with raw
   `shell: true`) and once with `node <bin file>`: `--version` (exit 0, prints the package version
@@ -128,8 +128,8 @@ The first release needs a packaging and release design. Facts that shape the dec
 
 ## Consequences
 
-- The package is small and predictable: `dist/**` (without maps), four named root files
-  (`LICENSE`, `CHANGELOG.md`, `THIRD_PARTY_NOTICES.md`, `README.md`) and `package.json`. The smoke test fails when
+- The package is small and predictable: `dist/**` (without maps), six named root files
+  (`LICENSE`, `CHANGELOG.md`, `THIRD_PARTY_NOTICES.md`, `README.md`, `CONTRIBUTING.md`, `AI_GUIDELINE.md`) and `package.json`. The smoke test fails when
   the real tarball holds anything else.
 - Every release runs the full gate set and an install from a clean directory before any publish.
 - No long-lived token exists to leak; a compromised fork cannot publish (Trusted Publisher is bound

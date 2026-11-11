@@ -5,6 +5,22 @@ cases, the gate order, the scripts) read [docs/guides/testing.md](../docs/guides
 this file only says what exists and where. Runner: `vitest`. Tests never use the network and
 never read a real configuration.
 
+<!-- prettier-ignore-start -->
+<!-- omit in toc -->
+## Summary
+<!-- prettier-ignore-end -->
+
+- [Test families](#test-families)
+  - [Target categories](#target-categories)
+  - [Unit tests](#unit-tests)
+  - [Consistency tests](#consistency-tests)
+- [Fixtures](#fixtures)
+  - [The `pass-` and `fail-` rule](#the-pass--and-fail--rule)
+  - [How fixtures map to rules](#how-fixtures-map-to-rules)
+- [Running the tests](#running-the-tests)
+- [Run one error code or family](#run-one-error-code-or-family)
+- [See also](#see-also)
+
 ## Test families
 
 Seven families. Each has a purpose, a place and one command to run it alone.

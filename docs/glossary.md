@@ -7,6 +7,19 @@ last_updated: 2026-11-11
 
 The terms of the code and the docs, grouped by theme and alphabetical inside each group (a leading `--` is ignored). Each entry names the type, file or key the term has in the code; when a term has no code name of its own, the entry says so. Back to the [docs index](README.md).
 
+<!-- prettier-ignore-start -->
+<!-- omit in toc -->
+## Summary
+<!-- prettier-ignore-end -->
+
+- [Configuration and runs](#configuration-and-runs)
+- [Templates, targets and tags](#templates-targets-and-tags)
+- [Headings and sections](#headings-and-sections)
+- [Patterns and placeholders](#patterns-and-placeholders)
+- [Rules, codes and diagnostics](#rules-codes-and-diagnostics)
+- [Parser and engine](#parser-and-engine)
+- [Tests](#tests)
+
 ## Configuration and runs
 
 | Term          | Definition                                                                                                                                                                                                                                  | See also                                                              |

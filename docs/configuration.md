@@ -9,6 +9,20 @@ The `md-template-lint.yml` file: its keys, defaults, paths, globs and the `io` o
 [spec.md](spec.md) section 6; it wins over this page. The commands and flags are in [cli.md](cli.md), the
 template syntax in [syntax-reference.md](syntax-reference.md).
 
+<!-- prettier-ignore-start -->
+<!-- omit in toc -->
+## Summary
+<!-- prettier-ignore-end -->
+
+- [Overview](#overview)
+- [Top-level keys](#top-level-keys)
+- [Pair keys](#pair-keys)
+- [Path values](#path-values)
+- [Globs](#globs)
+- [`onEmpty`](#onempty)
+- [`io` options: `approvedPaths`, `aliases`, `allowPrivateNetworks`](#io-options-approvedpaths-aliases-allowprivatenetworks)
+- [What is not configurable](#what-is-not-configurable)
+
 ## Overview
 
 One `md-template-lint.yml` per project. It is YAML, validated strictly: an unknown key is an error

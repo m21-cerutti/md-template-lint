@@ -1,0 +1,6 @@
+{
+  "*.{ts,mts,cts}": ["prettier --write", "eslint --fix --no-warn-ignored", "secretlint"],
+  "*.md": ["prettier --write", "secretlint", "markdownlint-cli2", "node dist/cli.js --quiet"],
+  "*.{json,jsonc,yml,yaml}": ["prettier --write", "secretlint"],
+  "!(*.ts|*.mts|*.cts|*.md|*.json|*.jsonc|*.yml|*.yaml)": "secretlint"
+}

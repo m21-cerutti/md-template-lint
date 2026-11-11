@@ -1,6 +1,6 @@
 ---
 title: Documentation index
-last_updated: 2026-11-04
+last_updated: 2026-11-11
 ---
 
 # Documentation index
@@ -67,25 +67,44 @@ Process: [../CONTRIBUTING.md](../CONTRIBUTING.md#decisions-adr-process).
 
 ## Templates
 
-Document templates in [../templates/](../templates/); check one with `md-template-lint --verify <file>`.
+Document templates live in two folders, see [../templates/README.md](../templates/README.md). Check one with `md-template-lint --verify <file>`.
 
-| File                                                                                 | For                                                                                             |
-| ------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
-| [../templates/adr.template.md](../templates/adr.template.md)                         | Architecture decision record (`deciders` optional).                                             |
-| [../templates/bug.template.md](../templates/bug.template.md)                         | Bug report with upstream link, minimal example, expected vs result table.                       |
-| [../templates/TODO.template.md](../templates/TODO.template.md)                       | `TODO.md`: epics with Phase/Tasks/Prio/Deps/Status/Notes/Subagent/Tier tables.                  |
-| [../templates/spec-product.template.md](../templates/spec-product.template.md)       | Product specification: what, not how.                                                           |
-| [../templates/spec-technical.template.md](../templates/spec-technical.template.md)   | Technical specification: the contract.                                                          |
-| [../templates/architecture.template.md](../templates/architecture.template.md)       | Architecture overview with a mermaid diagram, legend and discrepancies.                         |
-| [../templates/IDEA.template.md](../templates/IDEA.template.md)                       | `IDEA.md`: vision and dated idea list.                                                          |
-| [../templates/ai-capabilities.template.md](../templates/ai-capabilities.template.md) | Map of the AI agents, skills, commands and tools.                                               |
-| [../templates/CHANGELOG.template.md](../templates/CHANGELOG.template.md)             | `CHANGELOG.md`: Keep a Changelog groups (Added, Changed, Deprecated, Removed, Fixed, Security). |
-| [../templates/README.template.md](../templates/README.template.md)                   | `README.md`: project name, installation, usage, development, license.                           |
-| [../templates/ai/](../templates/ai/)                                                 | AI configuration templates, listed below.                                                       |
-| [../templates/ai/AGENTS.template.md](../templates/ai/AGENTS.template.md)             | `AGENTS.md`: rules, stack, build and test, quality gates for coding agents.                     |
-| [../templates/ai/agent.template.md](../templates/ai/agent.template.md)               | Agent definition: description, mode, model, permissions, role, task, format.                    |
-| [../templates/ai/SKILL.template.md](../templates/ai/SKILL.template.md)               | Skill: name, description, when to use, steps, resources.                                        |
-| [../templates/ai/command.template.md](../templates/ai/command.template.md)           | Slash command: description, agent, model, prompt with `$ARGUMENTS`.                             |
+### Generic templates
+
+Reusable skeletons in [../templates/generic/](../templates/generic/): copy one and adapt it. Pairs of this repository without a project variant use these directly.
+
+| File                                                                                                         | For                                                                                             |
+| ------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
+| [../templates/generic/adr.template.md](../templates/generic/adr.template.md)                                 | Architecture decision record (`deciders` optional).                                             |
+| [../templates/generic/bug.template.md](../templates/generic/bug.template.md)                                 | Bug report with upstream link, minimal example, expected vs result table.                       |
+| [../templates/generic/TODO.template.md](../templates/generic/TODO.template.md)                               | `TODO.md`: epics with Phase/Tasks/Prio/Deps/Status/Notes/Subagent/Tier tables.                  |
+| [../templates/generic/spec-product.template.md](../templates/generic/spec-product.template.md)               | Product specification: what, not how.                                                           |
+| [../templates/generic/spec-technical.template.md](../templates/generic/spec-technical.template.md)           | Technical specification: the contract.                                                          |
+| [../templates/generic/architecture.template.md](../templates/generic/architecture.template.md)               | Architecture overview with a mermaid diagram, legend and discrepancies.                         |
+| [../templates/generic/IDEA.template.md](../templates/generic/IDEA.template.md)                               | `IDEA.md`: vision and dated idea list.                                                          |
+| [../templates/generic/ai-capabilities.template.md](../templates/generic/ai-capabilities.template.md)         | Map of the AI agents, skills, commands and tools.                                               |
+| [../templates/generic/CHANGELOG.template.md](../templates/generic/CHANGELOG.template.md)                     | `CHANGELOG.md`: Keep a Changelog groups (Added, Changed, Deprecated, Removed, Fixed, Security). |
+| [../templates/generic/README.template.md](../templates/generic/README.template.md)                           | `README.md`: project name, installation, usage, development, license.                           |
+| [../templates/generic/CONTRIBUTING.template.md](../templates/generic/CONTRIBUTING.template.md)               | `CONTRIBUTING.md`: how to report, fork, test, commit and open a pull request.                   |
+| [../templates/generic/AI_GUIDELINE.template.md](../templates/generic/AI_GUIDELINE.template.md)               | `AI_GUIDELINE.md`: policy for AI-assisted contributions.                                        |
+| [../templates/generic/THIRD_PARTY_NOTICES.template.md](../templates/generic/THIRD_PARTY_NOTICES.template.md) | `THIRD_PARTY_NOTICES.md`: licences of bundled third-party code, one block per package.          |
+| [../templates/generic/ai/](../templates/generic/ai/)                                                         | AI configuration templates, listed below.                                                       |
+| [../templates/generic/ai/AGENTS.template.md](../templates/generic/ai/AGENTS.template.md)                     | `AGENTS.md`: rules, stack, build and test, quality gates for coding agents.                     |
+| [../templates/generic/ai/agent.template.md](../templates/generic/ai/agent.template.md)                       | Agent definition: description, mode, model, permissions, role, task, format.                    |
+| [../templates/generic/ai/SKILL.template.md](../templates/generic/ai/SKILL.template.md)                       | Skill: name, description, when to use, steps, resources.                                        |
+| [../templates/generic/ai/command.template.md](../templates/generic/ai/command.template.md)                   | Slash command: description, agent, model, prompt with `$ARGUMENTS`.                             |
+
+### Project variants
+
+This repository's own variants in [../templates/](../templates/), used by `md-template-lint.yml`. Same file names as the generic ones; each differs as shown.
+
+| File                                                                                         | Difference from the generic template                                                                |
+| -------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| [../templates/CHANGELOG.template.md](../templates/CHANGELOG.template.md)                     | Optional `Summary` table of contents and optional area headings (`Area`) inside the release groups. |
+| [../templates/CONTRIBUTING.template.md](../templates/CONTRIBUTING.template.md)               | Optional `Summary` table of contents; the first section is `Overview` (generic: `Summary`).         |
+| [../templates/AI_GUIDELINE.template.md](../templates/AI_GUIDELINE.template.md)               | Optional `Summary` table of contents.                                                               |
+| [../templates/THIRD_PARTY_NOTICES.template.md](../templates/THIRD_PARTY_NOTICES.template.md) | Optional `Summary` table of contents; the package table is `Packages` (generic: `Summary`).         |
+| [../templates/architecture.template.md](../templates/architecture.template.md)               | Optional `Summary` table of contents.                                                               |
 
 ## Which doc for which question
 

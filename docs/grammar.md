@@ -11,6 +11,16 @@ sequence, match, extra, checked). The tags themselves, the rule codes and their 
 the [spec](spec.md), section [2.6](spec.md#26-heading-suffix-tags-body-sections) and section
 [2.10](spec.md#210-heading-patterns-repeat-rules-and-order). Back to the [docs index](README.md).
 
+<!-- prettier-ignore-start -->
+<!-- omit in toc -->
+## Summary
+<!-- prettier-ignore-end -->
+
+- [Heading extraction rules](#heading-extraction-rules)
+- [Levels, parents and scope](#levels-parents-and-scope)
+  - [Terms used by the rules](#terms-used-by-the-rules)
+  - [Why the rules are shaped this way](#why-the-rules-are-shaped-this-way)
+
 ## Heading extraction rules
 
 The linter reads every heading level, H1 to H6, in templates and in target files alike (change

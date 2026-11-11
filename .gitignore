@@ -70,6 +70,7 @@ Thumbs.db
 # `.vscode/*` (not `.vscode/`): git cannot re-include a file of an excluded dir
 .vscode/*
 !.vscode/extensions.json
+!.vscode/settings.json
 
 # --- Project specific (md-template-lint) ---
 # Package tarballs from `pnpm pack`

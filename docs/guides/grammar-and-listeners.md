@@ -1,6 +1,6 @@
 ---
 title: "Guide: grammar and listeners"
-last_updated: 2026-11-04
+last_updated: 2026-11-11
 ---
 
 # Guide: grammar and listeners
@@ -13,6 +13,20 @@ Companion pages: [architecture.md](../architecture.md) ([lexer modes](../archite
 [listeners and error flow](../architecture.md#listeners-and-error-flow), [data flow](../architecture.md#data-flow)),
 [ADR 0002](../adr/0002-grammar-structure.md), [Adding a tag](adding-a-tag.md), the
 [glossary](../glossary.md).
+
+<!-- prettier-ignore-start -->
+<!-- omit in toc -->
+## Summary
+<!-- prettier-ignore-end -->
+
+- [The pieces](#the-pieces)
+- [Two stages](#two-stages)
+- [Lexer modes in practice](#lexer-modes-in-practice)
+- [Listeners and visitors](#listeners-and-visitors)
+- [Error flow](#error-flow)
+- [Disable directives in the grammar](#disable-directives-in-the-grammar)
+- [The generated parser](#the-generated-parser)
+- [See also](#see-also)
 
 ## The pieces
 

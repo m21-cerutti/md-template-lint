@@ -1,8 +1,10 @@
+package/AI_GUIDELINE.md
 package/CHANGELOG.md
 package/CONTRIBUTING.md
 package/LICENSE
 package/README.md
 package/THIRD_PARTY_NOTICES.md
+package/TODO.md
 package/dist/cli.d.ts
 package/dist/cli.js
 package/dist/engine/ranges.json

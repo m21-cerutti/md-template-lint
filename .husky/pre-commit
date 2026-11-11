@@ -20,6 +20,11 @@ if [ "$stale" = 1 ]; then
 fi
 
 # formatters in lint-staged fix and re-stage files first, so the suite sees the formatted files
+# .lintstagedrc.json is static: lint-staged passes absolute paths as separate arguments (no shell), and the paths that no tool must see
+# (src/generated, tests/fixtures, docs/syntax-reference.md, docs/proposals) are ignored by the tools themselves (see CONTRIBUTING.md)
 pnpm exec lint-staged || exit 1
+
+# ls-lint checks the whole tree and takes no file arguments, so it cannot be a lint-staged command
+pnpm exec ls-lint || exit 1
 
 pnpm test

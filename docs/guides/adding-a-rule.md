@@ -19,6 +19,23 @@ and [spec.md](../spec.md) sections [4.1](../spec.md#41-order-of-checks-for-one-t
 [4.3](../spec.md#43-code-table) before you start. The spec is the contract: when code and spec
 disagree, fix one of them in the same change.
 
+<!-- prettier-ignore-start -->
+<!-- omit in toc -->
+## Summary
+<!-- prettier-ignore-end -->
+
+- [0. Before you start](#0-before-you-start)
+- [1. Choose the category, the phase and the step](#1-choose-the-category-the-phase-and-the-step)
+- [2. Write the spec row first](#2-write-the-spec-row-first)
+- [3. Scaffold the rule](#3-scaffold-the-rule)
+- [4. Write the fixtures and the failing test first](#4-write-the-fixtures-and-the-failing-test-first)
+  - [Fixtures with control characters](#fixtures-with-control-characters)
+- [5. Run the test and see it fail](#5-run-the-test-and-see-it-fail)
+- [6. Implement the check](#6-implement-the-check)
+- [7. Run the gates, in this order](#7-run-the-gates-in-this-order)
+- [8. Update the docs](#8-update-the-docs)
+- [See also](#see-also)
+
 ## 0. Before you start
 
 ```bash

@@ -46,13 +46,13 @@ Project commands live in `.opencode/commands/`.
 ## Tools
 
 Project tools live in `.opencode/tools/`. There are none; the table lists the tooling of the
-repository instead (the gates an agent runs, from `package.json`, `.husky/`, `lint-staged.config.ts`
+repository instead (the gates an agent runs, from `package.json`, `.husky/`, `.lintstagedrc.json`
 and `.github/workflows/`).
 
 | Tool                                                         | Purpose                                                                                                                                               |
 | ------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `typescript` (`tsc`)                                         | Compiles `src/` to `dist/` (`pnpm run build`) and type-checks sources, tests and scripts in strict mode (`pnpm run typecheck`).                       |
-| `tsx`                                                        | Runs the TypeScript scripts of `scripts/` and `lint-staged.config.ts` without a build step ([ADR 0007](adr/0007-tsx-script-runner.md)).               |
+| `tsx`                                                        | Runs the TypeScript scripts of `scripts/` without a build step ([ADR 0007](adr/0007-tsx-script-runner.md)).                                           |
 | `vitest`, `@vitest/coverage-v8`                              | Test runner (`pnpm test`), the consistency checks (`pnpm run check:rules`) and the coverage gate (`pnpm run coverage`).                               |
 | `antlr-ng`, `antlr4ng`                                       | Generates the parser from `grammar/*.g4` into `src/generated/` (`pnpm run gen:parser`, no Java); `antlr4ng` is the runtime the generated parser uses. |
 | `eslint`, `@eslint/js`, `typescript-eslint`, `jiti`          | TypeScript lint (`pnpm run lint:ts`); `jiti` loads `eslint.config.ts`.                                                                                |
@@ -64,14 +64,14 @@ and `.github/workflows/`).
 | `@commitlint/cli`, `@commitlint/config-conventional`         | Conventional Commits check on the commit message (`.commitlintrc.ts`).                                                                                |
 | `@types/node`                                                | Node type definitions for the sources and scripts.                                                                                                    |
 | `yaml`                                                       | Runtime dependency: parses frontmatter and the per-project `md-template-lint.yml`.                                                                    |
-| `mdtl` / `md-template-lint` (`node dist/cli.js`)             | The product itself, used as a dogfood gate: lints this repository's docs against `templates/` with `md-template-lint.yml`.                            |
+| `mdtl` / `md-template-lint` (`node dist/cli.js`)             | The product itself, used as a dogfood gate: lints this repository's docs against `templates/` and `templates/generic/` with `md-template-lint.yml`.   |
 
 Git hooks (`.husky/`, installed by `pnpm run prepare`; never skip with `--no-verify`):
 
-| Hook         | Runs                                                                                                                                                                                                                                                                                       |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `pre-commit` | `pnpm run build` when `dist/cli.js` is missing or older than `src/` or `grammar/`, then `lint-staged`, then `pnpm test`. `lint-staged.config.ts` runs `prettier --write`, `eslint --fix`, `secretlint`, `ls-lint`, `markdownlint-cli2` and `node dist/cli.js --quiet` on the staged files. |
-| `commit-msg` | `commitlint --edit` (Conventional Commits).                                                                                                                                                                                                                                                |
+| Hook         | Runs                                                                                                                                                                                                                                                                                         |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pre-commit` | `pnpm run build` when `dist/cli.js` is missing or older than `src/` or `grammar/`, then `lint-staged`, then `ls-lint`, then `pnpm test`. `.lintstagedrc.json` runs `prettier --write`, `eslint --fix`, `secretlint`, `markdownlint-cli2` and `node dist/cli.js --quiet` on the staged files. |
+| `commit-msg` | `commitlint --edit` (Conventional Commits).                                                                                                                                                                                                                                                  |
 
 CI workflows (`.github/workflows/`, no secrets):
 

@@ -1,5 +1,5 @@
 ---
-last_updated: 2026-11-05
+last_updated: 2026-11-11
 ---
 
 # Changelog
@@ -8,7 +8,20 @@ All notable changes to this project are listed here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+<!-- prettier-ignore-start -->
+<!-- omit in toc -->
+## Summary
+<!-- prettier-ignore-end -->
+
+- [Unreleased](#unreleased)
+- [0.2.0 - 2026-11-05](#020---2026-11-05)
+  - [Added](#added)
+  - [Changed](#changed)
+  - [Removed](#removed)
+- [0.1.0 - 2026-10-29](#010---2026-10-29)
+  - [Added](#added-1)
+
+## Unreleased
 
 ## [0.2.0] - 2026-11-05
 
@@ -17,32 +30,27 @@ PowerShell wrappers (see [ADR 0014](docs/adr/0014-legacy-behaviour-catalogue.md)
 
 ### Added
 
-- CLI `md-template-lint` with the options `--config`, `--format`, `--quiet`, `--verify`,
-  `--help` and `--version`, and the exit codes `0` clean, `1` lint failure or broken template,
-  `2` usage, config or run error.
-- Per-project config `md-template-lint.yml`: pairs of template and targets with `include` and
-  `exclude` globs, `roots`, `templateRoot`, `aliases`, `approvedPaths` and `onEmpty`.
-- Stable rule codes `MTLxxx`, grouped by category (syntax, filename, presence, format, bounds,
-  type, heading, content, io, run diagnostics).
+#### CLI
+
+- CLI `mdtl` (package bin `mdtl`, with the alias `md-template-lint`) with the options `--config`,
+  `--format`, `--quiet`, `--verify`, `--help` and `--version`, and the exit codes `0` clean,
+  `1` lint failure or broken template, `2` usage, config or run error.
 - `--verify`: parses the templates, prints their schema and the template warnings, and reads no
   target. It needs no config when template paths are given. A template with a template error
   (`MTL017`, `MTL018`, `MTL019`, `MTL030`) fails: `--verify` exits 1 when a template is broken
   or has such an error.
 - Lint-staged mode: a list of files as arguments lints those files only; a file that matches no
   pair is skipped silently.
-- Reporters `text` (default), `plain` and `json`, with the offending source line under each
-  diagnostic.
-- Disable directives in a file: `disable-line`, `disable-next-line`, `disable-file` and
-  `begin disable` / `end disable` blocks.
-- Packaging, CI and release: a `pnpm run smoke:pack` check of the tarball and a clean install,
-  a CI workflow on three operating systems and a release workflow for an `X.Y.Z` tag (no `v` prefix).
-- Template tags on every heading level (H1 to H6).
-- Heading patterns with placeholders and formats, for example
-  `## Release [pattern:"[{semver}] - {date}"]`.
-- Repeat tags `[repeat-rules:same-level]` and order tags `[order:...]`, including
-  `[order:first:number|date|semver:...]`.
-- Sub-heading tags `[content:subheadings:disallow]` and `[content:subheadings:no-extra]`.
-- Tag `[unique-headings-names]`.
+
+#### Configuration
+
+- Per-project config `md-template-lint.yml`: pairs of template and targets with `include` and
+  `exclude` globs, `roots`, `templateRoot`, `aliases`, `approvedPaths` and `onEmpty`.
+
+#### Rules
+
+- Stable rule codes `MTLxxx`, grouped by category (syntax, filename, presence, format, bounds,
+  type, heading, content, io, run diagnostics).
 - Template rules: `MTL014` (invalid heading pattern), `MTL017` (adjacent headings with the
   same pattern), `MTL018` (optional repeat heading with a `min` tag), `MTL019` (deeper child
   before a shallower one) and `MTL030` (order tag without repeat tag).
@@ -61,7 +69,72 @@ PowerShell wrappers (see [ADR 0014](docs/adr/0014-legacy-behaviour-catalogue.md)
 - `MTL601` message hint `found later at line N, out of order` when a sibling with the missing
   text comes later in the target.
 
+#### Syntax
+
+- Template tags on every heading level (H1 to H6).
+- Heading patterns with placeholders and formats, for example
+  `## Release [pattern:"[{semver}] - {date}"]`.
+- Repeat tags `[repeat-rules:same-level]` and order tags `[order:...]`, including
+  `[order:first:number|date|semver:...]`.
+- Sub-heading tags `[content:subheadings:disallow]` and `[content:subheadings:no-extra]`.
+- Tag `[unique-headings-names]`.
+
+#### Reporting
+
+- Reporters `text` (default), `plain` and `json`, with the offending source line under each
+  diagnostic.
+- Disable directives in a file: `disable-line`, `disable-next-line`, `disable-file` and
+  `begin disable` / `end disable` blocks.
+
+#### Packaging and release
+
+- Packaging, CI and release: a `pnpm run smoke:pack` check of the tarball and a clean install,
+  a CI workflow on three operating systems and a release workflow for an `X.Y.Z` tag (no `v` prefix).
+- `CONTRIBUTING.md` (fork policy and development guide) and `AI_GUIDELINE.md` are shipped in
+  the package.
+
+#### Tooling
+
+- Git hooks for contributors: husky runs lint-staged (prettier, markdownlint, secretlint,
+  file-name checks and the template linter itself) and the full tests before a commit, and
+  commitlint on the commit message.
+
+#### Documentation
+
+- Doc templates for `CONTRIBUTING.md`, `AI_GUIDELINE.md` and `THIRD_PARTY_NOTICES.md`.
+- Docs: the CLI reference (`docs/cli.md`) and the config reference (`docs/configuration.md`)
+  are split from the syntax reference, which is now generated; plus `docs/grammar.md` and
+  `docs/glossary.md`.
+
+#### Tests
+
+- Test tags per error code: every rule test carries its `MTLxxx` code as a vitest tag, so
+  `pnpm exec vitest run --tags-filter MTL101` runs the tests of one rule. A test checks that
+  every tag used is declared.
+
 ### Changed
+
+#### CLI
+
+- BREAKING: template errors (`MTL017`, `MTL018`, `MTL019`, `MTL030`) are printed on the
+  template file in lint runs, not in `--verify` only, and the run exits 1. The targets are
+  still linted. See "Headings are matched by position" in
+  [ADR 0014](docs/adr/0014-legacy-behaviour-catalogue.md).
+
+#### Configuration
+
+- BREAKING: the global alias file `approved_path.yml` is replaced by the config keys `aliases`
+  and `approvedPaths`. See "Aliases and approved paths" in
+  [ADR 0014](docs/adr/0014-legacy-behaviour-catalogue.md).
+
+#### Rules
+
+- `MTL610` reports a required heading of level 3 to 6 that is missing in the section of its
+  parent. Its second message form is gone with `[presence:exist]`.
+- `MTL616` no longer fires for a run of only required exact-text template headings with empty
+  text (the template-body line `# [unique-headings-names]`); only `MTL601` reports it.
+
+#### Syntax
 
 - BREAKING: every heading level, H1 to H6, is now checked, and template heading levels are
   matched exactly: a template `## Context` is no longer satisfied by a target `# Context` or
@@ -74,14 +147,6 @@ PowerShell wrappers (see [ADR 0014](docs/adr/0014-legacy-behaviour-catalogue.md)
   template headings shifts the match, extras after the last one give the warning `MTL616`, and
   a swapped pair is `MTL601` with a hint. See "Headings are matched by position" in
   [ADR 0014](docs/adr/0014-legacy-behaviour-catalogue.md).
-- BREAKING: template errors (`MTL017`, `MTL018`, `MTL019`, `MTL030`) are printed on the
-  template file in lint runs, not in `--verify` only, and the run exits 1. The targets are
-  still linted. See "Headings are matched by position" in
-  [ADR 0014](docs/adr/0014-legacy-behaviour-catalogue.md).
-- `MTL610` reports a required heading of level 3 to 6 that is missing in the section of its
-  parent. Its second message form is gone with `[presence:exist]`.
-- `MTL616` no longer fires for a run of only required exact-text template headings with empty
-  text (the template-body line `# [unique-headings-names]`); only `MTL601` reports it.
 - BREAKING: `{int}` is renamed `{digits}`. `{int}` is now an unknown placeholder (`MTL014`).
   See "Other changes for heading tags" in [ADR 0014](docs/adr/0014-legacy-behaviour-catalogue.md).
 - BREAKING: order tags `[order:ascending]` and `[order:descending]` compare the heading text,
@@ -90,16 +155,38 @@ PowerShell wrappers (see [ADR 0014](docs/adr/0014-legacy-behaviour-catalogue.md)
 - BREAKING: the `{text}` case formats `snakecase`, `camelcase`, `screamcase` and `kebabcase`
   refuse digits-only text and need at least one letter. Use `{digits}` for such text. See
   "Other changes for heading tags" in [ADR 0014](docs/adr/0014-legacy-behaviour-catalogue.md).
-- BREAKING: the global alias file `approved_path.yml` is replaced by the config keys `aliases`
-  and `approvedPaths`. See "Aliases and approved paths" in
-  [ADR 0014](docs/adr/0014-legacy-behaviour-catalogue.md).
 
 ### Removed
 
+#### Rules
+
+- Rule `MTL602` (heading-level-missing). The code is reserved and never reused.
+
+#### Syntax
+
 - BREAKING: the `[presence:exist]` tag. Use a heading pattern such as `[pattern:"{text}"]`.
   See "The `exist` presence tag is removed" in [ADR 0014](docs/adr/0014-legacy-behaviour-catalogue.md).
-- Rule `MTL602` (heading-level-missing). The code is reserved and never reused.
-- The parity harness, the corpus and the legacy wrappers.
+- BREAKING: the `type=<name>` hint in frontmatter comments. A field type is now given by
+  a field value equal to the type name or by a bracket such as `[date]`; the text `type=<name>`
+  in a comment is plain text. See [spec.md](docs/spec.md), section 2.4.
 
-[Unreleased]: https://github.com/m21-cerutti/md-template-lint/compare/0.2.0...HEAD
-[0.2.0]: https://github.com/m21-cerutti/md-template-lint/releases/tag/0.2.0
+#### Tooling
+
+- The parity harness, the corpus and the legacy wrappers.
+- The `pending-rules.json` allow-list of rules without a test. Every rule now has tests.
+
+## [0.1.0] - 2026-10-29
+
+Virtual release. It stands for the legacy tools that 0.2.0 replaces. They were never tagged or
+published.
+
+### Added
+
+- A Python linter that checks one Markdown file against one template: frontmatter fields with
+  types and formats, headings, presence and bounds of sections, and file-system checks.
+- PowerShell wrappers per project, each with a table of template and target pairs, that called
+  the linter once per file.
+- A global alias file `approved_path.yml` for the paths a template may read.
+
+[0.2.0]: https://github.com/m21-cerutti/md-template-lint/compare/0.1.0...0.2.0
+[0.1.0]: https://github.com/m21-cerutti/md-template-lint/releases/tag/0.1.0

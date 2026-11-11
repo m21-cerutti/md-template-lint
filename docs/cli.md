@@ -13,6 +13,20 @@ The package installs two commands that run the same program: `mdtl` and `md-temp
 writes `mdtl`. Until the package is published, run it from a built clone: `node dist/cli.js` stands for
 `mdtl`.
 
+<!-- prettier-ignore-start -->
+<!-- omit in toc -->
+## Summary
+<!-- prettier-ignore-end -->
+
+- [Synopsis](#synopsis)
+- [Flags](#flags)
+- [Exit codes](#exit-codes)
+- [Full run and file arguments](#full-run-and-file-arguments)
+- [`--verify`](#--verify)
+- [Output](#output)
+- [Paths and backslashes](#paths-and-backslashes)
+- [Disable directives](#disable-directives)
+
 ## Synopsis
 
 ```text
@@ -92,7 +106,7 @@ and the template errors). No target is read.
 
 ```bash
 mdtl --verify
-mdtl --verify templates/adr.template.md
+mdtl --verify templates/generic/adr.template.md
 ```
 
 ## Output

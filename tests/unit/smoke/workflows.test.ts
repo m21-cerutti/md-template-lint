@@ -232,7 +232,7 @@ describe("release.yml", () => {
 
 describe("package.json publish settings", () => {
   it("ships only dist (without source maps), the licence, the notices and the README", () => {
-    expect(PACKAGE.files).toEqual(["dist", "!dist/**/*.map", "LICENSE", "CHANGELOG.md", "THIRD_PARTY_NOTICES.md", "README.md"]);
+    expect(PACKAGE.files).toEqual(["dist", "!dist/**/*.map", "LICENSE", "CHANGELOG.md", "THIRD_PARTY_NOTICES.md", "README.md", "CONTRIBUTING.md", "AI_GUIDELINE.md"]);
   });
 
   it("points main, types, bin and exports into dist", () => {

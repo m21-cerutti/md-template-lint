@@ -26,7 +26,9 @@
     "LICENSE",
     "CHANGELOG.md",
     "THIRD_PARTY_NOTICES.md",
-    "README.md"
+    "README.md",
+    "CONTRIBUTING.md",
+    "AI_GUIDELINE.md"
   ],
   "author": "Marc CERUTTI",
   "license": "MIT",

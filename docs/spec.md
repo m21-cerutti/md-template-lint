@@ -4844,7 +4844,7 @@ Field formats (change C11, ADR 0010, AS16). It adds the codes `MTL016`, `MTL306`
   `tests/syntax/syntax/MTL016-date-format-missing.test.ts`; CLI fixture for worked example 2.
   Every `--verify` expectation with a `date` field has the section.
 - README rule syntax and `docs/architecture.md` (free code ranges) describe the tags; the
-  date fields of `templates/*.template.md` and `templates/ai/AGENTS.template.md` carry
+  date fields of `templates/**/*.template.md` (including `templates/generic/ai/AGENTS.template.md`) carry
   `[format:date]`. Minor release: no existing target changes its findings without a new tag.
 
 Heading patterns, repeat rules and order (change C12, ADR 0011, AS17) and positional heading
@@ -5124,13 +5124,13 @@ disagreeing.
   longer accepting digits only, and the C10 rows, `MTL016` included;
   `docs/guides/adding-a-tag.md` and the other guides that describe matching. The shipped
   templates that used the dropped tag have each H1 or H2 migrated to a pattern (2.6 table):
-  `templates/adr.template.md`, `templates/architecture.template.md`,
-  `templates/bug.template.md`, `templates/README.template.md`,
-  `templates/spec-product.template.md`, `templates/spec-technical.template.md`,
-  `templates/ai/SKILL.template.md`, `templates/ai/command.template.md`,
-  `templates/ai/agent.template.md`, `templates/TODO.template.md` (its epic heading is a
+  `templates/generic/adr.template.md`, `templates/generic/architecture.template.md`,
+  `templates/generic/bug.template.md`, `templates/generic/README.template.md`,
+  `templates/generic/spec-product.template.md`, `templates/generic/spec-technical.template.md`,
+  `templates/generic/ai/SKILL.template.md`, `templates/generic/ai/command.template.md`,
+  `templates/generic/ai/agent.template.md`, `templates/generic/TODO.template.md` (its epic heading is a
   repeat pattern with `{char}` and `[order:ascending]`, worked example 7 J of 2.10);
-  `templates/CHANGELOG.template.md` has a pattern release heading in the style of worked
+  `templates/generic/CHANGELOG.template.md` has a pattern release heading in the style of worked
   example 1
   (`## Release [pattern:"[{semver}] - {date}"] [presence:optional] [repeat-rules:same-level] [order:first:date:descending] [content:subheadings:disallow]`,
   by date, not by string; `[order:first:semver:descending]` is equally valid, 2.10 "Order")

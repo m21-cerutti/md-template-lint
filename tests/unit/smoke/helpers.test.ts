@@ -511,7 +511,7 @@ describe("smoke-pack: the fixture project tests/fixtures/smoke/clean-project", (
 describe("smoke-pack: tarball content (fixtures/release/tarball)", () => {
   const cases = [
     { name: "pass-expected-package", problems: [] },
-    { name: "fail-extra-file", problems: ["unexpected file: CONTRIBUTING.md"] },
+    { name: "fail-extra-file", problems: ["unexpected file: TODO.md"] },
     { name: "fail-missing-required", problems: ["missing required file: dist/cli.js"] },
     { name: "fail-map-file", problems: ["forbidden source map: dist/cli.js.map"] },
     { name: "fail-tests-leak", problems: ["leaks tests/: tests/unit/engine.test.ts"] },
@@ -545,6 +545,8 @@ describe("smoke-pack: tarball content (fixtures/release/tarball)", () => {
       "missing required file: LICENSE",
       "missing required file: CHANGELOG.md",
       "missing required file: THIRD_PARTY_NOTICES.md",
+      "missing required file: CONTRIBUTING.md",
+      "missing required file: AI_GUIDELINE.md",
       "missing required file: dist/cli.js",
       "missing required file: dist/index.js",
     ]);
@@ -556,7 +558,7 @@ describe("smoke-pack: tarball content (fixtures/release/tarball)", () => {
   });
 
   it("flags a source map outside dist/ as a map, once", () => {
-    expect(checkTarballEntries(["package.json", "README.md", "LICENSE", "CHANGELOG.md", "THIRD_PARTY_NOTICES.md", "dist/cli.js", "dist/index.js", "lib/x.js.map"])).toEqual(["forbidden source map: lib/x.js.map"]);
+    expect(checkTarballEntries(["package.json", "README.md", "LICENSE", "CHANGELOG.md", "THIRD_PARTY_NOTICES.md", "CONTRIBUTING.md", "AI_GUIDELINE.md", "dist/cli.js", "dist/index.js", "lib/x.js.map"])).toEqual(["forbidden source map: lib/x.js.map"]);
   });
 });
 

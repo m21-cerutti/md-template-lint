@@ -1,12 +1,16 @@
 ---
 title: Architecture overview # [presence:required]
-last_updated: 2026-10-29 # [presence:required] [format:date] [date]
+last_updated: 2026-11-11 # [presence:required] [format:date] [date]
 ---
 
 # Architecture title [pattern:"{text}"]
 
 One paragraph: the shape of the system in plain words. Link the product and
 technical specifications.
+
+## Summary [presence:optional] [content:non-empty]
+
+- Table of contents: one link per section, written by the extension.
 
 ## Overview [content:non-empty]
 
@@ -53,6 +57,8 @@ when there are none.
 
 - Save as `docs/architecture.md`. Keep the frontmatter and refresh
   `last_updated` on every change.
+- The `Summary` block with its `omit in toc` markers is optional. Its list is
+  maintained by the Markdown All in One extension, not by hand.
 - One diagram per concern: one mermaid fence, then the explanation, then a
   `Sources:` line naming the files the diagram was drawn from.
 - Name nodes by role (Client, Service, Store), not by product, unless the

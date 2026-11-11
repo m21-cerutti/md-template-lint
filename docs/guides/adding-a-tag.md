@@ -18,6 +18,22 @@ and delete the branch afterwards. Background: [Grammar and listeners](grammar-an
 [ADR 0002](../adr/0002-grammar-structure.md), and the lexer modes in
 [architecture.md](../architecture.md#lexer-modes).
 
+<!-- prettier-ignore-start -->
+<!-- omit in toc -->
+## Summary
+<!-- prettier-ignore-end -->
+
+- [0. Before you start](#0-before-you-start)
+- [1. Write the tests first and see them fail](#1-write-the-tests-first-and-see-them-fail)
+- [2. Lexer: the keyword, in `TAG_STRICT` only](#2-lexer-the-keyword-in-tag_strict-only)
+- [3. Parser: the rule and its alternative](#3-parser-the-rule-and-its-alternative)
+- [4. AST: the type and the kind](#4-ast-the-type-and-the-kind)
+- [5. Visitor: build the tag](#5-visitor-build-the-tag)
+- [6. The rule that consumes the tag](#6-the-rule-that-consumes-the-tag)
+- [7. Check the work](#7-check-the-work)
+- [8. Docs, syntax reference and gates](#8-docs-syntax-reference-and-gates)
+- [See also](#see-also)
+
 ## 0. Before you start
 
 ```bash

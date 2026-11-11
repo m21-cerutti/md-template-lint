@@ -1,6 +1,6 @@
 ---
 title: "Guide: testing"
-last_updated: 2026-11-04
+last_updated: 2026-11-11
 ---
 
 # Guide: testing
@@ -12,6 +12,20 @@ helpers exist, and the order of the gates. Test runner: `vitest` (`pnpm test` is
 Related: [Adding a rule](adding-a-rule.md) (the tests of a new rule, written first: step 4),
 [fixtures and case names](#fixtures-and-case-names) (the layout),
 [CONTRIBUTING.md](../../CONTRIBUTING.md#tests), [glossary](../glossary.md).
+
+<!-- prettier-ignore-start -->
+<!-- omit in toc -->
+## Summary
+<!-- prettier-ignore-end -->
+
+- [The five kinds of test](#the-five-kinds-of-test)
+- [Fixtures and case names](#fixtures-and-case-names)
+- [Helpers](#helpers)
+- [Running tests](#running-tests)
+- [The gates, in order](#the-gates-in-order)
+- [Scripts](#scripts)
+- [Who writes the tests](#who-writes-the-tests)
+- [See also](#see-also)
 
 ## The five kinds of test
 

@@ -13,20 +13,29 @@ through them. The contract is [spec.md](spec.md); the user-facing references are
 [configuration](configuration.md) and the [grammar](grammar.md). When this page and the spec
 disagree, the spec wins.
 
-Contents:
+Guides for changes (this page holds no step lists): [Adding a rule](guides/adding-a-rule.md),
+[Adding a tag](guides/adding-a-tag.md), [Grammar and listeners](guides/grammar-and-listeners.md),
+[Testing](guides/testing.md). Terms: [glossary](glossary.md).
 
-- [Overview](#overview): [data flow](#data-flow), [run flow](#run-flow-config-runner-pipeline-reporters),
-  [engine](#engine), [CLI](#cli), [rules and contracts](#rules-and-contracts), [reporters](#reporters),
-  [runner and config](#runner-and-config), [io](#io)
+<!-- prettier-ignore-start -->
+<!-- omit in toc -->
+## Summary
+<!-- prettier-ignore-end -->
+
+- [Overview](#overview)
+  - [Data flow](#data-flow)
+  - [Run flow: config, runner, pipeline, reporters](#run-flow-config-runner-pipeline-reporters)
+  - [Engine](#engine)
+  - [CLI](#cli)
+  - [Rules and contracts](#rules-and-contracts)
+  - [Reporters](#reporters)
+  - [Runner and config](#runner-and-config)
+  - [io](#io)
 - [Legend](#legend)
 - [Layering rules](#layering-rules)
 - [Decisions](#decisions)
 - [Known limits](#known-limits)
 - [Discrepancies](#discrepancies)
-
-Guides for changes (this page holds no step lists): [Adding a rule](guides/adding-a-rule.md),
-[Adding a tag](guides/adding-a-tag.md), [Grammar and listeners](guides/grammar-and-listeners.md),
-[Testing](guides/testing.md). Terms: [glossary](glossary.md).
 
 ## Overview
 
