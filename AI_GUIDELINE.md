@@ -26,6 +26,6 @@ development.
 
 ## Resources
 
-- OpenCode documentation: https://opencode.ai/v2/docs
-- Issues: https://github.com/anomalyco/opencode
+- OpenCode documentation: <https://opencode.ai/v2/docs>
+- Issues: <https://github.com/anomalyco/opencode>
 - Research basis: [Evaluating AGENTS.md, ETH Zurich, 2026](https://arxiv.org/abs/2602.11988)

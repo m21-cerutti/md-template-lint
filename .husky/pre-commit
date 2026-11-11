@@ -1,0 +1,25 @@
+#!/usr/bin/env sh
+# Pre-commit: rebuild dist only when missing or older than src/grammar
+# (the Markdown check runs dist/cli.js), lint the staged files, then run the full suite (`pnpm test`).
+# Owner decision: the full suite runs at pre-commit; a failing suite blocks the commit, fix the cause.
+# Never skip with --no-verify: fix the finding instead.
+stale=0
+if [ ! -f dist/cli.js ]; then
+  stale=1
+else
+  # git ls-files, not find: plain `find` can be the Windows tool on PATH
+  for f in $(git ls-files -co --exclude-standard src grammar); do
+    if [ "$f" -nt dist/cli.js ]; then
+      stale=1
+      break
+    fi
+  done
+fi
+if [ "$stale" = 1 ]; then
+  pnpm run build || exit 1
+fi
+
+# formatters in lint-staged fix and re-stage files first, so the suite sees the formatted files
+pnpm exec lint-staged || exit 1
+
+pnpm test

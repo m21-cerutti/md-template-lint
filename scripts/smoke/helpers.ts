@@ -1,6 +1,7 @@
-// Pure helpers of scripts/smoke-pack.ts and scripts/smoke/check-release.ts (phase A30): no
-// process, no file system, no network. The scripts do the I/O; everything decidable lives here
-// so the unit tests cover it (tests/unit/smoke/).
+/**
+ * Helper module: pure functions (no process, file system, network) for smoke-pack.ts and check-release.ts.
+ * The scripts do I/O; unit tests cover the logic here (tests/unit/smoke/).
+ */
 import { join } from "node:path";
 
 // ---------------------------------------------------------------------------------------

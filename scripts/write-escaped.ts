@@ -1,19 +1,9 @@
-// Write a file from an ESCAPED text, so control characters (U+001C, U+0085, ...) that the
-// Write tool drops never appear in the command text:
-//   node scripts/write-escaped.ts <path> <escaped-text>
-//
-// Escapes decoded in <escaped-text>: \n \r \t \\ \xHH \uHHHH \u{H+}. Any other escape, a lone
-// surrogate, a code point above U+10FFFF or a trailing backslash is an error.
-// Output is UTF-8, no BOM unless \uFEFF is in the text.
-// <path> is relative to the repo root (the parent of scripts/) or absolute inside it.
-// Writes are limited to tests/fixtures/ (create or overwrite) and the git-ignored tmp/ (create
-// only), file extension .md .txt .json .yml or .yaml only (case-insensitive; anything a test
-// runner or shell could execute is refused). Refused (exit 1, nothing written): any other
-// place or extension; a path outside the repo root
-// (links resolved with realpathSync.native); a secret-like, `.git`, `node_modules`, 8.3 short
-// name (`~1`) or Windows device name segment; a UNC, `\\?\` or drive-relative path; a
-// directory; an existing file with hard links. Node built-ins only. The pure functions are
-// exported for tests.
+/**
+ * Usage: node scripts/write-escaped.ts <path> <escaped-text>
+ * Writes a file from escaped text; control characters preserved (escapes: \n \r \t \\ \xHH \uHHHH \u{H+}).
+ * Writes limited to tests/fixtures/ (create/overwrite) and tmp/ (create), extensions .md .txt .json .yml .yaml only.
+ * Refused: secret-like paths, .git, node_modules, devices, UNC paths, directories, hard-linked files.
+ */
 import { existsSync, lstatSync, mkdirSync, realpathSync, statSync, writeFileSync } from "node:fs";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import process from "node:process";

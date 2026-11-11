@@ -1,17 +1,8 @@
-// Generate the machine-derived blocks of docs/syntax-reference.md.
-//
-//   tsx scripts/syntax-doc/generate.ts write [--file <path>]   rewrite the blocks
-//   tsx scripts/syntax-doc/generate.ts check [--file <path>]   exit 1 + diff when stale
-//
-// Only the text between `<!-- BEGIN GENERATED: <name> -->` and
-// `<!-- END GENERATED: <name> -->` is touched (blocks `tags`, `errors`, `enums`);
-// every other byte of the file is kept. Sources, none of them hand-copied:
-// - errors: the rule registry, tests/consistency/pending-rules.json and the
-//   docs/spec.md 4.3 tables (parsed by tests/consistency/consistency.ts);
-// - tags: the ANTLR ATN of the parser (token sentences of fmTagBody and
-//   bodyTagBody), so the grammar stays the only place that knows tag syntax;
-// - enums: the exported constants of the source.
-// Prose (typical fixes, tag descriptions) lives in scripts/syntax-doc/notes.ts.
+/**
+ * Usage: pnpm run gen:syntax-doc | pnpm run check:syntax-doc
+ * Generates machine-derived blocks of docs/syntax-reference.md (tags, errors, enums) between
+ * HTML comments. Sources: rule registry, grammar ATN, exported constants. Prose from notes.ts.
+ */
 import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import process from "node:process";

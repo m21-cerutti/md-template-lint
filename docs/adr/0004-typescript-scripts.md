@@ -64,7 +64,7 @@ imports need the `.ts` extension.
 
 ## Consequences
 
-- Scripts are type-checked by `pnpm run typecheck` and linted by `pnpm run lint`.
+- Scripts are type-checked by `pnpm run typecheck` and linted by `pnpm run lint:ts`.
 - Contributors need Node 22.18 or newer (the dev tools, not the shipped `dist/`, need it).
 - A script that uses an enum or a parameter property fails twice: `tsc -p tsconfig.scripts.json` and Node itself.
 - `node scripts/*.ts` is covered by the existing `node scripts/*` shell allow rule in `opencode.jsonc`.

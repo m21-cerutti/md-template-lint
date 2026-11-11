@@ -128,8 +128,12 @@ is a green run that did not test the CLI process: build again after every change
 | `pnpm run check:parser`     | `src/generated/` equals what the grammars generate.                                                                     |
 | `pnpm run check:rules`      | The consistency tests of `tests/consistency/`.                                                                          |
 | `pnpm run check:syntax-doc` | `docs/syntax-reference.md` equals what `scripts/syntax-doc/generate.ts` generates (`pnpm run gen:syntax-doc` rewrites). |
-| `pnpm run typecheck`        | `tsc` strict on the sources, tests and scripts (`tsconfig.test.json`, `tsconfig.scripts.json`).                         |
-| `pnpm run lint`             | ESLint.                                                                                                                 |
+| `pnpm run typecheck`        | `tsc` strict on the sources, tests, scripts and root configs (`tsconfig.test.json`).                                    |
+| `pnpm run lint`             | All linters in order: `lint:ts`, `lint:md`, `lint:names`, `lint:secrets`; stops at the first failure.                   |
+| `pnpm run lint:ts`          | ESLint.                                                                                                                 |
+| `pnpm run lint:md`          | markdownlint-cli2 on the Markdown files.                                                                                |
+| `pnpm run lint:names`       | ls-lint, file and directory names.                                                                                      |
+| `pnpm run lint:secrets`     | secretlint on every file.                                                                                               |
 | `pnpm run format:check`     | Prettier (`pnpm run format` rewrites).                                                                                  |
 | `pnpm run build`            | `tsc -p tsconfig.json` to `dist/`.                                                                                      |
 | `pnpm test`                 | The whole vitest suite.                                                                                                 |

@@ -23,9 +23,10 @@ Conventions in this file:
   Phase ids (A3, A6, A9, A21 to A25) are plan phases and are never used as assumption ids.
 - Rule codes are `MTLnnn`. A code is never renumbered and never reused.
 
+<!-- prettier-ignore-start -->
 <!-- omit in toc -->
-
 ## Summary
+<!-- prettier-ignore-end -->
 
 - [1. Model](#1-model)
   - [1.1 What a template is](#11-what-a-template-is)

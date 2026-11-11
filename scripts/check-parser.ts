@@ -1,11 +1,10 @@
-// Verify that src/generated/ matches what `pnpm run gen:parser` produces.
-//
-// Generates both grammars (scripts/gen-parser.ts) into a fresh temporary
-// directory, then compares that output with src/generated/ (line endings are
-// normalized, so CRLF vs LF does not matter): a changed file, a
-// missing file or an extra (stale or hand-added) file fails with exit code 1.
-// src/generated/ itself is never modified. Works whether or not src/generated/
-// is committed.
+/**
+ * Usage: pnpm run check:parser
+ * Verifies that src/generated/ matches what `pnpm run gen:parser` produces by generating
+ * both grammars into a temporary directory and comparing against src/generated/ (CRLF vs
+ * LF differences ignored). A changed, missing, or stale file fails with exit code 1.
+ * src/generated/ is never modified.
+ */
 import { createHash } from "node:crypto";
 import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";

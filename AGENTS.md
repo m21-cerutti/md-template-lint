@@ -96,4 +96,4 @@ pnpm run build && pnpm run smoke:pack
 - AI capability inventory (agents, skills, commands, tools): [docs/ai-capabilities.md](docs/ai-capabilities.md)
 - AI-assisted development guideline: [AI_GUIDELINE.md](AI_GUIDELINE.md)
 - Project configuration: `opencode.jsonc`
-- OpenCode documentation: https://opencode.ai/v2/docs
+- OpenCode documentation: <https://opencode.ai/v2/docs>

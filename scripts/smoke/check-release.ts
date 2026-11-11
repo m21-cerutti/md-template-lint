@@ -1,11 +1,8 @@
-// Release guard (phase A30), run by .github/workflows/release.yml on a tag push:
-//
-//   tsx scripts/smoke/check-release.ts <tag> <owner>/<name>
-//
-// Reads package.json in the working directory. Fails when the tag is not `v<version>` or when
-// `repository.url` is not this repository (provenance needs both to agree). The rules are in
-// scripts/smoke/helpers.ts (checkRelease, unit tested).
-// Exit code: 0 ok, 1 a check failed, 2 usage or unreadable package.json.
+/**
+ * Usage: tsx scripts/smoke/check-release.ts <tag> <owner>/<name>
+ * Release guard (phase A30): verifies tag is v<version> and repository.url matches.
+ * Provenance requires both to agree. Exit code: 0 ok, 1 check failed, 2 usage error.
+ */
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import process from "node:process";

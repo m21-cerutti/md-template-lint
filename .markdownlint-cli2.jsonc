@@ -1,0 +1,21 @@
+// markdownlint-cli2 config. Run: pnpm run lint:md
+// Full-repo tuning is phase I2; rules below clash with prettier or the template syntax.
+{
+  "config": {
+    // line length is prettier's job (printWidth 250)
+    "MD013": false,
+    // inline HTML: directive comments and `<details>` blocks
+    "MD033": false,
+    // templates start with frontmatter or a plain heading
+    "MD041": false,
+    // repeated headings are required by template sections
+    "MD024": false,
+    // frontmatter title plus an H1 is the template shape
+    "MD025": false,
+    // code spans quote diagnostic prefixes and indentation with meaningful leading/trailing spaces
+    "MD038": false,
+  },
+  // PLAN_release-prep.md is a temporary plan file with wide tables; tmp, deps, build output and owner-only files are not project docs;
+  // tests/fixtures hold deliberately broken Markdown; docs/syntax-reference.md is generated; docs/proposals is owner draft space
+  "ignores": ["PLAN_release-prep.md", "tmp/**", "node_modules/**", "dist/**", "coverage/**", ".cortexkit/**", "tests/fixtures/**", "docs/syntax-reference.md", "docs/proposals/**", "TODO.md", "IDEA.md"],
+}

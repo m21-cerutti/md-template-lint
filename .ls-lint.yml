@@ -1,0 +1,19 @@
+# File and directory name rules (ls-lint). Run: pnpm run lint:names
+# Fitted to the names that exist today; nothing is renamed to satisfy it.
+ls:
+  .dir: kebab-case | regex:[A-Za-z0-9_.-]+
+  .ts: kebab-case | regex:MTL[0-9]{3}-[a-z0-9-]+
+  .test.ts: kebab-case | regex:MTL[0-9]{3}-[a-z0-9-]+
+  .g4: PascalCase
+  .md: kebab-case | SCREAMING_SNAKE_CASE | regex:[a-z0-9-]+\.template | regex:[A-Z][A-Za-z0-9]*\.template | regex:[A-Z][A-Z0-9]*\.template | regex:[0-9]{4}-[a-z0-9-]+ | regex:PLAN_[a-z0-9-]+
+
+ignore:
+  - node_modules
+  - dist
+  - coverage
+  - tmp
+  - .git
+  - .cortexkit
+  - src/generated
+  - tests/fixtures
+  - docs/proposals

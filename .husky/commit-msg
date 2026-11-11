@@ -1,0 +1,5 @@
+#!/usr/bin/env sh
+# Commit-msg: enforce Conventional Commits (rules in .commitlintrc.ts).
+# commitlint skips an empty message and git aborts it on its own, so no guard is needed.
+# Never skip with --no-verify: fix the message instead.
+pnpm exec commitlint --edit "$1"

@@ -1,16 +1,9 @@
-// Pack smoke test (phase A30): the published artifact works from a clean directory.
-//
-//   pnpm run smoke:pack                      pack, install the tarball in a temp dir, run the CLI
-//   pnpm run smoke:pack -- --tarball <file>  test a tarball that already exists (no pack)
-//   pnpm run smoke:pack -- --offline         pass --offline to pnpm add (needs a warm store)
-//
-// Steps: `pnpm pack`; list the tarball (`tar -tzf`, no shell) and check its content (required
-// files, no source map, nothing outside dist/ and the whitelisted root files); `pnpm add
-// <tarball>` in an empty temp project (outside this repository); then run the installed bin
-// through the real shim of node_modules/.bin: `--version` (also with `node <bin file>`), a copy
-// of the synthetic fixture project tests/fixtures/smoke/clean-project (exit 0) and an unknown
-// option (exit 2). The temp directory is removed.
-// Exit code: 0 all checks pass, 1 a check failed, 2 harness error (pack or install failed).
+/**
+ * Usage: pnpm run smoke:pack [--tarball <file>] [--offline]
+ * Pack smoke test (phase A30): verifies the published artifact works from a clean directory.
+ * Tests tarball content, installation in a temp project, and CLI invocation (--version, fixture lint, unknown option).
+ * Exit code: 0 all pass, 1 check failed, 2 harness error.
+ */
 // Pure decisions are in scripts/smoke/helpers.ts (unit tested); this file does the I/O.
 import { spawnSync } from "node:child_process";
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";

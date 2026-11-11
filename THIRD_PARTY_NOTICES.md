@@ -43,7 +43,7 @@ decision. `antlr-ng` itself is not shipped.
 | `jiti`     | 2.7.0   | `MIT`               | `LICENSE`: MIT, Copyright (c) Pooya Parsa                                     | not checked (npm field and shipped file agree)                                | MIT          |
 | `tsx`      | 4.23.15 | `MIT`               | `LICENSE`: MIT, Copyright (c) Hiroki Osame                                    | not checked (npm field and shipped file agree)                                | MIT          |
 
-`jiti` only loads `eslint.config.ts` for `pnpm run lint` (ADR 0004).
+`jiti` only loads `eslint.config.ts` for `pnpm run lint:ts` (ADR 0004).
 `tsx` only runs the scripts in `scripts/` (ADR 0007), checked on 2026-10-30 (phase A64). Its
 dependency `esbuild` 0.28.2 is `MIT` on npm and its own package is not shipped either; on macOS
 `tsx` also uses the optional `fsevents`.

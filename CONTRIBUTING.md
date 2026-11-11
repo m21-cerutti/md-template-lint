@@ -4,9 +4,10 @@ Thanks for helping with `md-template-lint`. This guide covers the setup, the qua
 test layout and how to extend the tool. The project rules for AI agents are in
 [AGENTS.md](AGENTS.md); they apply to people too.
 
+<!-- prettier-ignore-start -->
 <!-- omit in toc -->
-
 ## Summary
+<!-- prettier-ignore-end -->
 
 - [Setup](#setup)
 - [Quality gates](#quality-gates)

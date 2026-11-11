@@ -1,2 +1,5 @@
 allowBuilds:
   esbuild: true
+overrides:
+  # GHSA-gg6h-894w-4m9c (high ReDoS) in re2js < 2.8.7, pulled by markdownlint-cli2 > markdownlint (latest pins 2.8.6).
+  re2js: ">=2.8.7"

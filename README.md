@@ -15,9 +15,10 @@ Lint your documents markdown like any other file.
 
 </div>
 
+<!-- prettier-ignore-start -->
 <!-- omit in toc -->
-
 ## Summary
+<!-- prettier-ignore-end -->
 
 - [Description](#description)
 - [Quick usage](#quick-usage)

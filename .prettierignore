@@ -7,3 +7,4 @@ pnpm-lock.yaml
 grammar
 tests/fixtures/**
 docs/syntax-reference.md
+docs/proposals

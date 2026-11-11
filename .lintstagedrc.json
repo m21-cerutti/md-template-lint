@@ -1,3 +1,0 @@
-{
-  "*.md": "node dist/cli.js --quiet"
-}

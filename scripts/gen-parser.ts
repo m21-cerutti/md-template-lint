@@ -1,12 +1,9 @@
-// Generate the TypeScript lexer, parser, listener and visitor from
-// grammar/MdTemplateLexer.g4 and grammar/MdTemplateParser.g4 with antlr-ng
-// (pure Node, no Java).
-//
-// `tsx scripts/gen-parser.ts` empties src/generated/ first, so no stale file
-// survives a grammar change. scripts/check-parser.ts reuses generateParser()
-// with a temporary output directory. Runs antlr-ng's bin with the current
-// Node, so it does not depend on the package script shell. Scripts run through
-// tsx (ADR 0007); `.ts` import extensions, any TypeScript syntax allowed.
+/**
+ * Usage: pnpm run gen:parser
+ * Generates TypeScript lexer, parser, listener and visitor from grammar/*.g4 files
+ * with antlr-ng (pure Node, no Java). Empties src/generated/ first, so no stale file
+ * survives a grammar change. Runs through tsx with `.ts` import extensions allowed (ADR 0007).
+ */
 import { execFileSync } from "node:child_process";
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";

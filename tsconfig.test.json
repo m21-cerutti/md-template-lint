@@ -5,5 +5,5 @@
     "rootDir": ".",
     "allowImportingTsExtensions": true
   },
-  "include": ["src", "tests", "scripts", "eslint.config.ts"]
+  "include": ["src", "tests", "scripts", "eslint.config.ts", "vitest.config.ts", "lint-staged.config.ts", ".commitlintrc.ts"]
 }

@@ -1,30 +1,10 @@
-// Scaffold a rule:
-//   pnpm run new:rule -- <category> <name> [--code MTLnnn] [--phase <phase>] [--step <step>]
-//                        [--syntax] [--root <dir>]
-//
-// Adds a `defineRule({...})` entry with a stub check (`notImplemented`, throws
-// when run) to src/rules/<category>.ts, before the
-// `// new:rule inserts above this line` marker, plus a test stub and fixture
-// folders in the A39 layout, chosen from the phase (the same rule as
-// tests/consistency/rule-fixtures.ts):
-//   field / target phase: tests/target/<category>/<MTLxxx>-<name>.test.ts
-//                     tests/fixtures/pairs/<MTLxxx>/{pass-placeholder,fail-placeholder}/{template,target}.md
-//   parse / template phase (category syntax, or --syntax):
-//                     tests/syntax/<category>/<MTLxxx>-<name>.test.ts
-//                     tests/fixtures/templates/<MTLxxx>/{pass-placeholder,fail-placeholder}.md
-// The test stub names its fixture folder in `const DIR = "..."`, as `check:rules` requires.
-// Rename the placeholder cases to descriptive kebab-case names (pass-... or
-// fail-...), never numbered.
-// The code is `--code`, else the docs/spec.md 4.3 row with that name in that
-// category, else the next free code of the category range (then add the row
-// to the spec, or `pnpm run check:rules` fails). The code stays in
-// tests/consistency/pending-rules.json until the check is implemented.
-// Phase: `template` for category syntax or --syntax, else `field`; `field` and `target`
-// need `--step` (a FieldStep / TargetStep of src/engine/rule.ts; a wrong step
-// fails `pnpm run typecheck`). Ranges come from src/engine/ranges.json, the
-// same file src/engine/rule.ts imports. `--root` writes into another tree
-// (tests); the spec and ranges are always read from this repository.
-// No dependencies; never runs git. Runs through tsx (ADR 0007).
+/**
+ * Usage: pnpm run new:rule -- <category> <name> [--code MTLnnn] [--phase <phase>] [--step <step>]
+ *                              [--syntax] [--root <dir>]
+ * Scaffolds a rule: adds a defineRule({...}) stub to src/rules/<category>.ts with
+ * test stub and fixture folders. Code is --code, or the docs/spec.md 4.3 row, or the next free code.
+ * Phase is `template` for syntax rules, else `field`; `field` and `target` phases need --step.
+ */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import process from "node:process";

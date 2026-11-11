@@ -1,7 +1,9 @@
-// Hand-written notes rendered next to the generated tables of
-// docs/syntax-reference.md (scripts/syntax-doc/generate.ts). The tables
-// themselves come from the registry, the spec and the grammar; only prose
-// lives here. A missing note renders as an em dash.
+/**
+ * Hand-maintained prose notes rendered in docs/syntax-reference.md next to generated tables.
+ * Exported FIX_NOTES and TAG_NOTES; missing entries render as em dash.
+ * Enforced by pnpm run check:rules: any missing or orphan FIX_NOTES/TAG_NOTES entry fails (see tests/consistency/syntax-reference.ts).
+ * Related: docs/guides/adding-a-rule.md, docs/guides/adding-a-tag.md.
+ */
 
 /** Description and example of one tag family. */
 export interface TagNote {

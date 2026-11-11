@@ -42,8 +42,11 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
       - run: pnpm run check:parser
+      # docs/syntax-reference.md matches the generator (pnpm run gen:syntax-doc)
+      - run: pnpm run check:syntax-doc
       - run: pnpm run check:rules
       - run: pnpm run typecheck
+      # eslint, markdownlint-cli2, ls-lint, secretlint (pnpm run lint)
       - run: pnpm run lint
       - run: pnpm run format:check
       - run: pnpm test

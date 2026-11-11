@@ -67,7 +67,7 @@ const stepsOf = (job: Job): string[] => job.steps.flatMap((step) => (step.run ? 
 const usesOf = (workflow: Workflow): string[] => Object.values(workflow.jobs).flatMap((job) => job.steps.flatMap((s) => (s.uses ? [s.uses] : [])));
 
 /** The gates in the order of CONTRIBUTING.md, plus the install step before them. */
-const GATES = ["pnpm install --frozen-lockfile", "pnpm run check:parser", "pnpm run check:rules", "pnpm run typecheck", "pnpm run lint", "pnpm run format:check", "pnpm test", "pnpm run build"];
+const GATES = ["pnpm install --frozen-lockfile", "pnpm run check:parser", "pnpm run check:syntax-doc", "pnpm run check:rules", "pnpm run typecheck", "pnpm run lint", "pnpm run format:check", "pnpm test", "pnpm run build"];
 
 describe("ci.yml", () => {
   const job = CI.jobs["gates"] as Job;
