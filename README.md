@@ -321,7 +321,7 @@ text. A field or a heading without a presence tag is required.
 # [filename:case:kebab-case]
 id: 0000-record-template # [presence:required] [value:filename] [format:kebab-case]
 status: proposed | accepted # [presence:required]
-date: 2026-10-29 # [presence:required] [format:date] type=date
+date: 2026-10-29 # [presence:required] [format:date] [date]
 deciders: [Name] # [presence:required] [count:min:1]
 supersedes: 0000-other-record # [presence:optional]
 ---
@@ -493,12 +493,13 @@ interchangeable.
 
 ### type (`MTL500`-`MTL599`)
 
-Type hints are not rules; they only choose the field type. Forms: `type=<name>`
-anywhere in the comment; a single-word bracket such as `[date]`; the text
-`YYYY-MM-DD` or the word `ISO` (date); the words `url`/`lien` (url) and `path`
-(path); an alias marker `@<name>/` (path-alias); a field value equal to a type
-name; an option list `a | b` (enum). Without a hint the type is inferred from the
-value. Colon tags such as `[presence:...]` never act as type hints.
+Type hints are not rules; they only choose the field type. Forms: a single-word
+bracket such as `[date]` or `[list-of-int]`; the text `YYYY-MM-DD` or the word
+`ISO` (date); the words `url`/`lien` (url) and `path` (path); an alias marker
+`@<name>/` (path-alias); a field value equal to a type name; an option list
+`a | b` (enum). Without a hint the type is inferred from the value. Colon tags
+such as `[presence:...]` never act as type hints, and the text `type=<name>` in a
+comment is plain text, not a hint.
 
 | Code     | Name                    | Type                 | Valid when                                                                                                                                                                 |
 | -------- | ----------------------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

@@ -77,7 +77,7 @@ async function lint(testCase: TestCase) {
   };
 }
 
-describe("MTL304 scheme-disallowed", () => {
+describe("MTL304 scheme-disallowed", { tags: ["MTL304", "format"] }, () => {
   it("is registered in category format, error, field step scheme", () => {
     expect(registry.byCode.get(CODE)).toMatchObject({
       name: "scheme-disallowed",

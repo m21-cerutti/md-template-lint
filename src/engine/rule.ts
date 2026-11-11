@@ -191,7 +191,7 @@ const STUB_CHECKS = new WeakSet<object>();
 
 /**
  * Check of a scaffolded, not yet implemented rule (`pnpm run new:rule`). It
- * throws when run, and `pnpm run check:rules` treats the rule as pending.
+ * throws when run, and `pnpm run check:rules` fails until the check is implemented.
  */
 export function notImplemented(code: RuleCode): () => never {
   const check = (): never => {

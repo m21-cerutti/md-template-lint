@@ -14,7 +14,7 @@
 import { CharStream, CommonToken, TerminalNode } from "antlr4ng";
 import { describe, expect, it } from "vitest";
 import { MdTemplateLexer } from "../../src/generated/MdTemplateLexer.js";
-import { TagBareBracketContext, TagTypeEqContext } from "../../src/generated/MdTemplateParser.js";
+import { TagBareBracketContext } from "../../src/generated/MdTemplateParser.js";
 import { LexerErrorListener, ParserErrorListener, SyntaxEventLog, type PositionMap } from "../../src/tags/listeners.js";
 import { InternalParseError } from "../../src/tags/parser.js";
 import { TypeHintListener } from "../../src/tags/visitors/hints.js";
@@ -76,13 +76,10 @@ describe("listeners: defensive branches", () => {
     expect(() => InternalParseError.of([])).toThrow("internal: InternalParseError.of needs an error");
   });
 
-  it("fails: TypeHintListener ignores type contexts that have no first token", () => {
+  it("fails: TypeHintListener ignores a bracket context that has no first token", () => {
     const listener = new TypeHintListener(() => ({ line: 1, column: 1 }));
-    const typeEq = new TagTypeEqContext(null, 0);
     const bare = new TagBareBracketContext(null, 0);
-    expect(typeEq.start).toBeNull();
     expect(bare.start).toBeNull();
-    listener.enterTagTypeEq(typeEq);
     listener.enterTagBareBracket(bare);
     expect(listener.hints).toEqual([]);
   });

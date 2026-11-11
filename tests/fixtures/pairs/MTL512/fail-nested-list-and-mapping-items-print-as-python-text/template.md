@@ -1,3 +1,3 @@
 ---
-ids: ["1"] # type=list-of-int
+ids: ["1"] # [list-of-int]
 ---

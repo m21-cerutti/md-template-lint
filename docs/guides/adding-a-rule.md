@@ -100,10 +100,11 @@ With the spec row of section 2 in place, the script picks the code `MTL310` from
 ```text
 new:rule: MTL310 no-todo-value (stub) added to src/rules/format.ts
 new:rule: test stub tests/target/format/MTL310-no-todo-value.test.ts, fixtures tests/fixtures/pairs/MTL310/
+new:rule: MTL310 stays a stub: `pnpm run check:rules` fails until the check is implemented
 ```
 
-Without a spec row it chooses the next free code of the range and adds a third line telling you to
-add the row and the pending entry. It never runs git and refuses a name that already exists.
+Without a spec row it chooses the next free code of the range and adds a line telling you to
+add the row to `docs/spec.md` 4.3. It never runs git and refuses a name that already exists.
 
 What it wrote:
 
@@ -111,7 +112,10 @@ What it wrote:
   entry whose check is `notImplemented("MTL310")` (a stub that throws when run). It also adds
   `notImplemented` to the import from `../engine/rule.js`.
 - `tests/target/format/MTL310-no-todo-value.test.ts`: a stub with `const DIR = "tests/fixtures/pairs/MTL310"`,
-  a table with `pass-placeholder` and `fail-placeholder`, and `it.todo` cases.
+  a table with `pass-placeholder` and `fail-placeholder`, `it.todo` cases, and the tags of the
+  `describe` (`{ tags: ["MTL310", "format"] }`: the code and the family, which
+  `tests/consistency/rule-test-tags.test.ts` requires, see
+  [Run one error code or family](../../tests/README.md#run-one-error-code-or-family)).
 - `tests/fixtures/pairs/MTL310/pass-placeholder/` and `.../fail-placeholder/`, each with a
   `template.md` and a `target.md` holding an empty frontmatter.
 
@@ -121,27 +125,20 @@ gives `tests/syntax/<category>/<MTLxxx>-<name>.test.ts` with
 `tests/target/<category>/<MTLxxx>-<name>.test.ts` with
 `tests/fixtures/pairs/<MTLxxx>/<case>/template.md` and `target.md`.
 
-## 4. Keep the stub pending
+## 4. Expect the stub to fail `check:rules`
 
-A stub counts as a pending rule: add its code to `tests/consistency/pending-rules.json` right after
-the scaffold (the script never writes this file) and keep it there
-until the check is real. The file maps a code to a short reason and is `{}` when nothing is pending:
-
-```json
-{
-  "MTL310": "no-todo-value"
-}
-```
-
-Check the state of the repository:
+There is no staging list: every spec 4.3 code needs a registered rule with a real check, so a stub
+fails `check:rules` until you implement it (step 5). Check the state of the repository:
 
 ```bash
 pnpm run check:rules
 ```
 
-It must pass now (spec row, bumped count, stub, pending entry, scaffolded fixtures all agree). A
-line such as `MTL310 no-todo-value: stub check, keep it in pending-rules.json` or
-`... in docs/spec.md 4.3 but neither implemented ... nor pending ...` says which step is missing.
+Right after the scaffold it reports the stub, for example
+`MTL310 no-todo-value: in docs/spec.md 4.3 but the rule in src/rules/format.ts is still a stub check (implement it)`.
+`... in docs/spec.md 4.3 but no rule is registered in src/rules/format.ts` means the rule is missing
+from the registry, and `MTL310 no-todo-value: registered but not in docs/spec.md 4.3` means the spec
+row of section 2 is missing. Do not commit before it passes.
 
 ## 5. Implement the check
 
@@ -179,8 +176,6 @@ export const rules: readonly AnyRule[] = [
   fail on an unused import). The shorter import then fits on one line, so run `pnpm run format`
   before the gates. It runs `prettier --write .` over the whole tree: check `git status` first if you
   have other uncommitted files.
-- Remove `MTL310` from `tests/consistency/pending-rules.json` (back to `{}`). While both the real
-  check and the pending entry exist, `check:rules` says `implemented, remove it from pending-rules.json`.
 - The message is the spec text, character for character.
 - The check receives the context of its phase (`FieldContext`: `key`, `templateField`, `value`,
   `template`, `target`, `targetPath`, `env`) and returns diagnostics, or a promise of them.

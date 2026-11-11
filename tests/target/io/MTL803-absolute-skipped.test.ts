@@ -106,7 +106,7 @@ function listTree(): { dirs: string[]; files: string[] } {
   return { dirs: dirs.sort(), files: files.sort() };
 }
 
-describe("MTL803 absolute-skipped", () => {
+describe("MTL803 absolute-skipped", { tags: ["MTL803", "io"] }, () => {
   it("is registered in category io, warning, field step io", () => {
     expect(registry.byCode.get(CODE)).toMatchObject({
       name: "absolute-skipped",

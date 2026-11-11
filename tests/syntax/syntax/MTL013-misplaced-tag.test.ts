@@ -70,7 +70,7 @@ const CASES: readonly VerifyCase[] = [
   },
 ];
 
-describe("MTL013 misplaced-tag (--verify)", () => {
+describe("MTL013 misplaced-tag (--verify)", { tags: ["MTL013", "syntax"] }, () => {
   it("is registered in category syntax, warning, phase template", () => {
     expect(createRegistry().byCode.get(CODE)).toMatchObject({
       name: "misplaced-tag",

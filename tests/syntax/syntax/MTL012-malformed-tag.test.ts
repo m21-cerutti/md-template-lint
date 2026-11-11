@@ -61,7 +61,7 @@ const CASES: readonly VerifyCase[] = [
       warning("Field 'b': malformed tag [format:elements:dates]", 3, 25, "b: x # [format:elements:dates]"),
       warning("Field 'c': malformed tag [format:elements:]", 4, 25, "c: x # [format:elements:]"),
       warning("Field 'd': malformed tag [format:elements]", 5, 24, "d: x # [format:elements]"),
-      // Spec 3.2 step A5: the comment holds the word `ISO`, so `e` is a date field, and the
+      // Spec 3.2 step A4: the comment holds the word `ISO`, so `e` is a date field, and the
       // malformed tag is no `[format:date]`: MTL016 at column 1 sorts first (spec 2.9).
       {
         code: "MTL016",
@@ -186,7 +186,7 @@ const CASES: readonly VerifyCase[] = [
   },
 ];
 
-describe("MTL012 malformed-tag (--verify)", () => {
+describe("MTL012 malformed-tag (--verify)", { tags: ["MTL012", "syntax"] }, () => {
   it("is registered in category syntax, warning, phase template", () => {
     expect(createRegistry().byCode.get(CODE)).toMatchObject({
       name: "malformed-tag",

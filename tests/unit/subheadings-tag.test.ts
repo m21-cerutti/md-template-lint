@@ -46,7 +46,7 @@ describe("[content:subheadings:disallow] on headings", () => {
   });
 });
 
-describe("[content:subheadings] with a missing or other argument is malformed (MTL012)", () => {
+describe("[content:subheadings] with a missing or other argument is malformed (MTL012)", { tags: ["MTL012", "syntax"] }, () => {
   it.each([
     ["##", "[content:subheadings]"],
     ["###", "[content:subheadings]"],
@@ -73,7 +73,7 @@ describe("[content:subheadings] with a missing or other argument is malformed (M
   });
 });
 
-describe("[content:subheadings:disallow] in a frontmatter comment is misplaced (MTL013)", () => {
+describe("[content:subheadings:disallow] in a frontmatter comment is misplaced (MTL013)", { tags: ["MTL013", "syntax"] }, () => {
   it("reports wrong region in the comment and still peels the tag on an H4 heading", () => {
     const result = doc("---", `a: b # ${DISALLOW}`, "---", `#### Deep ${DISALLOW}`);
     expect(result.findings).toMatchObject([

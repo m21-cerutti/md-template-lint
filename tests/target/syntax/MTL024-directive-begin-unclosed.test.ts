@@ -29,7 +29,7 @@ const CASES: readonly TestCase[] = [
   },
 ];
 
-describe("MTL024 directive-begin-unclosed", () => {
+describe("MTL024 directive-begin-unclosed", { tags: ["MTL024", "syntax"] }, () => {
   it("is registered in category syntax, warning, target step directives", () => {
     expectDirectiveRule(CODE, "directive-begin-unclosed");
   });

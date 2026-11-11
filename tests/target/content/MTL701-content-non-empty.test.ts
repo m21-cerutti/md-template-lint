@@ -122,7 +122,7 @@ async function lint(testCase: { readonly name: string }) {
   };
 }
 
-describe("MTL701 content-non-empty", () => {
+describe("MTL701 content-non-empty", { tags: ["MTL701", "content"] }, () => {
   it("is registered in category content, error, target step content", () => {
     expect(registry.byCode.get(CODE)).toMatchObject({
       name: "content-non-empty",

@@ -1,3 +1,3 @@
 ---
-rating: "3" # type=int
+rating: "3" # [int]
 ---

@@ -142,7 +142,7 @@ const item = (diagnostic: VerifyDiagnostic): string[] => {
   return [`  - ${diagnostic.message} (line ${line}, column ${column})`, `      ${line} | ${diagnostic.sourceLine ?? ""}`, `      ${" ".repeat(String(line).length)} | ${" ".repeat(column - 1)}^`];
 };
 
-describe("MTL030 heading-order-without-repeat (--verify)", () => {
+describe("MTL030 heading-order-without-repeat (--verify)", { tags: ["MTL030", "syntax"] }, () => {
   it("is registered in category syntax, error, phase template, last of the category", () => {
     expect(registry.byCode.get(CODE)).toMatchObject({
       name: "heading-order-without-repeat",
@@ -200,7 +200,7 @@ describe("MTL030 heading-order-without-repeat (--verify)", () => {
   });
 });
 
-describe("MTL030 in a lint run: the order tag has no effect (spec 2.7)", () => {
+describe("MTL030 in a lint run: the order tag has no effect (spec 2.7)", { tags: ["MTL030", "syntax"] }, () => {
   // Epic B before Epic A: descending, so `[order:ascending]` on a repeat heading gives MTL609.
   const target = "---\ntitle: x\n---\n\n## Epic B - Release\n\n| Task | Status |\n\n## Epic A - Setup\n\nText.\n";
   const codesWith = async (template: string): Promise<string[]> => {
@@ -227,7 +227,7 @@ describe("MTL030 in a lint run: the order tag has no effect (spec 2.7)", () => {
   });
 });
 
-describe(`MTL030 in the --verify text report (spec 8.3 \`${SECTION}\`)`, () => {
+describe(`MTL030 in the --verify text report (spec 8.3 \`${SECTION}\`)`, { tags: ["MTL030", "syntax"] }, () => {
   // CLI `--format text` is the `pretty` reporter (spec 7.3); `plain` is the other text one.
   for (const format of ["text", "plain"]) {
     const failWord = format === "plain" ? "FAIL" : "✗";

@@ -15,11 +15,6 @@ mapping_template_value: anything
 empty_template_value: anything
 pipe_without_spaces: zzz
 note: not an option
-piped_string: c
-piped_int: 3
-piped_url: https://c.example
-piped_path: ./c/d.md
-piped_alias: "@c/d"
 count: 7
 ratio: 1.5
 draft_flag: maybe

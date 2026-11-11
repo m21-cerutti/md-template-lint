@@ -152,7 +152,7 @@ async function lint(template: string, target: string): Promise<Diagnostic[]> {
 
 const codesOf = (found: readonly Diagnostic[]) => found.map(({ code, message }) => ({ code, message }));
 
-describe("MTL014 heading-pattern-invalid (--verify)", () => {
+describe("MTL014 heading-pattern-invalid (--verify)", { tags: ["MTL014", "syntax"] }, () => {
   it("is registered in category syntax, warning, phase template", () => {
     expect(registry.byCode.get(CODE)).toMatchObject({
       name: "heading-pattern-invalid",
@@ -173,7 +173,7 @@ describe("MTL014 heading-pattern-invalid (--verify)", () => {
   }
 });
 
-describe("MTL014 in a lint run (spec 2.6 Checked, 2.10, DIR6)", () => {
+describe("MTL014 in a lint run (spec 2.6 Checked, 2.10, DIR6)", { tags: ["MTL014", "syntax"] }, () => {
   const head = "---\ntitle: x\n---\n\n";
 
   it("is never printed in a lint run and a directive naming it is MTL022 (DIR6)", async () => {
@@ -333,7 +333,7 @@ const item = (diagnostic: VerifyDiagnostic): string[] => {
   return [`  - ${diagnostic.message} (line ${line}, column ${column})`, `      ${line} | ${diagnostic.sourceLine ?? ""}`, `      ${" ".repeat(String(line).length)} | ${" ".repeat(column - 1)}^`];
 };
 
-describe("MTL014 in the --verify text report (spec 8.3 `Invalid patterns:`)", () => {
+describe("MTL014 in the --verify text report (spec 8.3 `Invalid patterns:`)", { tags: ["MTL014", "syntax"] }, () => {
   // CLI `--format text` is the `pretty` reporter (spec 7.3); `plain` is the other text one.
   for (const format of ["text", "plain"]) {
     for (const { name, diagnostics } of CASES) {
@@ -383,7 +383,7 @@ describe("MTL014 in the --verify text report (spec 8.3 `Invalid patterns:`)", ()
   }
 });
 
-describe("MTL014 worked example 2 of spec 2.10 (tests/fixtures/cli/schema-fail-invalid-pattern-worked-example)", () => {
+describe("MTL014 worked example 2 of spec 2.10 (tests/fixtures/cli/schema-fail-invalid-pattern-worked-example)", { tags: ["MTL014", "syntax"] }, () => {
   const FIXTURE = "schema-fail-invalid-pattern-worked-example";
   const expectedPlain = readFileSync(join(fixturePath("cli", FIXTURE), "expected.plain.txt"), "utf8").replaceAll("\r\n", "\n");
 

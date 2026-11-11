@@ -18,7 +18,6 @@ milestones  list-of-date  presence:required, order:ascending
 owner       string        presence:conditional:only when risky
 note        string        presence:required, count:min:2
 plain       string        presence:required
-piped       string        presence:required
 everything  enum          presence:optional, format:constant:red, format:snake_case, format:elements:snake_case, value:filename, count:min:2, count:max:4, range:min:1, range:max:9, order:ascending, format:scheme:http,https, io:exists, enum:red|green
 
 Headings:

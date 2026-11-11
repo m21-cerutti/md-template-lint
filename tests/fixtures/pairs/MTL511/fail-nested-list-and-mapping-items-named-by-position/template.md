@@ -1,3 +1,3 @@
 ---
-words: ["a"] # type=list-of-string
+words: ["a"] # [list-of-string]
 ---

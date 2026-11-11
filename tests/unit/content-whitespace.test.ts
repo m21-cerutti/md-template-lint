@@ -39,7 +39,7 @@ async function lint(code: string, tags: string, body: string): Promise<string[]>
   return found.filter((diagnostic) => diagnostic.code === code).map((d) => d.message);
 }
 
-describe("MTL701 content-non-empty: a body of only one character", () => {
+describe("MTL701 content-non-empty: a body of only one character", { tags: ["MTL701", "content"] }, () => {
   const MESSAGE = "Section 'Body': [content:non-empty] section body is empty";
 
   it.each(BLANK_CASES)("%s is blank: the body is empty", async (_label, codePoint) => {
@@ -53,7 +53,7 @@ describe("MTL701 content-non-empty: a body of only one character", () => {
   });
 });
 
-describe("MTL702 content-table: whitespace around a row", () => {
+describe("MTL702 content-table: whitespace around a row", { tags: ["MTL702", "content"] }, () => {
   const MESSAGE = "Section 'Body': [content:table] no markdown table row found";
 
   it.each(BLANK_CASES)("%s around | a | is trimmed: a row", async (_label, codePoint) => {
@@ -67,7 +67,7 @@ describe("MTL702 content-table: whitespace around a row", () => {
   });
 });
 
-describe("MTL703 content-list: whitespace after the marker", () => {
+describe("MTL703 content-list: whitespace after the marker", { tags: ["MTL703", "content"] }, () => {
   const MESSAGE = "Section 'Body': [content:list] no markdown list item found";
 
   it.each(BLANK_CASES)("-%s then text is a list item", async (_label, codePoint) => {
@@ -81,7 +81,7 @@ describe("MTL703 content-list: whitespace after the marker", () => {
   });
 });
 
-describe("MTL704 content-min-lines: a line of only one character is not counted", () => {
+describe("MTL704 content-min-lines: a line of only one character is not counted", { tags: ["MTL704", "content"] }, () => {
   it.each(BLANK_CASES)("%s line is blank: only 1 non-blank line", async (_label, codePoint) => {
     const char = String.fromCodePoint(codePoint);
     expect(await lint("MTL704", "[content:min-lines:2]", `Line one.\n${char}`)).toEqual(["Section 'Body': [content:min-lines:2] only 1 non-blank line(s)"]);
@@ -93,7 +93,7 @@ describe("MTL704 content-min-lines: a line of only one character is not counted"
   });
 });
 
-describe("MTL705 content-max-lines: a line of only one character is not counted", () => {
+describe("MTL705 content-max-lines: a line of only one character is not counted", { tags: ["MTL705", "content"] }, () => {
   it.each(BLANK_CASES)("%s line is blank: 1 non-blank line", async (_label, codePoint) => {
     const char = String.fromCodePoint(codePoint);
     expect(await lint("MTL705", "[content:max-lines:1]", `Line one.\n${char}`)).toEqual([]);

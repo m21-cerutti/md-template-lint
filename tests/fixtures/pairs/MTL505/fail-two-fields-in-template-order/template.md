@@ -1,4 +1,4 @@
 ---
-first: "https://example.com" # type=url
-second: "https://example.com" # type=url
+first: "https://example.com" # [url]
+second: "https://example.com" # [url]
 ---

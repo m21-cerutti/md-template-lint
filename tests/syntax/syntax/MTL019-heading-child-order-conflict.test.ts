@@ -124,7 +124,7 @@ const item = (diagnostic: VerifyDiagnostic): string[] => {
   return [`  - ${diagnostic.message} (line ${line}, column ${column})`, `      ${line} | ${diagnostic.sourceLine ?? ""}`, `      ${" ".repeat(String(line).length)} | ${" ".repeat(column - 1)}^`];
 };
 
-describe("MTL019 heading-child-order-conflict (--verify)", () => {
+describe("MTL019 heading-child-order-conflict (--verify)", { tags: ["MTL019", "syntax"] }, () => {
   it("is registered in category syntax, error, phase template, right after MTL018", () => {
     expect(registry.byCode.get(CODE)).toMatchObject({
       name: "heading-child-order-conflict",
@@ -181,7 +181,7 @@ describe("MTL019 heading-child-order-conflict (--verify)", () => {
   });
 });
 
-describe(`MTL019 in the --verify text report (spec 8.3 \`${SECTION}\`)`, () => {
+describe(`MTL019 in the --verify text report (spec 8.3 \`${SECTION}\`)`, { tags: ["MTL019", "syntax"] }, () => {
   // CLI `--format text` is the `pretty` reporter (spec 7.3); `plain` is the other text one.
   for (const format of ["text", "plain"]) {
     const failWord = format === "plain" ? "FAIL" : "✗";

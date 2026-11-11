@@ -25,7 +25,7 @@ const CASES: readonly TestCase[] = [
   { name: "fail-duplicate-code-once", expected: [at(7, 1, fixed("MTL910"))] },
 ];
 
-describe("MTL022 directive-code-not-suppressible", () => {
+describe("MTL022 directive-code-not-suppressible", { tags: ["MTL022", "syntax"] }, () => {
   it("is registered in category syntax, warning, target step directives", () => {
     expectDirectiveRule(CODE, "directive-code-not-suppressible");
   });

@@ -1,3 +1,3 @@
 ---
-aliases: ["@assets/logo.svg"] # type=list-of-path-alias
+aliases: ["@assets/logo.svg"] # [list-of-path-alias]
 ---

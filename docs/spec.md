@@ -173,9 +173,9 @@ Informal grammar (the `grammar/*.g4` files are normative):
 
 ```text
 tag            = "[" family ":" body "]"            ; body never contains "]"
-typeHintBare   = "[" typeToken "]"                  ; one word, no colon
-inlineComment  = (text | tag | typeHintBare | typeEq)*
-typeEq         = "type" "=" typeToken
+typeHint       = "[" typeToken "]"                  ; tagBareBracket: one word, no colon (2.4)
+hintWord       = "YYYY-MM-DD" | "iso" | "url" | "lien" | "path" | "@" name "/"   ; fmHintWord (2.4)
+inlineComment  = (text | tag | typeHint | hintWord)*
 filenameLine   = "#" WS "[filename:case:" convention "]" WS EOL
 headingSuffix  = headingText (WS tag)*              ; recognized tags peeled right to left
 convention     = "snake_case" | "kebab-case" | "camelCase" | "PascalCase"
@@ -263,7 +263,7 @@ reviewer: "string" # [presence:conditional:only when the change is risky]
 
 `[count:...]` bounds a list length. `[range:...]` bounds a number. They are never
 interchangeable. `[range:...]` does not look at the field type: a string-typed field holding
-`"3"` is range-checked too. A type hint such as `type=int` only adds the type rule on top.
+`"3"` is range-checked too. A type hint such as `[int]` only adds the type rule on top.
 
 Case styles used by `[format:...]` and `[filename:case:...]`:
 
@@ -280,7 +280,7 @@ PascalCase   ^[A-Z][a-zA-Z0-9]*$
 ---
 slug: "string" # [format:kebab-case] [value:filename]
 tags: ["a"] # [count:min:1] [count:max:5] [format:elements:kebab-case]
-rating: "3" # type=int [range:min:1] [range:max:5]
+rating: "3" # [int] [range:min:1] [range:max:5]
 homepage: "https://example.org" # [format:scheme:https] [io:exists]
 milestones: ["2026-01", "2026-06"] # [order:ascending]
 ---
@@ -290,14 +290,16 @@ milestones: ["2026-01", "2026-06"] # [order:ascending]
 
 Type hints are not rules. They only choose the field type (see section 3). Forms:
 
-- `type=<name>` anywhere in the comment.
-- A single-token bracket `[<name>]`, for example `[date]`. The `[path-alias]` bracket is a hint.
+- A single-token bracket `[<name>]`, for example `[date]` or `[list-of-int]`. The `[path-alias]` bracket is a hint.
 - The literal text `YYYY-MM-DD` or the word `ISO` (hint: date).
 - The words `url` or `lien` (hint: url), the word `path` (hint: path), matched as whole words.
 - An alias marker `@<name>/` in the comment (hint: path-alias).
 - The field VALUE equal to a type name (`"date"`), or an option list `a | b` (enum).
 
-Colon tags (`[presence:...]`) never act as type hints.
+Colon tags (`[presence:...]`) never act as type hints. The text `type=<name>` in a comment is
+plain text: it is not a hint form, it is ignored and it gives no diagnostic. The field value
+equal to a type name is the preferred way to declare a type; the bracket `[<name>]` is the form
+for a comment.
 
 ### 2.5 Filename comment (template-wide)
 
@@ -3007,21 +3009,22 @@ to the key (after `#`, trimmed). Source: `TypeInference.infer_type` py L1011,
 
 Step A, declared hint (first hit wins):
 
-1. `type=<name>` in the comment: that name, lowercased, even if it is not a known type.
-2. The value is a string equal (trimmed, case-insensitive) to a type name: that type.
-3. The value is a string containing the separator `|` (space, pipe, space): `enum`.
-4. The comment contains an alias marker `@<name>/` or the bracket `[path-alias]`
+1. The value is a string equal (trimmed, case-insensitive) to a type name: that type.
+2. The value is a string containing the separator `|` (space, pipe, space): `enum`.
+3. The comment contains an alias marker `@<name>/` or the bracket `[path-alias]`
    (case-insensitive), OR the value is alias-shaped (`@<name>/<rest>`): `path-alias`.
    If there is no comment, the hint search stops here with no hint.
-5. The comment contains `YYYY-MM-DD` or the word `ISO`: `date`.
-6. The first single-token bracket `[<word>]` (letters, digits, `_`, `-`) in the comment,
+4. The comment contains `YYYY-MM-DD` or the word `ISO`: `date`.
+5. The first single-token bracket `[<word>]` (letters, digits, `_`, `-`) in the comment,
    lowercased, other than `rule`: that token.
-7. The comment contains the word `url` or `lien`: `url`. Else the word `path`: `path`.
+6. The comment contains the word `url` or `lien`: `url`. Else the word `path`: `path`.
+
+`type=<name>` in the comment is not a hint (see 2.4): it takes no part in this order.
 
 Step B, promotion: if a hint was found, the value is a list and the hint is one of `date`,
 `url`, `path`, `path-alias`, the type is `list-of-<hint>`. Otherwise the type is the hint.
 There is no `list-of-enum`. `list-of-string` and `list-of-int` exist only through an explicit
-hint (`type=list-of-int`, the value `"list-of-int"`, or `[list-of-int]`).
+hint (the value `"list-of-int"`, or the bracket `[list-of-int]`).
 
 Step C, no hint, from the value alone:
 
@@ -3032,8 +3035,8 @@ Step C, no hint, from the value alone:
 3. String: alias-shaped, `path-alias`; date-like, `date`; url-like, `url`; path-like, `path`.
 4. Anything else: `string`.
 
-Kept quirk (Q01): a step A hint that is not one of the 17 types (`type=foo`, `[foo]`) becomes
-the type name. Such a type is never validated, and a bracket form is also reported as an
+Kept quirk (Q01): a step A hint that is not one of the 17 types (`[foo]`) becomes
+the type name. Such a type is never validated, and the bracket is also reported as an
 unknown tag (`MTL010`).
 
 ### 3.3 Loose inference predicates
@@ -4907,7 +4910,7 @@ five codes `MTL016`, `MTL306`, `MTL307`, `MTL308`, `MTL309` to 4.3 and to
   Expect every existing `--verify` expectation with a `date` field to gain the section.
 - F7 docs and dogfood: README rule syntax and `docs/architecture.md` (free code ranges),
   `[format:date]` on the date fields of `templates/*.template.md` and
-  `templates/ai/AGENTS.template.md` (all ten carry `type=date` without format today, so
+  `templates/ai/AGENTS.template.md` (all ten carry a `[date]` hint without format today, so
   `--verify` warns until then), `templates/CHANGELOG.template.md` line 2, dogfood run (every
   dogfood date is already `YYYY-MM-DD`). Minor release: no existing target changes its
   findings without a new tag.
@@ -5502,7 +5505,7 @@ disable` (six), codes separated by commas and/or whitespace, all case-insensitiv
   a `v` prefix; `[format:date]` on a non-date type always checks (no type rule covers it);
   `MTL309` leaves out the items `MTL513` lists, by the same "one problem, one error" logic;
   values are NOT trimmed (owner decision: exact text, so `1.2.0` gives `MTL306`);
-  `MTL016` checks the inferred type (3.2), so `type=date` and a date-like value both count, and a scalar tag on a `list-of-date` field
+  `MTL016` checks the inferred type (3.2), so a `[date]` hint and a date-like value both count, and a scalar tag on a `list-of-date` field
   (or the reverse) does not satisfy it; `MTL016` sits at column 1 of the key line, in a new
   last `--verify` section `Date fields without format:`; first tag of each kind wins (2.1);
   `[order:ascending]` and the type rules keep the default date parsing. Rationale: in 2.9.

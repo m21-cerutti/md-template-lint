@@ -1,5 +1,5 @@
 ---
-due: soon # type=date
+due: soon # [date]
 ---
 
 # Release notes

@@ -1,4 +1,4 @@
 ---
-first: "x" # type=string
-second: "x" # type=string
+first: "x" # [string]
+second: "x" # [string]
 ---

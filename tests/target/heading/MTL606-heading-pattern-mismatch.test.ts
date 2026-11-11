@@ -155,7 +155,7 @@ async function errorsOf(name: string) {
   return (await lintAll(name)).filter((diagnostic) => diagnostic.severity === "error").map((diagnostic) => [diagnostic.code, anchorLineOf(diagnostic)]);
 }
 
-describe("MTL606 heading-pattern-mismatch", () => {
+describe("MTL606 heading-pattern-mismatch", { tags: ["MTL606", "heading"] }, () => {
   it("is registered in category heading, error, target step headings", () => {
     expect(registry.byCode.get(CODE)).toMatchObject({
       name: "heading-pattern-mismatch",

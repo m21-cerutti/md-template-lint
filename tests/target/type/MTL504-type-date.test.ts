@@ -126,7 +126,7 @@ function listTree(): { dirs: string[]; files: string[] } {
   return { dirs: dirs.sort(), files: files.sort() };
 }
 
-describe("MTL504 type-date", () => {
+describe("MTL504 type-date", { tags: ["MTL504", "type"] }, () => {
   it("is registered in category type, error, field step type", () => {
     expect(registry.byCode.get(CODE)).toMatchObject({
       name: "type-date",

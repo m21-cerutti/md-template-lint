@@ -29,7 +29,7 @@ const CASES: readonly TestCase[] = [
   },
 ];
 
-describe("MTL025 directive-already-disabled", () => {
+describe("MTL025 directive-already-disabled", { tags: ["MTL025", "syntax"] }, () => {
   it("is registered in category syntax, warning, target step directives", () => {
     expectDirectiveRule(CODE, "directive-already-disabled");
   });

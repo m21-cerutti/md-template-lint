@@ -114,7 +114,6 @@ fmCommentItem
     | tagBareBracket
     | tagShapedBracket
     | tagProseBracket
-    | tagTypeEq
     | fmHintWord
     | ~NL
     ;
@@ -247,13 +246,7 @@ tagProseBracket
     ;
 
 tagBracketItem
-    : tagTypeEq
-    | ~(RBRACK | NL)
-    ;
-
-// `type=<name>` (spec 2.4), legacy `\btype\s*=\s*([\w-]+)`.
-tagTypeEq
-    : TYPE WS? EQ WS? tagHintName
+    : ~(RBRACK | NL)
     ;
 
 tagHintName
@@ -278,7 +271,6 @@ tagWord
     : ALNUM
     | NUMBER
     | WORD
-    | TYPE
     | RULE
     | ISO
     | URL

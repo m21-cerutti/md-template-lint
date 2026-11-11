@@ -1,7 +1,7 @@
 ---
-title: "Hello" # type=string
-count: "x" # type=string
-tags: "x" # type=list
-meta: "x" # type=nested-map
-empty_list: "x" # type=string
+title: "Hello" # [string]
+count: "x" # [string]
+tags: "x" # [list]
+meta: "x" # [nested-map]
+empty_list: "x" # [string]
 ---

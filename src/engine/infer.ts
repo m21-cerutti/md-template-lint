@@ -20,8 +20,6 @@ function has(hints: readonly TypeHint[], kind: TypeHint["kind"]): boolean {
 /** Step A: the declared hint, or null. */
 export function declaredHint(value: YamlValue, comment: FrontmatterComment | null): string | null {
   const hints = comment?.hints ?? [];
-  const typeEq = hints.find((hint) => hint.kind === "type-eq");
-  if (typeEq !== undefined) return typeEq.name;
   if (typeof value === "string") {
     const token = value.trim().toLowerCase();
     if (KNOWN_TYPE_NAMES.has(token)) return token;

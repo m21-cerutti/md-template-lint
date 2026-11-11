@@ -1,4 +1,4 @@
 ---
-first: ["./docs/readme.md"] # type=list-of-path
-second: ["./docs/readme.md"] # type=list-of-path
+first: ["./docs/readme.md"] # [list-of-path]
+second: ["./docs/readme.md"] # [list-of-path]
 ---

@@ -161,7 +161,7 @@ async function lint(testCase: TestCase) {
   };
 }
 
-describe("MTL307 date-format-mismatch", () => {
+describe("MTL307 date-format-mismatch", { tags: ["MTL307", "format"] }, () => {
   it("is registered in category format, error, field step shape", () => {
     expect(registry.byCode.get(CODE)).toMatchObject({
       name: "date-format-mismatch",

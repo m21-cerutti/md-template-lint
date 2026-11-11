@@ -1,4 +1,4 @@
 ---
-first: ["1"] # type=list-of-int
-second: ["1"] # type=list-of-int
+first: ["1"] # [list-of-int]
+second: ["1"] # [list-of-int]
 ---

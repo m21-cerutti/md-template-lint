@@ -1,4 +1,4 @@
 ---
 title: string
-logo: docs/logo.png # type=path [io:exists]
+logo: docs/logo.png # [path] [io:exists]
 ---

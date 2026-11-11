@@ -41,8 +41,8 @@ const CASES: readonly TestCase[] = [
   // Silent: members of every option list form (extra spaces, a single option
   // with a trailing separator, a leading separator, numbers, accents, an inner
   // pipe without spaces), the same on an optional and a conditional field, a
-  // `type=enum` hint with no option list (bare value, or a pipe without
-  // spaces), and `type=enum` on a template value that is a list holding
+  // `[enum]` hint with no option list (bare value, or a pipe without
+  // spaces), and `[enum]` on a template value that is a list holding
   // ` | `, a mapping or empty: no options, no check, no throw; other-type fields (string, int, float, bool, list,
   // mapping) holding values outside any option pin the type guard; blank,
   // whitespace-only, empty list and missing key are skipped by the step 3 gate.
@@ -151,7 +151,7 @@ const CASES: readonly TestCase[] = [
     name: "fail-two-fields-in-template-order",
     expected: [outside("error", "first", "published", DRAFT_ACCEPTED), outside("error", "second", "w", "['x', 'y', 'z']")],
   },
-  // Type from `type=enum` on a value that already holds the option list.
+  // Type from `[enum]` on a value that already holds the option list.
   {
     name: "fail-type-from-enum-hint-with-option-value",
     expected: [outside("error", "status", "published", DRAFT_ACCEPTED)],
@@ -169,7 +169,7 @@ async function lint(testCase: TestCase) {
   return found.filter((diagnostic) => diagnostic.code === CODE);
 }
 
-describe("MTL517 enum-option", () => {
+describe("MTL517 enum-option", { tags: ["MTL517", "type"] }, () => {
   it("is registered in category type, default severity error, field step type", () => {
     expect(registry.byCode.get(CODE)).toMatchObject({
       name: "enum-option",

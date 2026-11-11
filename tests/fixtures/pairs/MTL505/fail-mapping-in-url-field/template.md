@@ -1,3 +1,3 @@
 ---
-site: "https://example.com" # type=url
+site: "https://example.com" # [url]
 ---

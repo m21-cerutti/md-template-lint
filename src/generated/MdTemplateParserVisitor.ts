@@ -39,7 +39,6 @@ import { TagBareBracketContext } from "./MdTemplateParser.js";
 import { TagShapedBracketContext } from "./MdTemplateParser.js";
 import { TagProseBracketContext } from "./MdTemplateParser.js";
 import { TagBracketItemContext } from "./MdTemplateParser.js";
-import { TagTypeEqContext } from "./MdTemplateParser.js";
 import { TagHintNameContext } from "./MdTemplateParser.js";
 import { TagHintPieceContext } from "./MdTemplateParser.js";
 import { TagShapePieceContext } from "./MdTemplateParser.js";
@@ -323,12 +322,6 @@ export class MdTemplateParserVisitor<Result> extends AbstractParseTreeVisitor<Re
      * @return the visitor result
      */
     visitTagBracketItem?: (ctx: TagBracketItemContext) => Result;
-    /**
-     * Visit a parse tree produced by `MdTemplateParser.tagTypeEq`.
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    visitTagTypeEq?: (ctx: TagTypeEqContext) => Result;
     /**
      * Visit a parse tree produced by `MdTemplateParser.tagHintName`.
      * @param ctx the parse tree

@@ -85,11 +85,9 @@ The script (it never runs git and has no dependency):
 - writes a test stub and two placeholder fixtures (see section 4);
 - prints a warning when the code is not a spec 4.3 row for that name.
 
-A stub throws when run, so the rule counts as pending: its code must stay in
-`tests/consistency/pending-rules.json` until the check is implemented. That file maps a
-code to a short reason (it is `{}` when nothing is pending). If you added the spec row,
-add the code there now, or `pnpm run check:rules` reports a rule that is neither
-implemented nor pending.
+A stub throws when run, and `pnpm run check:rules` fails on it until the check is
+implemented (there is no staging list: every spec 4.3 code needs a registered rule with a
+real check).
 
 ## 3. Implement the check
 
@@ -129,7 +127,6 @@ Rules of the road:
   as the anchor (`reportOnLine` or `setAnchorLine`, spec 4.4 DIR5), so a disable directive
   can cover it; field findings get the key line from the pipeline. See "Anchor lines" in
   [architecture.md](architecture.md#anchor-lines-spec-44-dir5).
-- Remove the code from `tests/consistency/pending-rules.json` once the check is real.
 
 ## 4. Write the tests and fixtures
 

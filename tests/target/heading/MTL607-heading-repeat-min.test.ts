@@ -145,7 +145,7 @@ async function lintResult(name: string) {
   return lintTarget(registry, status.model, read(`${fixture}/target.md`), "target.md", createEnv());
 }
 
-describe("MTL607 heading-repeat-min", () => {
+describe("MTL607 heading-repeat-min", { tags: ["MTL607", "heading"] }, () => {
   it("is registered in category heading, error, target step headings", () => {
     expect(registry.byCode.get(CODE)).toMatchObject({
       name: "heading-repeat-min",

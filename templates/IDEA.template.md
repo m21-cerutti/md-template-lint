@@ -1,6 +1,6 @@
 ---
 title: Ideas # [presence:required]
-last_updated: 2026-10-29 # [presence:required] [format:date] type=date
+last_updated: 2026-10-29 # [presence:required] [format:date] [date]
 ---
 
 # Ideas — <project> [presence:optional]

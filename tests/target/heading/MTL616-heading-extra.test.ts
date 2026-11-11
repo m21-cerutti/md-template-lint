@@ -297,7 +297,7 @@ async function lintResult(name: string) {
   return lintTarget(registry, status.model, read(`${DIR}/${name}/target.md`), "target.md", createEnv());
 }
 
-describe("MTL616 heading-extra", () => {
+describe("MTL616 heading-extra", { tags: ["MTL616", "heading"] }, () => {
   it("is registered in category heading, warning, target step headings", () => {
     expect(registry.byCode.get(CODE)).toMatchObject({
       name: "heading-extra",

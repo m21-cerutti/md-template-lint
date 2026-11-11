@@ -91,10 +91,17 @@ of the other categories keep the split check in the test file itself (compare
 ```bash
 pnpm exec vitest run tests/target/bounds/MTL401-count-min.test.ts
 pnpm exec vitest run tests/unit
+pnpm exec vitest run --tags-filter MTL101
+pnpm exec vitest run --tags-filter heading
 pnpm test
 pnpm run check:rules
 pnpm run coverage
 ```
+
+The families (syntax, target, unit, integration, consistency, smoke, fixtures) and the commands to
+run each are in [tests/README.md](../../tests/README.md#test-families). Running one error code or
+one family by tag (`--tags-filter`), and the tags a new rule test must declare, are in
+[tests/README.md](../../tests/README.md#run-one-error-code-or-family).
 
 `pnpm run check:rules` is `vitest run tests/consistency`. `pnpm run coverage` runs the whole suite with
 v8 coverage and fails when lines, statements, functions or branches fall under 85% in `src/engine/**`,

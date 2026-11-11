@@ -136,7 +136,7 @@ async function lint(testCase: TestCase) {
   };
 }
 
-describe("MTL306 semver-mismatch", () => {
+describe("MTL306 semver-mismatch", { tags: ["MTL306", "format"] }, () => {
   it("is registered in category format, error, field step shape", () => {
     expect(registry.byCode.get(CODE)).toMatchObject({
       name: "semver-mismatch",

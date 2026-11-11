@@ -24,7 +24,7 @@ const CASES: readonly TestCase[] = [
   { name: "fail-end-closes-only-listed", expected: [at(8, 1, noOpen("MTL701"))] },
 ];
 
-describe("MTL023 directive-end-without-begin", () => {
+describe("MTL023 directive-end-without-begin", { tags: ["MTL023", "syntax"] }, () => {
   it("is registered in category syntax, warning, target step directives", () => {
     expectDirectiveRule(CODE, "directive-end-without-begin");
   });

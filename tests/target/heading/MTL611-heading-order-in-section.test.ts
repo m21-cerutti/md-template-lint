@@ -240,7 +240,7 @@ async function lint(testCase: TestCase) {
   return found.filter((diagnostic) => diagnostic.code === CODE);
 }
 
-describe("MTL611 heading-order-in-section", () => {
+describe("MTL611 heading-order-in-section", { tags: ["MTL611", "heading"] }, () => {
   it("is registered in category heading, error, target step headings", () => {
     expect(registry.byCode.get(CODE)).toMatchObject({
       name: "heading-order-in-section",

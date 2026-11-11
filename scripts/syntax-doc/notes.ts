@@ -39,7 +39,7 @@ export const TAG_NOTES: Readonly<Record<string, TagNote>> = {
   },
   "frontmatter:range": {
     description: "Bounds a numeric value, or each numeric item of a list.",
-    example: "`rating: 3 # type=int [range:min:1] [range:max:5]`",
+    example: "`rating: 3 # [int] [range:min:1] [range:max:5]`",
   },
   "frontmatter:unique-headings-names": {
     description: "Standalone comment line: no two target headings may share a name (case folded, any level).",
@@ -73,6 +73,28 @@ export const TAG_NOTES: Readonly<Record<string, TagNote>> = {
     description: "No two target headings inside the matched section (heading included) may share a name.",
     example: "`## Changes [unique-headings-names]`",
   },
+};
+
+/**
+ * One pass fixture (a template) per tag family, keyed like TAG_NOTES, as a path from the repository root.
+ * The generator checks that the file exists, is a `pass-` case and holds the family tag in its region.
+ */
+export const TAG_FIXTURES: Readonly<Record<string, string>> = {
+  "frontmatter:count": "tests/fixtures/pairs/MTL401/pass-lengths-meet-minimum-and-other-values-stay-silent/template.md",
+  "frontmatter:filename": "tests/fixtures/pairs/MTL101/pass-stem-matches-template-case-and-inert-tags-stay-silent/template.md",
+  "frontmatter:format": "tests/fixtures/pairs/MTL301/pass-value-equals-constant/template.md",
+  "frontmatter:io": "tests/fixtures/pairs/MTL804/pass-existing-paths-or-not-checked/template.md",
+  "frontmatter:order": "tests/fixtures/pairs/MTL407/pass-dates-ascending-and-other-values-stay-silent/template.md",
+  "frontmatter:presence": "tests/fixtures/pairs/MTL201/pass-all-required-present/template.md",
+  "frontmatter:range": "tests/fixtures/pairs/MTL403/pass-values-at-or-above-minimum-and-other-values-stay-silent/template.md",
+  "frontmatter:unique-headings-names": "tests/fixtures/pairs/MTL613/pass-differs-after-folding/template.md",
+  "frontmatter:value": "tests/fixtures/pairs/MTL102/pass-value-equals-file-stem/template.md",
+  "heading:content": "tests/fixtures/pairs/MTL701/pass-section-has-text/template.md",
+  "heading:order": "tests/fixtures/pairs/MTL609/pass-owner-example-j-epic-a-before-epic-b/template.md",
+  "heading:pattern": "tests/fixtures/pairs/MTL605/pass-pattern-headings-match-in-both-scopes/template.md",
+  "heading:presence": "tests/fixtures/pairs/MTL601/pass-required-heading-present/template.md",
+  "heading:repeat-rules": "tests/fixtures/pairs/MTL607/pass-count-above-minimum/template.md",
+  "heading:unique-headings-names": "tests/fixtures/pairs/MTL613/pass-repeat-instances-each-their-own-region/template.md",
 };
 
 /** Typical fix of an error code, keyed by code, e.g. `MTL201`. */

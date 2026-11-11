@@ -359,7 +359,7 @@ async function lint(template: string, target: string): Promise<Diagnostic[]> {
 
 const template = (tags: string): string => `---\ntitle: x\n---\n\n# Guide\n\n## Authoring checklist ${tags}\n`;
 
-describe("MTL015 heading-tag-conflict (--verify)", () => {
+describe("MTL015 heading-tag-conflict (--verify)", { tags: ["MTL015", "syntax"] }, () => {
   it("is registered in category syntax, warning, phase template", () => {
     expect(registry.byCode.get(CODE)).toMatchObject({
       name: "heading-tag-conflict",
@@ -464,7 +464,7 @@ const TEXT_CASES: readonly { readonly name: string; readonly items: readonly str
   { name: "pass-template-only-with-other-content-tag", items: [] },
 ];
 
-describe("MTL015 in the --verify text report (spec 8.3 `Conflicting tags:`)", () => {
+describe("MTL015 in the --verify text report (spec 8.3 `Conflicting tags:`)", { tags: ["MTL015", "syntax"] }, () => {
   // CLI `--format text` is the `pretty` reporter (spec 7.3); `plain` is the other text one.
   for (const format of ["text", "plain"]) {
     for (const { name, items } of TEXT_CASES) {

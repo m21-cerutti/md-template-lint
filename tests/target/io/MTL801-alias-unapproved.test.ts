@@ -73,7 +73,7 @@ function listTree(): { dirs: string[]; files: string[] } {
   return { dirs: dirs.sort(), files: files.sort() };
 }
 
-describe("MTL801 alias-unapproved", () => {
+describe("MTL801 alias-unapproved", { tags: ["MTL801", "io"] }, () => {
   it("is registered in category io, warning, field step io", () => {
     expect(registry.byCode.get(CODE)).toMatchObject({
       name: "alias-unapproved",

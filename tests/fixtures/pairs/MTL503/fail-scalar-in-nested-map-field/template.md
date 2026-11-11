@@ -1,3 +1,3 @@
 ---
-meta: "x" # type=nested-map
+meta: "x" # [nested-map]
 ---

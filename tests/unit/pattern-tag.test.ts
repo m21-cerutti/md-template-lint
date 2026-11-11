@@ -81,7 +81,7 @@ describe("pattern pieces: valid patterns (spec 2.10 PATTERN, PLACEHOLDERS)", () 
   });
 });
 
-describe("pattern pieces: invalid patterns (spec 2.10 INVALID PATTERN, MTL014 reasons)", () => {
+describe("pattern pieces: invalid patterns (spec 2.10 INVALID PATTERN, MTL014 reasons)", { tags: ["MTL014", "syntax"] }, () => {
   it.each([
     // Unknown placeholder name, column of its `{`.
     ["unknown name", "{version}", "unknown placeholder {version}", START],

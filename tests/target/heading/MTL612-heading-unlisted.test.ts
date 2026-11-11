@@ -261,7 +261,7 @@ async function lint(testCase: TestCase) {
   return found.filter((diagnostic) => diagnostic.code === CODE);
 }
 
-describe("MTL612 heading-unlisted", () => {
+describe("MTL612 heading-unlisted", { tags: ["MTL612", "heading"] }, () => {
   it("is registered in category heading, error, target step headings", () => {
     expect(registry.byCode.get(CODE)).toMatchObject({
       name: "heading-unlisted",

@@ -108,7 +108,7 @@ async function lint(testCase: TestCase) {
   return found.filter((diagnostic) => diagnostic.code === CODE);
 }
 
-describe("MTL514 type-list-of-path", () => {
+describe("MTL514 type-list-of-path", { tags: ["MTL514", "type"] }, () => {
   it("is registered in category type, error, field step type", () => {
     expect(registry.byCode.get(CODE)).toMatchObject({
       name: "type-list-of-path",

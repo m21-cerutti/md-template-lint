@@ -3,17 +3,18 @@
  * inside `pnpm run check:rules`). Each check returns human-readable problems;
  * an empty list means no drift. The generated blocks come from
  * scripts/syntax-doc/generate.ts; the checks here also cover what the generator
- * does not: note coverage, pending markers, CLI flags and enum lists.
+ * does not: note coverage, the CLI flags (documented in docs/cli.md) and enum lists.
  */
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
-import { staleBlocks, type BlockName, type ErrorRow, type TagForm } from "../../scripts/syntax-doc/generate.js";
+import { existsSync, readFileSync } from "node:fs";
+import { join, resolve } from "node:path";
+import { isPassFixture, staleBlocks, touchesUrlsOrFiles, WARNING, type BlockName, type ErrorRow, type TagForm } from "../../scripts/syntax-doc/generate.js";
 import type { AnyRule } from "../../src/engine/rule.js";
-import { isStub } from "../../src/engine/rule.js";
 import { ROOT } from "./consistency.js";
 
 export const DOC_PATH = join(ROOT, "docs", "syntax-reference.md");
 export const readDoc = () => readFileSync(DOC_PATH, "utf8");
+export const CLI_DOC_PATH = join(ROOT, "docs", "cli.md");
+export const readCliDoc = () => readFileSync(CLI_DOC_PATH, "utf8");
 
 const REGENERATE = "run `pnpm run gen:syntax-doc` and commit";
 
@@ -47,35 +48,103 @@ export function checkNotes(rows: readonly ErrorRow[], forms: readonly TagForm[],
   return problems;
 }
 
+/** Lines of generated block `name`, or undefined when the doc has no such block. */
+function blockLines(doc: string, name: BlockName): string[] | undefined {
+  const text = doc.replaceAll("\r\n", "\n");
+  const begin = `<!-- BEGIN GENERATED: ${name} -->\n`;
+  const start = text.indexOf(begin);
+  const end = text.indexOf(`\n<!-- END GENERATED: ${name} -->`);
+  if (start < 0 || end < start) return undefined;
+  return text.slice(start + begin.length, end).split("\n");
+}
+
+const tableCells = (line: string) =>
+  line
+    .slice(1, line.lastIndexOf("|"))
+    .split("|")
+    .map((entry) => entry.trim());
+
 /**
- * Pending means not built yet: a pending code has no implemented rule (a
- * scaffold stub does not count) and a tag form the doc marks `(pending)` is
- * not in the grammar. Both are vacuous while nothing is pending.
+ * The family table counts the codes the registry holds per category, and the run codes under `run`.
+ * `registered` and `runCodes` are the source of truth, the doc is what is checked.
  */
-export function checkPending(pending: Readonly<Record<string, string>>, registered: readonly AnyRule[], doc: string, forms: readonly TagForm[]): string[] {
-  const problems: string[] = [];
-  const implemented = new Set<string>(registered.filter((rule) => !isStub(rule)).map((rule) => rule.code));
-  for (const code of Object.keys(pending)) {
-    if (implemented.has(code)) problems.push(`${code}: pending but implemented in src/rules`);
+export function checkFamilies(doc: string, registered: readonly AnyRule[], runCodes: readonly string[]): string[] {
+  const lines = blockLines(doc, "families");
+  if (lines === undefined) return ["docs/syntax-reference.md: families block not found"];
+  const expected = new Map<string, number>();
+  for (const rule of registered) expected.set(rule.category, (expected.get(rule.category) ?? 0) + 1);
+  expected.set("run", runCodes.length);
+  const documented = new Map<string, number>();
+  for (const line of lines.filter((entry) => entry.startsWith("| `"))) {
+    const [family = "", , count = ""] = tableCells(line);
+    documented.set(family.replaceAll("`", ""), Number(count));
   }
-  const inGrammar = new Set(forms.map((form) => form.form));
-  for (const line of doc.replaceAll("\r\n", "\n").split("\n")) {
-    if (!line.includes("(pending)")) continue;
-    for (const match of line.matchAll(/`(\[[^`]+\])`/g)) {
-      const form = match[1] ?? "";
-      if (inGrammar.has(form)) {
-        problems.push(`${form}: marked (pending) in the doc but already in the grammar`);
-      }
-    }
+  const problems: string[] = [];
+  for (const [family, count] of expected) {
+    const found = documented.get(family);
+    if (found === undefined) problems.push(`${family}: family missing in the families block`);
+    else if (found !== count) problems.push(`${family}: the doc counts ${found} code(s), the source has ${count}`);
+  }
+  for (const family of documented.keys()) {
+    if (!expected.has(family)) problems.push(`${family}: in the families block but not in the source`);
   }
   return problems;
 }
 
-/** Long flags (`--name`) in the first column of the flag table of the doc's `## CLI` section. */
+/** Rows of the tags block: one per tag form. */
+function tagRows(doc: string): string[] | undefined {
+  return blockLines(doc, "tags")?.filter((line) => /^\| (frontmatter|heading) \|/.test(line));
+}
+
+/** Every tag form row ends with a link to an existing pass fixture; the doc is at `docDir`. */
+export function checkTagLinks(doc: string, forms: readonly TagForm[], docDir: string): string[] {
+  const rows = tagRows(doc);
+  if (rows === undefined) return ["docs/syntax-reference.md: tags block not found"];
+  const problems: string[] = [];
+  if (rows.length !== forms.length) problems.push(`tags block has ${rows.length} row(s), the grammar has ${forms.length} tag form(s)`);
+  for (const row of rows) {
+    const form = tableCells(row)[2] ?? row;
+    const target = /\]\(([^)]+)\)\s*\|$/.exec(row)?.[1];
+    if (target === undefined) problems.push(`${form}: no fixture link in the last column`);
+    else if (!isPassFixture(target)) problems.push(`${form}: ${target} is not a pass fixture`);
+    else if (!existsSync(resolve(docDir, target))) problems.push(`${form}: ${target} does not exist`);
+  }
+  return problems;
+}
+
+/** The warning emoji marks exactly the tag forms that reach files or URLs (`touchesUrlsOrFiles` of the generator); rows follow `forms`. */
+export function checkWarnings(doc: string, forms: readonly TagForm[]): string[] {
+  const rows = tagRows(doc);
+  if (rows === undefined) return ["docs/syntax-reference.md: tags block not found"];
+  if (rows.length !== forms.length) return [`tags block has ${rows.length} row(s), the grammar has ${forms.length} tag form(s)`];
+  const problems: string[] = [];
+  for (const [index, row] of rows.entries()) {
+    const form = tableCells(row)[2] ?? row;
+    const expected = forms[index] !== undefined && touchesUrlsOrFiles(forms[index]);
+    const marked = row.includes(WARNING);
+    if (expected && !marked) problems.push(`${form}: tag that reaches files or URLs without the warning emoji`);
+    if (!expected && marked) problems.push(`${form}: warning emoji on a tag that does not reach files or URLs`);
+  }
+  return problems;
+}
+
+/** The type hints block lists exactly the type names, one per bullet. */
+export function checkTypes(doc: string, names: Iterable<string>): string[] {
+  const lines = blockLines(doc, "types");
+  if (lines === undefined) return ["docs/syntax-reference.md: types block not found"];
+  const documented = lines.filter((line) => line.startsWith("- `")).map((line) => line.slice(3, line.lastIndexOf("`")));
+  const source = [...names];
+  return [
+    ...source.filter((name) => !documented.includes(name)).map((name) => `type '${name}' is in the source but not in the doc`),
+    ...documented.filter((name) => !source.includes(name)).map((name) => `type '${name}' is in the doc but not in the source`),
+  ];
+}
+
+/** Long flags (`--name`) in the first column of the flag table of the `## Flags` section of docs/cli.md. */
 export function documentedFlags(doc: string): string[] {
   const text = doc.replaceAll("\r\n", "\n");
-  const start = text.indexOf("\n## CLI\n");
-  if (start < 0) throw new Error("docs/syntax-reference.md: section '## CLI' not found");
+  const start = text.indexOf("\n## Flags\n");
+  if (start < 0) throw new Error("docs/cli.md: section '## Flags' not found");
   const end = text.indexOf("\n## ", start + 1);
   const flags: string[] = [];
   for (const line of text.slice(start, end < 0 ? undefined : end).split("\n")) {
@@ -88,8 +157,8 @@ export function documentedFlags(doc: string): string[] {
 /** Every documented long flag is in the CLI usage text (src/cli/args.ts USAGE). */
 export function checkFlags(doc: string, usage: string): string[] {
   const flags = documentedFlags(doc);
-  if (flags.length === 0) return ["docs/syntax-reference.md: no flag found in the CLI table"];
-  return flags.filter((flag) => !usage.split(/\s+/).some((word) => word.replace(/[,=].*$/, "") === flag)).map((flag) => `${flag}: documented in the CLI table but not in the USAGE of src/cli/args.ts`);
+  if (flags.length === 0) return ["docs/cli.md: no flag found in the flag table"];
+  return flags.filter((flag) => !usage.split(/\s+/).some((word) => word.replace(/[,=].*$/, "") === flag)).map((flag) => `${flag}: documented in the flag table but not in the USAGE of src/cli/args.ts`);
 }
 
 /** Back-quoted values after the first `: ` of the bullet that starts with `prefix`. */

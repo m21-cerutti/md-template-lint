@@ -114,7 +114,7 @@ async function lint(testCase: TestCase) {
   return found.filter((diagnostic) => diagnostic.code === CODE);
 }
 
-describe("MTL102 value-filename", () => {
+describe("MTL102 value-filename", { tags: ["MTL102", "filename"] }, () => {
   it("is registered in category filename, error, field step value-filename", () => {
     expect(registry.byCode.get(CODE)).toMatchObject({
       name: "value-filename",

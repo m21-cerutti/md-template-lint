@@ -1,3 +1,3 @@
 ---
-aliases: ["x"] # type=path-alias
+aliases: ["x"] # [path-alias]
 ---

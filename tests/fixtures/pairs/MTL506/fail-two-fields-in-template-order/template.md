@@ -1,4 +1,4 @@
 ---
-first: "./docs/readme.md" # type=path
-second: "./docs/readme.md" # type=path
+first: "./docs/readme.md" # [path]
+second: "./docs/readme.md" # [path]
 ---

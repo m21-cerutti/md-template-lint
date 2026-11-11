@@ -27,7 +27,7 @@ const CASES: readonly TestCase[] = [
   { name: "fail-duplicate-token-once", expected: [at(7, 1, unknown("MTL2O1"))] },
 ];
 
-describe("MTL021 directive-unknown-code", () => {
+describe("MTL021 directive-unknown-code", { tags: ["MTL021", "syntax"] }, () => {
   it("is registered in category syntax, warning, target step directives", () => {
     expectDirectiveRule(CODE, "directive-unknown-code");
   });

@@ -43,7 +43,6 @@
       { "name": "owner", "type": "string", "rules": ["presence:conditional:only when risky"] },
       { "name": "note", "type": "string", "rules": ["presence:required", "count:min:2"] },
       { "name": "plain", "type": "string", "rules": ["presence:required"] },
-      { "name": "piped", "type": "string", "rules": ["presence:required"] },
       {
         "name": "everything",
         "type": "enum",

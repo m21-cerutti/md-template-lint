@@ -40,7 +40,7 @@ const CASES: readonly TestCase[] = [
   },
 ];
 
-describe("MTL020 directive-malformed", () => {
+describe("MTL020 directive-malformed", { tags: ["MTL020", "syntax"] }, () => {
   it("is registered in category syntax, warning, target step directives", () => {
     expectDirectiveRule(CODE, "directive-malformed");
   });

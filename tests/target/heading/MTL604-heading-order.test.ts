@@ -155,7 +155,7 @@ async function lint(fixture: string) {
   return found.filter((diagnostic) => HEADING_CODES.includes(diagnostic.code));
 }
 
-describe("MTL604 heading-order", () => {
+describe("MTL604 heading-order", { tags: ["MTL604", "heading"] }, () => {
   it("is registered in category heading, error, target step headings", () => {
     expect(registry.byCode.get(CODE)).toMatchObject({
       name: "heading-order",

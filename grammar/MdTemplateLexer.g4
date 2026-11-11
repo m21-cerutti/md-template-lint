@@ -223,13 +223,11 @@ T_LBRACK : '[' -> type(LBRACK) ;
 T_RBRACK : ']' -> type(RBRACK) ;
 T_COLON : ':' -> type(COLON) ;
 T_DASH : '-' -> type(DASH) ;
-EQ : '=' ;
 // Trailing heading comment (legacy `<!--.*-->`, greedy to the last `-->`).
 HTML_COMMENT : '<!--' ~'\n'* '-->' ;
 
 // `YYYY-MM-DD` as a case-sensitive substring, like legacy `"YYYY-MM-DD" in comment`.
 DATE_PLACEHOLDER options { caseInsensitive = false; } : F_WORD_CHAR* 'YYYY-MM-DD' F_WORD_CHAR* ;
-TYPE : 'type' ;
 RULE : 'rule' ;
 ISO  : 'iso' ;
 URL  : 'url' ;

@@ -224,11 +224,12 @@ family(
 
 describe("hints.ts (TypeHintListener)", () => {
   const kinds = (text: string) => parseInlineComment(text).hints.map((h) => ("name" in h ? `${h.kind}:${h.name}` : h.kind));
-  it.each([["every hint form", "Type = INT [Date] YYYY-MM-DD iso lien @gen/", ["type-eq:int", "bracket:date", "date-placeholder", "iso-word", "url-word", "alias-marker:gen"]]])("passes: %s", (_label, text, expected) => {
+  it.each([["every hint form", "[INT] [Date] YYYY-MM-DD iso lien @gen/", ["bracket:int", "bracket:date", "date-placeholder", "iso-word", "url-word", "alias-marker:gen"]]])("passes: %s", (_label, text, expected) => {
     expect(kinds(text)).toEqual(expected);
   });
   it.each([
-    ["word glued before type", "subtype=int"],
+    ["removed type=<name> form", "type=int"],
+    ["removed type = <name> form, spaced", "Type = INT"],
     ["type= without name", "type="],
     ["colon tag", "[presence:optional]"],
     ["path inside a word", "pathway"],

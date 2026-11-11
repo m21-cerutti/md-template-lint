@@ -156,7 +156,7 @@ const REAL_TARGET = runnerText(REAL, "notes/real.md");
 const REAL_EXPECTED: readonly Expected[] = [
   { code: "MTL201", line: 2 }, // title: (key present, empty value: anchored on the key line)
   { code: "MTL302", line: 3 }, // slug: Not_Kebab, [format:kebab-case]
-  { code: "MTL508", line: 4 }, // port: abc, type=int
+  { code: "MTL508", line: 4 }, // port: abc, [int]
   { code: "MTL517", line: 5 }, // status: other, draft | done
   { code: "MTL401", line: 6 }, // tags: [a], [count:min:2]
   { code: "MTL404", line: 7 }, // level: 50, [range:max:10]
@@ -167,7 +167,7 @@ const REAL_EXPECTED: readonly Expected[] = [
 ];
 
 /**
- * The one template warning (spec 2.9): `dates` (`type=list-of-date`) has no
+ * The one template warning (spec 2.9): `dates` (`[list-of-date]`) has no
  * [format:elements:date]. MTL016 sits on column 1 of the template key line.
  */
 const datesWithoutFormat = (line: number) => [
@@ -331,7 +331,7 @@ const without = (code: string): Expected[] => UNANCHORED_EXPECTED.filter((other)
 /** How many findings `code` has in `UNANCHORED_EXPECTED` (the suppressed count of its disable-file). */
 const countOf = (code: string): number => UNANCHORED_EXPECTED.filter((other) => other.code === code).length;
 
-describe("codes without anchor (MTL101, MTL201 missing, MTL601 twice) and MTL603", () => {
+describe("codes without anchor (MTL101, MTL201 missing, MTL601 twice) and MTL603", { tags: ["MTL101", "MTL201", "MTL601", "MTL603", "filename", "presence", "heading"] }, () => {
   const closing = closingFence(UNANCHORED_TARGET);
   const run = (text: string) => lint(UNANCHORED_TEMPLATE, text, UNANCHORED_PATH);
 
@@ -451,7 +451,7 @@ describe("codes without anchor (MTL101, MTL201 missing, MTL601 twice) and MTL603
   // MTL604 has no anchor either (DIR7). A same-level swap no longer reaches it (positional
   // matching, spec 2.6 "Order"); an order ACROSS levels does: the H2 `Overview` matches before
   // the H1 `Notes` that precedes it in the template.
-  describe("MTL604 across levels (no anchor)", () => {
+  describe("MTL604 across levels (no anchor)", { tags: ["MTL604", "heading"] }, () => {
     const template = ["---", "title: string", "---", "", "# Notes", "", "## Overview", ""].join("\n");
     const target = ["---", "title: x", "---", "", "## Overview", "", "# Notes", ""].join("\n");
     const runOrder = (text: string) => lint(template, text, "notes/order.md");
@@ -497,7 +497,7 @@ describe("codes without anchor (MTL101, MTL201 missing, MTL601 twice) and MTL603
 // MTL804 (io warning), with the in-memory io of the unit tests.
 // ---------------------------------------------------------------------------------------
 
-describe("MTL804 (io:exists warning)", () => {
+describe("MTL804 (io:exists warning)", { tags: ["MTL804", "io"] }, () => {
   const dir = (name: string, file: string): string => readFileSync(join(fixturePath("suppression", name), file), "utf8");
   const template = dir("fail-io-path-missing-warning-reported", "template.md");
   const target = dir("fail-io-path-missing-warning-reported", "target.md");

@@ -59,7 +59,7 @@ async function lint(testCase: TestCase) {
   return found.filter((diagnostic) => diagnostic.code === CODE);
 }
 
-describe("MTL201 required-missing", () => {
+describe("MTL201 required-missing", { tags: ["MTL201", "presence"] }, () => {
   it("is registered in category presence, error, field step presence", () => {
     expect(registry.byCode.get(CODE)).toMatchObject({
       name: "required-missing",

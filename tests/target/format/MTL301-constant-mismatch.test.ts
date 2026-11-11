@@ -83,7 +83,7 @@ async function lint(testCase: TestCase) {
   };
 }
 
-describe("MTL301 constant-mismatch", () => {
+describe("MTL301 constant-mismatch", { tags: ["MTL301", "format"] }, () => {
   it("is registered in category format, error, field step constant", () => {
     expect(registry.byCode.get(CODE)).toMatchObject({
       name: "constant-mismatch",

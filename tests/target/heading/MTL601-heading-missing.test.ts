@@ -158,7 +158,7 @@ async function lint(fixture: string) {
   return found.filter((diagnostic) => diagnostic.code === CODE);
 }
 
-describe("MTL601 heading-missing", () => {
+describe("MTL601 heading-missing", { tags: ["MTL601", "heading"] }, () => {
   it("is registered in category heading, error, target step headings", () => {
     expect(registry.byCode.get(CODE)).toMatchObject({
       name: "heading-missing",

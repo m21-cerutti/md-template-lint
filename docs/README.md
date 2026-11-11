@@ -28,7 +28,9 @@ Start with the [architecture](architecture.md) and the [glossary](glossary.md).
 | [../tests/README.md](../tests/README.md)                           | The map of the test suite: families, folders, fixtures, the `pass-` / `fail-` rule, how to run them.                                                                                                                                                  |
 | [adding-a-rule.md](adding-a-rule.md)                               | The earlier single-file guide (scaffold flags in detail); the new home of the steps is the guide above.                                                                                                                                               |
 | [migration.md](migration.md)                                       | Replace the legacy wrappers and `approved_path.yml` with one `md-template-lint.yml`; the breaking changes "H3 and deeper headings are checked", "Headings are matched by position" and "The `exist` presence tag is removed" (how to fix a template). |
-| [syntax-reference.md](syntax-reference.md)                         | Reference for writing templates: tag forms, heading patterns, type hints, error codes, enums, config keys, CLI flags, exit codes. The tag, error and enum tables are generated (`pnpm run gen:syntax-doc`).                                           |
+| [syntax-reference.md](syntax-reference.md)                         | Reference for writing templates: tag forms, heading patterns, type hints, disable directives with a complete example, error codes, enums. The tag, type hint, error and enum tables are generated (`pnpm run gen:syntax-doc`).                        |
+| [cli.md](cli.md)                                                   | The command line: flags, exit codes, output formats, `--verify`, file arguments, path and backslash handling.                                                                                                                                         |
+| [configuration.md](configuration.md)                               | The `md-template-lint.yml` file: every key with type and default, pairs, paths, globs, `onEmpty`, the `io` options (`approvedPaths`, `aliases`, `allowPrivateNetworks`).                                                                              |
 
 ## Decisions (ADRs)
 
@@ -94,5 +96,7 @@ Document templates in [../templates/](../templates/); check one with `md-templat
 | Add a rule or a tag               | [guides/adding-a-rule.md](guides/adding-a-rule.md), [guides/adding-a-tag.md](guides/adding-a-tag.md) |
 | Change the grammar or a directive | [guides/grammar-and-listeners.md](guides/grammar-and-listeners.md)                                   |
 | Write or run tests                | [guides/testing.md](guides/testing.md), [../tests/README.md](../tests/README.md)                     |
-| Write a new template              | [syntax-reference.md](syntax-reference.md) (codes, tags, enums)                                      |
+| Write a new template              | [syntax-reference.md](syntax-reference.md) (codes, tags, enums, disable directives)                  |
+| Run the tool or read its output   | [cli.md](cli.md) (flags, exit codes, `--verify`)                                                     |
+| Write the config file             | [configuration.md](configuration.md) (keys, pairs, paths, globs, `io` options)                       |
 | Look up a word                    | [glossary.md](glossary.md)                                                                           |

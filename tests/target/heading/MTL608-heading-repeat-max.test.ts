@@ -125,7 +125,7 @@ async function lintResult(name: string) {
   return lintTarget(registry, status.model, read(`${fixture}/target.md`), "target.md", createEnv());
 }
 
-describe("MTL608 heading-repeat-max", () => {
+describe("MTL608 heading-repeat-max", { tags: ["MTL608", "heading"] }, () => {
   it("is registered in category heading, error, target step headings", () => {
     expect(registry.byCode.get(CODE)).toMatchObject({
       name: "heading-repeat-max",

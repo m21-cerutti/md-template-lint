@@ -1,3 +1,3 @@
 ---
-dates: ["2026-01-15"] # type=list-of-date
+dates: ["2026-01-15"] # [list-of-date]
 ---

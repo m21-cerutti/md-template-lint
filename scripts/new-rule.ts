@@ -229,7 +229,8 @@ const test = [
   ...cases.flatMap(([caseName, fixture, expected]) => ["  {", `    name: "${caseName}",`, `    fixture: \`\${DIR}/${fixture}\`,`, `    expected: "${expected}",`, "  },"]),
   "] as const;",
   "",
-  `describe("${code} ${name}", () => {`,
+  // The code and family tags that `tests/consistency/rule-test-tags.test.ts` requires.
+  `describe("${code} ${name}", { tags: ["${code}", "${category}"] }, () => {`,
   `  it("is registered in category ${category}", () => {`,
   `    expect(createRegistry().byCode.get("${code}")).toMatchObject({`,
   `      name: "${name}",`,
@@ -264,5 +265,6 @@ const relativeTest = `tests/${family}/${category}/${code}-${name}.test.ts`;
 process.stdout.write(`new:rule: ${code} ${name} (stub) added to src/rules/${category}.ts\n`);
 process.stdout.write(`new:rule: test stub ${relativeTest}, fixtures ${fixtureRoot}/\n`);
 if (row === undefined || row.code !== code) {
-  process.stdout.write(`new:rule: ${code} is not a docs/spec.md 4.3 row for '${name}': add the row and a ` + "pending-rules.json entry, or `pnpm run check:rules` fails\n");
+  process.stdout.write(`new:rule: ${code} is not a docs/spec.md 4.3 row for '${name}': add the row, or ` + "`pnpm run check:rules` fails\n");
 }
+process.stdout.write(`new:rule: ${code} stays a stub: \`pnpm run check:rules\` fails until the check is implemented\n`);

@@ -173,7 +173,7 @@ async function lint(testCase: { readonly name: string }) {
   };
 }
 
-describe("MTL705 content-max-lines", () => {
+describe("MTL705 content-max-lines", { tags: ["MTL705", "content"] }, () => {
   it("is registered in category content, error, target step content", () => {
     expect(registry.byCode.get(CODE)).toMatchObject({
       name: "content-max-lines",

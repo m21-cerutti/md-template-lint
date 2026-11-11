@@ -57,7 +57,7 @@ function listTree(): { dirs: string[]; files: string[] } {
   return { dirs: dirs.sort(), files: files.sort() };
 }
 
-describe("MTL503 type-nested-map", () => {
+describe("MTL503 type-nested-map", { tags: ["MTL503", "type"] }, () => {
   it("is registered in category type, error, field step type", () => {
     expect(registry.byCode.get(CODE)).toMatchObject({
       name: "type-nested-map",

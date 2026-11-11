@@ -1,3 +1,3 @@
 ---
-started: "2026-01-15" # type=date
+started: "2026-01-15" # [date]
 ---

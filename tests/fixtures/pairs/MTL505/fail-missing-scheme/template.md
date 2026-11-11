@@ -1,4 +1,4 @@
 ---
-no_scheme: "https://example.com" # type=url
-bare_host: "https://example.com" # type=url
+no_scheme: "https://example.com" # [url]
+bare_host: "https://example.com" # [url]
 ---

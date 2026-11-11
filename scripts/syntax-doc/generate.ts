@@ -1,6 +1,6 @@
 /**
  * Usage: pnpm run gen:syntax-doc | pnpm run check:syntax-doc
- * Generates machine-derived blocks of docs/syntax-reference.md (tags, errors, enums) between
+ * Generates machine-derived blocks of docs/syntax-reference.md (tags, types, families, errors, enums) between
  * HTML comments. Sources: rule registry, grammar ATN, exported constants. Prose from notes.ts.
  */
 import { readFileSync, writeFileSync } from "node:fs";
@@ -11,17 +11,19 @@ import { FORMAT_NAMES } from "../../src/cli/args.js";
 import { ON_EMPTY_VALUES } from "../../src/config/types.js";
 import { RUN_CODES } from "../../src/engine/directives.js";
 import { createRegistry } from "../../src/engine/registry.js";
-import { CATEGORIES, isStub, type AnyRule } from "../../src/engine/rule.js";
+import { CATEGORIES, type AnyRule } from "../../src/engine/rule.js";
 import { MdTemplateLexer } from "../../src/generated/MdTemplateLexer.js";
 import { MdTemplateParser } from "../../src/generated/MdTemplateParser.js";
+import type { BodyTag, FrontmatterTag } from "../../src/tags/ast.js";
+import { parseDocument } from "../../src/tags/parser.js";
 import { KNOWN_TYPE_NAMES } from "../../src/tags/types.js";
-import { firstSymbols, pendingCodes, sentences, sentenceText, specCodes, specRunCodes, type SpecCode, type SpecRunCode } from "../../tests/consistency/consistency.js";
-import { FIX_NOTES, TAG_NOTES } from "./notes.ts";
+import { firstSymbols, sentences, sentenceText, specCodes, specRunCodes, type SpecCode, type SpecRunCode } from "../../tests/consistency/consistency.js";
+import { FIX_NOTES, TAG_FIXTURES, TAG_NOTES } from "./notes.ts";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const DEFAULT_DOC = join(root, "docs", "syntax-reference.md");
 
-export const BLOCK_NAMES = ["tags", "errors", "enums"] as const;
+export const BLOCK_NAMES = ["tags", "types", "families", "errors", "enums"] as const;
 export type BlockName = (typeof BLOCK_NAMES)[number];
 
 const MISSING = "—";
@@ -35,7 +37,7 @@ const code = (text: string) => `\`${text}\``;
 // Errors
 // ---------------------------------------------------------------------------
 
-export type ErrorStatus = "implemented" | "pending" | "run";
+export type ErrorStatus = "implemented" | "run";
 
 export interface ErrorRow {
   readonly code: string;
@@ -50,7 +52,6 @@ export interface ErrorSources {
   readonly spec: readonly SpecCode[];
   readonly specRun: readonly SpecRunCode[];
   readonly registered: readonly AnyRule[];
-  readonly pending: Readonly<Record<string, string>>;
   readonly runCodes: readonly string[];
 }
 
@@ -76,12 +77,12 @@ export function leadingMessage(cellText: string): string {
   return end === 0 ? cellText : cellText.slice(0, end);
 }
 
-/** One row per code of the registry, the pending list, the spec 4.3 tables and the run codes. */
+/** One row per code of the registry, the spec 4.3 tables and the run codes. */
 export function errorRows(sources: ErrorSources): ErrorRow[] {
   const specByCode = new Map(sources.spec.map((entry) => [entry.code, entry]));
   const runByCode = new Map(sources.specRun.map((entry) => [entry.code, entry]));
   const ruleByCode = new Map<string, AnyRule>(sources.registered.map((rule) => [rule.code, rule]));
-  const all = new Set<string>([...specByCode.keys(), ...runByCode.keys(), ...ruleByCode.keys(), ...Object.keys(sources.pending), ...sources.runCodes]);
+  const all = new Set<string>([...specByCode.keys(), ...runByCode.keys(), ...ruleByCode.keys(), ...sources.runCodes]);
   const rows: ErrorRow[] = [];
   for (const entry of [...all].sort()) {
     const run = runByCode.get(entry);
@@ -98,13 +99,13 @@ export function errorRows(sources: ErrorSources): ErrorRow[] {
     }
     const spec = specByCode.get(entry);
     const rule = ruleByCode.get(entry);
-    const implemented = rule !== undefined && !isStub(rule) && !(entry in sources.pending);
+    // `pnpm run check:rules` fails for a spec code without a real rule, so every other row is implemented.
     rows.push({
       code: entry,
       name: spec?.name ?? rule?.name ?? "",
       severity: spec?.severity ?? rule?.severity ?? "",
       category: spec?.category ?? rule?.category ?? "",
-      status: implemented ? "implemented" : "pending",
+      status: "implemented",
       message: leadingMessage(spec?.message ?? ""),
     });
   }
@@ -203,8 +204,89 @@ export function tagForms(): TagForm[] {
   return forms;
 }
 
-export function renderTags(forms: readonly TagForm[]): string {
-  const lines = ["| Region | Family | Tag form | Description | Example |", "| ------ | ------ | -------- | ----------- | ------- |"];
+/** The `io` family is the only one that reaches the filesystem or the network (`env.io` in src/rules/io.ts): it gets the warning mark. */
+export const touchesUrlsOrFiles = (entry: TagForm) => entry.family === "io";
+
+export const WARNING = "⚠️";
+
+/** A fixture path with a `pass-` case folder or file in it (tests/README.md, the `pass-` and `fail-` rule). */
+export const isPassFixture = (path: string) => /(^|\/)pass-[^/]*(\/|$)/.test(path);
+
+/**
+ * Grammar family of each AST tag kind (src/tags/ast.ts), keyed per region. The compiler rejects a
+ * missing or extra kind. The tag text itself is never read here: the project parser decides what is a tag.
+ */
+const FRONTMATTER_FAMILY = {
+  presence: "presence",
+  "format-constant": "format",
+  "format-case": "format",
+  "format-elements": "format",
+  "format-shape": "format",
+  "format-elements-shape": "format",
+  "format-scheme": "format",
+  "value-filename": "value",
+  count: "count",
+  range: "range",
+  "order-ascending": "order",
+  "io-exists": "io",
+  "filename-case": "filename",
+  "unique-names": "unique-headings-names",
+} satisfies Record<FrontmatterTag["kind"], string>;
+
+const BODY_FAMILY = {
+  presence: "presence",
+  content: "content",
+  "content-lines": "content",
+  pattern: "pattern",
+  repeat: "repeat-rules",
+  order: "order",
+  "unique-names": "unique-headings-names",
+} satisfies Record<BodyTag["kind"], string>;
+
+/**
+ * Families of the well-formed tags of a template, per region (`heading` is the `body` region of the AST),
+ * as parsed by src/tags/parser.ts. A malformed or misplaced bracket, a standalone comment line other than
+ * the filename and unique-names switches, a fenced heading and body prose give no tag.
+ */
+export function documentTagFamilies(text: string): Record<TagForm["region"], ReadonlySet<string>> {
+  const document = parseDocument(text);
+  const frontmatter = new Set<string>();
+  for (const line of document.frontmatter?.lines ?? []) {
+    if (line.kind === "key") {
+      for (const tag of [...(line.comment?.tags ?? []), ...(line.comment?.inertTags ?? [])]) frontmatter.add(FRONTMATTER_FAMILY[tag.kind]);
+    } else if ((line.kind === "filename" || line.kind === "unique-names") && line.tag !== null) {
+      frontmatter.add(FRONTMATTER_FAMILY[line.tag.kind]);
+    }
+  }
+  const heading = new Set<string>();
+  for (const block of document.body) {
+    if (block.kind === "heading") for (const tag of block.tags) heading.add(BODY_FAMILY[tag.kind]);
+  }
+  return { frontmatter, heading };
+}
+
+/**
+ * Link to the pass fixture of a tag family, written for the doc in `docs/` (hence `../`). Throws when the fixture is not a `pass-` case,
+ * does not exist, or does not hold the family tag in the region of the form.
+ */
+export function fixtureLink(entry: TagForm, fixtures: Readonly<Record<string, string>> = TAG_FIXTURES, base: string = root): string {
+  const key = `${entry.region}:${entry.family}`;
+  const path = fixtures[key];
+  if (path === undefined) throw new Error(`syntax-doc: no TAG_FIXTURES entry for '${key}' in scripts/syntax-doc/notes.ts`);
+  if (!isPassFixture(path)) throw new Error(`syntax-doc: TAG_FIXTURES['${key}'] is not a pass fixture: ${path}`);
+  let text: string;
+  try {
+    text = readFileSync(join(base, path), "utf8");
+  } catch {
+    throw new Error(`syntax-doc: TAG_FIXTURES['${key}'] does not exist: ${path}`);
+  }
+  if (!documentTagFamilies(text)[entry.region].has(entry.family)) throw new Error(`syntax-doc: TAG_FIXTURES['${key}'] has no [${entry.family}] tag in its ${entry.region}: ${path}`);
+  const id = /MTL\d{3}/.exec(path)?.[0] ?? "fixture";
+  return `[${id} pass](../${path})`;
+}
+
+export function renderTags(forms: readonly TagForm[], fixtures: Readonly<Record<string, string>> = TAG_FIXTURES, base: string = root): string {
+  const lines = [`${WARNING} marks a tag that reads the filesystem or the network.`, "", "| Region | Family | Tag form | Description | Example | Fixture |", "| ------ | ------ | -------- | ----------- | ------- | ------- |"];
   let previous = "";
   for (const entry of forms) {
     const key = `${entry.region}:${entry.family}`;
@@ -213,9 +295,33 @@ export function renderTags(forms: readonly TagForm[]): string {
     const note = TAG_NOTES[key];
     const description = first ? cell(note?.description ?? "") : SAME_AS_ABOVE;
     const example = first ? cell(note?.example ?? "") : SAME_AS_ABOVE;
-    lines.push(`| ${entry.region} | ${code(entry.family)} | ${code(entry.form)} | ${description} | ${example} |`);
+    const form = touchesUrlsOrFiles(entry) ? `${code(entry.form)} ${WARNING}` : code(entry.form);
+    lines.push(`| ${entry.region} | ${code(entry.family)} | ${form} | ${description} | ${example} | ${fixtureLink(entry, fixtures, base)} |`);
   }
   return lines.join("\n");
+}
+
+// ---------------------------------------------------------------------------
+// Families and type hints
+// ---------------------------------------------------------------------------
+
+/** One error family (the rule category, or `run`): its codes. */
+export function renderFamilies(rows: readonly ErrorRow[]): string {
+  const families = new Map<string, ErrorRow[]>();
+  for (const row of rows) families.set(row.category, [...(families.get(row.category) ?? []), row]);
+  const lines = ["| Family | Code range | Count | Severities |", "| ------ | ---------- | ----- | ---------- |"];
+  for (const [family, members] of families) {
+    const codes = members.map((row) => row.code);
+    const severities = [...new Set(members.flatMap((row) => row.severity.split(" or ")))].sort();
+    lines.push(`| ${code(family)} | ${code(codes[0] ?? "")}–${code(codes.at(-1) ?? "")} | ${members.length} | ${severities.join(", ")} |`);
+  }
+  return lines.join("\n");
+}
+
+/** The type names, one bullet each; each is also the one-word hint `[<name>]`. */
+export function renderTypes(names: Iterable<string>): string {
+  const list = [...names];
+  return [`${list.length} type names; each one is also the type hint \`[<type-name>]\`:`, "", ...list.map((name) => `- ${code(name)}`)].join("\n");
 }
 
 // ---------------------------------------------------------------------------
@@ -234,17 +340,17 @@ export function renderEnums(): string {
 
 /** The generated text of each block, lines joined with `\n`. */
 export function generateBlocks(): Record<BlockName, string> {
+  const rows = errorRows({
+    spec: specCodes(),
+    specRun: specRunCodes(),
+    registered: createRegistry().rules,
+    runCodes: RUN_CODES,
+  });
   return {
     tags: renderTags(tagForms()),
-    errors: renderErrors(
-      errorRows({
-        spec: specCodes(),
-        specRun: specRunCodes(),
-        registered: createRegistry().rules,
-        pending: pendingCodes(),
-        runCodes: RUN_CODES,
-      }),
-    ),
+    types: renderTypes(KNOWN_TYPE_NAMES),
+    families: renderFamilies(rows),
+    errors: renderErrors(rows),
     enums: renderEnums(),
   };
 }

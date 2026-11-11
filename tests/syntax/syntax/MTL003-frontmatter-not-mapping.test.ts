@@ -27,7 +27,7 @@ const CASES: readonly VerifyCase[] = [
   { name: "fail-scalar-frontmatter", ...BROKEN },
 ];
 
-describe("MTL003 frontmatter-not-mapping (--verify)", () => {
+describe("MTL003 frontmatter-not-mapping (--verify)", { tags: ["MTL003", "syntax"] }, () => {
   it("is registered in category syntax, error, phase parse", () => {
     expect(createRegistry().byCode.get(CODE)).toMatchObject({
       name: "frontmatter-not-mapping",

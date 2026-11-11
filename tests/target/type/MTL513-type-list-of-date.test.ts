@@ -74,7 +74,7 @@ const CASES: readonly TestCase[] = [
     name: "fail-two-fields-in-template-order",
     expected: [shape("first", "a scalar"), entries("second", "['soon']")],
   },
-  // Type from a template list of date-like values, and from `type=date` with
+  // Type from a template list of date-like values, and from `[date]` with
   // a list value (promotion to list-of-date).
   {
     name: "fail-type-inferred-from-template-date-list",
@@ -97,7 +97,7 @@ async function lint(testCase: TestCase) {
   return found.filter((diagnostic) => diagnostic.code === CODE);
 }
 
-describe("MTL513 type-list-of-date", () => {
+describe("MTL513 type-list-of-date", { tags: ["MTL513", "type"] }, () => {
   it("is registered in category type, error, field step type", () => {
     expect(registry.byCode.get(CODE)).toMatchObject({
       name: "type-list-of-date",

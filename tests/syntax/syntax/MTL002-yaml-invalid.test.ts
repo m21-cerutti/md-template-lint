@@ -33,7 +33,7 @@ const CASES: readonly VerifyCase[] = [
   },
 ];
 
-describe("MTL002 yaml-invalid (--verify)", () => {
+describe("MTL002 yaml-invalid (--verify)", { tags: ["MTL002", "syntax"] }, () => {
   it("is registered in category syntax, error, phase parse", () => {
     expect(createRegistry().byCode.get(CODE)).toMatchObject({
       name: "yaml-invalid",

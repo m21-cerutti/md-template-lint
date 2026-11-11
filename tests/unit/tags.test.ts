@@ -148,9 +148,9 @@ describe("unknown and inert brackets in a comment", () => {
 
 describe("type hints", () => {
   it("collects every hint form in source order", () => {
-    const { hints } = parseInlineComment("type = List-Of-Int [Date] YYYY-MM-DD iso url lien path @gen-1/ [path-alias]");
+    const { hints } = parseInlineComment("[List-Of-Int] [Date] YYYY-MM-DD iso url lien path @gen-1/ [path-alias]");
     expect(hints.map((h) => ("name" in h ? `${h.kind}:${h.name}` : h.kind))).toEqual([
-      "type-eq:list-of-int",
+      "bracket:list-of-int",
       "bracket:date",
       "date-placeholder",
       "iso-word",
@@ -171,8 +171,14 @@ describe("type hints", () => {
   });
 
   it("matches the other hint words as whole words only", () => {
-    const { hints } = parseInlineComment("urls subtype=int pathway isotope x_url");
+    const { hints } = parseInlineComment("urls pathway isotope x_url");
     expect(hints).toEqual([]);
+  });
+
+  it("no longer reads type=<name> as a type hint (removed form)", () => {
+    for (const text of ["type=int", "type = List-Of-Int", "Type=date [presence:optional]", "see type=enum"]) {
+      expect(parseInlineComment(text).hints).toEqual([]);
+    }
   });
 
   it("does not treat colon tags as type hints", () => {

@@ -38,7 +38,7 @@ const CASES: readonly VerifyCase[] = [
   },
 ];
 
-describe("MTL011 unknown-heading-tag (--verify)", () => {
+describe("MTL011 unknown-heading-tag (--verify)", { tags: ["MTL011", "syntax"] }, () => {
   it("is registered in category syntax, warning, phase template", () => {
     expect(createRegistry().byCode.get(CODE)).toMatchObject({
       name: "unknown-heading-tag",

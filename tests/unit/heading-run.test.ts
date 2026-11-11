@@ -142,7 +142,7 @@ describe("HeadingRun: one run per level and scope (spec 2.6 'Sequence', 2.10 'Po
   });
 });
 
-describe("HeadingRun.setAside: template-only siblings (spec 2.10 step 1, MTL603)", () => {
+describe("HeadingRun.setAside: template-only siblings (spec 2.10 step 1, MTL603)", { tags: ["MTL603", "heading"] }, () => {
   const TEMPLATE = ["## A", "## T [presence:template-only]", "## B"];
 
   it("every sibling with the text is set aside, in file order, and no position takes it", () => {
@@ -343,7 +343,7 @@ describe("HeadingPosition.repeatMisses: tail siblings of a repeat heading (2.10 
   });
 });
 
-describe("HeadingPosition.foundLater: the MTL601 'found later' hint (spec 2.10 step 3b)", () => {
+describe("HeadingPosition.foundLater: the MTL601 'found later' hint (spec 2.10 step 3b)", { tags: ["MTL601", "heading"] }, () => {
   it("owner example I: a missing heading names its later sibling, which stays in the tail", () => {
     // `Alpha` looks at `Beta` (L5): nothing taken. L6, from the cursor onward, has its text.
     const items = run(["## Alpha", "## Beta"], ["## Beta", "## Alpha"]);

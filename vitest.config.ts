@@ -1,4 +1,5 @@
 import { configDefaults, defineConfig } from "vitest/config";
+import { ruleTags } from "./tests/helpers/rule-tags.js";
 
 const MINIMUM = { lines: 85, statements: 85, functions: 85, branches: 85 };
 
@@ -6,6 +7,8 @@ export default defineConfig({
   test: {
     // tmp/ is scratch space: never run it.
     exclude: [...configDefaults.exclude, "tmp/**"],
+    // One tag per registered code and per category, read from the registry (strictTags stays on).
+    tags: ruleTags(),
     coverage: {
       provider: "v8",
       include: ["src/**"],

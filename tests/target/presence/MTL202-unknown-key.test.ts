@@ -40,7 +40,7 @@ async function lint(testCase: TestCase) {
   return found.filter((diagnostic) => diagnostic.code === CODE);
 }
 
-describe("MTL202 unknown-key", () => {
+describe("MTL202 unknown-key", { tags: ["MTL202", "presence"] }, () => {
   it("is registered in category presence, warning, target step unknown-keys", () => {
     expect(registry.byCode.get(CODE)).toMatchObject({
       name: "unknown-key",

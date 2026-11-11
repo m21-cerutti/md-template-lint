@@ -103,7 +103,7 @@ async function lint(testCase: TestCase) {
   };
 }
 
-describe("MTL402 count-max", () => {
+describe("MTL402 count-max", { tags: ["MTL402", "bounds"] }, () => {
   it("is registered in category bounds, error, field step count", () => {
     expect(registry.byCode.get(CODE)).toMatchObject({
       name: "count-max",

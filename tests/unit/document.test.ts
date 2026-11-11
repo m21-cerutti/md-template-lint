@@ -210,7 +210,7 @@ describe("document structure", () => {
       "---\n- a\n  - b # [x]\n? k\n: v\n---\n```\n",
       "# \n##\n###### [presence:\n<!-- \n|\n1)\n*\n",
       "~~~\n~~\n~~~~ x\n",
-      "\u00e9t\u00e9: [caf\u00e9] # [caf\u00e9] type=\u00e9\n",
+      "\u00e9t\u00e9: [caf\u00e9] # [caf\u00e9] [\u00e9]\n",
     ];
     for (const text of samples) {
       expect(() => parseDocument(text)).not.toThrow();
@@ -248,7 +248,7 @@ describe("document structure", () => {
   });
 
   it("parses a large document in reasonable time", () => {
-    const fm = Array.from({ length: 200 }, (_, i) => `k${i}: "v" # [presence:optional] type=int`);
+    const fm = Array.from({ length: 200 }, (_, i) => `k${i}: "v" # [presence:optional] [int]`);
     const body = Array.from({ length: 2000 }, (_, i) => (i % 10 === 0 ? `## H${i} [content:non-empty]` : `line ${i} with [x] and | pipes |`));
     const started = Date.now();
     const result = doc("---", ...fm, "---", ...body);

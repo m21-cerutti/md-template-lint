@@ -55,6 +55,8 @@ describe("new:rule scaffold", () => {
     expect(rule).toContain(`    check: notImplemented("${code}"),`);
     const test = join(root, "tests", "target", "format", `${code}-${FAKE_RULE}.test.ts`);
     expect(existsSync(test)).toBe(true);
+    expect(readFileSync(test, "utf8")).toContain(`describe("${code} ${FAKE_RULE}", { tags: ["${code}", "format"] }, () => {`);
+    expect(result.stdout).toContain(`${code} stays a stub: \`pnpm run check:rules\` fails until the check is implemented`);
     for (const file of ["pass-placeholder/template.md", "pass-placeholder/target.md", "fail-placeholder/template.md", "fail-placeholder/target.md"]) {
       expect(existsSync(join(root, "tests", "fixtures", "pairs", code, file))).toBe(true);
     }

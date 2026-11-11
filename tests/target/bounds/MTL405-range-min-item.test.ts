@@ -141,7 +141,7 @@ async function lint(testCase: TestCase) {
   };
 }
 
-describe("MTL405 range-min-item", () => {
+describe("MTL405 range-min-item", { tags: ["MTL405", "bounds"] }, () => {
   it("is registered in category bounds, error, field step range", () => {
     expect(registry.byCode.get(CODE)).toMatchObject({
       name: "range-min-item",

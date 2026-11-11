@@ -162,7 +162,7 @@ async function lint(testCase: TestCase) {
   };
 }
 
-describe("MTL309 elements-date-mismatch", () => {
+describe("MTL309 elements-date-mismatch", { tags: ["MTL309", "format"] }, () => {
   it("is registered in category format, error, field step shape", () => {
     expect(registry.byCode.get(CODE)).toMatchObject({
       name: "elements-date-mismatch",

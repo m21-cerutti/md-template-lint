@@ -1,3 +1,3 @@
 ---
-tags: "x" # type=list
+tags: "x" # [list]
 ---

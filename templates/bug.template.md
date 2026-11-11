@@ -3,11 +3,11 @@
 id: short_bug_title # [presence:required] [value:filename] [format:snake_case]
 title: Short description of the bug # [presence:required]
 status: draft | reported | fixed | wontfix # [presence:required]
-date: 2026-10-29 # [presence:required] [format:date] type=date
+date: 2026-10-29 # [presence:required] [format:date] [date]
 component: module, script or tool name # [presence:required]
 severity: low | medium | high | critical # [presence:optional]
-upstream: https://example.org/project # [presence:required] type=url [format:scheme:https]
-issue_url: https://example.org/project/issues/1 # [presence:optional] type=url [format:scheme:https]
+upstream: https://example.org/project # [presence:required] [url] [format:scheme:https]
+issue_url: https://example.org/project/issues/1 # [presence:optional] [url] [format:scheme:https]
 environment: # [presence:optional]
   - OS and version
   - Runtime or tool version

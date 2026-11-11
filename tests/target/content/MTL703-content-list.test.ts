@@ -106,7 +106,7 @@ async function lint(testCase: { readonly name: string }) {
   };
 }
 
-describe("MTL703 content-list", () => {
+describe("MTL703 content-list", { tags: ["MTL703", "content"] }, () => {
   it("is registered in category content, error, target step content", () => {
     expect(registry.byCode.get(CODE)).toMatchObject({
       name: "content-list",

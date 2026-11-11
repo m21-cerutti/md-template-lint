@@ -1,5 +1,5 @@
 ---
-no_at_sign: "@assets/logo.svg" # type=path-alias
-absolute_path: "@assets/logo.svg" # type=path-alias
-leading_text: "@assets/logo.svg" # type=path-alias
+no_at_sign: "@assets/logo.svg" # [path-alias]
+absolute_path: "@assets/logo.svg" # [path-alias]
+leading_text: "@assets/logo.svg" # [path-alias]
 ---

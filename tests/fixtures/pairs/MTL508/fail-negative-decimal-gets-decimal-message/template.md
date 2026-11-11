@@ -1,3 +1,3 @@
 ---
-offset: "3" # type=int
+offset: "3" # [int]
 ---

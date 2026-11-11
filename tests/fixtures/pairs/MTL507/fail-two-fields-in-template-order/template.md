@@ -1,4 +1,4 @@
 ---
-first: "@assets/logo.svg" # type=path-alias
-second: "@assets/logo.svg" # type=path-alias
+first: "@assets/logo.svg" # [path-alias]
+second: "@assets/logo.svg" # [path-alias]
 ---

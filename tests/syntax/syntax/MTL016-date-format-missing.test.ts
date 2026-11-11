@@ -95,12 +95,12 @@ const CASES: readonly VerifyCase[] = [
     status: "ok",
     diagnostics: [warning("due", "date", DATE, 2, "due: 2026-10 # [presence:optional] [format:snake_case] [format:semver]")],
   },
-  // The inferred type counts, so a `type=date` hint does too (spec 3.2 step A1, AS16).
+  // The inferred type counts, so a `[date]` hint does too (spec 3.2 step A, AS16).
   {
     name: "fail-type-hint-date-without-format",
     exitCode: 0,
     status: "ok",
-    diagnostics: [warning("due", "date", DATE, 2, "due: soon # type=date")],
+    diagnostics: [warning("due", "date", DATE, 2, "due: soon # [date]")],
   },
   // The first scalar shape tag wins (spec 2.1, 2.9): `[format:semver]` here, not the date.
   {
@@ -132,13 +132,13 @@ const CASES: readonly VerifyCase[] = [
     status: "ok",
     diagnostics: [warning("milestones", "list-of-date", ELEMENTS, 3, 'milestones: ["2026-01-01"] # [format:elements:semver] [format:elements:date]')],
   },
-  // A `type=list-of-date` hint makes the type (spec 3.2 step A1) even for a non-date item;
+  // A `[list-of-date]` hint makes the type (spec 3.2 step A5) even for a non-date item;
   // no tag, or the scalar tag only, still warns with the elements tag.
   {
     name: "fail-type-hint-list-of-date-without-format",
     exitCode: 0,
     status: "ok",
-    diagnostics: [warning("history", "list-of-date", ELEMENTS, 2, 'history: ["soon"] # type=list-of-date'), warning("wrong_kind", "list-of-date", ELEMENTS, 3, 'wrong_kind: ["soon"] # type=list-of-date [format:date]')],
+    diagnostics: [warning("history", "list-of-date", ELEMENTS, 2, 'history: ["soon"] # [list-of-date]'), warning("wrong_kind", "list-of-date", ELEMENTS, 3, 'wrong_kind: ["soon"] # [list-of-date] [format:date]')],
   },
   // Every other template warning plus MTL016: source order in the JSON diagnostics (spec
   // 4.1, 8.4); the text report puts the date section last (pinned below).
@@ -185,12 +185,12 @@ const CASES: readonly VerifyCase[] = [
   },
   // Worked example 2, variant "formats added": no warning.
   { name: "pass-formats-added", exitCode: 0, status: "ok", diagnostics: [] },
-  // The inferred type counts (spec 2.9, 3.2 step A1): `type=string` makes a date-like value
-  // a `string` field, `type=list-of-string` a plain list: no date field, no warning. Two
+  // The inferred type counts (spec 2.9, 3.2 step A): `[string]` makes a date-like value
+  // a `string` field, `[list-of-string]` a plain list: no date field, no warning. Two
   // spaces before the `#` are allowed.
   { name: "pass-type-hint-string-on-date-like-value", exitCode: 0, status: "ok", diagnostics: [] },
   // A duplicate key: the last occurrence wins (Q06). The untagged first occurrences are
-  // replaced by the tagged last ones (`type=list-of-date` hint included): no warning.
+  // replaced by the tagged last ones (`[list-of-date]` hint included): no warning.
   { name: "pass-duplicate-key-tagged-last", exitCode: 0, status: "ok", diagnostics: [] },
   // Boundaries of the inference (spec 3.2 step C2): an empty list is `list`, a mixed list
   // (not every item date-like) is `list`, a single non-date item is `list`: no warning.
@@ -225,7 +225,7 @@ async function lint(template: string, target: string): Promise<Diagnostic[]> {
 
 const template = (comment: string): string => `---\nreleased: 2026-01-01${comment}\n---\n\n# Release notes\n`;
 
-describe("MTL016 date-format-missing (--verify)", () => {
+describe("MTL016 date-format-missing (--verify)", { tags: ["MTL016", "syntax"] }, () => {
   it("is registered in category syntax, warning, phase template", () => {
     expect(registry.byCode.get(CODE)).toMatchObject({
       name: "date-format-missing",
@@ -306,7 +306,7 @@ const TEXT_CASES: readonly { readonly name: string; readonly items: readonly str
   { name: "pass-enum-and-plain-list", items: [] },
 ];
 
-describe("MTL016 in the --verify text report (spec 8.3 `Date fields without format:`)", () => {
+describe("MTL016 in the --verify text report (spec 8.3 `Date fields without format:`)", { tags: ["MTL016", "syntax"] }, () => {
   // CLI `--format text` is the `pretty` reporter (spec 7.3); `plain` is the other text one.
   for (const format of ["text", "plain"]) {
     for (const { name, items } of TEXT_CASES) {
@@ -355,7 +355,7 @@ describe("MTL016 in the --verify text report (spec 8.3 `Date fields without form
 /** Spec 8.3 order of the sections of the template warnings; the date section is the LAST one. */
 const SECTION_TITLES = ["Unknown tags found (typo or unimplemented feature):", "Malformed tags:", "Misplaced tags:", "Conflicting tags:", SECTION];
 
-describe("MTL016 section is the last one of the --verify text report (spec 8.3)", () => {
+describe("MTL016 section is the last one of the --verify text report (spec 8.3)", { tags: ["MTL016", "syntax"] }, () => {
   for (const format of ["text", "plain"]) {
     it(`${format} fail-date-field-with-every-other-warning: five sections in spec order`, async () => {
       const out = await verifyText(format, "fail-date-field-with-every-other-warning");
@@ -404,7 +404,7 @@ All templates passed!
 ========================
 `;
 
-describe("MTL016 worked example 2 (spec 2.9), golden output", () => {
+describe("MTL016 worked example 2 (spec 2.9), golden output", { tags: ["MTL016", "syntax"] }, () => {
   let folder = "";
 
   beforeAll(() => {

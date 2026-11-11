@@ -1,3 +1,3 @@
 ---
-draft: "true" # type=bool
+draft: "true" # [bool]
 ---

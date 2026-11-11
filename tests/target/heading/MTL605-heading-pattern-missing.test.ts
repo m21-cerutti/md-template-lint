@@ -111,7 +111,7 @@ async function errorsOf(found: ReturnType<typeof lintText>) {
 
 const head = "---\ntitle: x\n---\n\n";
 
-describe("MTL605 heading-pattern-missing", () => {
+describe("MTL605 heading-pattern-missing", { tags: ["MTL605", "heading"] }, () => {
   it("is registered in category heading, error, target step headings", () => {
     expect(registry.byCode.get(CODE)).toMatchObject({
       name: "heading-pattern-missing",

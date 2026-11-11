@@ -181,7 +181,7 @@ async function lintResult(name: string) {
   return lintTarget(registry, status.model, read(`${DIR}/${name}/target.md`), "target.md", createEnv());
 }
 
-describe("MTL617 heading-order-key-missing", () => {
+describe("MTL617 heading-order-key-missing", { tags: ["MTL617", "heading"] }, () => {
   it("is registered in category heading, error, target step headings", () => {
     expect(registry.byCode.get(CODE)).toMatchObject({
       name: "heading-order-key-missing",

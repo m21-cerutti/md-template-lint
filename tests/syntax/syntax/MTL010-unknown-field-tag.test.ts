@@ -54,7 +54,7 @@ const CASES: readonly VerifyCase[] = [
   },
 ];
 
-describe("MTL010 unknown-field-tag (--verify)", () => {
+describe("MTL010 unknown-field-tag (--verify)", { tags: ["MTL010", "syntax"] }, () => {
   it("is registered in category syntax, warning, phase template", () => {
     expect(createRegistry().byCode.get(CODE)).toMatchObject({
       name: "unknown-field-tag",

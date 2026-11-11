@@ -134,7 +134,7 @@ async function lint(testCase: TestCase) {
   };
 }
 
-describe("MTL515 type-list-of-url", () => {
+describe("MTL515 type-list-of-url", { tags: ["MTL515", "type"] }, () => {
   it("is registered in category type, error, field step type", () => {
     expect(registry.byCode.get(CODE)).toMatchObject({
       name: "type-list-of-url",

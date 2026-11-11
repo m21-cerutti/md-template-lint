@@ -1,5 +1,5 @@
 /**
- * Family `type hints` (spec 2.4): `type=<name>`, `[<word>]`, `YYYY-MM-DD`,
+ * Family `type hints` (spec 2.4): `[<word>]`, `YYYY-MM-DD`,
  * `ISO`, `url`/`lien`, `path`, `@<name>/`. A LISTENER (simple collection, no
  * return value): walk an inline comment and collect every hint in source order.
  * Hints anywhere in the comment count, inside brackets too (legacy searched
@@ -7,7 +7,7 @@
  */
 import type { TerminalNode, Token } from "antlr4ng";
 import { MdTemplateLexer } from "../../generated/MdTemplateLexer.js";
-import type { TagBareBracketContext, TagTypeEqContext } from "../../generated/MdTemplateParser.js";
+import type { TagBareBracketContext } from "../../generated/MdTemplateParser.js";
 import { MdTemplateParserListener } from "../../generated/MdTemplateParserListener.js";
 import type { SourcePosition, TypeHint } from "../ast.js";
 
@@ -17,16 +17,6 @@ export class TypeHintListener extends MdTemplateParserListener {
   constructor(private readonly positionOf: (token: Token) => SourcePosition) {
     super();
   }
-
-  override enterTagTypeEq = (ctx: TagTypeEqContext): void => {
-    if (ctx.start === null) return;
-    this.hints.push({
-      kind: "type-eq",
-      name: ctx.tagHintName().getText().toLowerCase(),
-      position: this.positionOf(ctx.start),
-      raw: ctx.getText(),
-    });
-  };
 
   override enterTagBareBracket = (ctx: TagBareBracketContext): void => {
     if (ctx.start === null) return;

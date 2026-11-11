@@ -134,7 +134,7 @@ async function lint(testCase: { readonly name: string }) {
   };
 }
 
-describe("MTL704 content-min-lines", () => {
+describe("MTL704 content-min-lines", { tags: ["MTL704", "content"] }, () => {
   it("is registered in category content, error, target step content", () => {
     expect(registry.byCode.get(CODE)).toMatchObject({
       name: "content-min-lines",

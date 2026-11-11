@@ -5,7 +5,7 @@
  * MdTemplateLexer._ATN), never from the .g4 text. Hand-kept lists covered:
  * tagWord, tagFamily, the visitor registry, KNOWN_TYPE_NAMES, the AST tag
  * kind lists, the DEFAULT_MODE body rules, the rule files, the category code
- * ranges and the spec code table (with the pending allow-list).
+ * ranges and the spec code table.
  */
 import { readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -114,10 +114,6 @@ export function specTypeNames(text = spec()): string[] {
   return body.split("`").filter((_, index) => index % 2 === 1);
 }
 
-export function pendingCodes(): Record<string, string> {
-  return JSON.parse(read("tests", "consistency", "pending-rules.json")) as Record<string, string>;
-}
-
 // ---------------------------------------------------------------------------
 // ATN helpers
 // ---------------------------------------------------------------------------
@@ -196,12 +192,12 @@ export function checkTagFamily(): string[] {
   return sameSet("tagFamily (grammar/MdTemplateParser.g4) vs first keywords of fmTagBody/bodyTagBody", names(family), names(starts));
 }
 
-/** tagWord = generic word tokens + the seven type-hint words of TAG_TEXT. */
+/** tagWord = generic word tokens + the six hint and marker words of TAG_TEXT. */
 export function checkTagWord(): string[] {
   const tagWord = names(firstSymbols(parserAtn, MdTemplateParser.RULE_tagWord).tokens);
   const hintWords = names(firstSymbols(parserAtn, MdTemplateParser.RULE_fmHintWord).tokens).filter((name) => name !== "ALIAS_MARK");
-  const expected = ["ALNUM", "NUMBER", "WORD", "TYPE", "RULE", ...hintWords];
-  const problems = sameSet("tagWord vs word tokens + fmHintWord + TYPE + RULE", tagWord, expected);
+  const expected = ["ALNUM", "NUMBER", "WORD", "RULE", ...hintWords];
+  const problems = sameSet("tagWord vs word tokens + fmHintWord + RULE", tagWord, expected);
   const textKeywords = modeKeywords(MdTemplateLexer.TAG_TEXT);
   for (const keyword of textKeywords) {
     if (!tagWord.includes(keyword)) {
@@ -209,7 +205,7 @@ export function checkTagWord(): string[] {
     }
   }
   const hintCount = expected.length - 3;
-  if (hintCount !== 7) problems.push(`tagWord: expected 7 type-hint words, found ${hintCount}`);
+  if (hintCount !== 6) problems.push(`tagWord: expected 6 hint and marker words, found ${hintCount}`);
   const strict = modeKeywords(MdTemplateLexer.TAG_STRICT);
   for (const keyword of textKeywords) {
     if (strict.includes(keyword)) {
@@ -580,26 +576,23 @@ export function checkRanges(shared: Readonly<Record<Category, readonly number[]>
 }
 
 /**
- * Every spec code (except MTL9xx) is implemented XOR pending. A scaffold stub
- * (`notImplemented`) counts as pending. Registered rules match the spec.
+ * Every spec code (except MTL9xx) has a registered rule with a real check, and
+ * every registered rule is a spec code. A scaffold stub (`notImplemented`)
+ * fails until its check is written. Registered rules match the spec.
  */
-export function checkCodes(codes: readonly SpecCode[] = specCodes(), registered: readonly AnyRule[] = createRegistry().rules, pending: Readonly<Record<string, string>> = pendingCodes()): string[] {
+export function checkCodes(codes: readonly SpecCode[] = specCodes(), registered: readonly AnyRule[] = createRegistry().rules): string[] {
   const problems: string[] = [];
   const bySpec = new Map(codes.map((entry) => [entry.code, entry]));
-  const implemented = new Set<string>(registered.filter((rule) => !isStub(rule)).map((rule) => rule.code));
+  const byCode = new Map<string, AnyRule>(registered.map((rule) => [rule.code, rule]));
   for (const entry of codes) {
-    const isImplemented = implemented.has(entry.code);
-    const isPending = entry.code in pending;
-    if (!isImplemented && !isPending) {
-      problems.push(`${entry.code} ${entry.name}: in docs/spec.md 4.3 but neither implemented in ` + `src/rules/${entry.category}.ts nor pending in tests/consistency/pending-rules.json`);
-    } else if (isImplemented && isPending) {
-      problems.push(`${entry.code} ${entry.name}: implemented, remove it from pending-rules.json`);
+    const rule = byCode.get(entry.code);
+    if (rule === undefined) {
+      problems.push(`${entry.code} ${entry.name}: in docs/spec.md 4.3 but no rule is registered in src/rules/${entry.category}.ts`);
+    } else if (isStub(rule)) {
+      problems.push(`${entry.code} ${entry.name}: in docs/spec.md 4.3 but the rule in src/rules/${entry.category}.ts is still a stub check (implement it)`);
     }
   }
   for (const rule of registered) {
-    if (isStub(rule) && !(rule.code in pending)) {
-      problems.push(`${rule.code} ${rule.name}: stub check, keep it in pending-rules.json`);
-    }
     const entry = bySpec.get(rule.code);
     if (entry === undefined) {
       problems.push(`${rule.code} ${rule.name}: registered but not in docs/spec.md 4.3`);
@@ -614,9 +607,6 @@ export function checkCodes(codes: readonly SpecCode[] = specCodes(), registered:
     if (!entry.severity.split(" or ").includes(rule.severity)) {
       problems.push(`${rule.code}: severity '${rule.severity}' differs from spec '${entry.severity}'`);
     }
-  }
-  for (const code of Object.keys(pending)) {
-    if (!bySpec.has(code)) problems.push(`pending-rules.json: ${code} is not in docs/spec.md 4.3`);
   }
   return problems;
 }

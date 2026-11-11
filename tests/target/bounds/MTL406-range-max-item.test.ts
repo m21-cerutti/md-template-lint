@@ -141,7 +141,7 @@ async function lint(testCase: TestCase) {
   };
 }
 
-describe("MTL406 range-max-item", () => {
+describe("MTL406 range-max-item", { tags: ["MTL406", "bounds"] }, () => {
   it("is registered in category bounds, error, field step range", () => {
     expect(registry.byCode.get(CODE)).toMatchObject({
       name: "range-max-item",

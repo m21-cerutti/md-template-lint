@@ -1,3 +1,3 @@
 ---
-file: "./docs/readme.md" # type=path
+file: "./docs/readme.md" # [path]
 ---

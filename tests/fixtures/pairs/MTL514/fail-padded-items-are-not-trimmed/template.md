@@ -1,3 +1,3 @@
 ---
-paths: ["./docs/readme.md"] # type=list-of-path
+paths: ["./docs/readme.md"] # [list-of-path]
 ---

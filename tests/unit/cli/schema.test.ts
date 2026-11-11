@@ -43,7 +43,6 @@ const CASES: readonly Case[] = [
     // kind wins (count:min:2 over count:min:9), conditional beats optional.
     // Presence is always the first rule (required when untagged; conditional carries its text).
     // Headings: conditional beats required, template-only beats optional, optional beats required.
-    // `piped` has an option list as value but type=string: no enum rule (enum fields only).
     name: "pass-several-types-rules-headings",
     shows: [
       "Filename: [filename:case:snake_case]",
@@ -52,7 +51,6 @@ const CASES: readonly Case[] = [
       "status      enum          presence:optional, enum:draft|accepted",
       "owner       string        presence:conditional:only when risky",
       "plain       string        presence:required\n",
-      "piped       string        presence:required\n",
       "Headings:",
       "  # ADR (presence:required)",
       "  ## Context (presence:required, content:non-empty)",
@@ -308,7 +306,6 @@ describe("cli --verify schema: details", () => {
       "presence:required",
       "presence:required",
       "presence:conditional:only when risky",
-      "presence:required",
       "presence:required",
       "presence:required",
       "presence:optional",

@@ -1,3 +1,3 @@
 ---
-urls: ["https://example.com"] # type=list-of-url
+urls: ["https://example.com"] # [list-of-url]
 ---

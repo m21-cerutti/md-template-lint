@@ -98,7 +98,7 @@ async function lint(testCase: TestCase) {
   };
 }
 
-describe("MTL303 elements-case-mismatch", () => {
+describe("MTL303 elements-case-mismatch", { tags: ["MTL303", "format"] }, () => {
   it("is registered in category format, error, field step elements", () => {
     expect(registry.byCode.get(CODE)).toMatchObject({
       name: "elements-case-mismatch",

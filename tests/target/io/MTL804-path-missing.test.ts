@@ -168,7 +168,7 @@ function listTree(): { dirs: string[]; files: string[] } {
   return { dirs: dirs.sort(), files: files.sort() };
 }
 
-describe("MTL804 path-missing", () => {
+describe("MTL804 path-missing", { tags: ["MTL804", "io"] }, () => {
   it("is registered in category io, warning, field step io", () => {
     expect(registry.byCode.get(CODE)).toMatchObject({
       name: "path-missing",

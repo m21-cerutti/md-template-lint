@@ -156,7 +156,7 @@ async function lint(testCase: TestCase) {
   };
 }
 
-describe("MTL407 order-ascending", () => {
+describe("MTL407 order-ascending", { tags: ["MTL407", "bounds"] }, () => {
   it("is registered in category bounds, error, field step order", () => {
     expect(registry.byCode.get(CODE)).toMatchObject({
       name: "order-ascending",

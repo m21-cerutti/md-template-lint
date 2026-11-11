@@ -211,7 +211,7 @@ async function lintResult(name: string) {
   return lintTarget(registry, status.model, read(`${DIR}/${name}/target.md`), "target.md", createEnv());
 }
 
-describe("MTL609 heading-pattern-order", () => {
+describe("MTL609 heading-pattern-order", { tags: ["MTL609", "heading"] }, () => {
   it("is registered in category heading, error, target step headings", () => {
     expect(registry.byCode.get(CODE)).toMatchObject({
       name: "heading-pattern-order",
@@ -371,7 +371,7 @@ async function headingTokens(tags: string): Promise<readonly string[]> {
   return describeTemplate(status.model).headings[0]?.rules ?? [];
 }
 
-describe("MTL609 --verify order tokens (spec 8.3)", () => {
+describe("MTL609 --verify order tokens (spec 8.3)", { tags: ["MTL609", "heading"] }, () => {
   const forms = ["order:ascending", "order:descending", "order:first:number:ascending", "order:first:number:descending", "order:first:date:ascending", "order:first:date:descending", "order:first:semver:ascending", "order:first:semver:descending"];
   for (const form of forms) {
     it(`[${form}] prints as ${form}, after the pattern and repeat tokens`, async () => {

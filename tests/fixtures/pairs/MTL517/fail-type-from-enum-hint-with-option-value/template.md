@@ -1,3 +1,3 @@
 ---
-status: "draft | accepted" # type=enum
+status: "draft | accepted" # [enum]
 ---

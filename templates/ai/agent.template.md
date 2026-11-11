@@ -2,7 +2,7 @@
 # [filename:case:kebab-case]
 description: One line on what the agent does and when to pick it # [presence:required]
 mode: primary | subagent | all # [presence:required]
-model: provider/model-id # [presence:optional] type=string
+model: provider/model-id # [presence:optional] [string]
 permissions: # [presence:optional]
   - { action: edit, resource: "*", effect: ask }
   - { action: shell, resource: "*", effect: ask }

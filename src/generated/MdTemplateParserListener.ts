@@ -39,7 +39,6 @@ import { TagBareBracketContext } from "./MdTemplateParser.js";
 import { TagShapedBracketContext } from "./MdTemplateParser.js";
 import { TagProseBracketContext } from "./MdTemplateParser.js";
 import { TagBracketItemContext } from "./MdTemplateParser.js";
-import { TagTypeEqContext } from "./MdTemplateParser.js";
 import { TagHintNameContext } from "./MdTemplateParser.js";
 import { TagHintPieceContext } from "./MdTemplateParser.js";
 import { TagShapePieceContext } from "./MdTemplateParser.js";
@@ -472,16 +471,6 @@ export class MdTemplateParserListener implements ParseTreeListener {
      * @param ctx the parse tree
      */
     exitTagBracketItem?: (ctx: TagBracketItemContext) => void;
-    /**
-     * Enter a parse tree produced by `MdTemplateParser.tagTypeEq`.
-     * @param ctx the parse tree
-     */
-    enterTagTypeEq?: (ctx: TagTypeEqContext) => void;
-    /**
-     * Exit a parse tree produced by `MdTemplateParser.tagTypeEq`.
-     * @param ctx the parse tree
-     */
-    exitTagTypeEq?: (ctx: TagTypeEqContext) => void;
     /**
      * Enter a parse tree produced by `MdTemplateParser.tagHintName`.
      * @param ctx the parse tree

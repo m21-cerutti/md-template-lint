@@ -1,4 +1,4 @@
 ---
-first: "x" # type=list
+first: "x" # [list]
 second: list
 ---

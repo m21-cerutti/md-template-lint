@@ -1,6 +1,6 @@
 ---
 title: Technical specification # [presence:required]
-last_updated: 2026-10-29 # [presence:required] [format:date] type=date
+last_updated: 2026-10-29 # [presence:required] [format:date] [date]
 ---
 
 # Specification title [pattern:"{text}"]

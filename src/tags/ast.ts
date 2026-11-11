@@ -91,7 +91,6 @@ export type FrontmatterTag = FrontmatterFieldTag | FrontmatterInertTag;
 
 /** Type hints, spec 2.4 (frontmatter only). They choose a type and emit no code. */
 export type TypeHint =
-  | (Located & { readonly kind: "type-eq"; readonly name: string })
   | (Located & { readonly kind: "bracket"; readonly name: string })
   | (Located & { readonly kind: "date-placeholder" })
   | (Located & { readonly kind: "iso-word" })

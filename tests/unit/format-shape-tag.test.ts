@@ -61,7 +61,7 @@ describe("format shape tags on a frontmatter key comment", () => {
   });
 });
 
-describe("format shape tags with a bad shape are malformed (MTL012)", () => {
+describe("format shape tags with a bad shape are malformed (MTL012)", { tags: ["MTL012", "syntax"] }, () => {
   // The tag opens at column 8; the finding points at the first token that does not fit
   // (spec 2.7): the bad shape after `[format:` (16) or `[format:elements:` (25), the `]`
   // where a shape or `:` is due, the `:` after a complete shape (8 + 23 = 31).
@@ -120,7 +120,7 @@ describe("format shape tags with a bad shape are malformed (MTL012)", () => {
   });
 });
 
-describe("format shape tags on a heading are misplaced (MTL013)", () => {
+describe("format shape tags on a heading are misplaced (MTL013)", { tags: ["MTL013", "syntax"] }, () => {
   it.each([
     ["#", "[format:semver]"],
     ["##", "[format:date]"],

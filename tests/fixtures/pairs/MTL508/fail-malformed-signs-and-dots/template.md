@@ -1,7 +1,7 @@
 ---
-plus: "3" # type=int
-lone_minus: "3" # type=int
-double_minus: "3" # type=int
-trailing_dot: "3" # type=int
-leading_dot: "3" # type=int
+plus: "3" # [int]
+lone_minus: "3" # [int]
+double_minus: "3" # [int]
+trailing_dot: "3" # [int]
+leading_dot: "3" # [int]
 ---

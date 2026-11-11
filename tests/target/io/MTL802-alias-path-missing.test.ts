@@ -96,7 +96,7 @@ function listTree(): { dirs: string[]; files: string[] } {
   return { dirs: dirs.sort(), files: files.sort() };
 }
 
-describe("MTL802 alias-path-missing", () => {
+describe("MTL802 alias-path-missing", { tags: ["MTL802", "io"] }, () => {
   it("is registered in category io, warning, field step io", () => {
     expect(registry.byCode.get(CODE)).toMatchObject({
       name: "alias-path-missing",

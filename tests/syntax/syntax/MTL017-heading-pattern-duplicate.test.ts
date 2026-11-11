@@ -159,7 +159,7 @@ const item = (diagnostic: VerifyDiagnostic): string[] => {
   return [`  - ${diagnostic.message} (line ${line}, column ${column})`, `      ${line} | ${diagnostic.sourceLine ?? ""}`, `      ${" ".repeat(String(line).length)} | ${" ".repeat(column - 1)}^`];
 };
 
-describe("MTL017 heading-pattern-duplicate (--verify)", () => {
+describe("MTL017 heading-pattern-duplicate (--verify)", { tags: ["MTL017", "syntax"] }, () => {
   it("is registered in category syntax, error, phase template", () => {
     expect(registry.byCode.get(CODE)).toMatchObject({
       name: "heading-pattern-duplicate",
@@ -229,7 +229,7 @@ describe("MTL017 heading-pattern-duplicate (--verify)", () => {
   });
 });
 
-describe("MTL017 in the --verify text report (spec 8.3 `Duplicate patterns:`)", () => {
+describe("MTL017 in the --verify text report (spec 8.3 `Duplicate patterns:`)", { tags: ["MTL017", "syntax"] }, () => {
   // CLI `--format text` is the `pretty` reporter (spec 7.3); `plain` is the other text one.
   for (const format of ["text", "plain"]) {
     const failWord = format === "plain" ? "FAIL" : "✗";
@@ -323,7 +323,7 @@ describe("MTL017 in the --verify text report (spec 8.3 `Duplicate patterns:`)", 
   });
 });
 
-describe("MTL017 worked example 3 of spec 2.10 (tests/fixtures/cli/schema-fail-duplicate-pattern-worked-example)", () => {
+describe("MTL017 worked example 3 of spec 2.10 (tests/fixtures/cli/schema-fail-duplicate-pattern-worked-example)", { tags: ["MTL017", "syntax"] }, () => {
   const FIXTURE = "schema-fail-duplicate-pattern-worked-example";
 
   it("pretty text has the fail glyph header, exit 1", async () => {

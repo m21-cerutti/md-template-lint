@@ -118,7 +118,7 @@ describe("2.10 heading tags parse on every level, case-insensitive", () => {
   });
 });
 
-describe("2.10 malformed forms are MTL012 (spec 2.7), the bracket stays in the text", () => {
+describe("2.10 malformed forms are MTL012 (spec 2.7), the bracket stays in the text", { tags: ["MTL012", "syntax"] }, () => {
   // Tag (after `## R `, so the `[` is at column 6) -> column of the offending token.
   it.each([
     ["no quotes", "[pattern:Release]", 15],
@@ -157,7 +157,7 @@ describe("2.10 malformed forms are MTL012 (spec 2.7), the bracket stays in the t
   });
 });
 
-describe("2.10 heading tags in a frontmatter comment are MTL013 (spec 2.7)", () => {
+describe("2.10 heading tags in a frontmatter comment are MTL013 (spec 2.7)", { tags: ["MTL013", "syntax"] }, () => {
   it.each([
     '[pattern:"{semver}"]',
     '[pattern:"a]b"]',

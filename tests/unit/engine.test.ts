@@ -93,7 +93,9 @@ describe("loadDocument: sections", () => {
 
 describe("inferType (spec 3.2)", () => {
   it("step A: declared hints in priority order", () => {
-    expect(inferType("x", commentOf("type=Int [date]"))).toBe("int");
+    expect(inferType("x", commentOf("[Int] [date]"))).toBe("int");
+    // The removed `type=<name>` comment form is plain text: the value decides.
+    expect(inferType("x", commentOf("type=Int"))).toBe("string");
     expect(inferType(" Date ", null)).toBe("date");
     expect(inferType("a | b", null)).toBe("enum");
     expect(inferType("x", commentOf("see @assets/"))).toBe("path-alias");
@@ -111,7 +113,8 @@ describe("inferType (spec 3.2)", () => {
     expect(inferType(["a"], commentOf("[date]"))).toBe("list-of-date");
     expect(inferType(["a"], commentOf("url"))).toBe("list-of-url");
     expect(inferType(["a"], commentOf("[int]"))).toBe("int");
-    expect(inferType(["a"], commentOf("type=list-of-int"))).toBe("list-of-int");
+    expect(inferType(["a"], commentOf("[list-of-int]"))).toBe("list-of-int");
+    expect(inferType(["a"], commentOf("type=list-of-int"))).toBe("list");
   });
 
   it("step C: inference from the value alone", () => {

@@ -25,7 +25,7 @@ const CASES: readonly VerifyCase[] = [
   { name: "fail-truncated-multibyte-sequence", ...BROKEN },
 ];
 
-describe("MTL004 file-unreadable (--verify)", () => {
+describe("MTL004 file-unreadable (--verify)", { tags: ["MTL004", "syntax"] }, () => {
   it("is registered in category syntax, error, phase parse", () => {
     expect(createRegistry().byCode.get(CODE)).toMatchObject({
       name: "file-unreadable",

@@ -1,4 +1,4 @@
 ---
-first: ["https://example.com"] # type=list-of-url
-second: ["https://example.com"] # type=list-of-url
+first: ["https://example.com"] # [list-of-url]
+second: ["https://example.com"] # [list-of-url]
 ---

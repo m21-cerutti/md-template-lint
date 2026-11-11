@@ -1,7 +1,7 @@
 ---
 title: string
 slug: string # [format:kebab-case]
-port: 1 # type=int
+port: 1 # [int]
 ---
 
 # Notes

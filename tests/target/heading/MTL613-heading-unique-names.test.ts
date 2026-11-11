@@ -290,7 +290,7 @@ async function lintAll(name: string) {
   return (await lintResult(name)).diagnostics;
 }
 
-describe("MTL613 heading-unique-names", () => {
+describe("MTL613 heading-unique-names", { tags: ["MTL613", "heading"] }, () => {
   it("is registered in category heading, error, target step headings", () => {
     expect(registry.byCode.get(CODE)).toMatchObject({
       name: "heading-unique-names",

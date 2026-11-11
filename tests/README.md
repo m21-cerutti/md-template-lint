@@ -7,18 +7,42 @@ never read a real configuration.
 
 ## Test families
 
-| Family      | Path                                              | What it tests                                                                                                                          |
-| ----------- | ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| syntax      | `tests/syntax/syntax/<MTLxxx>-<name>.test.ts`     | One template-only code per file: `MTL001` to `MTL004`, `MTL010` to `MTL013`, `MTL015` and `MTL016`. A template run through `--verify`. |
-| target      | `tests/target/<category>/<MTLxxx>-<name>.test.ts` | One code per file that needs a template and a target. The pair is checked and linted.                                                  |
-| unit        | `tests/unit/`                                     | Engine, parser, config, runner, reporters, io, CLI, scripts and release packaging.                                                     |
-| integration | `tests/integration/rule-set.test.ts`              | The full ordered diagnostic list of one many-tag template (spec 4.1 and 8.4).                                                          |
-| consistency | `tests/consistency/`                              | No drift between grammar, visitors, AST kinds, rule files, code ranges, the spec and the fixture layout.                               |
-| helpers     | `tests/helpers/`                                  | Shared test code, not tests: `fixtures.ts`, `verify.ts`, `directives.ts`, `cli.ts`, `run.ts`, `io.ts`.                                 |
+Seven families. Each has a purpose, a place and one command to run it alone.
+
+| Family      | Location                                                                         | Purpose: what it proves                                                                                  | Example command                                                |
+| ----------- | -------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| syntax      | `tests/syntax/syntax/<MTLxxx>-<name>.test.ts`                                    | A template-only code is raised (or not) by a template run through `--verify`.                            | `pnpm exec vitest run tests/syntax`                            |
+| target      | `tests/target/<category>/<MTLxxx>-<name>.test.ts`                                | A code that needs a template and a target is raised (or not) when the pair is checked and linted.        | `pnpm exec vitest run tests/target`                            |
+| unit        | `tests/unit/`                                                                    | One part works alone: engine, parser, config, runner, reporters, io, CLI, scripts, release packaging.    | `pnpm exec vitest run tests/unit`                              |
+| integration | `tests/integration/` (`rule-set.test.ts`, `positional-heading.test.ts`)          | Several tags together give the full ordered diagnostic list of one many-tag template (spec 4.1 and 8.4). | `pnpm exec vitest run tests/integration`                       |
+| consistency | `tests/consistency/`                                                             | No drift between grammar, visitors, AST kinds, rule files, code ranges, spec, fixtures and test tags.    | `pnpm run check:rules`                                         |
+| smoke       | `tests/unit/smoke/` (helpers and workflows); `scripts/smoke-pack.ts` (the check) | The packaging helpers and CI workflows are right; `smoke:pack` runs the packed CLI in a clean project.   | `pnpm exec vitest run tests/unit/smoke`                        |
+| fixtures    | `tests/fixtures/` (data, no tests; map in [Fixtures](#fixtures))                 | Each case file has a test and each test has its case files (layout check).                               | `pnpm exec vitest run tests/consistency/rule-fixtures.test.ts` |
+
+`tests/helpers/` holds shared test code, not tests: `fixtures.ts`, `verify.ts`, `directives.ts`,
+`cli.ts`, `run.ts`, `io.ts`, `rule-tags.ts`.
+
+- **syntax:** `<category>` is always `syntax` here. Codes: `MTL001` to `MTL004`, `MTL010` to
+  `MTL019`, `MTL030`. The helper `verifyFixture` runs the CLI `--verify` on each fixture template.
+- **target:** the pair is checked with `checkTemplate` then `checkTarget` (or `lintTarget`). The
+  folders and their code ranges are in [Target categories](#target-categories).
+- **unit:** the file map is in [Unit tests](#unit-tests). `tests/unit/smoke/` is a unit folder that
+  also counts as the smoke family.
+- **integration:** the checks use the real registry and an in-memory environment. Pair fixtures are
+  in `tests/fixtures/integration/` and `tests/fixtures/positional/`.
+- **consistency:** the files are listed in [Consistency tests](#consistency-tests). The script
+  `pnpm run check:rules` is the same as the example command.
+- **smoke:** `pnpm run smoke:pack` (pack, install in a clean directory, run the installed CLI) needs
+  the network and is not a pre-commit gate. The vitest part above does not need the network.
+- **fixtures:** the layout check is `rule-fixtures.test.ts` (it is also part of `check:rules`).
 
 The phase of a rule decides its family: a template-only code (phase `parse` or `template`) is a
 syntax test, every other code is a target test. `pnpm run check:rules` fails when a code has its
 test or its fixtures in the wrong family.
+
+The word "syntax" has two uses: the test family `tests/syntax/` and the rule category `syntax`
+(also the vitest family tag, see [Run one error code or family](#run-one-error-code-or-family)),
+which holds both the template-only codes and the directive codes `MTL020` to `MTL025`.
 
 ### Target categories
 
@@ -33,7 +57,7 @@ test or its fixtures in the wrong family.
 | `tests/target/format/`   | `MTL301` to `MTL309` (`MTL306` to `MTL309`: step `shape`) |
 | `tests/target/bounds/`   | `MTL401` to `MTL407`                                      |
 | `tests/target/type/`     | `MTL501` to `MTL517`                                      |
-| `tests/target/heading/`  | `MTL601` to `MTL604`, `MTL610` to `MTL612`                |
+| `tests/target/heading/`  | `MTL601`, `MTL603` to `MTL617` (`MTL602` is retired)      |
 | `tests/target/content/`  | `MTL701` to `MTL705`                                      |
 | `tests/target/io/`       | `MTL801` to `MTL805`                                      |
 
@@ -59,9 +83,15 @@ rules: their cases live in the config, runner and CLI unit tests.
 visitors, types, ranges, rule files and the spec code table agree), `rule-fixtures.test.ts` (the
 fixture layout check, run on the repository and on small in-memory trees) and
 `syntax-reference.test.ts` (drift of `docs/syntax-reference.md`: generated blocks current, notes
-coverage, pending flags, documented CLI flags and enums), with their helpers `consistency.ts`,
-`rule-fixtures.ts` and `syntax-reference.ts`. `pending-rules.json` is the allow-list of spec codes that
-are not implemented yet.
+coverage, family counts, tag form fixture links and warning marks, type names, documented CLI flags
+and enums), `disable-example.test.ts` (the "Complete example" of the disable directives section of
+`docs/syntax-reference.md` is written to a temporary project and linted: the documented diagnostics
+remain and each of the six verbs is proven alone), with their helpers `consistency.ts`,
+`rule-fixtures.ts`, `syntax-reference.ts` and `disable-example.ts`. `rule-test-tags.test.ts` checks that every
+`MTLxxx-*.test.ts` declares its code tag and its family tag (see
+[Run one error code or family](#run-one-error-code-or-family)). Every spec 4.3 code must have a
+registered rule with a real check: there is no staging list, and a `new:rule` stub fails the run
+until it is implemented.
 
 ## Fixtures
 
@@ -74,6 +104,7 @@ cases, so a fixture without a case fails the run.
 | `tests/fixtures/pairs/`         | target tests                                              | `<MTLxxx>/<case>/template.md` and `target.md`: one pair per case.                                                                                                                              |
 | `tests/fixtures/rule-controls/` | target tests                                              | `<MTLxxx>-<name>/`: controls outside the pass/fail split (for example "no tag, no diagnostic"). Today: `MTL101-no-filename-tag`.                                                               |
 | `tests/fixtures/integration/`   | `tests/integration/rule-set.test.ts`                      | `<case>/template.md` and `target.md` of the many-tag template.                                                                                                                                 |
+| `tests/fixtures/positional/`    | `tests/integration/positional-heading.test.ts`            | `<case>/template.md` and `target.md`: regression pairs of the positional heading match.                                                                                                        |
 | `tests/fixtures/config/`        | `tests/unit/config/`                                      | Projects with an `md-template-lint.yml` (groups `validate-`, `discover-`, `naming-`).                                                                                                          |
 | `tests/fixtures/runner/`        | `tests/unit/runner/`, `tests/unit/reporters/`             | Projects with config, templates, targets and `expected.*` output files (groups `inputs-`, `empty-`, `broken-`, `parse-`, `suppress-`, `excerpt-`, `expand-`, `io-`, `unreadable-`, `report-`). |
 | `tests/fixtures/cli/`           | `tests/unit/cli/`                                         | Projects run through the CLI (groups `exit-`, `list-`, `verify-`, `schema-`, `format-`, `wiring-`, `usage-`, `suppress-`, `large-`).                                                           |
@@ -150,6 +181,35 @@ pnpm exec vitest run tests/unit
 
 The gates, in order, are in [docs/guides/testing.md](../docs/guides/testing.md#the-gates-in-order)
 and in [CONTRIBUTING.md](../CONTRIBUTING.md#quality-gates).
+
+## Run one error code or family
+
+Every `describe` of a rule test carries vitest tags: its code (`MTL101`) and its family, which is the
+rule category (`syntax`, `filename`, `presence`, `format`, `bounds`, `type`, `heading`, `content`,
+`io`). The run codes `MTL901` to `MTL923` have a code tag each and the family `run`. The tags are
+declared in `vitest.config.ts` from the registry (`ruleTags()` in `tests/helpers/rule-tags.ts`).
+Tests of other files may carry a code tag too (for example `tests/unit/config/glob.test.ts` for
+`MTL907`), so a tag run can select more than the rule test file.
+
+```bash
+pnpm exec vitest run --tags-filter MTL101                 # one error code
+pnpm exec vitest run --tags-filter heading                # one family (a category, or run)
+pnpm exec vitest run --tags-filter "MTL101 or MTL102"     # a combined filter
+pnpm exec vitest run --tags-filter "heading and not MTL601"
+pnpm exec vitest --listTags --run                         # every tag, with its description
+```
+
+The file-name filter is an alternative that needs no tag. It matches the path as a substring:
+
+```bash
+pnpm exec vitest run MTL101                               # tests/target/filename/MTL101-filename-case.test.ts
+```
+
+A new rule test must declare its code and its family in the options of its `describe`, for
+example `describe("MTL101 filename-case", { tags: ["MTL101", "filename"] }, () => { ... })`.
+`pnpm run check:rules` (`tests/consistency/rule-test-tags.test.ts`) fails on a missing tag. The
+test stub of `pnpm run new:rule` already carries both tags. Vitest runs with `strictTags`, so an
+unknown tag name is an error.
 
 ## See also
 

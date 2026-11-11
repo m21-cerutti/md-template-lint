@@ -3,7 +3,7 @@
 slug: "string" # [presence:required] [format:kebab-case] [value:filename]
 owner: "string" # [presence:optional]
 tags: ["a"] # [count:min:1] [count:max:3] [format:elements:kebab-case]
-rating: "3" # type=int [range:min:1] [range:max:5]
+rating: "3" # [int] [range:min:1] [range:max:5]
 status: "draft | accepted" # [presence:optional]
 milestones: ["2026-01", "2026-06"] # [order:ascending]
 homepage: "https://example.org" # [format:scheme:https] [io:exists]

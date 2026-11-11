@@ -79,7 +79,7 @@ const CASES: readonly TestCase[] = [
     expected: [shape("first", "a scalar"), entries("second", "['nowhere']")],
   },
   // Type from the template value `list-of-path-alias`, and from the hint
-  // `[path-alias]` or `type=path-alias` with a list value (promotion).
+  // `[path-alias]` with a list value (promotion).
   {
     name: "fail-type-from-template-value-list-of-path-alias",
     expected: [entries("aliases", "['x']")],
@@ -105,7 +105,7 @@ async function lint(testCase: TestCase) {
   return found.filter((diagnostic) => diagnostic.code === CODE);
 }
 
-describe("MTL516 type-list-of-path-alias", () => {
+describe("MTL516 type-list-of-path-alias", { tags: ["MTL516", "type"] }, () => {
   it("is registered in category type, error, field step type", () => {
     expect(registry.byCode.get(CODE)).toMatchObject({
       name: "type-list-of-path-alias",

@@ -42,21 +42,24 @@ describe("check:rules", () => {
     expect(specRanges().size).toBe(9);
     const atn = MdTemplateParser._ATN;
     expect(firstSymbols(atn, MdTemplateParser.RULE_tagFamily).tokens.size).toBe(12);
-    expect(firstSymbols(atn, MdTemplateParser.RULE_tagWord).tokens.size).toBe(10);
+    expect(firstSymbols(atn, MdTemplateParser.RULE_tagWord).tokens.size).toBe(9);
     expect(firstSymbols(atn, MdTemplateParser.RULE_fmTagBody).rules.size).toBe(9);
     expect(firstSymbols(atn, MdTemplateParser.RULE_bodyTagBody).rules.size).toBe(6);
     expect(sentences(atn, MdTemplateParser.RULE_fmCountTag)).toHaveLength(2);
-    expect(modeKeywords(MdTemplateLexer.TAG_TEXT)).toEqual(["ISO", "LIEN", "PATH", "RULE", "TYPE", "URL"]);
+    expect(modeKeywords(MdTemplateLexer.TAG_TEXT)).toEqual(["ISO", "LIEN", "PATH", "RULE", "URL"]);
     expect(modeRules(MdTemplateLexer.BODY).length).toBeGreaterThanOrEqual(8);
     expect(tagFamilies().get("frontmatter:range")).toBe("fmRangeTag");
     expect(tagFamilies().get("body:content-lines")).toBe("bodyContentTag");
   });
 
-  it("fails: a spec code neither implemented nor pending", () => {
-    expect(checkCodes(specCodes(), [], {})).toContain("MTL001 frontmatter-missing: in docs/spec.md 4.3 but neither implemented in " + "src/rules/syntax.ts nor pending in tests/consistency/pending-rules.json");
+  it("fails: a spec code that no rule registers (no staging list exists)", () => {
+    expect(checkCodes(specCodes(), [])).toContain("MTL001 frontmatter-missing: in docs/spec.md 4.3 but no rule is registered in src/rules/syntax.ts");
+    const [first] = specCodes();
+    if (first === undefined) throw new Error("docs/spec.md 4.3 has no code");
+    expect(checkCodes([first], [])).toEqual([`${first.code} ${first.name}: in docs/spec.md 4.3 but no rule is registered in src/rules/${first.category}.ts`]);
   });
 
-  it("fails: a registered rule missing from the spec, a pending code missing too", () => {
+  it("fails: a registered rule missing from the spec", () => {
     const rogue = defineRule({
       code: "MTL099",
       name: "rogue",
@@ -65,10 +68,10 @@ describe("check:rules", () => {
       phase: "template",
       check: () => [],
     });
-    expect(checkCodes([], [rogue], { MTL099: "rogue" })).toEqual(["MTL099 rogue: registered but not in docs/spec.md 4.3", "pending-rules.json: MTL099 is not in docs/spec.md 4.3"]);
+    expect(checkCodes([], [rogue])).toEqual(["MTL099 rogue: registered but not in docs/spec.md 4.3"]);
   });
 
-  it("fails: a scaffold stub that left the pending list; passes while pending", () => {
+  it("fails: a scaffold stub until its check is implemented", () => {
     const stub = defineRule({
       code: "MTL301",
       name: "constant-mismatch",
@@ -79,11 +82,9 @@ describe("check:rules", () => {
       check: notImplemented("MTL301"),
     });
     const constant = specCodes().filter((entry) => entry.code === "MTL301");
-    expect(checkCodes(constant, [stub], {})).toEqual([
-      "MTL301 constant-mismatch: in docs/spec.md 4.3 but neither implemented in " + "src/rules/format.ts nor pending in tests/consistency/pending-rules.json",
-      "MTL301 constant-mismatch: stub check, keep it in pending-rules.json",
-    ]);
-    expect(checkCodes(constant, [stub], { MTL301: "constant-mismatch" })).toEqual([]);
+    expect(checkCodes(constant, [stub])).toEqual(["MTL301 constant-mismatch: in docs/spec.md 4.3 but the rule in src/rules/format.ts is still a stub check (implement it)"]);
+    const real = defineRule({ ...stub, check: () => [] });
+    expect(checkCodes(constant, [real])).toEqual([]);
   });
 
   it("fails: a visitor registry drift", () => {

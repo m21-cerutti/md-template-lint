@@ -61,7 +61,7 @@ describe("compileGlob: base directory of the walk", () => {
   }
 });
 
-describe("compileGlob: invalid globs (MTL907)", () => {
+describe("compileGlob: invalid globs (MTL907)", { tags: ["MTL907", "run"] }, () => {
   const cases: readonly (readonly [string, string])[] = [
     ["", "empty glob"],
     ["   ", "empty glob"],

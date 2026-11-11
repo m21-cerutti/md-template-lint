@@ -1,4 +1,4 @@
 ---
-plain_scalar: ["a"] # type=list-of-string
-comma_separated_scalar: ["a"] # type=list-of-string
+plain_scalar: ["a"] # [list-of-string]
+comma_separated_scalar: ["a"] # [list-of-string]
 ---

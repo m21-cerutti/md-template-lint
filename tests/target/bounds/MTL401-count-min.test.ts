@@ -97,7 +97,7 @@ async function lint(testCase: TestCase) {
   };
 }
 
-describe("MTL401 count-min", () => {
+describe("MTL401 count-min", { tags: ["MTL401", "bounds"] }, () => {
   it("is registered in category bounds, error, field step count", () => {
     expect(registry.byCode.get(CODE)).toMatchObject({
       name: "count-min",
