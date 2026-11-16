@@ -3122,7 +3122,7 @@ Target:
 Fixtures (template fixtures under `tests/fixtures/templates/<code>/`, test
 `tests/syntax/syntax/MTL031-frontmatter-tag-conflict.test.ts`; pair fixtures
 `tests/fixtures/optional-frontmatter/<case>/template.md` and `target.md`, test
-`tests/unit/optional-frontmatter.test.ts`; CLI fixtures
+`tests/unit/engine/optional-frontmatter.test.ts`; CLI fixtures
 `tests/fixtures/cli/schema-pass-frontmatter-optional` and
 `schema-fail-frontmatter-tag-conflict`):
 
@@ -5006,7 +5006,7 @@ and `MTL612`.
   `MTL701` to `MTL705` use the exact-level match; `MTL610` to `MTL612` are in
   `src/rules/heading.ts` (phase `target`, step `headings`) and `MTL015` in
   `src/rules/syntax.ts` (phase `template`); emission order and anchors as in 4.3 and DIR5.
-- Tests: `tests/unit/document.test.ts` and `tests/unit/regions.test.ts` (H3 to H6 lose
+- Tests: `tests/unit/engine/document.test.ts` and `tests/unit/tags/regions.test.ts` (H3 to H6 lose
   their tags; `MTL012` for `[content:subheadings]`, `MTL013` for the tag in frontmatter).
   Pass and fail cases for `MTL610` (H3 missing, parent missing gives no `MTL610`),
   `MTL611`, `MTL612` (unlisted H3 and H4 under the tag, topmost only, listed descendant does
@@ -5035,7 +5035,7 @@ Field formats (change C11, ADR 0010, AS16). It adds the codes `MTL016`, `MTL306`
   `[format:semver]` on a heading is `MTL013`.
 - `MTL306` semver-mismatch: the SEMVER predicate in `src/engine/values.ts` (value pattern,
   2.9); `FIELD_STEPS` of `src/engine/rule.ts` has `shape` after `type` (11 present-value
-  steps, spelled out in `tests/unit/pipeline.test.ts`); the rule in `src/rules/format.ts`;
+  steps, spelled out in `tests/unit/engine/pipeline.test.ts`); the rule in `src/rules/format.ts`;
   `--verify` rule token `format:semver` in `src/runner/schema.ts` (rule order of 8.3).
   Fixtures `tests/fixtures/pairs/MTL306/`, test
   `tests/target/format/MTL306-semver-mismatch.test.ts`.
@@ -5112,8 +5112,8 @@ disagreeing.
   `BODY_KIND_SET`, and the `content` kind has a `check` value for `no-extra`. Visitors
   `src/tags/visitors/pattern.ts` and `src/tags/visitors/repeat.ts` (registered in
   `visitors/index.ts`), body order in `src/tags/visitors/order.ts`, `no-extra` in the
-  content visitor. Tests (`tests/unit/visitors.test.ts`, `tests/unit/tags.test.ts`,
-  `tests/unit/document.test.ts`): the tags parse at every level, case-insensitive, with a
+  content visitor. Tests (`tests/unit/tags/visitors.test.ts`, `tests/unit/tags/tags.test.ts`,
+  `tests/unit/engine/document.test.ts`): the tags parse at every level, case-insensitive, with a
   `]` and a `\"` inside the quotes; the eight order forms parse; `[pattern:x]`, an unclosed
   quote, `min:0`, `[order:sideways]`, the malformed order forms of 2.10 and
   `[content:subheadings:no-extras]` are `MTL012`; the four tags and every `first:` order
@@ -5170,7 +5170,7 @@ disagreeing.
   `tests/fixtures/positional/` (each format: one accepted and one rejected value of the
   2.10 list, example F, `## 007` under `{digits:format:padding:3}` and under `{number}`,
   `## 2026` refused by `{text:format:snakecase}`), unit tests of the predicates in
-  `tests/unit/values.test.ts`.
+  `tests/unit/engine/values.test.ts`.
 - Content label (no code of its own): `src/rules/content.ts` prints
   `Section '{text}' (pattern "{pattern}")` (and the section-scope form) for a pattern
   heading, 2.6 "Content tags"; exact-text labels unchanged. Fixtures: worked example 7 J of
@@ -5377,7 +5377,7 @@ heading-unique-names (the 4.3 table then holds 84 codes, pinned by
   document model); visitor in `src/tags/visitors/` (its own family file, registered in
   `visitors/index.ts`). The placement table of 2.11: key line inert, mixed comment line
   inert, an argument `MTL012`, a typo `MTL011` / `MTL010`. Tests
-  (`tests/unit/visitors.test.ts`, `tests/unit/tags.test.ts`, `tests/unit/document.test.ts`):
+  (`tests/unit/tags/visitors.test.ts`, `tests/unit/tags/tags.test.ts`, `tests/unit/engine/document.test.ts`):
   the tag parses at every level, case-insensitive, is peeled from the heading text; the
   frontmatter line sets the switch; every row of the placement table.
 - `MTL613` heading-unique-names: the rule in `src/rules/heading.ts` (phase `target`, step
@@ -5432,7 +5432,7 @@ Optional frontmatter (2.12, ADR 0015, change C14, decisions of 2026-11-11). It a
   changes its findings.
 - Tests: the fixture list of 2.12, `tests/fixtures/templates/MTL031/` and
   `tests/syntax/syntax/MTL031-frontmatter-tag-conflict.test.ts`, the pair fixtures of
-  `tests/fixtures/optional-frontmatter/` with `tests/unit/optional-frontmatter.test.ts`, the CLI
+  `tests/fixtures/optional-frontmatter/` with `tests/unit/engine/optional-frontmatter.test.ts`, the CLI
   fixtures `schema-pass-frontmatter-optional` and `schema-fail-frontmatter-tag-conflict`.
 
 Coverage check (read by `pnpm run check:rules`): every code of 4.3 appears in exactly one

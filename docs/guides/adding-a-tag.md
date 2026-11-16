@@ -75,7 +75,7 @@ The family `io` is known, so the bracket is a tag attempt. Its argument is not, 
 
 Write the tests of the whole change before any of the five places. Two levels.
 
-**Parser level.** In `tests/unit/tags.test.ts`, in the block "frontmatter value tags", add a test
+**Parser level.** In `tests/unit/tags/tags.test.ts`, in the block "frontmatter value tags", add a test
 with `parseInlineComment`:
 
 ```ts
@@ -86,7 +86,7 @@ it("parses io:readable", () => {
 });
 ```
 
-and in `tests/unit/visitors.test.ts`, in the table of `io.ts (IoVisitor)`, a passing row next to the
+and in `tests/unit/tags/visitors.test.ts`, in the table of `io.ts (IoVisitor)`, a passing row next to the
 `[IO:EXISTS]` one (the table runs one case per row, with a mixed-case input):
 
 ```ts
@@ -96,7 +96,7 @@ and in `tests/unit/visitors.test.ts`, in the table of `io.ts (IoVisitor)`, a pas
 Run them and watch them fail:
 
 ```bash
-pnpm exec vitest run tests/unit/tags.test.ts tests/unit/visitors.test.ts
+pnpm exec vitest run tests/unit/tags/tags.test.ts tests/unit/tags/visitors.test.ts
 ```
 
 It must exit 1: the new tests fail on `expect(findings).toEqual([])` (the received list holds the
@@ -204,7 +204,7 @@ io-exists in src/tags/ast.ts, src/tags/visitors/io.ts, src/rules/io.ts,
 
 ```bash
 pnpm exec tsx tmp/tag.ts
-pnpm exec vitest run tests/unit/tags.test.ts tests/unit/visitors.test.ts
+pnpm exec vitest run tests/unit/tags/tags.test.ts tests/unit/tags/visitors.test.ts
 pnpm run check:parser
 pnpm run check:rules
 pnpm run typecheck

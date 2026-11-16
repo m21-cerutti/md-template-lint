@@ -52,7 +52,7 @@ git switch -c scratch/try-a-rule
 ```
 
 (`pnpm run new:rule` also takes `--root <dir>` to write into another tree. The unit test
-`tests/unit/new-rule.test.ts` uses it on a copy of `src/rules/`; the spec and the code ranges are
+`tests/unit/scripts/new-rule.test.ts` uses it on a copy of `src/rules/`; the spec and the code ranges are
 always read from this repository.)
 
 ## 1. Choose the category, the phase and the step

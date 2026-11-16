@@ -266,6 +266,6 @@ pnpm run check:parser
 ## See also
 
 - [Adding a tag](adding-a-tag.md): the five places, step by step.
-- [Testing](testing.md): the parser tests (`tests/unit/tags.test.ts`, `visitors.test.ts`,
+- [Testing](testing.md): the parser tests (`tests/unit/tags/tags.test.ts`, `tests/unit/tags/visitors.test.ts`,
   `directives.test.ts`, `listeners.test.ts`) and the consistency check.
 - [Architecture](../architecture.md), [spec.md section 2](../spec.md#2-template-tags), [glossary](../glossary.md).

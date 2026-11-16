@@ -6,8 +6,8 @@ last_updated: 2026-10-29
 # yaml comment-binding spike (A6)
 
 Question: can the `yaml` package (2.9.1, pinned) bind a frontmatter inline comment to the
-right top-level key (spec 2.1)? Evidence: `tests/unit/yaml-spike.test.ts` (binding) and
-`tests/unit/yaml-explore.test.ts` (loading options). Both run in `pnpm test`.
+right top-level key (spec 2.1)? Evidence: `tests/unit/research/yaml-spike.test.ts` (binding) and
+`tests/unit/research/yaml-explore.test.ts` (loading options). Both run in `pnpm test`.
 
 ## Cases checked
 
