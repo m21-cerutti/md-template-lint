@@ -15,7 +15,6 @@
     // code spans quote diagnostic prefixes and indentation with meaningful leading/trailing spaces
     "MD038": false,
   },
-  // PLAN_release-prep.md is a temporary plan file with wide tables; tmp, deps, build output and owner-only files are not project docs;
-  // tests/fixtures hold deliberately broken Markdown; docs/syntax-reference.md is generated; docs/proposals is owner draft space
-  "ignores": ["PLAN_release-prep.md", "tmp/**", "node_modules/**", "dist/**", "coverage/**", ".cortexkit/**", "tests/fixtures/**", "docs/syntax-reference.md", "docs/proposals/**", "TODO.md", "IDEA.md"],
+  // tests/fixtures hold deliberately broken Markdown; docs/syntax-reference.md is generated;
+  "ignores": ["tmp/**", "node_modules/**", "dist/**", "coverage/**", ".cortexkit/**", "tests/fixtures/**", "docs/syntax-reference.md"],
 }
