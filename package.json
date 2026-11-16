@@ -45,6 +45,7 @@
     "lint": "pnpm run lint:ts && pnpm run lint:md && pnpm run lint:names && pnpm run lint:secrets",
     "lint:ts": "eslint .",
     "lint:md": "markdownlint-cli2 \"**/*.md\"",
+    "lint:md:template": "node dist/cli.js",
     "lint:names": "ls-lint",
     "lint:secrets": "secretlint \"**/*\"",
     "format": "prettier --write .",

@@ -81,8 +81,6 @@ pairs:
 
   - name: index
     template: templates/generic/INDEX.template.md
-    include:
-      - docs/INDEX.md
-      - tests/INDEX.md
-      - templates/INDEX.md
+    include: "**/INDEX.md"
+    exclude: "**/node_modules/"
     description: folder index pages
