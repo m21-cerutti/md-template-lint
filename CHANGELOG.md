@@ -1,5 +1,5 @@
 ---
-last_updated: 2026-11-11
+last_updated: 2026-11-16
 ---
 
 # Changelog
@@ -14,14 +14,49 @@ All notable changes to this project are listed here. The format follows
 <!-- prettier-ignore-end -->
 
 - [Unreleased](#unreleased)
+- [0.2.1 - 2026-11-16](#021---2026-11-16)
+  - [Changed](#changed)
 - [0.2.0 - 2026-11-05](#020---2026-11-05)
   - [Added](#added)
-  - [Changed](#changed)
+  - [Changed](#changed-1)
   - [Removed](#removed)
 - [0.1.0 - 2026-10-29](#010---2026-10-29)
   - [Added](#added-1)
 
 ## Unreleased
+
+## [0.2.1] - 2026-11-16
+
+Maintenance release. There is no change in the rules, the CLI or the syntax. The changes below
+touch the tests, the docs and the lint setup of the repository only.
+
+### Changed
+
+#### Tests
+
+- The unit tests are moved from a flat `tests/unit/` into folders that mirror `src/`:
+  `tests/unit/engine`, `tests/unit/tags`, `tests/unit/cli`, `tests/unit/scripts` and
+  `tests/unit/research`. The test code is unchanged apart from its import paths.
+
+#### Documentation
+
+- The guides (`docs/guides/adding-a-rule.md`, `adding-a-tag.md`, `grammar-and-listeners.md`,
+  `testing.md`), `docs/research/yaml-spike.md`, `docs/spec.md` and `tests/INDEX.md` point to the
+  new unit test paths.
+- `docs/syntax-reference.md` is regenerated. The content is the same: only the Markdown layout
+  changes (table alignment, a `prettier-ignore` wrapper around each generated block, no blank
+  line after the frontmatter in the examples).
+
+#### Tooling
+
+- The ignore lists of the repository checks are trimmed to what is still needed:
+  `.markdownlint-cli2.jsonc` (the removed plan file, `docs/proposals`, `TODO.md` and `IDEA.md`),
+  `.prettierignore` (`docs/proposals`) and `.secretlintignore` (`.cortexkit/`, `src/generated/`,
+  `tests/fixtures/` and `docs/proposals/`).
+- New script `pnpm run lint:md:template` (`node dist/cli.js`): it runs the template linter on
+  this repository, using the built CLI.
+- In `md-template-lint.yml`, the `index` pair now lints every `INDEX.md` (`**/INDEX.md`, with
+  `node_modules/` excluded) instead of the three listed index files.
 
 ## [0.2.0] - 2026-11-05
 
@@ -199,5 +234,6 @@ published.
   the linter once per file.
 - A global alias file `approved_path.yml` for the paths a template may read.
 
+[0.2.1]: https://github.com/m21-cerutti/md-template-lint/compare/0.2.0...0.2.1
 [0.2.0]: https://github.com/m21-cerutti/md-template-lint/compare/0.1.0...0.2.0
 [0.1.0]: https://github.com/m21-cerutti/md-template-lint/releases/tag/0.1.0
