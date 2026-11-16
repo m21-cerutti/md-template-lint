@@ -41,7 +41,6 @@ tags: ["a"] # [count:min:1] [format:elements:kebab-case]
 version: "1.0.0" # [format:semver]
 released: "2026-01-31" # [date] [format:date]
 ---
-
 # Title
 
 ## Overview [presence:required] [content:non-empty]
@@ -61,11 +60,11 @@ with free text, in any order. For a tag that can appear once, the first one wins
 tags in a target file are inert; only recognized trailing heading tags are stripped from
 target headings before comparison.
 
-| Region      | Where                                                                                | Binds to              |
-| ----------- | ------------------------------------------------------------------------------------ | --------------------- |
-| frontmatter | Trailing `#` comment of a top-level key line (`key: value # [tag]`)                  | that key              |
-| frontmatter | Standalone `#` comment line holding only the tag (`filename`, `unique-headings-names`) | the whole template  |
-| heading     | Bracket tags after the text of a heading of any level H1 to H6 (`## Text [tag]`)     | that heading          |
+| Region      | Where                                                                                  | Binds to           |
+| ----------- | -------------------------------------------------------------------------------------- | ------------------ |
+| frontmatter | Trailing `#` comment of a top-level key line (`key: value # [tag]`)                    | that key           |
+| frontmatter | Standalone `#` comment line holding only the tag (`filename`, `unique-headings-names`) | the whole template |
+| heading     | Bracket tags after the text of a heading of any level H1 to H6 (`## Text [tag]`)       | that heading       |
 
 - A `#` starts a comment only outside quotes and at the start or after a space or tab.
 - Comments on indented sub-keys and on list items bind to nothing.
@@ -84,6 +83,7 @@ target headings before comparison.
 quoted pattern. Tags in the table are the complete set of the grammar. Where one form is
 written `[a:b:c]`, every colon part is a literal keyword.
 
+<!-- prettier-ignore-start -->
 <!-- BEGIN GENERATED: tags -->
 ⚠️ marks a tag that reads the filesystem or the network.
 
@@ -140,6 +140,7 @@ written `[a:b:c]`, every colon part is a literal keyword.
 | heading | `repeat-rules` | `[repeat-rules:same-level]` | " | " | [MTL607 pass](../tests/fixtures/pairs/MTL607/pass-count-above-minimum/template.md) |
 | heading | `unique-headings-names` | `[unique-headings-names]` | No two target headings inside the matched section (heading included) may share a name. | `## Changes [unique-headings-names]` | [MTL613 pass](../tests/fixtures/pairs/MTL613/pass-repeat-instances-each-their-own-region/template.md) |
 <!-- END GENERATED: tags -->
+<!-- prettier-ignore-end -->
 
 Notes on specific families:
 
@@ -170,14 +171,14 @@ pattern, `{{` and `}}` are literal braces, `\"` a literal quote, `\\` a literal 
 backslash pair is `MTL014`. No `v` prefix is implied: write `v{semver}` when headings carry one.
 Two placeholders may not touch (`{digits}{text}` is `MTL014`); put literal text between them.
 
-| Placeholder | Default value                                         | Other formats (`{name:format:<fmt>}`)                              |
-| ----------- | ----------------------------------------------------- | ------------------------------------------------------------------ |
-| `{text}`    | any text except a purely numeric value                | `snakecase`, `camelcase`, `screamcase`, `kebabcase`, `lowercase`, `uppercase` |
-| `{number}`  | `-?digits(.digits)?`, leading zeros allowed           | `scientific`, `precision:N`                                        |
-| `{digits}`  | `0` or digits with no leading zero, no sign           | `signed`, `hex`, `uid`, `padding:N`                                |
-| `{semver}`  | full SemVer 2.0.0                                     | `core`, `major-minor`                                              |
-| `{date}`    | `YYYY-MM-DD`, a real date                             | `year-month`, `year`                                               |
-| `{char}`    | one Unicode letter (no format allowed)                | none                                                               |
+| Placeholder | Default value                               | Other formats (`{name:format:<fmt>}`)                                         |
+| ----------- | ------------------------------------------- | ----------------------------------------------------------------------------- |
+| `{text}`    | any text except a purely numeric value      | `snakecase`, `camelcase`, `screamcase`, `kebabcase`, `lowercase`, `uppercase` |
+| `{number}`  | `-?digits(.digits)?`, leading zeros allowed | `scientific`, `precision:N`                                                   |
+| `{digits}`  | `0` or digits with no leading zero, no sign | `signed`, `hex`, `uid`, `padding:N`                                           |
+| `{semver}`  | full SemVer 2.0.0                           | `core`, `major-minor`                                                         |
+| `{date}`    | `YYYY-MM-DD`, a real date                   | `year-month`, `year`                                                          |
+| `{char}`    | one Unicode letter (no format allowed)      | none                                                                          |
 
 An argument (`padding:3`, `precision:2`) is digits of 1 or more with no leading zero. A pattern
 heading, optionally with a repeat tag, takes the next sibling or run of siblings that match. Order
@@ -198,6 +199,7 @@ comment is plain text, not a hint. There is no `list-of-enum`;
 `list-of-string` and `list-of-int` exist only through an explicit hint. A hint that is not one of
 the types is kept as a name, never validated, and the bracket is also `MTL010`.
 
+<!-- prettier-ignore-start -->
 <!-- BEGIN GENERATED: types -->
 17 type names; each one is also the type hint `[<type-name>]`:
 
@@ -219,6 +221,7 @@ the types is kept as a name, never validated, and the bracket is also `MTL010`.
 - `list-of-url`
 - `list-of-path-alias`
 <!-- END GENERATED: types -->
+<!-- prettier-ignore-end -->
 
 Date shapes accepted by the type `date`: `YYYY-MM-DD`, `YYYY-MM`, `YYYY`, `DD/MM/YYYY` and the
 ongoing marker `present` (or `présent`). `[format:date]` narrows a field to `YYYY-MM-DD` only. A date
@@ -229,14 +232,16 @@ field without `[format:date]` gets the template warning `MTL016`.
 A target file silences codes locally. Directives are never read in a template, inside fenced code
 or inline code, or after a parse error. Keyword, verbs and codes are case-insensitive.
 
-| Directive                                      | Covers                                                    |
-| ---------------------------------------------- | --------------------------------------------------------- |
-| `md-template-lint disable <codes>`             | its line to the matching `end disable`, else to the end of the file |
-| `md-template-lint disable-line <codes>`        | its own line                                              |
-| `md-template-lint disable-next-line <codes>`   | the next file line                                        |
-| `md-template-lint disable-file <codes>`        | the whole document, including findings without a line     |
-| `md-template-lint begin disable <codes>`       | its line to the matching `end disable` (unclosed is `MTL024`) |
-| `md-template-lint end disable <codes>`         | closes the open range of each listed code                 |
+
+| Directive                                    | Covers                                                              |
+| -------------------------------------------- | ------------------------------------------------------------------- |
+| `md-template-lint disable <codes>`           | its line to the matching `end disable`, else to the end of the file |
+| `md-template-lint disable-line <codes>`      | its own line                                                        |
+| `md-template-lint disable-next-line <codes>` | the next file line                                                  |
+| `md-template-lint disable-file <codes>`      | the whole document, including findings without a line               |
+| `md-template-lint begin disable <codes>`     | its line to the matching `end disable` (unclosed is `MTL024`)       |
+| `md-template-lint end disable <codes>`       | closes the open range of each listed code                           |
+
 
 - Carriers: a one-line HTML comment in the body (`<!-- md-template-lint disable-line MTL701 -->`,
   also on a heading line) and, in the frontmatter, a YAML comment (trailing a top-level key line, or
@@ -277,7 +282,6 @@ title: Notes
 status: draft
 version: "1.0.0" # [format:semver]
 ---
-
 # Notes
 
 ## Overview [content:non-empty]
@@ -353,6 +357,7 @@ Run codes (`MTL9xx`) are not rules; they report problems of the run itself.
 
 ### Error codes by family
 
+<!-- prettier-ignore-start -->
 <!-- BEGIN GENERATED: families -->
 | Family | Code range | Count | Severities |
 | ------ | ---------- | ----- | ---------- |
@@ -367,9 +372,11 @@ Run codes (`MTL9xx`) are not rules; they report problems of the run itself.
 | `io` | `MTL801`–`MTL805` | 5 | warning |
 | `run` | `MTL901`–`MTL923` | 17 | error, warning |
 <!-- END GENERATED: families -->
+<!-- prettier-ignore-end -->
 
 ### All error codes
 
+<!-- prettier-ignore-start -->
 <!-- BEGIN GENERATED: errors -->
 | Code | Name | Severity | Category | Status | Message | Typical fix |
 | ---- | ---- | -------- | -------- | ------ | ------- | ----------- |
@@ -476,15 +483,18 @@ Run codes (`MTL9xx`) are not rules; they report problems of the run itself.
 | `MTL922` | option-bad-value | error | run | run | `invalid value '{value}' for {flag} (expected {expected})` | Use a value the flag accepts: `text`, `plain` or `json`. |
 | `MTL923` | usage-conflict | error | run | run | e.g. `--verify needs a config or at least one template path` | Pass a config or at least one template path to `--verify`. |
 <!-- END GENERATED: errors -->
+<!-- prettier-ignore-end -->
 
 ## Enums
 
+<!-- prettier-ignore-start -->
 <!-- BEGIN GENERATED: enums -->
 - Output formats (`--format`): `text`, `plain`, `json`
 - `onEmpty` values: `warn`, `error`, `ignore`
 - Field types (17): `string`, `enum`, `list`, `date`, `path`, `url`, `int`, `float`, `bool`, `nested-map`, `path-alias`, `list-of-string`, `list-of-int`, `list-of-date`, `list-of-path`, `list-of-url`, `list-of-path-alias`
 - Rule categories: `syntax`, `filename`, `presence`, `format`, `bounds`, `type`, `heading`, `content`, `io`
 <!-- END GENERATED: enums -->
+<!-- prettier-ignore-end -->
 
 ## See also
 
