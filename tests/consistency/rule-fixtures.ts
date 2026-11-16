@@ -2,7 +2,7 @@
  * The rule-case layout check of `pnpm run check:rules` (A39 layout, docs/architecture.md
  * "Tests: rule cases"). Pure functions over a read-only `Tree`, so the same check runs on the
  * repository (tests/consistency/rule-fixtures.test.ts), on small in-memory trees, and on a
- * throwaway `pnpm run new:rule` scaffold (tests/unit/new-rule.test.ts).
+ * throwaway `pnpm run new:rule` scaffold (tests/unit/scripts/new-rule.test.ts).
  *
  * - Template-only codes (phase `parse` or `template`): one test file
  *   `tests/syntax/<category>/<code>-<name>.test.ts`, fixtures `tests/fixtures/templates/<code>/`,

@@ -53,7 +53,7 @@ const CASES: readonly Case[] = [
   },
   // DIR9: the sum over pair-file lints: a.md (1) in two pairs plus b.md (2).
   { name: "pass-sum-over-pair-file-lints", target: "notes/a.md", suppressed: 4, exitCode: 0 },
-  // Real codes (see tests/unit/suppression-real-codes.test.ts): the template makes 10 findings.
+  // Real codes (see tests/unit/engine/suppression-real-codes.test.ts): the template makes 10 findings.
   // One baseline without directive (exit 1), then one passing case per suppression type.
   { name: "fail-real-codes-no-directive", target: "notes/real.md", suppressed: 0, exitCode: 1 },
   { name: "pass-real-disable-line", target: "notes/real.md", suppressed: 10, exitCode: 0 },

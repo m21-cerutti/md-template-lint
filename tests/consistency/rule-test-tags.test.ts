@@ -83,7 +83,7 @@ describe("check:rules test tags", () => {
       ["tests/target/filename/MTL102-b.test.ts", 'describe("MTL102 x", () => {});'],
       ["tests/target/bounds/MTL401-c.test.ts", 'describe("MTL401 x", { tags: ["MTL401"] }, () => {});'],
       ["tests/target/bounds/MTL999-d.test.ts", tagged],
-      ["tests/unit/engine.test.ts", "describe('no code in the name', () => {});"],
+      ["tests/unit/engine/engine.test.ts", "describe('no code in the name', () => {});"],
     ]);
     expect(checkRuleTestTags(files)).toEqual([
       "tests/target/filename/MTL102-b.test.ts: missing tag 'MTL102' (add it to the `tags: [...]` option of its describe)",
