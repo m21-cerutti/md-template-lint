@@ -102,6 +102,8 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: "24"
+          always-auth: true
+          registry-url: "https://registry.npmjs.org"
 
       # Trusted Publishing (OIDC) and provenance need npm 11.5.1 or newer. The version is exact,
       # never a range, so a new npm release cannot change what publishes. Raise it on purpose.
