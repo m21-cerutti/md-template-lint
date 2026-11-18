@@ -64,7 +64,8 @@
     "smoke:pack": "tsx scripts/smoke-pack.ts",
     "gen:parser": "tsx scripts/gen-parser.ts",
     "gen:syntax-doc": "tsx scripts/syntax-doc/generate.ts write",
-    "new:rule": "tsx scripts/new-rule.ts"
+    "new:rule": "tsx scripts/new-rule.ts",
+    "bench": "tsx scripts/bench.ts"
   },
   "devDependencies": {
     "@commitlint/cli": "^21.2.4",
