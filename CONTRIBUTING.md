@@ -1,5 +1,5 @@
 ---
-last_updated: 2026-11-11
+last_updated: 2026-11-19
 ---
 
 # Contributing
@@ -21,6 +21,7 @@ Thank you for helping `md-template-lint`. This page explains how to report a pro
 - [Quality gates](#quality-gates)
   - [Tests](#tests)
   - [Code guidelines](#code-guidelines)
+  - [Performance](#performance)
 - [Project-specific changes](#project-specific-changes)
   - [Decisions (ADR process)](#decisions-adr-process)
   - [Documentation](#documentation)
@@ -205,6 +206,37 @@ Details per area are in [docs/architecture.md](docs/architecture.md), sections "
 - Do not hand-edit `src/generated/`; regenerate it from the grammars.
 - Do not ship personal paths or personal data in code, tests or docs.
 - Keep changes surgical: no unrequested feature, no refactor of unrelated files.
+
+### Performance
+
+`scripts/bench.ts` times a whole lint run (`loadConfig` plus `runLint`, in process, with an in-memory `io` and no network) on synthetic projects. It generates them in a fresh OS temp folder and removes it at the end. Per workload it does one cold run, then N warm runs (5 by default), and reports the cold time, the median, the minimum and the CV (coefficient of variation, in percent) of the warm runs.
+
+```bash
+pnpm run bench                          # table on stdout, progress on stderr
+pnpm run bench -- --runs 10             # 10 warm runs per workload
+pnpm --silent run bench -- --json       # one JSON document on stdout
+pnpm exec tsx scripts/bench.ts --json   # the same, without going through pnpm
+```
+
+Plain `pnpm run bench -- --json` prints a `$ tsx scripts/bench.ts --json` line before the JSON, so the output is not valid JSON. Use `pnpm --silent` or `pnpm exec tsx` when a script reads it.
+
+The five workloads:
+
+- 500 files, 1 template: 500 small notes linted against one template.
+- 2000 files, 1 template: the same with 2000 notes.
+- 1 file, 5000 headings: one target with 5000 repeated headings (`[pattern]` and `[repeat-rules]`).
+- Large template (300 fields, 600 headings), 5 files: a big template matched by five targets.
+- 200 templates, 3 files each: 200 pairs, each with its own template and 3 notes.
+
+The bench is opt-in. It is not part of `pnpm test`, CI or the git hooks, and it asserts nothing, so a slow run never fails a gate. Run it yourself when a change touches the engine, the runner or the parser.
+
+To compare two states of the code:
+
+- Run the bench on each state, several times (3 to 5 runs of the whole command), on the same machine and the same Node version. Compare the median of the per-run medians, not a single run.
+- Look at the CV before you trust a difference. On the reference machine class (a 16-CPU desktop) the run-to-run CV is 2 to 8 %, so treat a gain under about 6 % as noise.
+- Close other processes first (editors, test watchers, other benches). A busy machine can double a median.
+- To find where the time goes, run `pnpm run build`, then profile the built CLI, not the `tsx` sources: `node --cpu-prof --cpu-prof-dir tmp/prof dist/cli.js` on a project, and open the `.cpuprofile` in Chrome DevTools or any profile reader. `tsx` adds its own transpile frames. The profile of one run includes the cold start, so it overstates parsing and module loading against the warm median.
+- A performance change must keep the diagnostics, their order and the exit codes unchanged: the suite pins them, so run `pnpm test` as well.
 
 ## Project-specific changes
 

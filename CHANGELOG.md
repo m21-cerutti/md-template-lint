@@ -1,5 +1,5 @@
 ---
-last_updated: 2026-11-16
+last_updated: 2026-11-19
 ---
 
 # Changelog
@@ -14,16 +14,46 @@ All notable changes to this project are listed here. The format follows
 <!-- prettier-ignore-end -->
 
 - [Unreleased](#unreleased)
-- [0.2.1 - 2026-11-16](#021---2026-11-16)
-  - [Changed](#changed)
-- [0.2.0 - 2026-11-05](#020---2026-11-05)
   - [Added](#added)
+  - [Changed](#changed)
+- [0.2.1 - 2026-11-16](#021---2026-11-16)
   - [Changed](#changed-1)
+- [0.2.0 - 2026-11-05](#020---2026-11-05)
+  - [Added](#added-1)
+  - [Changed](#changed-2)
   - [Removed](#removed)
 - [0.1.0 - 2026-10-29](#010---2026-10-29)
-  - [Added](#added-1)
+  - [Added](#added-2)
 
 ## Unreleased
+
+### Added
+
+- Opt-in benchmark script `pnpm run bench` (`scripts/bench.ts`, options `--runs N` and `--json`).
+  It times a lint run on five generated workloads (500 files, 2000 files, one file with 5000
+  headings, a large template, 200 templates). It is not part of `pnpm test`, CI or the hooks.
+  How to run it and compare two runs: the "Performance" section of
+  [CONTRIBUTING.md](CONTRIBUTING.md#performance).
+
+### Changed
+
+- Faster lint runs. The diagnostics, their order and the exit codes are unchanged. The gains come
+  from five changes:
+  - Target files are read ahead of the lint (a window of 16 files). The files are still linted
+    one by one, in the same order.
+  - The heading match of a template and a target is computed once and shared by the rules that
+    need it.
+  - The `MTL611` check (heading order in a section) is linear in the number of headings.
+  - The sections of a document are built in a single pass.
+  - Documents are parsed with ANTLR's faster SLL prediction first. The full parse runs only when
+    the first one reports an error, so the error texts are the same.
+- Median wall time of one run per workload, before and after (milliseconds; 5 runs of the bench
+  after one cold run, Node v24.15.0, 16 CPUs):
+  - 500 files, 1 template: 341.4 to 158.1.
+  - 2000 files, 1 template: 1348.6 to 512.7.
+  - 1 file, 5000 headings: 393.8 to 114.7.
+  - Large template (300 fields, 600 headings), 5 files: 617.8 to 128.8.
+  - 200 templates, 3 files each: 876.8 to 412.4.
 
 ## [0.2.1] - 2026-11-16
 
