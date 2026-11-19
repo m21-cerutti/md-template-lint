@@ -334,7 +334,7 @@ function positionalRun(template: DocumentModel, target: DocumentModel, members: 
  * first-fit, no gaps, no backtracking). A section-scope run walks the target
  * section of the parent's match, so a parent is matched before its children.
  */
-export function matchHeadings(template: DocumentModel, target: DocumentModel): HeadingMatch[] {
+export function matchHeadings(template: DocumentModel, target: DocumentModel): readonly HeadingMatch[] {
   let byTarget = matchCache.get(template);
   if (byTarget === undefined) {
     byTarget = new WeakMap();
@@ -351,9 +351,9 @@ export function matchHeadings(template: DocumentModel, target: DocumentModel): H
 /**
  * `matchHeadings` is a pure function of two immutable models and is read by many rules per
  * target: computed once per (template, target) pair, entries die with the models. The array is
- * shared, so callers must not mutate it (no rule does).
+ * shared, so it is typed readonly.
  */
-const matchCache = new WeakMap<DocumentModel, WeakMap<DocumentModel, HeadingMatch[]>>();
+const matchCache = new WeakMap<DocumentModel, WeakMap<DocumentModel, readonly HeadingMatch[]>>();
 
 function computeMatches(template: DocumentModel, target: DocumentModel): HeadingMatch[] {
   const sections = template.sections;

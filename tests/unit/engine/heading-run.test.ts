@@ -19,7 +19,7 @@ function load(body: readonly string[]): DocumentModel {
 }
 
 /** `matchHeadings` of two bodies, in template order. */
-const run = (template: readonly string[], target: readonly string[]): HeadingMatch[] => matchHeadings(load(template), load(target));
+const run = (template: readonly string[], target: readonly string[]): readonly HeadingMatch[] => matchHeadings(load(template), load(target));
 
 const must = <T>(value: T | null | undefined): T => {
   if (value === null || value === undefined) throw new Error("missing entry");
