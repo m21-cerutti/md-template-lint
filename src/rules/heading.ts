@@ -460,15 +460,33 @@ const headingOrderInSection = defineRule({
   check: (context): Diagnostic[] => {
     const targets = context.target.sections;
     const matches = matchHeadings(context.template, context.target);
+    // A child with an invalid pattern (MTL014) is not checked and not listed (spec 2.6). The
+    // children of each match or instance of P, each once: a repeat child by its first instance.
+    // Indexed once by (template parent, parent match), in `matches` order.
+    const childrenOf = new Map<number, Map<Section, HeadingMatch[]>>();
+    for (const item of matches) {
+      const parentIndex = item.section.parent;
+      if (item.scope !== "section" || !item.checked || item.instance !== 0 || parentIndex === null || item.parentMatch === null) continue;
+      let byMatch = childrenOf.get(parentIndex);
+      if (byMatch === undefined) {
+        byMatch = new Map();
+        childrenOf.set(parentIndex, byMatch);
+      }
+      const list = byMatch.get(item.parentMatch);
+      if (list === undefined) byMatch.set(item.parentMatch, [item]);
+      else list.push(item);
+    }
+    const positionOf = new Map<Section, number>();
+    targets.forEach((heading, index) => {
+      if (!positionOf.has(heading)) positionOf.set(heading, index);
+    });
     return matches.flatMap((parent) => {
       const { section, match } = parent;
       if (!parent.checked || match === null || headingPresence(section) === "template-only") {
         return [];
       }
-      // A child with an invalid pattern (MTL014) is not checked and not listed (spec 2.6). The
-      // children of THIS match or instance of P, each once: a repeat child by its first instance.
-      const children = matches.filter((item) => item.scope === "section" && item.checked && item.section.parent === parent.index && item.parentMatch === match && item.instance === 0);
-      const indices = children.flatMap((item) => (item.match === null ? [] : [targets.indexOf(item.match)]));
+      const children = childrenOf.get(parent.index)?.get(match) ?? [];
+      const indices = children.flatMap((item) => (item.match === null ? [] : [positionOf.get(item.match) ?? -1]));
       if (indices.slice(1).every((index, before) => (indices[before] ?? 0) <= index)) return [];
       const deepest = Math.max(...children.map((item) => item.section.level));
       const templateOrder = reprValue(children.map((item) => item.section.text));
