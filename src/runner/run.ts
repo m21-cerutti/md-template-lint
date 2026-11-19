@@ -39,7 +39,7 @@ import type { Diagnostic } from "../engine/model.js";
 import { createRegistry, runPhase, type RuleRegistry } from "../engine/registry.js";
 import type { RuleEnv, RuleIo } from "../engine/rule.js";
 import { withExcerpts } from "./excerpt.js";
-import { isDirectory, isRegularFile, readUtf8, samePath, templateProblem } from "./files.js";
+import { isDirectory, isRegularFile, readUtf8, samePath, templateProblem, type ReadResult } from "./files.js";
 import { listedMatches, resolveFileList, type FileListInput, type ListedFile, type ListedMatch } from "./list.js";
 import { brokenReport, loadTemplate, withoutText, type LintTemplate } from "./template.js";
 import type { Block, ExitCode, FileResult, PairBlock, ReportedDiagnostic, RunResult, RunSummary, TemplateReport } from "./types.js";
@@ -57,6 +57,9 @@ export interface RunOptions {
    */
   readonly files?: FileListInput;
 }
+
+/** Target reads in flight ahead of the file being linted (bounded memory). */
+const READ_AHEAD = 16;
 
 const PARSE_CODES = new Set(["MTL001", "MTL002", "MTL003", "MTL004"]);
 
@@ -195,8 +198,7 @@ export async function runLint(loaded: ConfigResult, options: RunOptions): Promis
     return files;
   };
 
-  const lintFile = async (status: Extract<LintTemplate, { status: "ok" }>, rootDir: string, env: RuleEnv, relative: string): Promise<FileResult> => {
-    const read = await readUtf8(`${rootDir}/${relative}`);
+  const lintFile = async (status: Extract<LintTemplate, { status: "ok" }>, env: RuleEnv, relative: string, read: ReadResult): Promise<FileResult> => {
     let found: Diagnostic[];
     if (read.ok) {
       const linted = await lintTarget(registry, status.model, read.text, relative, env);
@@ -288,8 +290,16 @@ export async function runLint(loaded: ConfigResult, options: RunOptions): Promis
       template = { path: templateShown, status: "fail", errors: status.errors };
       failedTemplates.add(templateShown);
     }
+    // Reads run up to READ_AHEAD files ahead, but file i is linted (and its result pushed) only
+    // after its own read, before file i+1: diagnostics keep the file order. readUtf8 never rejects.
+    const readAt = (index: number): Promise<ReadResult> => readUtf8(`${rootDir}/${files[index] ?? ""}`);
+    const reads = files.slice(0, READ_AHEAD).map((_, index) => readAt(index));
     const results: FileResult[] = [];
-    for (const relative of files) results.push(await lintFile(status, rootDir, env, relative));
+    for (const [index, relative] of files.entries()) {
+      const read = reads[index % READ_AHEAD] ?? readAt(index);
+      if (index + READ_AHEAD < files.length) reads[index % READ_AHEAD] = readAt(index + READ_AHEAD);
+      results.push(await lintFile(status, env, relative, await read));
+    }
     const block: PairBlock = {
       ...head,
       template,
