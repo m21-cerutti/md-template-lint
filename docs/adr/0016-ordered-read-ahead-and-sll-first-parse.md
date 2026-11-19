@@ -73,3 +73,34 @@ diagnostics, their order and the exit codes stay the same.
   the before and after medians are in the [CHANGELOG](../../CHANGELOG.md).
 - Code: `src/runner/run.ts` (`READ_AHEAD`, `runPair`), `src/tags/listeners.ts` (`parseSll`),
   `src/tags/parser.ts` (two-stage parse).
+
+### SLL and LL prediction modes
+
+- SLL prediction picks each rule alternative without looking at which rule called it. It is the
+  cheaper mode. Full LL also looks at the caller context, so it costs more.
+- ANTLR documents that an SLL parse that finishes returns the same tree LL would return, or it
+  reports a syntax error.
+- An SLL error is not final: the input may be wrong, or it may need LL. So the parser bails out
+  on the first SLL error and parses again with full LL, which also gives the usual error texts.
+
+Caveat: SLL gives no guarantee on invalid input, hence the fallback to LL. The antlr4ng source
+below was read from GitHub `main`. The version pinned in `package.json` is checked by
+`tests/unit/tags/sll-fallback.test.ts`.
+
+### Resources
+
+- [ANTLR 4 runtime API, PredictionMode](https://www.antlr.org/api/Java/org/antlr/v4/runtime/atn/PredictionMode.html):
+  SLL "will either return a correct parse tree (i.e. the same parse tree that would be returned
+  with the LL prediction mode), or it will report a syntax error".
+- [antlr4ng `PredictionMode.ts`](https://github.com/mike-lischke/antlr4ng/blob/main/src/atn/PredictionMode.ts)
+  and [antlr4ng README](https://github.com/mike-lischke/antlr4ng): the runtime in use ports the
+  same modes and contract, and says it implements what the Java runtime does.
+- [ANTLR FAQ, "Why is my expression parser slow?"](https://github.com/antlr/antlr4/blob/master/doc/faq/general.md):
+  the official answer is two-stage parsing, SLL first and LL on failure.
+- [`BailErrorStrategy` source](https://github.com/antlr/antlr4/blob/master/runtime/Java/src/org/antlr/v4/runtime/BailErrorStrategy.java):
+  stops stage one at the first syntax error so stage two can start.
+- [antlr4 issue 374](https://github.com/antlr/antlr4/issues/374): the author calls it the
+  "standard two-stage parse" and points to the ALL(\*) paper for the reason.
+- [ALL(\*) paper, tech report](https://www.antlr.org/papers/allstar-techreport.pdf) and its
+  [SPLASH 2014 page](https://2014.splashcon.org/details/splash2014-artifacts/15/Adaptive-LL-Parsing-The-Power-of-Dynamic-Analysis):
+  the algorithm behind ANTLR 4 prediction, with the theory and not the SLL-first recipe.
