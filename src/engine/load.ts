@@ -67,16 +67,25 @@ const LEVELS: readonly HeadingLevel[] = [1, 2, 3, 4, 5, 6];
  * preceding heading with a lower level.
  */
 function buildSections(headings: readonly BodyHeading[], fileLines: readonly string[]): Section[] {
-  return headings.map((heading, index) => {
-    const next = headings.slice(index + 1).find((following) => following.level <= heading.level);
-    const end = next === undefined ? fileLines.length : next.line - 1;
-    let parent: number | null = null;
-    for (let before = index - 1; before >= 0; before -= 1) {
-      if ((headings[before]?.level ?? heading.level) < heading.level) {
-        parent = before;
-        break;
-      }
+  // One pass with a stack of open headings (strictly increasing levels): heading j closes every
+  // open heading of level >= its own (their end is the line before j), and the one left on top
+  // is its parent.
+  const ends = headings.map(() => fileLines.length);
+  const parents: (number | null)[] = [];
+  const open: number[] = [];
+  headings.forEach((heading, index) => {
+    let top = open[open.length - 1];
+    while (top !== undefined && (headings[top]?.level ?? 0) >= heading.level) {
+      ends[top] = heading.line - 1;
+      open.pop();
+      top = open[open.length - 1];
     }
+    parents.push(top ?? null);
+    open.push(index);
+  });
+  return headings.map((heading, index) => {
+    const end = ends[index] ?? fileLines.length;
+    const parent = parents[index] ?? null;
     return {
       level: LEVELS.find((level) => level === heading.level) ?? 6,
       text: heading.text,
