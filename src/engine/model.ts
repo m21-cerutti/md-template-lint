@@ -335,6 +335,27 @@ function positionalRun(template: DocumentModel, target: DocumentModel, members: 
  * section of the parent's match, so a parent is matched before its children.
  */
 export function matchHeadings(template: DocumentModel, target: DocumentModel): HeadingMatch[] {
+  let byTarget = matchCache.get(template);
+  if (byTarget === undefined) {
+    byTarget = new WeakMap();
+    matchCache.set(template, byTarget);
+  }
+  let found = byTarget.get(target);
+  if (found === undefined) {
+    found = computeMatches(template, target);
+    byTarget.set(target, found);
+  }
+  return found;
+}
+
+/**
+ * `matchHeadings` is a pure function of two immutable models and is read by many rules per
+ * target: computed once per (template, target) pair, entries die with the models. The array is
+ * shared, so callers must not mutate it (no rule does).
+ */
+const matchCache = new WeakMap<DocumentModel, WeakMap<DocumentModel, HeadingMatch[]>>();
+
+function computeMatches(template: DocumentModel, target: DocumentModel): HeadingMatch[] {
   const sections = template.sections;
   const matches: HeadingMatch[] = [];
   /** Template index -> its entries, in order (one per scope and instance). */
