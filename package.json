@@ -1,6 +1,6 @@
 {
   "name": "md-template-lint",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Lint Markdown files (frontmatter and headings) against Markdown templates.",
   "type": "module",
   "engines": {

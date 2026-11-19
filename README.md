@@ -136,7 +136,7 @@ Ship the first version.
 Run `mdtl` in the project root:
 
 ```text
-mdtl 0.2.1
+mdtl 0.2.3
 Config: md-template-lint.yml
 ========================
 

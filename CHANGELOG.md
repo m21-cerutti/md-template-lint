@@ -14,6 +14,7 @@ All notable changes to this project are listed here. The format follows
 <!-- prettier-ignore-end -->
 
 - [Unreleased](#unreleased)
+- [0.2.3 - 2026-11-19](#023---2026-11-19)
   - [Added](#added)
   - [Changed](#changed)
 - [0.2.1 - 2026-11-16](#021---2026-11-16)
@@ -26,6 +27,8 @@ All notable changes to this project are listed here. The format follows
   - [Added](#added-2)
 
 ## Unreleased
+
+## [0.2.3] - 2026-11-19
 
 ### Added
 
@@ -54,6 +57,9 @@ All notable changes to this project are listed here. The format follows
   - 1 file, 5000 headings: 393.8 to 114.7.
   - Large template (300 fields, 600 headings), 5 files: 617.8 to 128.8.
   - 200 templates, 3 files each: 876.8 to 412.4.
+- [ADR 0016](docs/adr/0016-ordered-read-ahead-and-sll-first-parse.md) (ordered read-ahead and
+  SLL-first parse) now lists the ANTLR and antlr4ng resources that explain SLL versus LL
+  prediction.
 
 ## [0.2.1] - 2026-11-16
 
@@ -264,6 +270,7 @@ published.
   the linter once per file.
 - A global alias file `approved_path.yml` for the paths a template may read.
 
+[0.2.3]: https://github.com/m21-cerutti/md-template-lint/compare/0.2.2...0.2.3
 [0.2.1]: https://github.com/m21-cerutti/md-template-lint/compare/0.2.0...0.2.1
 [0.2.0]: https://github.com/m21-cerutti/md-template-lint/compare/0.1.0...0.2.0
 [0.1.0]: https://github.com/m21-cerutti/md-template-lint/releases/tag/0.1.0
