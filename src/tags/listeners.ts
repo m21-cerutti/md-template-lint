@@ -12,7 +12,7 @@
  *
  * No tag regex here: the grammar (grammar/*.g4) decides what is an error.
  */
-import { BaseErrorListener, CharStream, CommonTokenStream, LexerNoViableAltException, Token, type ATNSimulator, type RecognitionException, type Recognizer } from "antlr4ng";
+import { BailErrorStrategy, BaseErrorListener, CharStream, CommonTokenStream, LexerNoViableAltException, ParseCancellationException, PredictionMode, Token, type ATNSimulator, type RecognitionException, type Recognizer } from "antlr4ng";
 import { MdTemplateLexer } from "../generated/MdTemplateLexer.js";
 import { MdTemplateParser } from "../generated/MdTemplateParser.js";
 import type { Region, SourcePosition, TagFinding } from "./ast.js";
@@ -105,8 +105,7 @@ export interface Recognizers {
  * Lexer and parser over `text`, starting in lexer mode `mode` (pushed when
  * `push`). The default console listeners are replaced by the collecting ones.
  */
-export function createRecognizers(text: string, mode: number, push: boolean, map: PositionMap): Recognizers {
-  const log = new SyntaxEventLog();
+export function createRecognizers(text: string, mode: number, push: boolean, map: PositionMap, log = new SyntaxEventLog()): Recognizers {
   const input = CharStream.fromString(text);
   const lexer = new MdTemplateLexer(input);
   lexer.removeErrorListeners();
@@ -117,6 +116,27 @@ export function createRecognizers(text: string, mode: number, push: boolean, map
   parser.removeErrorListeners();
   parser.addErrorListener(new ParserErrorListener(log, map));
   return { parser, log };
+}
+
+/**
+ * First stage of ANTLR's two-stage parse: SLL prediction with a bail-out strategy and no
+ * listeners. When it finishes with no lexer or parser error, its tree is the one full LL gives
+ * (PredictionMode.SLL contract). Null on any error: the caller then parses as usual (full LL,
+ * collecting listeners), so every error path and its events stay unchanged.
+ */
+export function parseSll<T>(text: string, mode: number, push: boolean, entry: (parser: MdTemplateParser) => T): T | null {
+  const log = new SyntaxEventLog();
+  const { parser } = createRecognizers(text, mode, push, () => ({ line: 0, column: 0 }), log);
+  parser.removeErrorListeners();
+  parser.errorHandler = new BailErrorStrategy();
+  parser.interpreter.predictionMode = PredictionMode.SLL;
+  try {
+    const tree = entry(parser);
+    return log.isEmpty ? tree : null;
+  } catch (error) {
+    if (error instanceof ParseCancellationException) return null;
+    throw error;
+  }
 }
 
 /** The single sink of one document parse: grammar errors and tag findings. */

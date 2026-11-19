@@ -50,7 +50,7 @@ import type {
   TagSubject,
 } from "./ast.js";
 import { keySubject } from "./key.js";
-import { createRecognizers, DiagnosticCollector, type GrammarError, type PositionMap, type SyntaxEvent, type SyntaxEventLog } from "./listeners.js";
+import { createRecognizers, DiagnosticCollector, parseSll, type GrammarError, type PositionMap, type SyntaxEvent, type SyntaxEventLog } from "./listeners.js";
 import { BracketShapeVisitor } from "./visitors/brackets.js";
 import { DirectiveVisitor, scanComments } from "./visitors/directive.js";
 import { HeadingVisitor, peelHeading, type HeadingItemResult } from "./visitors/heading.js";
@@ -609,7 +609,8 @@ export function analyzeDocument(text: string): DocumentAnalysis {
   // Lexer contract: every line ends with LF (grammar/MdTemplateLexer.g4).
   const source = normalized === "" || normalized.endsWith("\n") ? normalized : `${normalized}\n`;
   const session = new ParseSession(source, MdTemplateLexer.DEFAULT_MODE, false, DEFAULT_ORIGIN);
-  const tree = session.parser.document();
+  // Two-stage parse: SLL first; on any error the session's full LL parse, as before.
+  const tree = parseSll(source, MdTemplateLexer.DEFAULT_MODE, false, (parser) => parser.document()) ?? session.parser.document();
   const fmCtx = tree.frontmatter();
   const unclosed = tree.fmUnclosed() !== null;
   const fmEnd = fmCtx?.stop?.line ?? 0;
